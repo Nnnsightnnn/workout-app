@@ -39,7 +39,8 @@ function setupPWA() {
 }
 
 function initUserPicker() {
-  document.getElementById("userChip").onclick = openUserPicker;
+  document.getElementById("userChip").onclick = () => showScreen('settings');
+  document.getElementById("settingsCloseBtn").onclick = () => showScreen('workout');
 }
 
 function renderUserChip() {
@@ -57,15 +58,11 @@ function renderUserChip() {
   avEl.textContent = (u.name.trim()[0] || "U").toUpperCase();
 }
 
-function openUserPicker() {
+function renderUserSection() {
+  const container = document.getElementById("userSection");
+  if (!container) return;
   const s = loadStore();
-  const html = `
-    <h3>Switch user</h3>
-    <div id="userList"></div>
-    <button class="user-add-row" id="userAddBtn">＋ Add new user</button>
-  `;
-  openSheet(html);
-  const list = document.getElementById("userList");
+  container.innerHTML = "";
   s.users.forEach(u => {
     const row = document.createElement("div");
     row.className = "user-row" + (u.id === state.userId ? " active" : "");
@@ -76,11 +73,12 @@ function openUserPicker() {
       <button class="row-icon-btn danger" title="Delete" data-action="delete">🗑</button>
     `;
     row.querySelector(".name").textContent = u.name;
-    // Tap to switch (not on the action buttons)
     row.addEventListener("click", (e) => {
       if (e.target.closest(".row-icon-btn")) return;
       switchUser(u.id);
-      closeSheet();
+      renderUserSection();
+      renderUserChip();
+      renderWorkoutScreen();
     });
     row.querySelector("[data-action=rename]").onclick = (e) => {
       e.stopPropagation();
@@ -90,9 +88,13 @@ function openUserPicker() {
       e.stopPropagation();
       confirmDeleteUser(u);
     };
-    list.appendChild(row);
+    container.appendChild(row);
   });
-  document.getElementById("userAddBtn").onclick = openAddUserDialog;
+  const addBtn = document.createElement("button");
+  addBtn.className = "user-add-row";
+  addBtn.textContent = "＋ Add new user";
+  addBtn.onclick = openAddUserDialog;
+  container.appendChild(addBtn);
 }
 
 function openAddUserDialog(isFirstRun) {
@@ -134,13 +136,14 @@ function openAddUserDialog(isFirstRun) {
     state.currentDayId = determineDefaultDay();
     closeSheet();
     renderUserChip();
+    renderUserSection();
     renderWorkoutScreen();
     showToast(`Welcome, ${u.name}`, "success");
   };
   input.addEventListener("keydown", e => { if (e.key === "Enter") save(); });
   document.getElementById("saveAddBtn").onclick = save;
   const cancel = document.getElementById("cancelAddBtn");
-  if (cancel) cancel.onclick = () => { closeSheet(); openUserPicker(); };
+  if (cancel) cancel.onclick = () => { closeSheet(); renderUserSection(); };
 }
 function selectNewUserTpl(el, tplId) {
   el.closest('.sheet, #sheetContent').querySelectorAll('.tpl-option').forEach(o => o.classList.remove('active'));
@@ -167,11 +170,12 @@ function openRenameDialog(user) {
     renameUserRec(user.id, name);
     closeSheet();
     renderUserChip();
+    renderUserSection();
     showToast("Renamed", "success");
   };
   input.addEventListener("keydown", e => { if (e.key === "Enter") save(); });
   document.getElementById("renameSave").onclick = save;
-  document.getElementById("renameCancel").onclick = () => { closeSheet(); openUserPicker(); };
+  document.getElementById("renameCancel").onclick = () => { closeSheet(); renderUserSection(); };
 }
 
 function confirmDeleteUser(user) {
@@ -191,7 +195,7 @@ function confirmDeleteUser(user) {
     </div>
   `;
   openSheet(html);
-  document.getElementById("delCancel").onclick = () => { closeSheet(); openUserPicker(); };
+  document.getElementById("delCancel").onclick = () => { closeSheet(); renderUserSection(); };
   document.getElementById("delConfirm").onclick = () => {
     const wasCurrent = user.id === state.userId;
     deleteUserRec(user.id);
@@ -209,6 +213,7 @@ function confirmDeleteUser(user) {
     } else {
       renderUserChip();
     }
+    renderUserSection();
     showToast("User deleted", "success");
   };
 }
@@ -224,6 +229,7 @@ function initUnitToggle() {
   });
 }
 function initNav() {
+  document.getElementById("logoBtn").onclick = () => showScreen("workout");
   document.querySelectorAll("nav.bottom button").forEach(btn => {
     btn.onclick = () => showScreen(btn.dataset.screen);
   });
@@ -289,6 +295,7 @@ function initSheet() {
 }
 
 function init() {
+  runMigrations();
   const s = loadStore();
   state.unit = s.unit || "lbs";
   document.querySelectorAll("#unitToggle button").forEach(b => b.classList.toggle("active", b.dataset.unit === state.unit));
@@ -296,6 +303,9 @@ function init() {
   setupPWA();
   initUserPicker(); initUnitToggle(); initNav(); initTools();
   initWorkoutScreen(); initTimer(); initSheet(); initSidebar();
+
+  const versionEl = document.getElementById("appVersionLabel");
+  if (versionEl) versionEl.textContent = "Build " + APP_BUILD;
 
   // First-run or empty user list → prompt to create first user
   if (!s.users.length || !s.currentUserId) {
@@ -332,6 +342,10 @@ try {
   window.DEFAULT_PROGRAM = DEFAULT_PROGRAM;
   window.JBROWN_PROGRAM = JBROWN_PROGRAM;
   window.FILLY_PROGRAM = FILLY_PROGRAM;
+  window.PROGRAM_HYPERTROPHY = PROGRAM_HYPERTROPHY;
+  window.PROGRAM_ATHLETIC = PROGRAM_ATHLETIC;
+  window.PROGRAM_MINIMAL = PROGRAM_MINIMAL;
+  window.PROGRAM_GLUTES = PROGRAM_GLUTES;
   window.PROGRAM_TEMPLATES = PROGRAM_TEMPLATES;
   window.CATEGORIES = CATEGORIES;
 } catch (e) {}

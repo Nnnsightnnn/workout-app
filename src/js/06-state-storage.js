@@ -33,12 +33,14 @@ function newUserRecord(name, templateId) {
     sessions: [],
     measurements: [],
     draft: null,
-    lastDoneDayId: null
+    lastDoneDayId: null,
+    programStartDate: tpl.totalWeeks ? Date.now() : null,
+    weeklySchedule: null
   };
 }
 
 function getDefaultStore() {
-  return { unit: "lbs", users: [], currentUserId: null };
+  return { _schemaVersion: APP_VERSION, unit: "lbs", users: [], currentUserId: null };
 }
 
 function loadStore() {
@@ -60,6 +62,8 @@ function loadStore() {
       if (u.lastDoneDayId === undefined) u.lastDoneDayId = null;
       if (!u.measurements) u.measurements = [];
       if (!u.templateId) u.templateId = "conjugate5";
+      if (u.programStartDate === undefined) u.programStartDate = null;
+      if (u.weeklySchedule === undefined) u.weeklySchedule = null;
     });
     return s;
   } catch (e) { return getDefaultStore(); }

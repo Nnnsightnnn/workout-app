@@ -26,9 +26,14 @@ let output = template
   .replace('/* {{CSS}} */', css)
   .replace('/* {{JS}} */', js);
 
-// 5. Write output
+// 5. Inject build hash
+const crypto = require('crypto');
+const hash = crypto.createHash('md5').update(output).digest('hex').slice(0, 8);
+output = output.replace('__BUILD_HASH__', hash);
+
+// 6. Write output
 fs.writeFileSync(OUT, output, 'utf-8');
 
-// 6. Report
+// 7. Report
 const lines = output.split('\n').length;
-console.log(`Built ${OUT} (${lines} lines, ${output.length} bytes)`);
+console.log(`Built ${OUT} (${lines} lines, ${output.length} bytes, hash: ${hash})`);
