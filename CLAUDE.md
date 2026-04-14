@@ -1,6 +1,6 @@
 # Claude Context — K&N Lifts Workout App
 
-Essential project context. Full details in `.claude/specs/`.
+Essential project context.
 
 ## Tech Stack
 HTML5 • CSS3 (variables, flexbox, grid) • Vanilla JS (ES6+) • LocalStorage • Web Audio API • Vibration API
@@ -19,6 +19,9 @@ src/
     04-filly-program.js    ← FILLY_PROGRAM
     05-program-templates.js← PROGRAM_TEMPLATES
     06-state-storage.js    ← state, loadStore, saveStore, userData, updateUser
+    06a-version.js         ← APP_VERSION (schema int), APP_BUILD (build hash)
+    06b-migrations.js      ← MIGRATIONS[], runMigrations(), restorePreMigrationBackup()
+    06c-import.js          ← importData(), validateImportData()
     07-day-rotation.js     ← determineDefaultDay(), getCurrentDay()
     08-input-draft.js      ← getDraft, ensureDraft, saveInput
     09-program-editing.js  ← mutateDay, resetCurrentDay, resetAllProgram
@@ -37,10 +40,11 @@ src/
     22-init.js             ← setupPWA, init, DOMContentLoaded
 build.js                   ← Build script (zero deps, Node.js built-ins only)
 workout-app.html           ← BUILD OUTPUT (single-file distributable)
+index.html                 ← Redirect → workout-app.html (for GitHub Pages)
 test-v3.js                 ← Test harness (jsdom-based, 16 workflow tests)
+.github/workflows/pages.yml ← GitHub Pages auto-deploy on push to main
 CLAUDE.md                  ← This file
 README.md                  ← User-facing documentation
-.claude/                   ← Context system (specs, memory, commands, skills)
 ```
 
 ## Architecture
@@ -53,8 +57,25 @@ All JS shares global scope — no module system, same as a single `<script>` tag
 
 ## Storage
 - **Key**: `kn-lifts-v3` in LocalStorage
-- **Schema**: `{ unit, users[], currentUserId }`
-- **Per user**: `{ id, name, program[], sessions[], draft, lastDoneDayId }`
+- **Schema**: `{ _schemaVersion, unit, users[], currentUserId }`
+- **Per user**: `{ id, name, templateId, program[], sessions[], measurements[], draft, lastDoneDayId }`
+
+## Hosting & Deploy
+- **Live URL**: https://nnnsightnnn.github.io/workout-app/
+- **Hosting**: GitHub Pages, auto-deploys from `main` branch via `.github/workflows/pages.yml`
+- **Deploy workflow**: Edit `src/` → `node build.js` → commit → push to `main` → live in ~15s
+- **User upgrade path**: Users open the URL (or their home screen shortcut) — they always get the latest code. localStorage persists across deploys since the origin stays the same.
+
+## Schema Migrations
+When changing the data schema (adding/renaming/removing fields in stored data):
+1. Add a migration to `MIGRATIONS[]` in `src/js/06b-migrations.js`
+2. Bump `APP_VERSION` in `src/js/06a-version.js` to match
+3. Add a defensive default in `loadStore()` in `06-state-storage.js` as safety net
+4. `node build.js && node test-v3.js`
+
+Migrations run automatically on app load when stored `_schemaVersion` < `APP_VERSION`.
+Pre-migration data is auto-backed up to `kn-lifts-backup-premigration` in localStorage.
+Recovery from console: `restorePreMigrationBackup()`
 
 ---
 
@@ -78,14 +99,11 @@ All JS shares global scope — no module system, same as a single `<script>` tag
 > TRIGGER: When adding or styling any new buttons, cards, or interactive elements
 
 ### Data [DATA]
-**[DATA-00001]** Storage key is `kn-lifts-v3` — never change without migration
+**[DATA-00001]** Storage key is `kn-lifts-v3` — never change. Schema version lives inside the data as `_schemaVersion`.
 **[DATA-00002]** Always go through `updateUser()` → `saveStore()` for persistence
 **[DATA-00003]** Deep clone with `deepClone()` (JSON round-trip) when copying objects
+**[DATA-00004]** Schema changes require a migration in `06b-migrations.js` + bump `APP_VERSION` in `06a-version.js`. See "Schema Migrations" section above.
 > TRIGGER: When modifying data layer
-
-### Memory Check (REQUIRED)
-**ALWAYS check first:** `.claude/memory/active/quick-reference.md`
-> TRIGGER: Before starting any task
 
 ### Verification [VERIFY]
 **[VERIFY-00001]** Read code before recommending changes
@@ -102,19 +120,6 @@ All JS shares global scope — no module system, same as a single `<script>` tag
 **[TASK-00001]** Use task tracking for multi-step work
 **[TASK-00002]** Commit format: `"Fix: [Description] (Task: <id>)"`
 > TRIGGER: When starting complex tasks
-
-## Context Management [CTX]
-**[CTX-00001]** Memory: `.claude/memory/active/`
-**[CTX-00002]** Search: quick-reference → structured → docs
-
-## Pain Points [PAIN]
-**[PAIN-00001]** Track friction: `.claude/pain-points/active-pain-points.md`
-
-## Quick Reference
-**Memory**: `.claude/memory/active/quick-reference.md`
-**Architecture**: `.claude/specs/architecture.md`
-**Pain Points**: `.claude/pain-points/active-pain-points.md`
-**Commands**: `/focus`, `/investigate`, `/brainstorm-design`, `/plan-as-group`
 
 ---
 
