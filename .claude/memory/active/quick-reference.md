@@ -6,34 +6,40 @@ Top patterns for the K&N Lifts workout app. Check this FIRST before any task.
 
 ## App Architecture
 
-**Single file**: `workout-app.html` (2385 lines) — CSS + HTML + JS inline, zero dependencies.
+**Multi-file source** in `src/`, built to single-file `workout-app.html` via `node build.js`.
 
-**Data flow**: User Input → `savInput()` → `updateUser(fn)` → `saveStore()` → re-render
+**Data flow**: User Input → `saveInput()` → `updateUser(fn)` → `saveStore()` → re-render
 
 **Storage**: LocalStorage key `kn-lifts-v3`
 ```js
 { unit, users: [{ id, name, program[], sessions[], draft, lastDoneDayId }], currentUserId }
 ```
 
+**Build**: `node build.js` → concatenates `src/template.html` + `src/styles.css` + `src/js/*.js` → `workout-app.html`
+**Test**: `node build.js && node test-v3.js`
+
 ---
 
-## Code Section Map
+## Code Section Map (src/js/)
 
-| Section | Line | Key Functions |
-|---------|------|---------------|
-| Exercise Library | 801 | `LIBRARY`, `LIB_BY_ID`, `CATEGORIES` |
-| Default Program | 890 | `DEFAULT_PROGRAM`, `mkSets()` |
-| State/Storage | 1009 | `loadStore()`, `saveStore()`, `userData()`, `updateUser()` |
-| Day Rotation | 1121 | `determineDefaultDay()`, `getCurrentDay()` |
-| Draft Management | 1141 | `getDraft()`, `savInput()`, `getInput()`, `ensureDraft()` |
-| Program Editing | 1196 | `mutateDay()`, `resetCurrentDay()`, `resetAllProgram()` |
-| Render: Workout | 1226 | `renderWorkoutScreen()` |
-| Bottom Sheets | 1470 | Day picker, library browser, edit menus |
-| Start/Finish | 1749 | `startWorkout()`, `finishWorkout()` — PR detection here |
-| Rest Timer | 1848 | `startRest()`, `playBeep()` |
-| History | 1949 | Session list, donut chart |
-| Tools | 2049 | Plate calculator, 1RM estimator |
-| Init | 2130 | `init()` at line 2341, event wiring |
+| File | Key Functions |
+|------|---------------|
+| `01-exercise-library.js` | `LIBRARY`, `LIB_BY_ID`, `CATEGORIES` |
+| `02-default-program.js` | `DEFAULT_PROGRAM`, `mkSets()` |
+| `03-jbrown-program.js` | `JBROWN_PROGRAM` |
+| `04-filly-program.js` | `FILLY_PROGRAM` |
+| `05-program-templates.js` | `PROGRAM_TEMPLATES` |
+| `06-state-storage.js` | `loadStore()`, `saveStore()`, `userData()`, `updateUser()` |
+| `07-day-rotation.js` | `determineDefaultDay()`, `getCurrentDay()` |
+| `08-input-draft.js` | `getDraft()`, `saveInput()`, `getInput()`, `ensureDraft()` |
+| `09-program-editing.js` | `mutateDay()`, `resetCurrentDay()`, `resetAllProgram()` |
+| `10-render-workout.js` | `renderWorkoutScreen()` |
+| `12-bottom-sheet.js` | Day picker, library browser, edit menus |
+| `13-start-finish.js` | `startWorkout()`, `finishWorkout()` — PR detection |
+| `14-timers.js` | `startRest()`, `playBeep()` |
+| `15-history.js` | `renderHistory()` |
+| `16-tools.js` | Plate calculator, 1RM estimator |
+| `22-init.js` | `init()`, PWA setup, event wiring |
 
 ---
 

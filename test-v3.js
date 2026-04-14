@@ -89,6 +89,7 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
   t("render: set row prefills default weight", () => {
     // Force render of Day 1
     w.state.currentDayId = 1;
+    w.state.dayChosen = true;
     w.renderWorkoutScreen();
     // Find a weight input. Back Squat should show 135
     const inputs = w.document.querySelectorAll(".weight-in");
