@@ -1,7 +1,8 @@
 const fs = require("fs");
 const { JSDOM } = require("jsdom");
 
-const html = fs.readFileSync("/sessions/epic-gifted-pascal/mnt/Workout App/workout-app.html", "utf-8");
+const path = require("path");
+const html = fs.readFileSync(path.join(__dirname, "workout-app.html"), "utf-8");
 
 const errors = [];
 const dom = new JSDOM(html, {
