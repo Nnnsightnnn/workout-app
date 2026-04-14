@@ -16,7 +16,7 @@ function showScreen(name) {
   document.querySelectorAll("nav.bottom button").forEach(b => b.classList.toggle("active", b.dataset.screen === name));
   if (name === "history") renderHistory();
   if (name === "workout") renderWorkoutScreen();
-  if (name === "tools") { renderBodySection(); renderProgramPicker(); }
+  if (name === "settings") { renderUserSection(); renderBodySection(); renderProgramPicker(); }
   // Hide floating timer button off-workout
   document.querySelector(".fab").style.display = name === "workout" ? "" : "none";
 }

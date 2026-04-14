@@ -16,6 +16,7 @@ function renderWorkoutScreen() {
 
   // Show day picker if user hasn't chosen a workout yet (and no draft in progress)
   if (!state.dayChosen && !getDraft()) {
+    renderTimelineStrip();
     renderDayPicker();
     return;
   }
@@ -44,6 +45,8 @@ function renderWorkoutScreen() {
   } else {
     badge.style.background = ''; badge.style.color = '';
   }
+
+  renderTimelineStrip();
 
   container.innerHTML = "";
   day.blocks.forEach((block, bi) => {
@@ -86,11 +89,18 @@ function renderDayPicker() {
     tab.onclick = () => {
       if (tpl.id === u.templateId) return;
       if (!confirm(`Switch to ${tpl.name}? Your current program edits will be replaced.`)) return;
+      // Structured programs get the schedule picker flow
+      if (tpl.totalWeeks) {
+        openSchedulePicker(tpl);
+        return;
+      }
       updateUser(usr => {
         usr.templateId = tpl.id;
         usr.program = deepClone(tpl.days);
         usr.draft = null;
         usr.lastDoneDayId = null;
+        usr.programStartDate = null;
+        usr.weeklySchedule = null;
       });
       stopSessionTimer();
       state.workoutStartedAt = null;

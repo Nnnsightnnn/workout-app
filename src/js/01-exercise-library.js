@@ -114,5 +114,12 @@ const LIBRARY = [
   { id:"meadowsrow", name:"Meadows Row", muscles:["lats","upper back"], cat:"Pull", defaultRest:60, defaultSets:3, defaultReps:10, perSide:true, defaultWeight:35, demoUrl:"https://www.youtube.com/watch?v=RNYwsF6cR7A" },
   { id:"uprightrow", name:"Upright Row", muscles:["traps","shoulders"], cat:"Shoulders", defaultRest:60, defaultSets:3, defaultReps:12, defaultWeight:45, demoUrl:"https://www.youtube.com/watch?v=amCU-ziHITM" },
   { id:"cablecurl", name:"Cable Curl", muscles:["biceps"], cat:"Arms", defaultRest:45, defaultSets:3, defaultReps:12, defaultWeight:40, demoUrl:"https://www.youtube.com/watch?v=NFzTWp2qpiE" },
+  // Athletic + Minimal + Glute Additions
+  { id:"hangpowerclean", name:"Hang Power Clean", muscles:["full body","traps","glutes","hamstrings"], cat:"Conditioning", defaultRest:120, defaultSets:4, defaultReps:3, defaultWeight:95, demoUrl:"https://www.youtube.com/watch?v=V6sZ2JVdMbQ" },
+  { id:"jumpsquat", name:"Jump Squat", muscles:["quads","glutes","conditioning"], cat:"Conditioning", defaultRest:60, defaultSets:4, defaultReps:6, bodyweight:true, defaultWeight:0, demoUrl:"https://www.youtube.com/watch?v=A-cFYGvaxi8" },
+  { id:"medballslam", name:"Med Ball Slam", muscles:["core","shoulders","conditioning"], cat:"Conditioning", defaultRest:60, defaultSets:3, defaultReps:8, defaultWeight:20, demoUrl:"https://www.youtube.com/watch?v=1yMRvsuk9Xg" },
+  { id:"kbclean", name:"KB Clean & Press", muscles:["shoulders","core","glutes"], cat:"Shoulders", defaultRest:60, defaultSets:3, defaultReps:6, perSide:true, defaultWeight:25, demoUrl:"https://www.youtube.com/watch?v=0aRb6SsvILo" },
+  { id:"bandrow", name:"Band Row", muscles:["upper back","lats","rear delts"], cat:"Pull", defaultRest:45, defaultSets:3, defaultReps:15, bodyweight:true, defaultWeight:0, demoUrl:"https://www.youtube.com/watch?v=RFvBzTYGMmo" },
+  { id:"dbhipabduction", name:"Banded Hip Abduction", muscles:["glute med","glute min"], cat:"Hinge", defaultRest:45, defaultSets:3, defaultReps:15, perSide:true, bodyweight:true, defaultWeight:0, demoUrl:"https://www.youtube.com/watch?v=jghbMRmJz9s" },
 ];
 const LIB_BY_ID = Object.fromEntries(LIBRARY.map(e => [e.id, e]));
