@@ -378,6 +378,15 @@ function renderExercise(day, block, ex, bi, ei, isSuperset) {
     t.textContent = `rest ${formatRest(ex.rest)}`;
     meta.appendChild(t);
   }
+  // Injury flag: warn if exercise conflicts with user's reported injury history
+  const _warnedExIds = getInjuryWarnings();
+  if (ex.exId && _warnedExIds.has(ex.exId)) {
+    const t = document.createElement("span");
+    t.className = "tag injury-warn";
+    t.title = "May need modification — injury flag active";
+    t.textContent = "⚠ modify";
+    meta.appendChild(t);
+  }
   info.appendChild(meta);
   head.appendChild(info);
 

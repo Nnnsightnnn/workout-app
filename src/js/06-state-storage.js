@@ -43,7 +43,7 @@ function newUserRecord(name, templateId) {
 }
 
 function getDefaultStore() {
-  return { _schemaVersion: APP_VERSION, unit: "lbs", users: [], currentUserId: null };
+  return { _schemaVersion: APP_VERSION, unit: "lbs", users: [], currentUserId: null, onboarding: null };
 }
 
 function loadStore() {
@@ -55,6 +55,8 @@ function loadStore() {
     if (s.currentUserId && !s.users.find(u => u.id === s.currentUserId)) {
       s.currentUserId = s.users[0]?.id || null;
     }
+    // Defensive default for onboarding
+    if (s.onboarding === undefined) s.onboarding = null;
     // Fill missing per-user fields
     s.users.forEach(u => {
       if (!u.id) u.id = genId();
