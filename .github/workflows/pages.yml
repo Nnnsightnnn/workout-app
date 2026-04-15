@@ -1,8 +1,9 @@
-name: Deploy to GitHub Pages
+name: Build and Deploy to GitHub Pages
 
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -14,16 +15,42 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  build-test-deploy:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        # Safety gate: broken builds never reach Pages.
+        # Pages keeps serving the last successful deploy.
+        run: npm test
+
+      - name: Build workout-app.html from src/
+        run: npm run build
+
+      - name: Stage deployable files into dist/
+        # Publish only what the app needs. Source, tests, node_modules stay out.
+        run: |
+          mkdir -p dist
+          cp index.html dist/
+          cp workout-app.html dist/
+
       - uses: actions/configure-pages@v5
+
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: ./dist
+
       - id: deployment
         uses: actions/deploy-pages@v4
