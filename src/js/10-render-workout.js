@@ -453,6 +453,58 @@ function renderSetsTable(block, ex, bi, ei) {
   const wrap = document.createElement("div");
   wrap.className = "sets-wrap";
 
+  // Tempo coaching cue — shown prominently above the sets when a tempo is prescribed
+  if (ex.tempo) {
+    const parts = ex.tempo.split("-");
+    const labels = ["Down", "Pause", "Up", "Top"];
+    const cue = document.createElement("div");
+    cue.className = "tempo-cue";
+    const lbl = document.createElement("span");
+    lbl.className = "tempo-cue-label";
+    lbl.textContent = "Tempo";
+    cue.appendChild(lbl);
+    const phases = document.createElement("div");
+    phases.className = "tempo-cue-phases";
+    parts.forEach((t, i) => {
+      if (i > 0) {
+        const sep = document.createElement("div");
+        sep.className = "tempo-divider";
+        sep.textContent = "—";
+        phases.appendChild(sep);
+      }
+      const ph = document.createElement("div");
+      ph.className = "tempo-phase";
+      ph.innerHTML = `<div class="tempo-count">${t}</div><div class="tempo-phase-name">${labels[i] || ""}</div>`;
+      phases.appendChild(ph);
+    });
+    cue.appendChild(phases);
+    wrap.appendChild(cue);
+  }
+
+  // Previous session (same day) — what was lifted last time this exact workout day was done
+  const prevSets = getPrevDaySetsFor(state.currentDayId, ex.exId || ex.name);
+  if (prevSets.length) {
+    const prev = document.createElement("div");
+    prev.className = "prev-session";
+    const lbl = document.createElement("span");
+    lbl.className = "prev-label";
+    lbl.textContent = "Last";
+    prev.appendChild(lbl);
+    prevSets.forEach((s, idx) => {
+      if (idx > 0) {
+        const sep = document.createElement("span");
+        sep.className = "prev-sep";
+        sep.textContent = "·";
+        prev.appendChild(sep);
+      }
+      const chip = document.createElement("span");
+      chip.className = "prev-set";
+      chip.textContent = (s.bodyweight || s.weight === 0) ? `${s.reps}r` : `${s.weight}×${s.reps}`;
+      prev.appendChild(chip);
+    });
+    wrap.appendChild(prev);
+  }
+
   const header = document.createElement("div");
   header.className = "sets-header" + (bw ? " bw" : "");
   const repsLabel = ex.isTime ? "Time (s)" : ex.isDistance ? "Dist (m)" : "Reps";
@@ -578,7 +630,10 @@ function wireRow(row, block, ex, bi, ei, i, bw) {
     if (dx > 60) {
       const was = row.classList.contains("set-done");
       row.classList.remove("set-done", "set-skipped");
-      if (!was) row.classList.add("set-done");
+      if (!was) {
+        row.classList.add("set-done");
+        state.lastCompletedTempo = ex.tempo || null;
+      }
       saveInput(statusKey, was ? null : "done");
       if (navigator.vibrate) navigator.vibrate(10);
     } else if (dx < -60) {
