@@ -2,28 +2,34 @@
 // TIMELINE STRIP — Journey Map calendar + program phase tracking
 // ============================================================
 
-function getStreakCount(sessions) {
-  if (!sessions || !sessions.length) return 0;
+function getTrainingStreak(sessions, daysPerWeek) {
+  if (!sessions || !sessions.length) return { count: 0, atRisk: false };
   const dayMs = 86400000;
+  const maxGap = Math.ceil(7 / (daysPerWeek || 4)) + 1;
   const todayStart = new Date(); todayStart.setHours(0,0,0,0);
-  let streak = 0;
-  let checkDate = todayStart.getTime();
+  const todayMs = todayStart.getTime();
 
-  // Check if there's a session today first
-  const hasToday = sessions.some(s => s.finishedAt >= checkDate && s.finishedAt < checkDate + dayMs);
-  if (!hasToday) {
-    // Check yesterday — streak might still be active
-    checkDate -= dayMs;
-    const hasYesterday = sessions.some(s => s.finishedAt >= checkDate && s.finishedAt < checkDate + dayMs);
-    if (!hasYesterday) return 0;
+  // Unique session dates sorted descending
+  const seen = new Set();
+  const sessionDays = [];
+  [...sessions].sort((a, b) => b.finishedAt - a.finishedAt).forEach(s => {
+    const ds = new Date(s.finishedAt); ds.setHours(0,0,0,0);
+    const key = ds.getTime();
+    if (!seen.has(key)) { seen.add(key); sessionDays.push(key); }
+  });
+
+  const daysSinceLast = Math.floor((todayMs - sessionDays[0]) / dayMs);
+  if (daysSinceLast >= maxGap) return { count: 0, atRisk: false };
+
+  let count = 1;
+  for (let i = 1; i < sessionDays.length; i++) {
+    const gap = Math.floor((sessionDays[i - 1] - sessionDays[i]) / dayMs);
+    if (gap > maxGap) break;
+    count++;
   }
 
-  // Walk backwards counting consecutive days
-  while (true) {
-    const hasSession = sessions.some(s => s.finishedAt >= checkDate && s.finishedAt < checkDate + dayMs);
-    if (hasSession) { streak++; checkDate -= dayMs; } else break;
-  }
-  return streak;
+  const atRisk = daysSinceLast >= maxGap - 1 && daysSinceLast > 0;
+  return { count, atRisk };
 }
 
 function getProgramWeek(programStartDate) {
@@ -87,24 +93,45 @@ function renderTimelineStrip() {
     days.push(todayMs + i * dayMs);
   }
 
-  // Streak
-  const streak = getStreakCount(sessions);
+  // Streak (training-frequency-aware)
+  const { count: streak, atRisk: streakAtRisk } = getTrainingStreak(sessions, u.daysPerWeek);
 
   // Phase info — prefer user's workout-count-based week, fall back to date-based
   const weekNum = u.currentWeek || getProgramWeek(u.programStartDate);
   const dynamicPhases = getPhasesForTemplate(u.templateId, u.totalWeeks);
   const phase = dynamicPhases ? phaseForWeek(dynamicPhases, weekNum) : getCurrentPhase(tpl, weekNum);
 
-  // Top row: streak + phase label
+  // Top row: streak + forge counter + phase label
   const infoRow = document.createElement("div");
   infoRow.className = "tl-info-row";
 
   if (streak > 0) {
     const streakEl = document.createElement("div");
-    streakEl.className = "tl-streak";
-    streakEl.innerHTML = `<span class="tl-streak-num">${streak}</span><span class="tl-streak-label">day streak</span>`;
+    const flameTier = streak >= 30 ? "legendary" : streak >= 14 ? "lg" : streak >= 7 ? "md" : streak >= 3 ? "sm" : "ember";
+    streakEl.className = "tl-streak flame-" + flameTier + (streakAtRisk ? " flame-risk" : "");
+    streakEl.innerHTML = `<span class="tl-flame"></span><span class="tl-streak-num">${streak}</span><span class="tl-streak-label">streak</span>`;
     infoRow.appendChild(streakEl);
   }
+
+  // Forge counter — lifetime volume
+  if (sessions.length > 0) {
+    const totalVol = sessions.reduce((sum, s) => sum + (s.volume || 0), 0);
+    const forgeEl = document.createElement("div");
+    forgeEl.className = "tl-forge";
+    if (totalVol > 0) {
+      const volStr = totalVol >= 1000000 ? (totalVol / 1000000).toFixed(1) + "M"
+        : totalVol >= 10000 ? (totalVol / 1000).toFixed(1) + "k"
+        : totalVol.toLocaleString();
+      forgeEl.innerHTML = `<span class="tl-forge-num">${volStr}</span><span class="tl-forge-unit">${state.unit}</span><span class="tl-forge-label">lifted</span>`;
+    } else {
+      const totalSets = sessions.reduce((sum, s) => sum + (s.sets ? s.sets.length : 0), 0);
+      forgeEl.innerHTML = `<span class="tl-forge-num">${totalSets}</span><span class="tl-forge-label">sets done</span>`;
+    }
+    infoRow.appendChild(forgeEl);
+  }
+
+  // Fuel Orb — weekly progress fill
+  infoRow.appendChild(buildFuelOrb(sessions, u));
 
   var displayTotalWeeks = u.totalWeeks || (tpl && tpl.totalWeeks);
   if (displayTotalWeeks && weekNum) {
@@ -191,6 +218,8 @@ function renderTimelineStrip() {
       strip.scrollLeft = offset;
     }
   });
+
+  renderStampCard();
 }
 
 function openSessionDetail(session) {
@@ -227,12 +256,15 @@ function openSessionDetail(session) {
   del.innerHTML = `<span class="icon">🗑</span> Delete this session`;
   del.style.marginTop = "14px";
   del.onclick = () => {
-    if (!confirm("Delete this workout session? This can't be undone.")) return;
+    if (_undoPending) clearUndoToast();
+    const deletedSession = deepClone(session);
+    const deletedUserId = state.userId;
     deleteSession(session.id);
     closeSheet();
     renderTimelineStrip();
     renderHistory();
-    showToast("Session deleted", "success");
+    _undoPending = { session: deletedSession, userId: deletedUserId, timerId: null, onExpire: null };
+    showUndoToast("Session deleted", () => { _undoPending = null; });
   };
   wrap.appendChild(del);
 
@@ -243,6 +275,29 @@ function deleteSession(sessionId) {
   updateUser(u => {
     u.sessions = u.sessions.filter(s => s.id !== sessionId);
   });
+}
+
+function undoDeleteSession() {
+  if (!_undoPending || !_undoPending.session) return;
+  const { session: s, userId, timerId } = _undoPending;
+  if (timerId) clearTimeout(timerId);
+  const store = loadStore();
+  const targetUser = store.users.find(u => u.id === userId);
+  if (!targetUser) {
+    _undoPending = null;
+    showToast("Can\u2019t undo \u2014 user not found");
+    return;
+  }
+  targetUser.sessions.push(s);
+  targetUser.sessions.sort((a, b) => a.finishedAt - b.finishedAt);
+  saveStore(store);
+  _undoPending = null;
+  const t = document.getElementById("toast");
+  t.className = "toast";
+  t.innerHTML = "";
+  renderTimelineStrip();
+  renderHistory();
+  showToast("Session restored", "success");
 }
 
 function openAddWorkout(dateMs) {
@@ -384,4 +439,119 @@ function openLogSets(dateMs, day) {
   actions.appendChild(saveBtn);
   wrap.appendChild(actions);
   openSheet(wrap);
+}
+
+// ============================================================
+// STAMP CARD — Hanko-style session collection
+// ============================================================
+function renderStampCard() {
+  const el = document.getElementById("stampCard");
+  if (!el) return;
+  const u = userData();
+  if (!u || !u.sessions || !u.sessions.length) { el.style.display = "none"; return; }
+
+  el.style.display = "";
+  el.innerHTML = "";
+
+  const sessions = u.sessions;
+  const total = sessions.length;
+  const CARD = 10;
+  const done = Math.floor(total / CARD);
+  const cur = total % CARD;
+  const full = cur === 0 && done > 0;
+  const filled = full ? CARD : cur;
+  const base = full ? (done - 1) * CARD : done * CARD;
+
+  const wrap = document.createElement("div");
+  wrap.className = "stamp-card" + (full ? " stamp-card-complete" : "");
+
+  for (let i = 0; i < CARD; i++) {
+    const stamp = document.createElement("div");
+    if (i < filled) {
+      const s = sessions[base + i];
+      const color = s ? getDayPrimaryColor(s) : null;
+      const init = s && s.dayName ? s.dayName.charAt(0) : "";
+      stamp.className = "stamp filled" + (i === filled - 1 && !full ? " newest" : "");
+      if (color) stamp.style.setProperty("--stamp-color", color);
+      stamp.innerHTML = `<span class="stamp-initial">${init}</span>`;
+    } else {
+      stamp.className = "stamp empty";
+    }
+    wrap.appendChild(stamp);
+  }
+
+  const ctr = document.createElement("div");
+  ctr.className = "stamp-counter";
+  ctr.innerHTML = `<span class="stamp-counter-num">${filled}/${CARD}</span>` +
+    (done > 0 ? `<span class="stamp-counter-cards">${done} done</span>` : "");
+  wrap.appendChild(ctr);
+
+  el.appendChild(wrap);
+}
+
+// ============================================================
+// FUEL ORB — Weekly progress liquid fill
+// ============================================================
+function getWeeklyProgress(sessions, u) {
+  const target = u.program ? u.program.length : (u.daysPerWeek || 4);
+  let completed = 0;
+
+  if (u.currentWeek) {
+    // Structured program: count unique day IDs done this week
+    const weekSessions = sessions.filter(s => s.programWeek === u.currentWeek);
+    completed = new Set(weekSessions.map(s => s.dayId)).size;
+  } else {
+    // Fallback: count sessions in the last 7 days
+    const weekAgo = Date.now() - 7 * 86400000;
+    completed = sessions.filter(s => s.finishedAt >= weekAgo).length;
+  }
+
+  return { completed: Math.min(completed, target), target };
+}
+
+function buildFuelOrb(sessions, u) {
+  const { completed, target } = getWeeklyProgress(sessions, u);
+  const pct = target > 0 ? Math.min(completed / target, 1) : 0;
+  const isFull = pct >= 1;
+
+  const wrap = document.createElement("div");
+  wrap.className = "fuel-orb" + (isFull ? " fuel-full" : "") + (pct === 0 ? " fuel-empty" : "");
+
+  // SVG dimensions
+  const size = 44;
+  const r = 19;
+  const cx = size / 2;
+  const cy = size / 2;
+
+  // Liquid level: pct 0 = bottom of circle, 1 = top
+  // Map pct to Y position within the circle (top of liquid surface)
+  // Circle spans from cy-r (top=3) to cy+r (bottom=41)
+  const liquidTop = cy + r - (pct * 2 * r); // 41 at 0%, 3 at 100%
+
+  // Wave path for liquid surface
+  const wAmp = pct > 0 && pct < 1 ? 2.5 : 0;
+  const wY = liquidTop;
+  const wave1 = `M0,${wY} Q${size*0.25},${wY - wAmp} ${size*0.5},${wY} T${size},${wY} L${size},${size} L0,${size} Z`;
+  const wave2 = `M0,${wY + 1} Q${size*0.25},${wY + 1 + wAmp} ${size*0.5},${wY + 1} T${size},${wY + 1} L${size},${size} L0,${size} Z`;
+
+  // Color based on fill level
+  const fillColor = isFull ? "#ffd60a" : pct >= 0.6 ? "#ff8c42" : "#ff6b35";
+  const fillColorDim = isFull ? "#cc9a00" : pct >= 0.6 ? "#cc5428" : "#cc4420";
+
+  wrap.innerHTML = `<svg viewBox="0 0 ${size} ${size}" class="fuel-orb-svg">
+    <defs>
+      <clipPath id="orbClip"><circle cx="${cx}" cy="${cy}" r="${r}"/></clipPath>
+      <linearGradient id="orbGrad" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0%" stop-color="${fillColorDim}"/>
+        <stop offset="100%" stop-color="${fillColor}"/>
+      </linearGradient>
+    </defs>
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--bg-card)" stroke="var(--border)" stroke-width="2"/>
+    ${pct > 0 ? `<path d="${wave1}" fill="url(#orbGrad)" clip-path="url(#orbClip)" class="orb-wave orb-wave-1"/>` : ""}
+    ${pct > 0 ? `<path d="${wave2}" fill="url(#orbGrad)" clip-path="url(#orbClip)" class="orb-wave orb-wave-2" opacity="0.5"/>` : ""}
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${pct > 0 ? fillColor + '44' : 'var(--border)'}" stroke-width="2" ${pct === 0 ? 'stroke-dasharray="3 3"' : ""}/>
+    <text x="${cx}" y="${cy + 1}" text-anchor="middle" dominant-baseline="central" class="orb-text">${completed}/${target}</text>
+  </svg>`;
+
+  return wrap;
 }

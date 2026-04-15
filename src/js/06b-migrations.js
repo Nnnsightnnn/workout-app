@@ -11,7 +11,7 @@ const MIGRATIONS = [
       store.users.forEach(u => {
         if (!u.id) u.id = genId();
         if (!u.name) u.name = "User";
-        if (!u.program) u.program = deepClone(DEFAULT_PROGRAM);
+        if (!u.program) u.program = [];
         if (!u.sessions) u.sessions = [];
         if (u.draft === undefined) u.draft = null;
         if (u.lastDoneDayId === undefined) u.lastDoneDayId = null;
@@ -61,6 +61,20 @@ const MIGRATIONS = [
     description: "Add onboardingDismissedAt flag for persistent onboarding prompt",
     migrate(store) {
       if (store.onboardingDismissedAt === undefined) store.onboardingDismissedAt = null;
+      return store;
+    }
+  },
+  {
+    version: 4,
+    description: "Add daysPerWeek per user for flexible day count",
+    migrate(store) {
+      store.users.forEach(u => {
+        if (u.daysPerWeek === undefined) {
+          const tpl = (typeof PROGRAM_TEMPLATES !== "undefined")
+            ? PROGRAM_TEMPLATES.find(t => t.id === u.templateId) : null;
+          u.daysPerWeek = tpl ? tpl.daysPerWeek : u.program ? u.program.length : 5;
+        }
+      });
       return store;
     }
   }

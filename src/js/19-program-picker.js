@@ -13,7 +13,7 @@ function renderProgramPicker() {
   const phaseLabel = phase ? ` · <span style="color:${phase.color}">${phase.name}</span>` : "";
   el.innerHTML = `
     <div class="program-current">
-      <div class="program-badge">${tpl.daysPerWeek || tpl.days.length}d</div>
+      <div class="program-badge">${u.daysPerWeek || tpl.daysPerWeek}d</div>
       <div class="program-info">
         <div class="name">${tpl.name}</div>
         <div class="desc">${tpl.description}</div>
@@ -38,7 +38,7 @@ function openProgramPicker() {
     html += `
       <div class="tpl-option${tpl.id === current ? ' active' : ''}" onclick="openDurationPicker('${tpl.id}')">
         <div class="tpl-head">
-          <div class="tpl-badge">${tpl.daysPerWeek || tpl.days.length}d</div>
+          <div class="tpl-badge">${tpl.daysPerWeek}d</div>
           <div class="tpl-name">${tpl.name}${infoBtn}</div>
         </div>
         <div class="tpl-desc">${tpl.description}</div>
@@ -60,19 +60,49 @@ function openDurationPicker(templateId) {
   const minW = tpl.minWeeks || 8;
   const maxW = tpl.maxWeeks || 12;
 
+  const tplNativeDays = tpl.daysPerWeek;
+  const profile = (typeof getUserProfile === "function") ? getUserProfile() : {};
+  let selectedDays = profile.daysPerWeek || tplNativeDays;
+
   const wrap = document.createElement("div");
   wrap.innerHTML = `
     <h3>${tpl.name}</h3>
     <p style="color:var(--text-dim);font-size:12px;margin-bottom:12px;">${tpl.description}</p>
-    <p style="font-weight:700;font-size:14px;margin-bottom:8px;">How many weeks?</p>
+    <p style="font-weight:700;font-size:14px;margin-bottom:8px;">How many days per week?</p>
   `;
+
+  // Days per week selector
+  const dayBtnGrid = document.createElement("div");
+  dayBtnGrid.style.cssText = "display:flex;gap:8px;margin-bottom:16px;";
+
+  for (let d = 2; d <= 6; d++) {
+    const btn = document.createElement("button");
+    btn.className = "schedule-day-btn" + (d === selectedDays ? " selected" : "");
+    btn.dataset.day = d;
+    btn.textContent = d + "d" + (d === tplNativeDays ? " \u2605" : "");
+    btn.style.cssText = "flex:1;padding:10px;font-size:14px;font-weight:700;";
+    btn.onclick = function() {
+      selectedDays = d;
+      dayBtnGrid.querySelectorAll("button").forEach(function(b) {
+        b.classList.toggle("selected", parseInt(b.dataset.day) === selectedDays);
+      });
+      updateStartBtn();
+    };
+    dayBtnGrid.appendChild(btn);
+  }
+  wrap.appendChild(dayBtnGrid);
+
+  // Weeks selector
+  const weeksLabel = document.createElement("p");
+  weeksLabel.style.cssText = "font-weight:700;font-size:14px;margin-bottom:8px;";
+  weeksLabel.textContent = "How many weeks?";
+  wrap.appendChild(weeksLabel);
 
   const durations = [];
   if (minW <= 8 && maxW >= 8) durations.push(8);
   if (minW <= 10 && maxW >= 10) durations.push(10);
   if (minW <= 12 && maxW >= 12) durations.push(12);
   if (minW === 6) durations.unshift(6);
-  // Ensure at least one option
   if (!durations.length) durations.push(minW);
 
   let selectedWeeks = durations.includes(10) ? 10 : durations[Math.floor(durations.length / 2)];
@@ -85,7 +115,7 @@ function openDurationPicker(templateId) {
     if (phases && previewEl) {
       previewEl.innerHTML = phases.map(p =>
         `<span style="color:${p.color};font-weight:600;">${p.name}</span> <span style="color:var(--text-dim);font-size:11px;">(${p.weeks.length}wk)</span>`
-      ).join(" → ");
+      ).join(" \u2192 ");
     }
     btnGrid.querySelectorAll("button").forEach(b => {
       b.classList.toggle("selected", parseInt(b.dataset.wk) === selectedWeeks);
@@ -98,7 +128,7 @@ function openDurationPicker(templateId) {
     btn.dataset.wk = wk;
     btn.textContent = wk + " wk";
     btn.style.cssText = "flex:1;padding:10px;font-size:14px;font-weight:700;";
-    btn.onclick = function() { selectedWeeks = wk; updatePreview(); };
+    btn.onclick = function() { selectedWeeks = wk; updatePreview(); updateStartBtn(); };
     btnGrid.appendChild(btn);
   });
   wrap.appendChild(btnGrid);
@@ -117,10 +147,12 @@ function openDurationPicker(templateId) {
 
   const startBtn = document.createElement("button");
   startBtn.className = "primary";
-  startBtn.textContent = "Start " + selectedWeeks + "-Week Program";
+  function updateStartBtn() {
+    startBtn.textContent = "Start " + selectedDays + "d \u00d7 " + selectedWeeks + "wk Program";
+  }
+  updateStartBtn();
   startBtn.onclick = function() {
-    startBtn.textContent = "Start " + selectedWeeks + "-Week Program";
-    applyProgramSwitch(tpl, selectedWeeks);
+    applyProgramSwitch(tpl, selectedWeeks, selectedDays);
   };
 
   actions.appendChild(cancelBtn);
@@ -129,18 +161,20 @@ function openDurationPicker(templateId) {
   openSheet(wrap);
 }
 
-function applyProgramSwitch(tpl, totalWeeks) {
+function applyProgramSwitch(tpl, totalWeeks, daysPerWeek) {
   const tw = totalWeeks || 10;
-  const generated = resolveWeekProgram(tpl.id, 1, tw);
+  const dpw = daysPerWeek || tpl.daysPerWeek;
+  const generated = resolveWeekProgram(tpl.id, 1, tw, dpw);
   updateUser(u => {
     u.templateId = tpl.id;
-    u.program = generated || deepClone(tpl.days);
+    u.program = generated || [];
     u.draft = null;
     u.lastDoneDayId = null;
     u.programStartDate = Date.now();
     u.weeklySchedule = null;
     u.currentWeek = 1;
     u.totalWeeks = tw;
+    u.daysPerWeek = dpw;
   });
   stopSessionTimer();
   state.workoutStartedAt = null;
@@ -149,7 +183,7 @@ function applyProgramSwitch(tpl, totalWeeks) {
   closeSheet();
   renderProgramPicker();
   renderWorkoutScreen();
-  showToast("Started " + tw + "-week " + tpl.name, "success");
+  showToast("Started " + dpw + "d × " + tw + "wk " + tpl.name, "success");
 }
 
 // Manual week controls
@@ -195,7 +229,7 @@ function openWeekControl() {
       usr.lastDoneDayId = null;
       usr.draft = null;
       usr.programStartDate = Date.now();
-      var gen = resolveWeekProgram(usr.templateId, 1, usr.totalWeeks);
+      var gen = resolveWeekProgram(usr.templateId, 1, usr.totalWeeks, usr.daysPerWeek);
       if (gen) usr.program = gen;
     });
     state.currentDayId = 1;

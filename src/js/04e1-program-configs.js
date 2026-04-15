@@ -173,8 +173,8 @@ var PROGRAM_CONFIGS = {
   // ---- 4-Day Athletic Performance ----
   athletic4: {
     phaseConfig: [
-      { name:"Foundation", ratio:0.35, color:"#30d158", description:"Build base — movement quality and work capacity" },
-      { name:"Power",      ratio:0.35, color:"#ff6b35", description:"Develop explosiveness — speed and load" },
+      { name:"Foundation", loadingPhase:"Accumulation", ratio:0.35, color:"#30d158", description:"Build base — movement quality and work capacity" },
+      { name:"Power",      loadingPhase:"Intensification", ratio:0.35, color:"#ff6b35", description:"Develop explosiveness — speed and load" },
       { name:"Peak",       ratio:0.15, color:"#bf5af2", description:"Peak performance — max output" },
       { name:"Deload",     ratio:0.15, color:"#64d2ff", description:"Recovery" }
     ],
@@ -213,8 +213,8 @@ var PROGRAM_CONFIGS = {
   // ---- 3-Day Minimal Equipment ----
   minimal3: {
     phaseConfig: [
-      { name:"Density",  ratio:0.40, color:"#bf5af2", description:"More work in less time — build conditioning" },
-      { name:"Strength", ratio:0.35, color:"#ff6b35", description:"Heavier loads, longer rest — build strength" },
+      { name:"Density",  loadingPhase:"Accumulation", ratio:0.40, color:"#bf5af2", description:"More work in less time — build conditioning" },
+      { name:"Strength", loadingPhase:"Intensification", ratio:0.35, color:"#ff6b35", description:"Heavier loads, longer rest — build strength" },
       { name:"Deload",   ratio:0.25, color:"#64d2ff", description:"Active recovery — lighter sessions" }
     ],
     days: [
@@ -242,8 +242,8 @@ var PROGRAM_CONFIGS = {
   // ---- 2-Day Glute Builder Add-On ----
   glutes2: {
     phaseConfig: [
-      { name:"Activation", ratio:0.30, color:"#30d158", description:"Mind-muscle connection — lighter loads, high reps" },
-      { name:"Growth",     ratio:0.45, color:"#ff6b35", description:"Progressive overload — increase weight each week" },
+      { name:"Activation", loadingPhase:"Accumulation", ratio:0.30, color:"#30d158", description:"Mind-muscle connection — lighter loads, high reps" },
+      { name:"Growth", loadingPhase:"Intensification", ratio:0.45, color:"#ff6b35", description:"Progressive overload — increase weight each week" },
       { name:"Deload",     ratio:0.25, color:"#64d2ff", description:"Recovery — maintain movement, reduce volume" }
     ],
     days: [
@@ -265,8 +265,8 @@ var PROGRAM_CONFIGS = {
   // ---- 4-Day Upper/Lower Split ----
   upperlower4: {
     phaseConfig: [
-      { name:"Volume",        ratio:0.40, color:"#ff6b35", description:"Higher reps — build muscle base" },
-      { name:"Strength",      ratio:0.35, color:"#ff2d55", description:"Heavier loads — build peak strength" },
+      { name:"Volume", loadingPhase:"Accumulation", ratio:0.40, color:"#ff6b35", description:"Higher reps — build muscle base" },
+      { name:"Strength", loadingPhase:"Intensification", ratio:0.35, color:"#ff2d55", description:"Heavier loads — build peak strength" },
       { name:"Deload",        ratio:0.25, color:"#64d2ff", description:"Recovery week" }
     ],
     days: [
@@ -331,8 +331,8 @@ var PROGRAM_CONFIGS = {
   // ---- 6-Day Push/Pull/Legs x2 ----
   ppl6: {
     phaseConfig: [
-      { name:"Volume",    ratio:0.40, color:"#ff6b35", description:"High frequency volume — each muscle 2x/week" },
-      { name:"Intensity", ratio:0.35, color:"#ff2d55", description:"Heavier loads — strength emphasis" },
+      { name:"Volume", loadingPhase:"Accumulation", ratio:0.40, color:"#ff6b35", description:"High frequency volume — each muscle 2x/week" },
+      { name:"Intensity", loadingPhase:"Intensification", ratio:0.35, color:"#ff2d55", description:"Heavier loads — strength emphasis" },
       { name:"Deload",    ratio:0.25, color:"#64d2ff", description:"Recovery" }
     ],
     days: [
@@ -358,7 +358,7 @@ var PROGRAM_CONFIGS = {
         { letter:"WU", name:"Warm-Up", type:"warmup" },
         { letter:"A",  name:"Incline/DB Press", slots:[{ pool:"push_secondary", loading:"accessory" }] },
         { letter:"B",  name:"Flye + Lateral", slots:[{ pool:"push_secondary", loading:"isolation" }, { pool:"delt", loading:"isolation" }] },
-        { letter:"C",  name:"Tricep Focus", slots:[{ pool:"tricep", loading:"isolation" }, { pool:"tricep", loading:"isolation" }] }
+        { letter:"C",  name:"Tricep + Legs", slots:[{ pool:"tricep", loading:"isolation" }, { pool:"squat_secondary", loading:"isolation" }] }
       ]},
       { name:"Pull B — Volume", blocks:[
         { letter:"WU", name:"Warm-Up", type:"warmup" },
@@ -378,8 +378,8 @@ var PROGRAM_CONFIGS = {
   // ---- 3-Day Full Body Beginner ----
   beginner3: {
     phaseConfig: [
-      { name:"Learn",     ratio:0.40, color:"#30d158", description:"Build movement patterns — light loads, high reps" },
-      { name:"Progress",  ratio:0.35, color:"#ff6b35", description:"Increase weight gradually — linear progression" },
+      { name:"Accumulation",    ratio:0.40, color:"#30d158", description:"Build movement patterns — light loads, high reps" },
+      { name:"Intensification", ratio:0.35, color:"#ff6b35", description:"Increase weight gradually — linear progression" },
       { name:"Deload",    ratio:0.25, color:"#64d2ff", description:"Rest and recover" }
     ],
     days: [
@@ -407,8 +407,8 @@ var PROGRAM_CONFIGS = {
   // ---- 4-Day Powerlifting ----
   powerlifting4: {
     phaseConfig: [
-      { name:"Volume",    ratio:0.35, color:"#ff6b35", description:"Build work capacity with moderate loads" },
-      { name:"Strength",  ratio:0.35, color:"#ff2d55", description:"Heavy singles, doubles, triples" },
+      { name:"Accumulation",    ratio:0.35, color:"#ff6b35", description:"Build work capacity with moderate loads" },
+      { name:"Intensification", ratio:0.35, color:"#ff2d55", description:"Heavy singles, doubles, triples" },
       { name:"Peak",      ratio:0.15, color:"#bf5af2", description:"Test maxes" },
       { name:"Deload",    ratio:0.15, color:"#64d2ff", description:"Recovery" }
     ],
@@ -443,8 +443,8 @@ var PROGRAM_CONFIGS = {
   // ---- 5-Day Bro Split (Bodybuilding) ----
   brosplit5: {
     phaseConfig: [
-      { name:"Volume",      ratio:0.40, color:"#ff6b35", description:"High volume — pump and time under tension" },
-      { name:"Progressive",  ratio:0.35, color:"#ff2d55", description:"Increase loads — progressive overload" },
+      { name:"Accumulation",    ratio:0.40, color:"#ff6b35", description:"High volume — pump and time under tension" },
+      { name:"Intensification", ratio:0.35, color:"#ff2d55", description:"Increase loads — progressive overload" },
       { name:"Deload",       ratio:0.25, color:"#64d2ff", description:"Light week — maintain movement" }
     ],
     days: [
@@ -470,7 +470,7 @@ var PROGRAM_CONFIGS = {
         { letter:"WU", name:"Warm-Up", type:"warmup" },
         { letter:"A",  name:"Squat", slots:[{ pool:"squat_primary", loading:"compound", rotateEvery:3 }] },
         { letter:"B",  name:"Hinge + Quad", slots:[{ pool:"hinge_primary", loading:"compound" }, { pool:"squat_secondary", loading:"accessory" }] },
-        { letter:"C",  name:"Hamstrings + Calves", slots:[{ pool:"hinge_secondary", loading:"isolation" }, { pool:"squat_secondary", loading:"isolation" }] }
+        { letter:"C",  name:"Hamstrings + Core", slots:[{ pool:"hinge_secondary", loading:"isolation" }, { pool:"core", loading:"accessory" }] }
       ]},
       { name:"Arms", blocks:[
         { letter:"WU", name:"Warm-Up", type:"warmup" },
@@ -484,8 +484,8 @@ var PROGRAM_CONFIGS = {
   // ---- 3-Day Over-40 Recovery-Focused ----
   masters3: {
     phaseConfig: [
-      { name:"Foundation",  ratio:0.40, color:"#30d158", description:"Build base — joint-friendly movements, moderate volume" },
-      { name:"Progression", ratio:0.35, color:"#ff6b35", description:"Gradual overload — listen to your body" },
+      { name:"Accumulation",    ratio:0.40, color:"#30d158", description:"Build base — joint-friendly movements, moderate volume" },
+      { name:"Intensification", ratio:0.35, color:"#ff6b35", description:"Gradual overload — listen to your body" },
       { name:"Deload",      ratio:0.25, color:"#64d2ff", description:"Recovery — extra rest, mobility focus" }
     ],
     days: [
@@ -505,7 +505,7 @@ var PROGRAM_CONFIGS = {
         { letter:"WU", name:"Warm-Up", type:"warmup" },
         { letter:"A",  name:"Squat", slots:[{ pool:"squat_primary", loading:"compound", rotateEvery:4 }] },
         { letter:"B",  name:"Row + Shoulders", slots:[{ pool:"pull_horizontal", loading:"accessory" }, { pool:"delt", loading:"isolation" }] },
-        { letter:"C",  name:"Arms", slots:[{ pool:"bicep", loading:"isolation" }, { pool:"tricep", loading:"isolation" }] }
+        { letter:"C",  name:"Posterior + Arms", slots:[{ pool:"hinge_secondary", loading:"accessory" }, { pool:"bicep", loading:"isolation" }] }
       ]}
     ]
   },
@@ -513,8 +513,8 @@ var PROGRAM_CONFIGS = {
   // ---- 4-Day Strength + Conditioning ----
   strength_cond4: {
     phaseConfig: [
-      { name:"Base",     ratio:0.35, color:"#30d158", description:"Build aerobic base + strength foundation" },
-      { name:"Build",    ratio:0.35, color:"#ff6b35", description:"Increase intensity — heavier lifts + harder conditioning" },
+      { name:"Base", loadingPhase:"Accumulation", ratio:0.35, color:"#30d158", description:"Build aerobic base + strength foundation" },
+      { name:"Build", loadingPhase:"Intensification", ratio:0.35, color:"#ff6b35", description:"Increase intensity — heavier lifts + harder conditioning" },
       { name:"Peak",     ratio:0.15, color:"#bf5af2", description:"Peak fitness — max effort" },
       { name:"Deload",   ratio:0.15, color:"#64d2ff", description:"Recovery" }
     ],
@@ -549,8 +549,8 @@ var PROGRAM_CONFIGS = {
   // ---- 2-Day Runner's Strength ----
   runner2: {
     phaseConfig: [
-      { name:"Build",   ratio:0.45, color:"#30d158", description:"Build injury resistance + power for running" },
-      { name:"Maintain", ratio:0.30, color:"#ff6b35", description:"Maintain strength — don't interfere with mileage" },
+      { name:"Build", loadingPhase:"Accumulation", ratio:0.45, color:"#30d158", description:"Build injury resistance + power for running" },
+      { name:"Maintain", loadingPhase:"Intensification", ratio:0.30, color:"#ff6b35", description:"Maintain strength — don't interfere with mileage" },
       { name:"Deload",   ratio:0.25, color:"#64d2ff", description:"Light week — focus on running" }
     ],
     days: [
@@ -571,8 +571,8 @@ var PROGRAM_CONFIGS = {
   // ---- 5-Day Functional Fitness ----
   functional5: {
     phaseConfig: [
-      { name:"GPP",       ratio:0.35, color:"#30d158", description:"General physical prep — build all-around fitness" },
-      { name:"Intensity", ratio:0.35, color:"#ff6b35", description:"Push harder — heavier loads, faster conditioning" },
+      { name:"GPP", loadingPhase:"Accumulation", ratio:0.35, color:"#30d158", description:"General physical prep — build all-around fitness" },
+      { name:"Intensity", loadingPhase:"Intensification", ratio:0.35, color:"#ff6b35", description:"Push harder — heavier loads, faster conditioning" },
       { name:"Peak",      ratio:0.15, color:"#bf5af2", description:"Test fitness" },
       { name:"Deload",    ratio:0.15, color:"#64d2ff", description:"Recovery" }
     ],
@@ -613,8 +613,8 @@ var PROGRAM_CONFIGS = {
   // ---- 4-Day Calisthenics + Weights ----
   calisthenics4: {
     phaseConfig: [
-      { name:"Skill",     ratio:0.40, color:"#30d158", description:"Build movement skills — bodyweight progressions" },
-      { name:"Strength",  ratio:0.35, color:"#ff6b35", description:"Add load — weighted calisthenics + accessories" },
+      { name:"Skill", loadingPhase:"Accumulation", ratio:0.40, color:"#30d158", description:"Build movement skills — bodyweight progressions" },
+      { name:"Strength", loadingPhase:"Intensification", ratio:0.35, color:"#ff6b35", description:"Add load — weighted calisthenics + accessories" },
       { name:"Deload",    ratio:0.25, color:"#64d2ff", description:"Recovery — skill practice only" }
     ],
     days: [
@@ -652,8 +652,8 @@ var PROGRAM_CONFIGS = {
   // ---- 3-Day Reverse Pyramid Training (RPT) ----
   rpt3: {
     phaseConfig: [
-      { name:"Base",     ratio:0.40, color:"#ff6b35", description:"Establish top-set baselines — RPT sets of 6-8" },
-      { name:"Push",     ratio:0.35, color:"#ff2d55", description:"Push top sets heavier — RPT sets of 4-6" },
+      { name:"Base", loadingPhase:"Accumulation", ratio:0.40, color:"#ff6b35", description:"Establish top-set baselines — RPT sets of 6-8" },
+      { name:"Push", loadingPhase:"Intensification", ratio:0.35, color:"#ff2d55", description:"Push top sets heavier — RPT sets of 4-6" },
       { name:"Deload",   ratio:0.25, color:"#64d2ff", description:"Light top sets — recover" }
     ],
     days: [
@@ -667,7 +667,7 @@ var PROGRAM_CONFIGS = {
         { letter:"WU", name:"Warm-Up", type:"warmup" },
         { letter:"A",  name:"Squat RPT", slots:[{ pool:"squat_primary", loading:"rpt", rotateEvery:3 }] },
         { letter:"B",  name:"Hinge RPT", slots:[{ pool:"hinge_primary", loading:"rpt", rotateEvery:4 }] },
-        { letter:"C",  name:"Single-Leg + Core", slots:[{ pool:"squat_secondary", loading:"accessory" }, { pool:"core", loading:"accessory" }] }
+        { letter:"C",  name:"Single-Leg + Core", slots:[{ pool:"squat_secondary", loading:"accessory" }, { pool:"hinge_secondary", loading:"accessory" }, { pool:"core", loading:"accessory" }] }
       ]},
       { name:"RPT Upper B", blocks:[
         { letter:"WU", name:"Warm-Up", type:"warmup" },
@@ -681,8 +681,8 @@ var PROGRAM_CONFIGS = {
   // ---- 3-Day Knees Over Toes / ATG ----
   kot3: {
     phaseConfig: [
-      { name:"Foundation", ratio:0.35, color:"#30d158", description:"Bodyweight only — build ROM and baseline tolerance" },
-      { name:"Load",       ratio:0.40, color:"#ff6b35", description:"Add load progressively — full ATG depth" },
+      { name:"Foundation", loadingPhase:"Accumulation", ratio:0.35, color:"#30d158", description:"Bodyweight only — build ROM and baseline tolerance" },
+      { name:"Load", loadingPhase:"Intensification", ratio:0.40, color:"#ff6b35", description:"Add load progressively — full ATG depth" },
       { name:"Deload",     ratio:0.25, color:"#64d2ff", description:"Maintain ROM — reduce load" }
     ],
     days: [
@@ -710,8 +710,8 @@ var PROGRAM_CONFIGS = {
   // ---- 5-Day Hybrid Athlete (Viada Concurrent Training) ----
   hybrid5: {
     phaseConfig: [
-      { name:"Base Build",    ratio:0.35, color:"#30d158", description:"Build aerobic base + strength foundation simultaneously" },
-      { name:"Intensify",     ratio:0.35, color:"#ff6b35", description:"Push both strength and conditioning — manage interference" },
+      { name:"Base Build", loadingPhase:"Accumulation", ratio:0.35, color:"#30d158", description:"Build aerobic base + strength foundation simultaneously" },
+      { name:"Intensify", loadingPhase:"Intensification", ratio:0.35, color:"#ff6b35", description:"Push both strength and conditioning — manage interference" },
       { name:"Peak",          ratio:0.15, color:"#bf5af2", description:"Peak performance in both domains" },
       { name:"Deload",        ratio:0.15, color:"#64d2ff", description:"Full recovery" }
     ],
@@ -752,8 +752,8 @@ var PROGRAM_CONFIGS = {
   // ---- 4-Day PRVN / CrossFit GPP ----
   prvn4: {
     phaseConfig: [
-      { name:"GPP Build",   ratio:0.35, color:"#30d158", description:"Build work capacity — moderate strength + conditioning" },
-      { name:"Intensity",   ratio:0.35, color:"#ff6b35", description:"Push loads and MetCon intensity" },
+      { name:"GPP Build", loadingPhase:"Accumulation", ratio:0.35, color:"#30d158", description:"Build work capacity — moderate strength + conditioning" },
+      { name:"Intensity", loadingPhase:"Intensification", ratio:0.35, color:"#ff6b35", description:"Push loads and MetCon intensity" },
       { name:"Peak",        ratio:0.15, color:"#bf5af2", description:"Test fitness — heavy + fast" },
       { name:"Deload",      ratio:0.15, color:"#64d2ff", description:"Recovery week" }
     ],
@@ -792,9 +792,9 @@ var PROGRAM_CONFIGS = {
   // ---- Wendler's 5/3/1 (4-Day) ----
   wendler4: {
     phaseConfig: [
-      { name:"5s Week",   ratio:0.25, color:"#30d158", description:"3×5 at 65/75/85% — build base" },
-      { name:"3s Week",   ratio:0.25, color:"#ff6b35", description:"3×3 at 70/80/90% — push intensity" },
-      { name:"1s Week",   ratio:0.25, color:"#ff2d55", description:"5/3/1 at 75/85/95% — AMRAP on last set" },
+      { name:"5s Week", loadingPhase:"Accumulation", ratio:0.25, color:"#30d158", description:"3×5 at 65/75/85% — build base" },
+      { name:"3s Week", loadingPhase:"Intensification", ratio:0.25, color:"#ff6b35", description:"3×3 at 70/80/90% — push intensity" },
+      { name:"1s Week", loadingPhase:"Peak", ratio:0.25, color:"#ff2d55", description:"5/3/1 at 75/85/95% — AMRAP on last set" },
       { name:"Deload",    ratio:0.25, color:"#64d2ff", description:"3×5 at 40/50/60% — recover and reset" }
     ],
     days: [
@@ -828,7 +828,7 @@ var PROGRAM_CONFIGS = {
   // ---- GZCL Method (4-Day) ----
   gzcl4: {
     phaseConfig: [
-      { name:"Base",      ratio:0.40, color:"#30d158", description:"Build volume across all tiers" },
+      { name:"Base", loadingPhase:"Accumulation", ratio:0.40, color:"#30d158", description:"Build volume across all tiers" },
       { name:"Peak",      ratio:0.35, color:"#ff2d55", description:"Push T1 heavy, maintain T2/T3" },
       { name:"Deload",    ratio:0.25, color:"#64d2ff", description:"Recovery" }
     ],
@@ -863,8 +863,8 @@ var PROGRAM_CONFIGS = {
   // ---- Starting Strength / StrongLifts (3-Day) ----
   ss3: {
     phaseConfig: [
-      { name:"Linear Gains", ratio:0.50, color:"#30d158", description:"Add weight every session — ride the novice wave" },
-      { name:"Intermediate",  ratio:0.25, color:"#ff6b35", description:"Slower progression — weekly PRs" },
+      { name:"Linear Gains", loadingPhase:"Accumulation", ratio:0.50, color:"#30d158", description:"Add weight every session — ride the novice wave" },
+      { name:"Intermediate", loadingPhase:"Intensification", ratio:0.25, color:"#ff6b35", description:"Slower progression — weekly PRs" },
       { name:"Deload",        ratio:0.25, color:"#64d2ff", description:"Reset and rebuild" }
     ],
     days: [
@@ -892,8 +892,8 @@ var PROGRAM_CONFIGS = {
   // ---- German Volume Training (4-Day) ----
   gvt4: {
     phaseConfig: [
-      { name:"Shock",    ratio:0.50, color:"#ff2d55", description:"10×10 — maximum volume stimulus" },
-      { name:"Adapt",    ratio:0.25, color:"#ff6b35", description:"10×8 — heavier, slightly less volume" },
+      { name:"Shock", loadingPhase:"Accumulation", ratio:0.50, color:"#ff2d55", description:"10×10 — maximum volume stimulus" },
+      { name:"Adapt", loadingPhase:"Intensification", ratio:0.25, color:"#ff6b35", description:"10×8 — heavier, slightly less volume" },
       { name:"Deload",   ratio:0.25, color:"#64d2ff", description:"6×10 — recover from the brutality" }
     ],
     days: [
@@ -913,7 +913,7 @@ var PROGRAM_CONFIGS = {
         { letter:"WU", name:"Warm-Up", type:"warmup" },
         { letter:"A",  name:"10×10 OHP", slots:[{ pool:"press_primary", loading:"gvt", rotateEvery:4 }] },
         { letter:"B",  name:"Superset Arms", slots:[{ pool:"bicep", loading:"accessory" }, { pool:"tricep", loading:"accessory" }] },
-        { letter:"C",  name:"Rear Delts", slots:[{ pool:"delt", loading:"isolation" }] }
+        { letter:"C",  name:"Rear Delts + Legs", slots:[{ pool:"delt", loading:"isolation" }, { pool:"squat_secondary", loading:"isolation" }] }
       ]},
       { name:"GVT Back + Hinge", blocks:[
         { letter:"WU", name:"Warm-Up", type:"warmup" },
@@ -927,8 +927,8 @@ var PROGRAM_CONFIGS = {
   // ---- PHUL: Power Hypertrophy Upper Lower (4-Day) ----
   phul4: {
     phaseConfig: [
-      { name:"Volume",    ratio:0.40, color:"#ff6b35", description:"Build base — higher reps on hypertrophy days" },
-      { name:"Strength",  ratio:0.35, color:"#ff2d55", description:"Push power days heavier" },
+      { name:"Volume", loadingPhase:"Accumulation", ratio:0.40, color:"#ff6b35", description:"Build base — higher reps on hypertrophy days" },
+      { name:"Strength", loadingPhase:"Intensification", ratio:0.35, color:"#ff2d55", description:"Push power days heavier" },
       { name:"Deload",    ratio:0.25, color:"#64d2ff", description:"Recovery" }
     ],
     days: [

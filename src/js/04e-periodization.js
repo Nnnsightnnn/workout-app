@@ -35,26 +35,26 @@ function pickEvery(arr, wk, n) { return arr[Math.floor((wk - 1) / n) % arr.lengt
 // --- Exercise pools by movement pattern + equipment ---
 
 var POOLS = {
-  squat_primary:   { full:["backsquat","frontsquat","ssbsquat","pausesquat"], barbell:["backsquat","frontsquat","pausesquat"], bodyweight:["goblet","jumpsquat"] },
-  squat_secondary: { full:["legpress","bulgarian","goblet","reverselunge","stepup","legext"], barbell:["bulgarian","goblet","reverselunge","stepup"], bodyweight:["cossacksquat","bulgarian","reverselunge","stepup","jumpsquat"] },
-  hinge_primary:   { full:["deadlift","sumo","trapbar"], barbell:["deadlift","sumo"], bodyweight:["kbswing","slrdl"] },
-  hinge_secondary: { full:["rdl","slrdl","goodmorning","hipthrust","legcurl","nordiccurl","kbswing","gluebridge"], barbell:["rdl","slrdl","goodmorning","hipthrust","nordiccurl","kbswing"], bodyweight:["slrdl","nordiccurl","gluebridge","kbswing"] },
-  push_primary:    { full:["bench","incbench","cgbench","floorpress"], barbell:["bench","incbench","cgbench","floorpress"], bodyweight:["dip","pushup"] },
-  push_secondary:  { full:["dbbench","inclinedb","tempobench","cablefly","pecfly","dip"], barbell:["dbbench","inclinedb","tempobench","dip"], bodyweight:["dip","pushup"] },
-  press_primary:   { full:["strictpress","pushpress","logpress"], barbell:["strictpress","pushpress"], bodyweight:["hkpress","dbshoulder"] },
-  press_secondary: { full:["dbshoulder","hkpress","arnold"], barbell:["dbshoulder","hkpress","arnold"], bodyweight:["hkpress"] },
-  pull_horizontal: { full:["bbrow","pendlayrow","csrow","sarow","cablerow","gorillarow","meadowsrow"], barbell:["bbrow","pendlayrow","sarow","gorillarow"], bodyweight:["ringrow","bandrow","gorillarow"] },
-  pull_vertical:   { full:["weightedpullup","pullup","chinup","pulldown"], barbell:["pullup","chinup","weightedpullup"], bodyweight:["pullup","chinup","ringrow"] },
-  delt:            { full:["latraise","revfly","facepull","frontraise","arnold","uprightrow"], barbell:["latraise","revfly","facepull","frontraise","arnold"], bodyweight:["bandpullapart","revfly","latraise"] },
-  bicep:           { full:["bbcurl","dbcurl","hammer","inclinecurl","cablecurl"], barbell:["bbcurl","dbcurl","hammer","inclinecurl"], bodyweight:["chinup","bandrow"] },
-  tricep:          { full:["pushdown","skullcrusher","ohtri","dip"], barbell:["skullcrusher","ohtri","dip"], bodyweight:["dip","pushup"] },
-  core:            { full:["pallof","hangingkr","hanglegr","abwheel","plank","sideplank","deadbug","tgu"], barbell:["hangingkr","hanglegr","abwheel","plank","sideplank","deadbug","tgu"], bodyweight:["plank","sideplank","deadbug","hangingkr","abwheel"] },
-  carry:           { full:["farmers","safwalk","yoke","sledpush"], barbell:["farmers","safwalk"], bodyweight:["farmers","safwalk"] },
-  glute:           { full:["hipthrust","gluebridge","dbhipabduction","bulgarian","reverselunge","kbswing"], barbell:["hipthrust","gluebridge","dbhipabduction","kbswing"], bodyweight:["gluebridge","dbhipabduction","reverselunge","kbswing"] },
-  conditioning:    { full:["assaultbike","echobike","rower","wallball","burpee","boxjump","medballslam","kbswing","sledpush"], barbell:["rower","burpee","boxjump","kbswing"], bodyweight:["burpee","boxjump","jumpsquat"] },
-  power:           { full:["hangpowerclean","pushpress","boxjump","jumpsquat","medballslam","kbswing"], barbell:["pushpress","boxjump","jumpsquat","kbswing"], bodyweight:["boxjump","jumpsquat","burpee"] },
+  squat_primary:   { full:["backsquat","frontsquat","ssbsquat","pausesquat","zerchersquat","smithsquat"], barbell:["backsquat","frontsquat","pausesquat","zerchersquat"], bodyweight:["goblet","jumpsquat","bwsquat","pistolsquat"] },
+  squat_secondary: { full:["legpress","bulgarian","goblet","reverselunge","stepup","legext","hacksquat","walkinglunge","splitsquat","landminesquat","pendlumsquat","sissysquat"], barbell:["bulgarian","goblet","reverselunge","stepup","walkinglunge","splitsquat","landminesquat"], bodyweight:["cossacksquat","bulgarian","reverselunge","stepup","jumpsquat","bwsquat","walkinglunge","pistolsquat","sissysquat","splitsquat"] },
+  hinge_primary:   { full:["deadlift","sumo","trapbar","deficitdl","blockpull","jeffersonlift"], barbell:["deadlift","sumo","deficitdl","blockpull","jeffersonlift"], bodyweight:["kbswing","slrdl"] },
+  hinge_secondary: { full:["rdl","slrdl","goodmorning","hipthrust","legcurl","nordiccurl","kbswing","gluebridge","backext","seatedlegcurl","snatchgriprdl","cablepullthru","reversebackext","singleleghipthrust","kbrdl","singlelegcurl","diagonallift"], barbell:["rdl","slrdl","goodmorning","hipthrust","nordiccurl","kbswing","backext","snatchgriprdl","kbrdl","reversebackext"], bodyweight:["slrdl","nordiccurl","gluebridge","kbswing","backext","reversebackext"] },
+  push_primary:    { full:["bench","incbench","cgbench","floorpress","declinebench","larsenpress","spotopress"], barbell:["bench","incbench","cgbench","floorpress","declinebench","larsenpress","spotopress"], bodyweight:["dip","pushup","archerpushup","handstandpushup"] },
+  push_secondary:  { full:["dbbench","inclinedb","tempobench","cablefly","pecfly","dip","declinedb","machinepress","dipweighted"], barbell:["dbbench","inclinedb","tempobench","dip","dipweighted"], bodyweight:["dip","pushup","diamondpushup","archerpushup","widepushup","handstandpushup"] },
+  press_primary:   { full:["strictpress","pushpress","logpress","dbohp","zspress","bradfordpress"], barbell:["strictpress","pushpress","zspress","bradfordpress"], bodyweight:["hkpress","dbshoulder","pikepress","handstandpushup"] },
+  press_secondary: { full:["dbshoulder","hkpress","arnold","landminepress"], barbell:["dbshoulder","hkpress","arnold","landminepress"], bodyweight:["hkpress","pikepress"] },
+  pull_horizontal: { full:["bbrow","pendlayrow","csrow","sarow","cablerow","gorillarow","meadowsrow","sealrow","tbarrow","supinatedrow","renegaderow"], barbell:["bbrow","pendlayrow","sarow","gorillarow","tbarrow","supinatedrow"], bodyweight:["ringrow","bandrow","gorillarow","elevatedinvrow","supinatedinvrow","renegaderow"] },
+  pull_vertical:   { full:["weightedpullup","pullup","chinup","pulldown","neutralpullup","closegrippd","straightarmpd","widepullup","muscleup"], barbell:["pullup","chinup","weightedpullup","neutralpullup","widepullup","muscleup"], bodyweight:["pullup","chinup","ringrow","neutralpullup","widepullup","muscleup"] },
+  delt:            { full:["latraise","revfly","facepull","frontraise","arnold","uprightrow","cablelatraise","behindneckpress","machinelateral","scaption","reardeltcable","busdriver","dbcleanhigh"], barbell:["latraise","revfly","facepull","frontraise","arnold","behindneckpress","scaption","busdriver","dbcleanhigh"], bodyweight:["bandpullapart","revfly","latraise","scaption"] },
+  bicep:           { full:["bbcurl","dbcurl","hammer","inclinecurl","cablecurl","preachercurl","concurl","reversecurl","spidercurl","crossbodyhammer","zottmancurl","dragcurl"], barbell:["bbcurl","dbcurl","hammer","inclinecurl","preachercurl","concurl","spidercurl","zottmancurl","dragcurl"], bodyweight:["chinup","bandrow"] },
+  tricep:          { full:["pushdown","skullcrusher","ohtri","dip","dbtri","kickback","ropepushdown","overheadcableext","jmpress","closegripdip"], barbell:["skullcrusher","ohtri","dip","dbtri","kickback","jmpress","closegripdip"], bodyweight:["dip","pushup","diamondpushup","closegripdip"] },
+  core:            { full:["pallof","hangingkr","hanglegr","abwheel","plank","sideplank","deadbug","tgu","woodchop","russiantwist","bearcrwl","copenhagenplank","dragonflag","bodysawplank","ghdsitp","toestobar","suitcasecrunch","halfkneelingchop","birddogrow","revplank"], barbell:["hangingkr","hanglegr","abwheel","plank","sideplank","deadbug","tgu","russiantwist","bearcrwl","copenhagenplank","dragonflag","toestobar","suitcasecrunch","halfkneelingchop","birddogrow","revplank"], bodyweight:["plank","sideplank","deadbug","hangingkr","abwheel","bearcrwl","copenhagenplank","lsit","dragonflag","bodysawplank","suitcasecrunch","revplank","toestobar"] },
+  carry:           { full:["farmers","safwalk","yoke","sledpush","overheadcarry","crossbodycarry","sandbagcarry","bottleupcarry","zerchercarry"], barbell:["farmers","safwalk","overheadcarry","crossbodycarry","bottleupcarry","zerchercarry"], bodyweight:["farmers","safwalk","overheadcarry","crossbodycarry"] },
+  glute:           { full:["hipthrust","gluebridge","dbhipabduction","bulgarian","reverselunge","kbswing","singleleghipthrust","cablepullthru"], barbell:["hipthrust","gluebridge","dbhipabduction","kbswing","singleleghipthrust"], bodyweight:["gluebridge","dbhipabduction","reverselunge","kbswing"] },
+  conditioning:    { full:["assaultbike","echobike","rower","wallball","burpee","boxjump","medballslam","kbswing","sledpush","battlerope","dballovershoulder","thruster","manmaker","devilspress","ropeclimb"], barbell:["rower","burpee","boxjump","kbswing","thruster","devilspress"], bodyweight:["burpee","boxjump","jumpsquat","ropeclimb"] },
+  power:           { full:["hangpowerclean","pushpress","boxjump","jumpsquat","medballslam","kbswing","thruster","devilspress"], barbell:["pushpress","boxjump","jumpsquat","kbswing","thruster"], bodyweight:["boxjump","jumpsquat","burpee"] },
   kot:             { full:["tibraise","atgsplit","slantboardsquat","poliquat","reversesled","nordiccurl","calfraise"], barbell:["tibraise","atgsplit","slantboardsquat","poliquat","nordiccurl","calfraise"], bodyweight:["tibraise","atgsplit","slantboardsquat","poliquat","nordiccurl"] },
-  warmup_cardio:   { full:["rower","bikerg","skierg","stairmaster"], barbell:["rower","bikerg","treadmill"], bodyweight:["treadmill","jumpsquat","burpee"] }
+  warmup_cardio:   { full:["rower","bikerg","skierg","stairmaster","jumprope","elliptical","versaclimber"], barbell:["rower","bikerg","treadmill","jumprope","elliptical"], bodyweight:["treadmill","jumpsquat","burpee","jogplace","jumprope"] }
 };
 
 // --- Pool access with equipment + injury filtering ---
@@ -211,14 +211,28 @@ var WU_MOBILITY = [
   ["goblet","bandpullapart","inchworm"],
   ["spiderman","thoracicrot","wgs"],
   ["deadbug","hipswitch","bandpullapart"],
-  ["inchworm","cossacksquat","scappushup"]
+  ["inchworm","cossacksquat","scappushup"],
+  // Expanded combos using new mobility exercises
+  ["firehydrant","shoulderpassthru","squattostand"],
+  ["legswingfwd","wallslide","bootstrapper"],
+  ["quadhipcircle","openbook","birddog"],
+  ["laterallunge","pronetrap","torsotwist"],
+  ["sidewindmill","legswingside","glutebridgemarch"],
+  ["armcircle","kneetowall","firehydrant"],
+  ["squattostand","sidewindmill","legswingfwd"],
+  ["birddog","shoulderpassthru","laterallunge"],
+  ["openbook","glutebridgemarch","quadhipcircle"],
+  ["bootstrapper","wallslide","legswingside"],
+  ["torsotwist","firehydrant","openbook"],
+  ["kneetowall","pronetrap","squattostand"]
 ];
 
-function buildWarmup(blockId, weekNum, equipment, injuredIds) {
+function buildWarmup(blockId, weekNum, dayId, equipment, injuredIds) {
   var cardioPool = getPool("warmup_cardio", equipment, injuredIds);
-  var cardioId = pick(cardioPool, weekNum);
+  var offset = (weekNum - 1) * 7 + ((dayId || 1) - 1);
+  var cardioId = cardioPool[offset % cardioPool.length];
   var cardio = LIB_BY_ID[cardioId];
-  var mobSet = WU_MOBILITY[(weekNum - 1) % WU_MOBILITY.length];
+  var mobSet = WU_MOBILITY[offset % WU_MOBILITY.length];
   var exercises = [
     mkSets(cardio, { sets:1, reps: cardio.isDistance ? 250 : 60, rest:0, notes:"5 min easy" })
   ];
@@ -249,7 +263,7 @@ function buildDayFromConfig(dayCfg, dayId, weekNum, phaseName, wip, equipment, i
 
   dayCfg.blocks.forEach(function(bCfg, bi) {
     if (bCfg.type === "warmup") {
-      blocks.push(buildWarmup(pfx + "-wu", weekNum, equipment, injuredIds));
+      blocks.push(buildWarmup(pfx + "-wu", weekNum, dayId, equipment, injuredIds));
       return;
     }
 
@@ -295,7 +309,7 @@ function buildDayFromConfig(dayCfg, dayId, weekNum, phaseName, wip, equipment, i
 
 // --- Master generator ---
 
-function generateWeek(templateId, weekNum, totalWeeks) {
+function generateWeek(templateId, weekNum, totalWeeks, daysPerWeek) {
   var cfg = typeof PROGRAM_CONFIGS !== "undefined" && PROGRAM_CONFIGS[templateId];
   if (!cfg) return null;
 
@@ -304,20 +318,28 @@ function generateWeek(templateId, weekNum, totalWeeks) {
   var phases = allocatePhases(totalWeeks, cfg.phaseConfig);
   var phase = phaseForWeek(phases, weekNum);
   var phaseName = phase ? phase.name : "Deload";
+  var loadingPhase = phase && phase.loadingPhase ? phase.loadingPhase : phaseName;
   var wip = weekInPhase(phases, weekNum);
 
-  return cfg.days.map(function(dayCfg, di) {
-    return buildDayFromConfig(dayCfg, di + 1, weekNum, phaseName, wip, profile.equipment, injuredIds, profile.experience);
-  });
+  var configDays = cfg.days;
+  var numDays = daysPerWeek || configDays.length;
+  numDays = Math.max(2, Math.min(7, numDays));
+
+  var result = [];
+  for (var di = 0; di < numDays; di++) {
+    var dayCfg = configDays[di % configDays.length];
+    var day = buildDayFromConfig(dayCfg, di + 1, weekNum, loadingPhase, wip, profile.equipment, injuredIds, profile.experience);
+    day.sub = (day.sub || "").replace(loadingPhase, phaseName);
+    if (di >= configDays.length) {
+      day.name = dayCfg.name + " (B)";
+    }
+    result.push(day);
+  }
+  return result;
 }
 
 // --- Resolution wrapper ---
 
-function resolveWeekProgram(templateId, weekNum, totalWeeks) {
-  var generated = generateWeek(templateId, weekNum, totalWeeks);
-  if (generated) return generated;
-  // Fallback: legacy template without config
-  var tpl = PROGRAM_TEMPLATES.find(function(t) { return t.id === templateId; });
-  if (!tpl) return null;
-  return deepClone(tpl.baseDays || tpl.days);
+function resolveWeekProgram(templateId, weekNum, totalWeeks, daysPerWeek) {
+  return generateWeek(templateId, weekNum, totalWeeks, daysPerWeek);
 }

@@ -29,15 +29,16 @@ function genId() {
   return "u_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7);
 }
 
-function newUserRecord(name, templateId, totalWeeks) {
+function newUserRecord(name, templateId, totalWeeks, daysPerWeek) {
   const tpl = PROGRAM_TEMPLATES.find(t => t.id === templateId) || PROGRAM_TEMPLATES[0];
   const tw = totalWeeks || 10;
-  const generated = (typeof resolveWeekProgram === "function") ? resolveWeekProgram(tpl.id, 1, tw) : null;
+  const dpw = daysPerWeek || tpl.daysPerWeek;
+  const generated = (typeof resolveWeekProgram === "function") ? resolveWeekProgram(tpl.id, 1, tw, dpw) : null;
   return {
     id: genId(),
     name: String(name || "User").trim().slice(0, 40) || "User",
     templateId: tpl.id,
-    program: generated || deepClone(tpl.days),
+    program: generated || [],
     sessions: [],
     measurements: [],
     draft: null,
@@ -45,7 +46,8 @@ function newUserRecord(name, templateId, totalWeeks) {
     programStartDate: Date.now(),
     weeklySchedule: null,
     currentWeek: 1,
-    totalWeeks: tw
+    totalWeeks: tw,
+    daysPerWeek: dpw
   };
 }
 
@@ -103,7 +105,7 @@ function loadStore() {
     s.users.forEach(u => {
       if (!u.id) u.id = genId();
       if (!u.name) u.name = "User";
-      if (!u.program) u.program = deepClone(DEFAULT_PROGRAM);
+      if (!u.program) u.program = [];
       if (!u.sessions) u.sessions = [];
       if (u.draft === undefined) u.draft = null;
       if (u.lastDoneDayId === undefined) u.lastDoneDayId = null;
@@ -113,6 +115,7 @@ function loadStore() {
       if (u.weeklySchedule === undefined) u.weeklySchedule = null;
       if (u.currentWeek === undefined) u.currentWeek = 1;
       if (u.totalWeeks === undefined) u.totalWeeks = null;
+      if (u.daysPerWeek === undefined) u.daysPerWeek = null;
     });
     return s;
   } catch (e) {
@@ -173,6 +176,7 @@ function deleteUserRec(id) {
   saveStore(s);
 }
 function switchUser(id) {
+  if (typeof clearUndoToast === 'function') clearUndoToast();
   const s = loadStore();
   if (!s.users.find(u => u.id === id)) return;
   s.currentUserId = id;

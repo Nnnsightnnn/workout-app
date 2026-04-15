@@ -43,7 +43,7 @@ function advanceWeek() {
     usr.currentWeek = nextWeek;
     usr.lastDoneDayId = null;
     usr.draft = null;
-    var generated = resolveWeekProgram(usr.templateId, nextWeek, usr.totalWeeks);
+    var generated = resolveWeekProgram(usr.templateId, nextWeek, usr.totalWeeks, usr.daysPerWeek);
     if (generated) usr.program = generated;
   });
   state.currentDayId = 1;
@@ -58,7 +58,7 @@ function goBackWeek() {
     usr.currentWeek = prevWeek;
     usr.lastDoneDayId = null;
     usr.draft = null;
-    var generated = resolveWeekProgram(usr.templateId, prevWeek, usr.totalWeeks);
+    var generated = resolveWeekProgram(usr.templateId, prevWeek, usr.totalWeeks, usr.daysPerWeek);
     if (generated) usr.program = generated;
   });
   state.currentDayId = 1;

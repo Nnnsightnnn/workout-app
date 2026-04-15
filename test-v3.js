@@ -355,6 +355,7 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     // Every program day should estimate between 15 and 120 minutes
     const programs = [w.DEFAULT_PROGRAM, w.JBROWN_PROGRAM, w.FILLY_PROGRAM];
     for (const prog of programs) {
+      assert(prog && prog.length > 0, "generated program has days");
       for (const day of prog) {
         const min = w.estimateSessionMinutes(day);
         assert(min >= 15 && min <= 120, `Day ${day.id} "${day.name}" estimated ${min} min — out of range`);
@@ -378,6 +379,61 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     const budget = w.computeTimeBudget(day, target);
     assert(budget.adjustments.length > 0, "should have adjustments");
     assert(budget.adjustedMin < current, `adjusted ${budget.adjustedMin} should be less than ${current}`);
+  });
+
+  // ---- Warmup & cooldown variation ----
+
+  t("warmup variation: different days in same week get different warmups", () => {
+    const days = w.generateWeek("conjugate5", 1, 10);
+    assert(days && days.length >= 3, "generated at least 3 days");
+    const mobSets = days.map(d => {
+      const wu = d.blocks.find(b => b.type === "warmup");
+      assert(wu, `day ${d.id} has warmup block`);
+      return wu.exercises.slice(1).map(e => e.exId).sort().join(",");
+    });
+    const unique = new Set(mobSets);
+    assert(unique.size > 1, `expected different warmup combos across days, got: ${JSON.stringify(mobSets)}`);
+  });
+
+  t("warmup variation: different weeks get different warmups", () => {
+    const week1 = w.generateWeek("conjugate5", 1, 10);
+    const week2 = w.generateWeek("conjugate5", 2, 10);
+    const wu1 = week1[0].blocks.find(b => b.type === "warmup");
+    const wu2 = week2[0].blocks.find(b => b.type === "warmup");
+    const mob1 = wu1.exercises.slice(1).map(e => e.exId).join(",");
+    const mob2 = wu2.exercises.slice(1).map(e => e.exId).join(",");
+    assert(mob1 !== mob2, `week 1 day 1 warmup should differ from week 2 day 1: ${mob1}`);
+  });
+
+  t("cooldown variation: different days get different cooldowns", () => {
+    const cd1 = w.getCooldownExercises(1);
+    const cd2 = w.getCooldownExercises(2);
+    const cd3 = w.getCooldownExercises(3);
+    eq(cd1.length, 3, "cooldown has 3 exercises");
+    eq(cd2.length, 3, "cooldown has 3 exercises");
+    const ids1 = cd1.map(e => e.exId).sort().join(",");
+    const ids2 = cd2.map(e => e.exId).sort().join(",");
+    const ids3 = cd3.map(e => e.exId).sort().join(",");
+    const unique = new Set([ids1, ids2, ids3]);
+    assert(unique.size >= 2, `expected different cooldowns across days, got: ${ids1} | ${ids2} | ${ids3}`);
+  });
+
+  t("cooldown variation: all day combos produce valid exercises", () => {
+    for (let d = 1; d <= 7; d++) {
+      const cd = w.getCooldownExercises(d);
+      eq(cd.length, 3, `day ${d} cooldown has 3 exercises`);
+      for (const ex of cd) {
+        assert(ex.exId, `day ${d} cooldown exercise has exId`);
+        assert(ex.name, `day ${d} cooldown exercise has name`);
+      }
+    }
+  });
+
+  t("estimateCooldownSec: accepts dayId parameter", () => {
+    const sec1 = w.estimateCooldownSec(1);
+    const sec2 = w.estimateCooldownSec(2);
+    assert(sec1 > 0, "cooldown time for day 1 is positive");
+    assert(sec2 > 0, "cooldown time for day 2 is positive");
   });
 
   console.log("\n===== RESULTS =====");

@@ -2,14 +2,78 @@
 // RENDER: Workout
 // ============================================================
 
-// Default cooldown exercises rendered as a virtual block
-const COOLDOWN_EXERCISES = [
+// Cooldown stretch pool — curated combos rotated by dayId + weekNum
+const CD_STRETCHES = [
+  // 0-4: Original stretches
   { exId: "hipflexorstretch", name: "Hip Flexor Stretch", muscles: ["hip flexors"], isTime: true, perSide: true, reps: 45 },
   { exId: "hamstringstretch", name: "Hamstring Stretch", muscles: ["hamstrings"], isTime: true, reps: 45 },
   { exId: "thoracicrot", name: "Thoracic Rotation", muscles: ["thoracic", "upper back"], perSide: true, reps: 8 },
   { exId: "pigeonpose", name: "Pigeon Pose", muscles: ["hips", "glutes"], isTime: true, perSide: true, reps: 60 },
   { exId: "childpose", name: "Child's Pose", muscles: ["shoulders", "hips", "thoracic"], isTime: true, reps: 60 },
+  // 5-9: Lower body focus
+  { exId: "quadstretch", name: "Standing Quad Stretch", muscles: ["quads", "hip flexors"], isTime: true, perSide: true, reps: 45 },
+  { exId: "seatedforward", name: "Seated Forward Fold", muscles: ["hamstrings", "lower back"], isTime: true, reps: 60 },
+  { exId: "butterflystretch", name: "Butterfly Stretch", muscles: ["hips", "adductors"], isTime: true, reps: 60 },
+  { exId: "figurefour", name: "Figure-4 Stretch", muscles: ["hips", "glutes"], isTime: true, perSide: true, reps: 45 },
+  { exId: "frogstretch", name: "Frog Stretch", muscles: ["adductors", "hips"], isTime: true, reps: 60 },
+  // 10-14: Spinal / thoracic
+  { exId: "catcow", name: "Cat-Cow", muscles: ["thoracic", "lower back"], reps: 10 },
+  { exId: "lyingtwist", name: "Lying Spinal Twist", muscles: ["thoracic", "hips"], isTime: true, perSide: true, reps: 45 },
+  { exId: "supinespinal", name: "Supine Spinal Twist", muscles: ["thoracic", "hips", "lower back"], isTime: true, perSide: true, reps: 45 },
+  { exId: "seatedtwist", name: "Seated Spinal Twist", muscles: ["thoracic", "hips"], isTime: true, perSide: true, reps: 30 },
+  { exId: "cobrapose", name: "Cobra Pose", muscles: ["lower back", "hip flexors"], isTime: true, reps: 45 },
+  // 15-19: Upper body / shoulders
+  { exId: "crossbodyshoulder", name: "Crossbody Shoulder Stretch", muscles: ["shoulders"], isTime: true, perSide: true, reps: 30 },
+  { exId: "latstretch", name: "Lat Stretch", muscles: ["lats", "shoulders"], isTime: true, perSide: true, reps: 30 },
+  { exId: "cheststretch", name: "Doorway Chest Stretch", muscles: ["chest", "shoulders"], isTime: true, perSide: true, reps: 30 },
+  { exId: "eaglearms", name: "Eagle Arms Stretch", muscles: ["shoulders", "upper back"], isTime: true, perSide: true, reps: 30 },
+  { exId: "threadneedle", name: "Thread the Needle", muscles: ["thoracic", "shoulders"], isTime: true, perSide: true, reps: 30 },
+  // 20-24: Full body / misc
+  { exId: "downdog", name: "Downward Dog", muscles: ["hamstrings", "calves", "shoulders"], isTime: true, reps: 45 },
+  { exId: "happybaby", name: "Happy Baby Pose", muscles: ["hips", "hamstrings"], isTime: true, reps: 45 },
+  { exId: "standingcalfstretch", name: "Standing Calf Stretch", muscles: ["calves"], isTime: true, perSide: true, reps: 30 },
+  { exId: "kneelingquadstretch", name: "Kneeling Quad Stretch", muscles: ["quads", "hip flexors"], isTime: true, perSide: true, reps: 45 },
+  { exId: "wallhamstring", name: "Wall Hamstring Stretch", muscles: ["hamstrings"], isTime: true, perSide: true, reps: 45 },
+  // 25-29: Recovery / gentle
+  { exId: "scorpionstretch", name: "Scorpion Stretch", muscles: ["hip flexors", "thoracic"], perSide: true, reps: 5 },
+  { exId: "proneshoulder", name: "Prone Shoulder Stretch", muscles: ["shoulders", "chest"], isTime: true, reps: 45 },
+  { exId: "standingside", name: "Standing Side Bend", muscles: ["obliques", "lats"], isTime: true, perSide: true, reps: 30 },
+  { exId: "neckstretch", name: "Neck Side Stretch", muscles: ["traps"], isTime: true, perSide: true, reps: 20 },
+  { exId: "wriststretch", name: "Wrist Flexor Stretch", muscles: ["grip"], isTime: true, reps: 30 },
 ];
+// 24 curated combos — each picks 3 stretches with body-part balance (lower + upper/spine + recovery)
+const CD_COMBOS = [
+  [0, 2, 4],    // hip flexor, thoracic rot, child's pose
+  [5, 11, 16],  // quad stretch, lying twist, lat stretch
+  [1, 3, 15],   // hamstring, pigeon, crossbody shoulder
+  [8, 10, 17],  // figure-4, cat-cow, chest stretch
+  [6, 12, 18],  // seated forward, supine spinal, eagle arms
+  [7, 14, 19],  // butterfly, cobra, thread the needle
+  [9, 13, 20],  // frog stretch, seated twist, downward dog
+  [0, 11, 27],  // hip flexor, lying twist, standing side
+  [23, 25, 16], // kneeling quad, scorpion, lat stretch
+  [24, 10, 15], // wall hamstring, cat-cow, crossbody shoulder
+  [5, 12, 26],  // quad stretch, supine spinal, prone shoulder
+  [1, 14, 18],  // hamstring, cobra, eagle arms
+  [3, 13, 17],  // pigeon, seated twist, chest stretch
+  [8, 2, 20],   // figure-4, thoracic rot, downward dog
+  [21, 11, 28], // happy baby, lying twist, neck stretch
+  [6, 25, 19],  // seated forward, scorpion, thread the needle
+  [9, 26, 22],  // frog, prone shoulder, calf stretch
+  [7, 10, 29],  // butterfly, cat-cow, wrist stretch
+  [0, 3, 27],   // hip flexor, pigeon, standing side
+  [23, 12, 15], // kneeling quad, supine spinal, crossbody shoulder
+  [24, 14, 4],  // wall hamstring, cobra, child's pose
+  [5, 13, 16],  // quad stretch, seated twist, lat stretch
+  [1, 11, 17],  // hamstring, lying twist, chest stretch
+  [8, 20, 28],  // figure-4, downward dog, neck stretch
+];
+function getCooldownExercises(dayId) {
+  var idx = ((dayId || 1) - 1) % CD_COMBOS.length;
+  return CD_COMBOS[idx].map(function(i) { return CD_STRETCHES[i]; });
+}
+// Backward-compat alias for time estimation
+const COOLDOWN_EXERCISES = CD_STRETCHES;
 
 function renderWorkoutScreen() {
   const container = document.getElementById("blocksContainer");
@@ -86,6 +150,25 @@ function renderWorkoutScreen() {
     renderStatsBar(container, day);
   } else {
     // Original flat rendering (pre-start + edit mode)
+    if (!state.editMode) {
+      let firstIncompleteIdx = 0;
+      for (let i = 0; i < day.blocks.length; i++) {
+        const bp = calcBlockProgress(day.blocks[i]);
+        if (bp.done < bp.total) { firstIncompleteIdx = i; break; }
+      }
+      const heroBlock = day.blocks[firstIncompleteIdx];
+      const heroBtn = document.createElement("button");
+      heroBtn.className = "chapter-start-btn chapter-start-hero";
+      heroBtn.textContent = "Start Block " + heroBlock.letter;
+      heroBtn.addEventListener("click", () => {
+        startWorkout();
+        state.workoutView = "focus";
+        state.focusBlockIdx = firstIncompleteIdx;
+        state.focusExIdx = 0;
+        renderWorkoutScreen();
+      });
+      container.appendChild(heroBtn);
+    }
     day.blocks.forEach((block, bi) => {
       container.appendChild(renderBlock(day, block, bi));
     });
@@ -117,20 +200,27 @@ function renderDayPicker() {
 
   container.innerHTML = "";
 
-  // Program template tabs
-  const tabs = document.createElement("div");
-  tabs.className = "program-tabs";
+  // Program template selector (flat list — all templates, any day count)
+  const programSelector = document.createElement("div");
+  programSelector.className = "program-selector";
+
+  const programList = document.createElement("div");
+  programList.className = "program-filtered-list";
+
   PROGRAM_TEMPLATES.forEach(tpl => {
-    const tab = document.createElement("div");
-    tab.className = "program-tab" + (tpl.id === u.templateId ? " active" : "");
-    tab.innerHTML = `<div class="ptab-badge">${tpl.daysPerWeek || tpl.days.length}d</div><div class="ptab-name">${tpl.name}</div>`;
-    tab.onclick = () => {
+    const item = document.createElement("div");
+    item.className = "program-list-item" + (tpl.id === u.templateId ? " active" : "");
+    const nativeDays = tpl.daysPerWeek;
+    item.innerHTML = `<div class="pli-badge">${nativeDays}d</div><div class="pli-name">${tpl.name}</div>`;
+    item.onclick = () => {
       if (tpl.id === u.templateId) return;
       openDurationPicker(tpl.id);
     };
-    tabs.appendChild(tab);
+    programList.appendChild(item);
   });
-  container.appendChild(tabs);
+
+  programSelector.appendChild(programList);
+  container.appendChild(programSelector);
 
   // Day cards
   const next = determineDefaultDay();
@@ -200,7 +290,7 @@ function _wireTimeBudgetCard(card, day, breakdown) {
   function updateAdjustments() {
     if (currentTarget >= breakdown.totalMin) {
       adjPreview.innerHTML = "";
-      startRow.innerHTML = `<button class="tb-start-btn primary" data-action="start">Start ~${breakdown.totalMin} min</button>`;
+      startRow.innerHTML = `<button class="tb-start-btn primary" data-action="start">Start ~${currentTarget} min</button>`;
       durationEl.textContent = `⏱ ~${breakdown.totalMin} min`;
       const wuMin = Math.round(breakdown.warmupSec / 60);
       const wkMin = Math.round(breakdown.workingSec / 60);
@@ -366,7 +456,7 @@ function renderCooldownBlock() {
     msg.textContent = "Cool-down skipped";
     wrap.appendChild(msg);
   } else {
-    COOLDOWN_EXERCISES.forEach(ex => {
+    getCooldownExercises(state.currentDayId).forEach(ex => {
       const card = document.createElement("div");
       card.className = "exercise-card";
 
@@ -1025,6 +1115,20 @@ function renderChaptersView(container, day) {
       renderWorkoutScreen();
     });
 
+    if (isActive && !isDone) {
+      const startBtn = document.createElement("button");
+      startBtn.className = "chapter-start-btn";
+      startBtn.textContent = "Start Block " + block.letter;
+      startBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        state.workoutView = "focus";
+        state.focusBlockIdx = bi;
+        state.focusExIdx = 0;
+        renderWorkoutScreen();
+      });
+      card.appendChild(startBtn);
+    }
+
     wrap.appendChild(card);
   });
 
@@ -1039,7 +1143,7 @@ function renderChaptersView(container, day) {
       <div class="chapter-info">
         <div class="chapter-name">Cool Down</div>
         <div class="chapter-meta">
-          <span>${COOLDOWN_EXERCISES.length} stretches</span>
+          <span>${getCooldownExercises(state.currentDayId).length} stretches</span>
           <span>·</span>
           <span>~5m</span>
         </div>
@@ -1094,7 +1198,8 @@ function renderFocusView(container, day) {
     wrap.appendChild(hdr);
 
     // Dot nav for cooldown
-    const exCount = COOLDOWN_EXERCISES.length;
+    const cdExercises = getCooldownExercises(state.currentDayId);
+    const exCount = cdExercises.length;
     state.focusExIdx = Math.max(0, Math.min(state.focusExIdx, exCount - 1));
     wrap.appendChild(buildDotNav(exCount, state.focusExIdx, (idx) => {
       state.focusExIdx = idx;
@@ -1102,7 +1207,7 @@ function renderFocusView(container, day) {
     }));
 
     // Render single cooldown exercise
-    const cdEx = COOLDOWN_EXERCISES[state.focusExIdx];
+    const cdEx = cdExercises[state.focusExIdx];
     const card = buildCooldownFocusCard(cdEx);
     const cardWrap = document.createElement("div");
     cardWrap.className = "focus-card-wrap";
@@ -1181,10 +1286,68 @@ function renderFocusView(container, day) {
     // Check block completion
     const bp = calcBlockProgress(block);
     if (bp.total > 0 && bp.done === bp.total) {
-      const doneBanner = document.createElement("div");
-      doneBanner.className = "focus-block-done";
-      doneBanner.textContent = "✓ Block Complete";
-      wrap.appendChild(doneBanner);
+      const doneWrap = document.createElement("div");
+      doneWrap.className = "focus-block-done";
+
+      const checkHeader = document.createElement("div");
+      checkHeader.className = "focus-done-check";
+      checkHeader.textContent = "✓ Block Complete";
+      doneWrap.appendChild(checkHeader);
+
+      // Find next incomplete block
+      let nextBlockIdx = null;
+      for (let i = state.focusBlockIdx + 1; i < day.blocks.length; i++) {
+        const nbp = calcBlockProgress(day.blocks[i]);
+        if (nbp.done < nbp.total) { nextBlockIdx = i; break; }
+      }
+
+      if (nextBlockIdx !== null) {
+        const nextBtn = document.createElement("button");
+        nextBtn.className = "chapter-start-btn";
+        nextBtn.textContent = "Start Block " + day.blocks[nextBlockIdx].letter;
+        nextBtn.addEventListener("click", () => {
+          state.focusBlockIdx = nextBlockIdx;
+          state.focusExIdx = 0;
+          renderWorkoutScreen();
+        });
+        doneWrap.appendChild(nextBtn);
+
+        const overviewLink = document.createElement("button");
+        overviewLink.className = "focus-overview-link";
+        overviewLink.textContent = "Back to Overview";
+        overviewLink.addEventListener("click", () => {
+          state.workoutView = "chapters";
+          state.focusBlockIdx = null;
+          state.focusExIdx = 0;
+          renderWorkoutScreen();
+        });
+        doneWrap.appendChild(overviewLink);
+      } else {
+        const cdSkipped = getInput("__cooldown|skipped", false);
+        if (!cdSkipped) {
+          const cdBtn = document.createElement("button");
+          cdBtn.className = "chapter-start-btn";
+          cdBtn.textContent = "Start Cool Down";
+          cdBtn.addEventListener("click", () => {
+            state.focusBlockIdx = -1;
+            state.focusExIdx = 0;
+            renderWorkoutScreen();
+          });
+          doneWrap.appendChild(cdBtn);
+        }
+        const overviewBtn = document.createElement("button");
+        overviewBtn.className = "chapter-start-btn chapter-start-secondary";
+        overviewBtn.textContent = "← Back to Overview";
+        overviewBtn.addEventListener("click", () => {
+          state.workoutView = "chapters";
+          state.focusBlockIdx = null;
+          state.focusExIdx = 0;
+          renderWorkoutScreen();
+        });
+        doneWrap.appendChild(overviewBtn);
+      }
+
+      wrap.appendChild(doneWrap);
     }
   }
 

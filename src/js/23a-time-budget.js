@@ -97,11 +97,14 @@ function estimateWarmupExSec(ex) {
   return (ex.sets || 1) * reps * 2 + 10;
 }
 
-// Cooldown: uses COOLDOWN_EXERCISES from 10-render-workout.js.
-function estimateCooldownSec() {
-  if (typeof COOLDOWN_EXERCISES === "undefined") return 360; // ~6 min fallback
+// Cooldown: uses getCooldownExercises(dayId) or falls back to COOLDOWN_EXERCISES.
+function estimateCooldownSec(dayId) {
+  var exercises = (typeof getCooldownExercises === "function" && dayId)
+    ? getCooldownExercises(dayId)
+    : (typeof COOLDOWN_EXERCISES !== "undefined" ? COOLDOWN_EXERCISES : null);
+  if (!exercises) return 360; // ~6 min fallback
   let total = 0;
-  COOLDOWN_EXERCISES.forEach(ex => {
+  exercises.forEach(ex => {
     if (ex.isTime) {
       total += (ex.reps || 0) * (ex.perSide ? 2 : 1);
     } else {
@@ -128,7 +131,7 @@ function estimateSessionSeconds(day, options) {
   const includeCooldown = opts.includeCooldown !== false;
   let total = 0;
   day.blocks.forEach(block => { total += estimateBlockSec(block); });
-  if (includeCooldown) total += estimateCooldownSec();
+  if (includeCooldown) total += estimateCooldownSec(day ? day.id : undefined);
   return total;
 }
 
@@ -155,7 +158,7 @@ function getSessionBreakdown(day) {
     if (isWarmup) warmupSec += blockTotal; else workingSec += blockTotal;
     return { blockId: block.id, name: block.name, letter: block.letter, isWarmup, totalSec: blockTotal, exercises };
   });
-  const cooldownSec = estimateCooldownSec();
+  const cooldownSec = estimateCooldownSec(day.id);
   const totalSec = warmupSec + workingSec + cooldownSec;
   return { totalSec, totalMin: Math.round(totalSec / 60), warmupSec, workingSec, cooldownSec, blocks };
 }
