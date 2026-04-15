@@ -60,6 +60,7 @@ function renderWorkoutScreen() {
 
   updateFinishButton();
   updateProgress();
+  updatePaceChip();
 }
 
 function renderDayPicker() {
@@ -130,6 +131,7 @@ function renderDayPicker() {
       html += `<span class="picker-block-tag">${b.letter} ${b.name}</span>`;
     });
     html += `</div>`;
+    html += `<div class="picker-duration">⏱ ~${estimateSessionMinutes(d)} min</div>`;
     card.innerHTML = html;
 
     card.onclick = () => {
