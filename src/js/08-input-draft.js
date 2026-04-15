@@ -54,6 +54,7 @@ function updateFinishButton() {
   document.getElementById("finishBtn").style.display = started ? "" : "none";
   document.getElementById("headerStartBtn").classList.toggle("active", !started);
   document.getElementById("headerFinishBtn").classList.toggle("active", started);
+  updateSessionEst();
 }
 
 function calcProgress() {
@@ -84,6 +85,7 @@ function updateProgress() {
   fill.style.width = pct + "%";
   fill.classList.toggle("complete", pct === 100 && total > 0);
   if (pct === 100 && total > 0 && done > 0) triggerCelebration();
+  updatePaceChip();
 }
 
 function triggerCelebration() {

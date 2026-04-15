@@ -2,6 +2,7 @@
 // START / FINISH WORKOUT
 // ============================================================
 function startWorkout() {
+  state.trimmedBlocks = null;
   ensureDraft();
   updateFinishButton();
   showToast("Workout started 💪", "success");
@@ -83,6 +84,7 @@ function finishWorkout() {
     u.lastDoneDayId = day.id;
   });
 
+  state.trimmedBlocks = null;
   stopSessionTimer();
   hideRest();
   state.workoutStartedAt = null;
