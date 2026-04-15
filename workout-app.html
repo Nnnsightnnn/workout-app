@@ -1322,6 +1322,63 @@
     box-shadow: var(--pillow-accent-sm);
   }
 
+  /* === Pace Chip === */
+  .pace-chip {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: 10px; margin-bottom: 8px;
+    font-size: 12px; font-weight: 700;
+    border: 2px solid var(--border); background: var(--bg-card-2);
+  }
+  .pace-chip::before { content: "●"; font-size: 9px; margin-right: 2px; }
+  .pace-green  { color: var(--success); border-color: rgba(48,209,88,0.3);  background: rgba(48,209,88,0.08); }
+  .pace-green::before  { color: var(--success); }
+  .pace-amber  { color: var(--warn);    border-color: rgba(255,214,10,0.3); background: rgba(255,214,10,0.08); }
+  .pace-amber::before  { color: var(--warn); }
+  .pace-red    { color: var(--danger);  border-color: rgba(255,69,58,0.3);  background: rgba(255,69,58,0.08); }
+  .pace-red::before    { color: var(--danger); }
+
+  /* === Trim Row === */
+  .trim-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .trim-btn {
+    color: var(--danger) !important;
+    border-color: rgba(255,69,58,0.35) !important;
+    background: rgba(255,69,58,0.1) !important;
+  }
+  .trim-btn:active { box-shadow: var(--pillow-pressed) !important; }
+
+  /* === Session Estimate (pre-start) === */
+  .session-est-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 10px; margin-bottom: 8px;
+    background: var(--bg-card-2); border: 2px solid var(--border);
+    color: var(--text-dim); font-size: 12px; font-weight: 600;
+  }
+  .session-est-row .est-icon { font-size: 14px; }
+  .session-est-row .est-badge { font-size: 14px; font-weight: 800; color: var(--text); }
+  .session-est-row .est-detail { color: var(--text-faint); }
+
+  /* === Day Picker Duration Line === */
+  .day-picker-card .picker-duration {
+    font-size: 11px; font-weight: 700; color: var(--text-faint);
+    margin-top: 6px;
+  }
+  .day-picker-card.recommended .picker-duration { color: var(--text-dim); }
+
+  /* === Rest Nudge === */
+  .rest-nudge {
+    margin-top: 8px; padding: 7px 12px; border-radius: 10px;
+    background: rgba(255,214,10,0.12); border: 1px solid rgba(255,214,10,0.3);
+    color: var(--warn); font-size: 12px; font-weight: 600;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  .rest-nudge-btn {
+    background: var(--warn); color: #000; border-radius: 8px;
+    padding: 4px 12px; font-size: 11px; font-weight: 800;
+    flex-shrink: 0; cursor: pointer;
+    transition: transform 0.1s var(--spring);
+  }
+  .rest-nudge-btn:active { transform: var(--squish-sm); }
+
   /* === Reduced Motion === */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
@@ -1497,6 +1554,15 @@
     <div class="progress-bar-wrap" id="workoutProgressWrap" style="display:none;">
       <div class="progress-bar-fill" id="workoutProgressFill"></div>
     </div>
+
+    <div id="paceChip" class="pace-chip" style="display:none;"></div>
+
+    <div id="trimRow" class="trim-row" style="display:none;">
+      <button class="action-btn trim-btn" id="trimBtn" onclick="trimSession()">✂ Trim session</button>
+      <button class="action-btn" id="undoTrimBtn" onclick="undoTrim()">↺ Undo trim</button>
+    </div>
+
+    <div id="sessionEstRow" class="session-est-row" style="display:none;"></div>
 
     <div class="quick-row" id="quickRow">
       <button class="action-btn primary" id="startBtn">▶ Start Workout</button>
@@ -1677,6 +1743,9 @@
     <div class="rest-actions">
       <button class="rest-btn" onclick="addRest(30)">+30</button>
       <button class="rest-btn" onclick="skipRest()">Skip</button>
+    </div>
+    <div id="restNudge" class="rest-nudge" style="display:none;">
+      Running long — <button class="rest-nudge-btn">60s instead?</button>
     </div>
   </div>
 </div>
@@ -2537,6 +2606,8 @@ let state = {
   sidebarSwapTarget: null, // { bi, ei }
   sidebarFilterCat: "All",
   dayChosen: false,
+  paceIntervalId: null,
+  trimmedBlocks: null,
 };
 
 function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
@@ -2651,7 +2722,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 1;
-const APP_BUILD = "ff9ae624";
+const APP_BUILD = "2ff82040";
 
 
 // ============================================================
@@ -2925,6 +2996,7 @@ function updateFinishButton() {
   document.getElementById("finishBtn").style.display = started ? "" : "none";
   document.getElementById("headerStartBtn").classList.toggle("active", !started);
   document.getElementById("headerFinishBtn").classList.toggle("active", started);
+  updateSessionEst();
 }
 
 function calcProgress() {
@@ -2955,6 +3027,7 @@ function updateProgress() {
   fill.style.width = pct + "%";
   fill.classList.toggle("complete", pct === 100 && total > 0);
   if (pct === 100 && total > 0 && done > 0) triggerCelebration();
+  updatePaceChip();
 }
 
 function triggerCelebration() {
@@ -3460,6 +3533,7 @@ function renderWorkoutScreen() {
 
   updateFinishButton();
   updateProgress();
+  updatePaceChip();
 }
 
 function renderDayPicker() {
@@ -3530,6 +3604,7 @@ function renderDayPicker() {
       html += `<span class="picker-block-tag">${b.letter} ${b.name}</span>`;
     });
     html += `</div>`;
+    html += `<div class="picker-duration">⏱ ~${estimateSessionMinutes(d)} min</div>`;
     card.innerHTML = html;
 
     card.onclick = () => {
@@ -4164,6 +4239,7 @@ function addBlock() {
 // START / FINISH WORKOUT
 // ============================================================
 function startWorkout() {
+  state.trimmedBlocks = null;
   ensureDraft();
   updateFinishButton();
   showToast("Workout started 💪", "success");
@@ -4245,6 +4321,7 @@ function finishWorkout() {
     u.lastDoneDayId = day.id;
   });
 
+  state.trimmedBlocks = null;
   stopSessionTimer();
   hideRest();
   state.workoutStartedAt = null;
@@ -4275,11 +4352,13 @@ function startSessionTimer() {
   };
   tick();
   state.sessionIntervalId = setInterval(tick, 1000);
+  startPaceTicker();
 }
 function stopSessionTimer() {
   if (state.sessionIntervalId) clearInterval(state.sessionIntervalId);
   state.sessionIntervalId = null;
   document.getElementById("sessionPill").classList.remove("active");
+  stopPaceTicker();
 }
 
 function toggleTimerPopover() {
@@ -4304,6 +4383,7 @@ function startRest(seconds, label) {
   document.getElementById("restOverlay").classList.add("active");
   document.getElementById("restCard").classList.remove("done");
   document.getElementById("restTarget").textContent = label || "Rest";
+  maybeShowRestNudge(seconds);
   if (state.restIntervalId) clearInterval(state.restIntervalId);
   const tick = () => {
     const rem = Math.max(0, Math.ceil((state.restEndsAt - Date.now()) / 1000));
@@ -5582,6 +5662,187 @@ function _obPreselectTemplate(tplId) {
   container.querySelectorAll(".tpl-option").forEach(el => {
     el.classList.toggle("active", el.dataset.tpl === tplId);
   });
+}
+
+
+// ============================================================
+// PACE & SESSION TIMING
+// ============================================================
+
+// Estimate total session duration in minutes for a given day object.
+// Formula: each working set costs ~45s execution + its configured rest (default 90s).
+function estimateSessionMinutes(day) {
+  if (!day) return 0;
+  let totalSec = 0;
+  day.blocks.forEach(block => {
+    block.exercises.forEach(ex => {
+      if (ex.isWarmup) return;
+      const numSets = ex.sets || 3;
+      const rest = (ex.rest != null && ex.rest >= 0) ? ex.rest : 90;
+      totalSec += numSets * (45 + rest);
+    });
+  });
+  return Math.round(totalSec / 60);
+}
+
+// Update the pre-start session estimate chip on the workout screen.
+function updateSessionEst() {
+  const row = document.getElementById("sessionEstRow");
+  if (!row) return;
+  const started = state.workoutStartedAt != null || hasAnyInput();
+  const day = getCurrentDay();
+  if (!started && day && state.dayChosen) {
+    const estMin = estimateSessionMinutes(day);
+    const { total } = calcProgress();
+    row.innerHTML = `<span class="est-icon">⏱</span><span class="est-badge">~${estMin} min</span><span class="est-detail">· ${total} sets</span>`;
+    row.style.display = "";
+  } else {
+    row.style.display = "none";
+  }
+}
+
+// Calculate pace status during an active workout.
+// Returns null when workout not started or no progress data.
+// Returns { status:"green"|"amber"|"red", overByMin, estTotalMin }
+function calcPaceStatus() {
+  if (!state.workoutStartedAt) return null;
+  const day = getCurrentDay();
+  if (!day) return null;
+  const estTotalMin = estimateSessionMinutes(day);
+  if (estTotalMin === 0) return null;
+  const { done, total } = calcProgress();
+  if (total === 0) return null;
+
+  const elapsedMin = (Date.now() - state.workoutStartedAt) / 60000;
+  const fracDone = done / total;
+  const expectedElapsedMin = fracDone * estTotalMin;
+  const overByMin = elapsedMin - expectedElapsedMin;
+
+  let status = "green";
+  if (overByMin >= 10) status = "red";
+  else if (overByMin >= 5) status = "amber";
+
+  return { status, overByMin: Math.round(overByMin * 10) / 10, estTotalMin };
+}
+
+// Render the live pace chip and manage trim/undo button visibility.
+function updatePaceChip() {
+  const chip = document.getElementById("paceChip");
+  const trimRow = document.getElementById("trimRow");
+  if (!chip) return;
+
+  if (!state.workoutStartedAt) {
+    chip.style.display = "none";
+    if (trimRow) trimRow.style.display = "none";
+    return;
+  }
+
+  const pace = calcPaceStatus();
+  if (!pace) {
+    chip.style.display = "none";
+    if (trimRow) trimRow.style.display = "none";
+    return;
+  }
+
+  chip.style.display = "";
+  chip.className = "pace-chip pace-" + pace.status;
+
+  const over = pace.overByMin;
+  const overStr = over > 0.5 ? `+${Math.round(over)} min` : over < -0.5 ? `${Math.round(over)} min` : "on track";
+  const label = pace.status === "green" ? "On pace" : "Running long";
+  chip.textContent = `${label} · ${overStr} · ~${pace.estTotalMin} min est.`;
+
+  if (trimRow) {
+    const hasTrimmed = state.trimmedBlocks && state.trimmedBlocks.length > 0;
+    const showAny = pace.status === "red" || hasTrimmed;
+    trimRow.style.display = showAny ? "" : "none";
+    const trimBtn = document.getElementById("trimBtn");
+    const undoBtn = document.getElementById("undoTrimBtn");
+    if (trimBtn) trimBtn.style.display = pace.status === "red" ? "" : "none";
+    if (undoBtn) undoBtn.style.display = hasTrimmed ? "" : "none";
+  }
+}
+
+// Start the pace update interval (called alongside session timer).
+function startPaceTicker() {
+  if (state.paceIntervalId) clearInterval(state.paceIntervalId);
+  updatePaceChip();
+  state.paceIntervalId = setInterval(updatePaceChip, 20000);
+}
+
+// Stop the pace interval and clear the chip.
+function stopPaceTicker() {
+  if (state.paceIntervalId) clearInterval(state.paceIntervalId);
+  state.paceIntervalId = null;
+  updatePaceChip();
+}
+
+// Remove the last block that has no done sets from the current day.
+function trimSession() {
+  const day = getCurrentDay();
+  if (!day) return;
+
+  // Walk blocks in order; track the last one with zero done sets.
+  let lastPendingIdx = -1;
+  day.blocks.forEach((block, bi) => {
+    if (block.exercises.every(ex => ex.isWarmup)) return;
+    let anyDone = false;
+    block.exercises.forEach((ex, ei) => {
+      if (ex.isWarmup) return;
+      const n = ex.sets || 3;
+      for (let i = 0; i < n; i++) {
+        if (getInput(inputKey(block.id, ei, i, "status"), null) === "done") anyDone = true;
+      }
+    });
+    if (!anyDone) lastPendingIdx = bi;
+  });
+
+  if (lastPendingIdx < 0) {
+    showToast("No untouched blocks to trim");
+    return;
+  }
+
+  const trimmedBlock = deepClone(day.blocks[lastPendingIdx]);
+  if (!state.trimmedBlocks) state.trimmedBlocks = [];
+  state.trimmedBlocks.push({ dayId: day.id, blockIdx: lastPendingIdx, block: trimmedBlock });
+
+  mutateDay(d => { d.blocks.splice(lastPendingIdx, 1); });
+  renderWorkoutScreen();
+  showToast(`Trimmed "${trimmedBlock.name}" — tap Undo to restore`, "success");
+  updatePaceChip();
+}
+
+// Restore the most recently trimmed block.
+function undoTrim() {
+  if (!state.trimmedBlocks || !state.trimmedBlocks.length) return;
+  const last = state.trimmedBlocks.pop();
+  mutateDay(d => {
+    if (d.id === last.dayId) d.blocks.splice(last.blockIdx, 0, last.block);
+  });
+  renderWorkoutScreen();
+  showToast("Block restored", "success");
+  updatePaceChip();
+}
+
+// Show the rest-nudge suggestion if session is running long and rest > 60s.
+function maybeShowRestNudge(requestedSec) {
+  const nudge = document.getElementById("restNudge");
+  if (!nudge) return;
+  const pace = calcPaceStatus();
+  const isLong = pace && (pace.status === "amber" || pace.status === "red");
+  if (isLong && requestedSec > 60) {
+    nudge.style.display = "";
+    const btn = nudge.querySelector(".rest-nudge-btn");
+    if (btn) {
+      btn.onclick = () => {
+        const lbl = (document.getElementById("restTarget") || {}).textContent || "Rest";
+        startRest(60, lbl);
+        nudge.style.display = "none";
+      };
+    }
+  } else {
+    nudge.style.display = "none";
+  }
 }
 
 </script>
