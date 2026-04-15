@@ -3,6 +3,9 @@
 // ============================================================
 function startWorkout() {
   state.trimmedBlocks = null;
+  state.workoutView = "chapters";
+  state.focusBlockIdx = null;
+  state.focusExIdx = 0;
   ensureDraft();
   updateFinishButton();
   showToast("Workout started 💪", "success");
@@ -81,6 +84,7 @@ function finishWorkout() {
   const duration = Math.floor((Date.now() - draft.startedAt) / 1000);
   const volume = sets.reduce((a, s) => a + s.weight * s.reps, 0);
   const prCount = sets.filter(s => s.isPR).length;
+  const uForWeek = userData();
   const session = {
     id: "s-" + Date.now(),
     dayId: day.id,
@@ -88,22 +92,51 @@ function finishWorkout() {
     startedAt: draft.startedAt,
     finishedAt: Date.now(),
     duration, sets, volume, prCount,
-    blockNotes
+    blockNotes,
+    programWeek: uForWeek ? uForWeek.currentWeek || null : null
   };
 
   updateUser(u => {
     u.sessions.push(session);
-    if (u.sessions.length > 365) u.sessions = u.sessions.slice(-365);
+    if (u.sessions.length > 365) {
+      u.sessions = u.sessions.slice(-365);
+      setTimeout(() => showToast("Oldest sessions trimmed — export a backup to keep full history"), 3500);
+    }
     u.draft = null;
     u.lastDoneDayId = day.id;
   });
 
   state.trimmedBlocks = null;
+  state.workoutView = "chapters";
+  state.focusBlockIdx = null;
+  state.focusExIdx = 0;
   stopSessionTimer();
-  hideRest();
+  hideInlineRest();
   state.workoutStartedAt = null;
 
-  // Move to next day in rotation
+  // Check if this completes the week (all days done)
+  const uAfter = userData();
+  if (uAfter && uAfter.totalWeeks && uAfter.currentWeek) {
+    const weekSessions = uAfter.sessions.filter(s => s.programWeek === uAfter.currentWeek);
+    const uniqueDays = new Set(weekSessions.map(s => s.dayId));
+    if (uniqueDays.size >= uAfter.program.length && uAfter.currentWeek <= uAfter.totalWeeks) {
+      if (uAfter.currentWeek < uAfter.totalWeeks) {
+        advanceWeek();
+        showToast("Week " + (uAfter.currentWeek + 1) + " unlocked! New exercises loaded.", "success");
+      } else {
+        // Program complete
+        showToast("Program complete! Check settings to restart or switch.", "pr");
+      }
+      renderWorkoutScreen();
+      const msg2 = prCount > 0
+        ? `🏆 Saved! ${sets.length} sets, ${prCount} PR${prCount>1?'s':''}!`
+        : `✓ Saved! ${sets.length} sets in ${formatDuration(duration)}`;
+      setTimeout(() => showToast(msg2, prCount > 0 ? "pr" : "success"), 1500);
+      return;
+    }
+  }
+
+  // Move to next day in rotation (within same week)
   const nextDay = (day.id % userData().program.length) + 1;
   state.currentDayId = nextDay;
   renderWorkoutScreen();

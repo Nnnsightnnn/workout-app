@@ -8,9 +8,9 @@ let state = {
   currentDayId: 1,
   workoutStartedAt: null,
   sessionIntervalId: null,
-  restEndsAt: null, restTotal: 0, restIntervalId: null, restTimeoutId: null,
+  restEndsAt: null, restTotal: 0, restIntervalId: null,
+  restCardEl: null,
   editMode: false,
-  lastCompletedTempo: null,  // tempo of last swiped-done set, shown in rest overlay
   pendingExAdd: null,  // { blockId }
   sidebarOpen: false,
   sidebarSelectedEx: null,
@@ -19,6 +19,9 @@ let state = {
   dayChosen: false,
   paceIntervalId: null,
   trimmedBlocks: null,
+  workoutView: "chapters",   // 'chapters' | 'focus'
+  focusBlockIdx: null,        // index into day.blocks (-1 = cooldown)
+  focusExIdx: 0,              // exercise index within focused block
 };
 
 function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
@@ -26,19 +29,23 @@ function genId() {
   return "u_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7);
 }
 
-function newUserRecord(name, templateId) {
+function newUserRecord(name, templateId, totalWeeks) {
   const tpl = PROGRAM_TEMPLATES.find(t => t.id === templateId) || PROGRAM_TEMPLATES[0];
+  const tw = totalWeeks || 10;
+  const generated = (typeof resolveWeekProgram === "function") ? resolveWeekProgram(tpl.id, 1, tw) : null;
   return {
     id: genId(),
     name: String(name || "User").trim().slice(0, 40) || "User",
     templateId: tpl.id,
-    program: deepClone(tpl.days),
+    program: generated || deepClone(tpl.days),
     sessions: [],
     measurements: [],
     draft: null,
     lastDoneDayId: null,
-    programStartDate: tpl.totalWeeks ? Date.now() : null,
-    weeklySchedule: null
+    programStartDate: Date.now(),
+    weeklySchedule: null,
+    currentWeek: 1,
+    totalWeeks: tw
   };
 }
 
@@ -103,6 +110,8 @@ function loadStore() {
       if (!u.templateId) u.templateId = "conjugate5";
       if (u.programStartDate === undefined) u.programStartDate = null;
       if (u.weeklySchedule === undefined) u.weeklySchedule = null;
+      if (u.currentWeek === undefined) u.currentWeek = 1;
+      if (u.totalWeeks === undefined) u.totalWeeks = null;
     });
     return s;
   } catch (e) {
@@ -112,7 +121,16 @@ function loadStore() {
     return getDefaultStore();
   }
 }
-function saveStore(s) { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
+function saveStore(s) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+  } catch (e) {
+    console.error("KN Lifts: failed to save data:", e);
+    if (typeof showToast === "function") {
+      showToast("Storage full — export a backup and free space", "error");
+    }
+  }
+}
 
 function userData() {
   const s = loadStore();

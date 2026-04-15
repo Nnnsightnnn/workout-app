@@ -273,21 +273,6 @@ function initSidebar() {
   });
   document.getElementById("sidebarSearch").oninput = renderSidebarGrid;
 }
-function initTimer() {
-  document.getElementById("fabRestBtn").onclick = toggleTimerPopover;
-  document.getElementById("timerPresets").addEventListener("click", e => {
-    const b = e.target.closest(".timer-preset"); if (!b) return;
-    startRest(parseInt(b.dataset.sec), `${formatRest(parseInt(b.dataset.sec))} rest`);
-    closeTimerPopover();
-  });
-  // Close popover on outside click
-  document.addEventListener("click", (e) => {
-    if (!document.getElementById("timerPopover").contains(e.target) &&
-        !document.getElementById("fabRestBtn").contains(e.target)) {
-      closeTimerPopover();
-    }
-  });
-}
 function initSheet() {
   document.getElementById("sheetBg").addEventListener("click", e => {
     if (e.target.id === "sheetBg") closeSheet();
@@ -302,7 +287,7 @@ function init() {
 
   setupPWA();
   initUserPicker(); initUnitToggle(); initNav(); initTools();
-  initWorkoutScreen(); initTimer(); initSheet(); initSidebar();
+  initWorkoutScreen(); initSheet(); initSidebar();
 
   const versionEl = document.getElementById("appVersionLabel");
   if (versionEl) versionEl.textContent = "Build " + APP_BUILD;

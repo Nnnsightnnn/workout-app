@@ -90,9 +90,10 @@ function renderTimelineStrip() {
   // Streak
   const streak = getStreakCount(sessions);
 
-  // Phase info
-  const weekNum = getProgramWeek(u.programStartDate);
-  const phase = getCurrentPhase(tpl, weekNum);
+  // Phase info — prefer user's workout-count-based week, fall back to date-based
+  const weekNum = u.currentWeek || getProgramWeek(u.programStartDate);
+  const dynamicPhases = getPhasesForTemplate(u.templateId, u.totalWeeks);
+  const phase = dynamicPhases ? phaseForWeek(dynamicPhases, weekNum) : getCurrentPhase(tpl, weekNum);
 
   // Top row: streak + phase label
   const infoRow = document.createElement("div");
@@ -105,15 +106,16 @@ function renderTimelineStrip() {
     infoRow.appendChild(streakEl);
   }
 
-  if (tpl && tpl.totalWeeks && weekNum) {
+  var displayTotalWeeks = u.totalWeeks || (tpl && tpl.totalWeeks);
+  if (displayTotalWeeks && weekNum) {
     const phaseEl = document.createElement("div");
     phaseEl.className = "tl-phase";
-    if (weekNum > tpl.totalWeeks) {
+    if (weekNum > displayTotalWeeks) {
       phaseEl.innerHTML = `<span class="tl-phase-label" style="color:var(--success);">Program Complete!</span>`;
     } else {
       const phaseName = phase ? phase.name : "";
       const phaseColor = phase ? phase.color : "var(--text-dim)";
-      phaseEl.innerHTML = `<span class="tl-week">Week ${weekNum} of ${tpl.totalWeeks}</span>` +
+      phaseEl.innerHTML = `<span class="tl-week">Week ${weekNum} of ${displayTotalWeeks}</span>` +
         (phaseName ? `<span class="tl-phase-dot" style="background:${phaseColor};"></span><span class="tl-phase-label" style="color:${phaseColor};">${phaseName}</span>` : "");
     }
     infoRow.appendChild(phaseEl);
@@ -158,14 +160,16 @@ function renderTimelineStrip() {
 
   container.appendChild(strip);
 
-  // Phase progress bar (for structured programs)
-  if (tpl && tpl.phases && tpl.totalWeeks && weekNum && weekNum <= tpl.totalWeeks) {
+  // Phase progress bar — use dynamic phases from periodization engine
+  var barPhases = dynamicPhases || (tpl && tpl.phases);
+  var barTotal = displayTotalWeeks || (tpl && tpl.totalWeeks);
+  if (barPhases && barTotal && weekNum && weekNum <= barTotal) {
     const progBar = document.createElement("div");
     progBar.className = "tl-phase-bar";
-    tpl.phases.forEach(p => {
+    barPhases.forEach(p => {
       const seg = document.createElement("div");
       seg.className = "tl-phase-seg";
-      const widthPct = (p.weeks.length / tpl.totalWeeks) * 100;
+      const widthPct = (p.weeks.length / barTotal) * 100;
       seg.style.width = widthPct + "%";
       seg.style.background = p.color + "33";
       if (p.weeks.includes(weekNum)) {

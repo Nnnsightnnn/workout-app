@@ -20,9 +20,42 @@ const MIGRATIONS = [
       });
       return store;
     }
+  },
+  {
+    version: 2,
+    description: "Add currentWeek and totalWeeks for periodized programs",
+    migrate(store) {
+      store.users.forEach(u => {
+        // Set totalWeeks from template if it was a structured program
+        if (u.totalWeeks === undefined || u.totalWeeks === null) {
+          const tpl = (typeof PROGRAM_TEMPLATES !== "undefined")
+            ? PROGRAM_TEMPLATES.find(t => t.id === u.templateId) : null;
+          if (tpl && tpl.totalWeeks) {
+            u.totalWeeks = tpl.totalWeeks;
+          } else {
+            u.totalWeeks = 10; // default for all programs
+          }
+        }
+        // Estimate currentWeek from programStartDate if available
+        if (u.currentWeek === undefined || u.currentWeek === null) {
+          if (u.programStartDate) {
+            const elapsed = Math.floor((Date.now() - u.programStartDate) / 604800000) + 1;
+            u.currentWeek = Math.max(1, Math.min(elapsed, u.totalWeeks));
+          } else {
+            u.currentWeek = 1;
+          }
+        }
+        // Ensure programStartDate is always set
+        if (!u.programStartDate) u.programStartDate = Date.now();
+        // Generate this week's program from the new engine
+        if (typeof resolveWeekProgram === "function") {
+          var generated = resolveWeekProgram(u.templateId, u.currentWeek, u.totalWeeks);
+          if (generated) u.program = generated;
+        }
+      });
+      return store;
+    }
   }
-  // Future migrations:
-  // { version: 2, description: "...", migrate(store) { ... return store; } },
 ];
 
 function runMigrations() {

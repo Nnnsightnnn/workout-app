@@ -129,10 +129,22 @@ function saveOnboarding(answers) {
 // ---- Flow state (not persisted) ----
 let _obStep = 0;
 let _obAnswers = {};
+let _obIsRedo = false;
 
-function showOnboardingFlow() {
+function showOnboardingFlow(redo) {
   _obStep = 0;
   _obAnswers = {};
+  _obIsRedo = !!redo;
+  if (_obIsRedo) {
+    const s = loadStore();
+    if (s.onboarding) {
+      ONBOARDING_STEPS.forEach(step => {
+        if (s.onboarding[step.id] !== undefined) {
+          _obAnswers[step.id] = s.onboarding[step.id];
+        }
+      });
+    }
+  }
   const overlay = document.getElementById("onboardingOverlay");
   if (!overlay) return;
   overlay.classList.add("active");
@@ -151,10 +163,12 @@ function _renderObStep() {
   const step = ONBOARDING_STEPS[_obStep];
   const isLast = _obStep === total - 1;
   const pct = Math.round((_obStep / total) * 100);
-  const selectedVals = isLast ? (_obAnswers[step.id] || []) : [];
+  const selectedVals = step.type === "multi" ? (_obAnswers[step.id] || []) : [];
 
   const optionsHtml = step.options.map(opt => {
-    const isSel = step.type === "multi" && selectedVals.includes(opt.value);
+    const isSel = step.type === "multi"
+      ? selectedVals.includes(opt.value)
+      : _obAnswers[step.id] === opt.value;
     return `<button class="ob-option${isSel ? " selected" : ""}" data-value="${opt.value}">
       <span class="ob-opt-icon">${opt.icon}</span>
       <div class="ob-opt-text">
@@ -219,11 +233,13 @@ function _obFinish() {
   const timerEl = document.getElementById("customTimerSec");
   if (timerEl) timerEl.value = onb.defaultRestSeconds;
 
-  // Pre-select the recommended template in the add-user dialog (sheet is open behind overlay)
-  _obPreselectTemplate(onb.recommendedTemplate);
-
-  // Show warm handoff summary screen
-  _renderObHandoff(onb);
+  if (_obIsRedo) {
+    _renderObHandoffRedo(onb);
+  } else {
+    // Pre-select the recommended template in the add-user dialog (sheet is open behind overlay)
+    _obPreselectTemplate(onb.recommendedTemplate);
+    _renderObHandoff(onb);
+  }
 }
 
 // ---- Warm handoff screen ----
@@ -288,4 +304,109 @@ function _obPreselectTemplate(tplId) {
   container.querySelectorAll(".tpl-option").forEach(el => {
     el.classList.toggle("active", el.dataset.tpl === tplId);
   });
+}
+
+// ---- Redo handoff screen ----
+function _renderObHandoffRedo(onb) {
+  const inner = document.getElementById("onboardingInner");
+  if (!inner) return;
+  const tpl = (typeof PROGRAM_TEMPLATES !== "undefined")
+    ? PROGRAM_TEMPLATES.find(t => t.id === onb.recommendedTemplate) : null;
+  const tplName = tpl ? tpl.name : onb.recommendedTemplate;
+  const reasons = _buildHandoffReasons(_obAnswers, onb.recommendedTemplate);
+  const reasonsHtml = reasons.map(r => `<li>${r}</li>`).join("");
+
+  const u = userData();
+  const currentTplId = u ? u.templateId : null;
+  const isDifferent = currentTplId && currentTplId !== onb.recommendedTemplate;
+
+  let actionHtml;
+  if (isDifferent) {
+    const currentTpl = PROGRAM_TEMPLATES.find(t => t.id === currentTplId);
+    const currentName = currentTpl ? currentTpl.name : currentTplId;
+    actionHtml = `
+      <p class="ob-handoff-hint">You're currently on <strong>${currentName}</strong>.
+      We now recommend <strong>${tplName}</strong> based on your updated profile.</p>
+      <div class="ob-actions">
+        <button class="ob-continue-btn" id="obSwitchBtn">Switch to ${tplName}</button>
+        <button class="ob-skip-btn" id="obKeepBtn">Keep current program →</button>
+      </div>`;
+  } else {
+    actionHtml = `
+      <p class="ob-handoff-hint">Your training profile has been updated.</p>
+      <div class="ob-actions">
+        <button class="ob-continue-btn" id="obDoneBtn">Done</button>
+      </div>`;
+  }
+
+  inner.innerHTML = `
+    <div class="ob-progress"><div class="ob-progress-fill" style="width:100%"></div></div>
+    <div class="ob-body ob-handoff">
+      <div class="ob-step-label">Profile updated</div>
+      <h2 class="ob-title">Your recommendation —</h2>
+      <div class="ob-program-name">${tplName}</div>
+      <ul class="ob-reasons">${reasonsHtml}</ul>
+      ${actionHtml}
+    </div>`;
+
+  const closeAndRefresh = () => {
+    closeOnboarding();
+    renderWorkoutScreen();
+    renderProfileCard();
+    showToast("Training profile updated", "success");
+  };
+
+  if (isDifferent) {
+    document.getElementById("obSwitchBtn").addEventListener("click", () => {
+      const newTpl = PROGRAM_TEMPLATES.find(t => t.id === onb.recommendedTemplate);
+      if (newTpl) {
+        closeOnboarding();
+        openDurationPicker(newTpl.id);
+        renderProfileCard();
+        return;
+      }
+      closeOnboarding();
+      renderProfileCard();
+    });
+    document.getElementById("obKeepBtn").addEventListener("click", closeAndRefresh);
+  } else {
+    document.getElementById("obDoneBtn").addEventListener("click", closeAndRefresh);
+  }
+}
+
+// ---- Training Profile card in Settings ----
+function renderProfileCard() {
+  const el = document.getElementById("profileContent");
+  if (!el) return;
+  const s = loadStore();
+  const ob = s.onboarding;
+
+  if (ob && ob.completedAt) {
+    const goalLabels = { strength: "Strength", hypertrophy: "Hypertrophy",
+                         athletic: "Athletic Performance", general: "General Fitness" };
+    const expLabels = { beginner: "Beginner", intermediate: "Intermediate", advanced: "Advanced" };
+    const eqLabels = { full: "Full Gym", barbell: "Home + Barbell", bodyweight: "Bodyweight + Bands" };
+    const injList = (ob.injuries || []).filter(i => i !== "none");
+    const injText = injList.length
+      ? injList.map(i => ({ lowerback: "Lower back", knees: "Knees", shoulders: "Shoulders" }[i] || i)).join(", ")
+      : "None";
+
+    el.innerHTML = `
+      <div class="profile-summary">
+        <div class="profile-row"><span class="profile-label">Goal</span><span class="profile-value">${goalLabels[ob.goal] || ob.goal || "—"}</span></div>
+        <div class="profile-row"><span class="profile-label">Experience</span><span class="profile-value">${expLabels[ob.experience] || ob.experience || "—"}</span></div>
+        <div class="profile-row"><span class="profile-label">Days / week</span><span class="profile-value">${ob.days || "—"}</span></div>
+        <div class="profile-row"><span class="profile-label">Equipment</span><span class="profile-value">${eqLabels[ob.equipment] || ob.equipment || "—"}</span></div>
+        <div class="profile-row"><span class="profile-label">Flags</span><span class="profile-value">${injText}</span></div>
+      </div>
+      <button class="program-change-btn" onclick="showOnboardingFlow(true)">Update Training Profile</button>
+    `;
+  } else {
+    el.innerHTML = `
+      <p style="color:var(--text-dim);font-size:13px;line-height:1.5;margin:0 0 10px;">
+        Complete the training questionnaire to get personalized program recommendations and exercise safety flags.
+      </p>
+      <button class="program-change-btn" onclick="showOnboardingFlow(true)">Complete Questionnaire</button>
+    `;
+  }
 }

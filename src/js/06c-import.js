@@ -44,6 +44,18 @@ function migrateImportedData(data) {
   return data;
 }
 
+// Recovery — callable from browser console: restorePreImportBackup()
+function restorePreImportBackup() {
+  const backup = localStorage.getItem("kn-lifts-backup-preimport");
+  if (!backup) {
+    console.log("No pre-import backup found");
+    return false;
+  }
+  localStorage.setItem(STORAGE_KEY, backup);
+  console.log("Restored pre-import backup. Reload the page.");
+  return true;
+}
+
 function importData() {
   const input = document.createElement("input");
   input.type = "file";

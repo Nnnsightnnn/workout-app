@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="K&N Lifts">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏋️</text></svg>">
 <title>K&amp;N Lifts</title>
 <style>
 /* {{CSS}} */
@@ -169,6 +170,11 @@
       <div id="programContent"></div>
     </div>
 
+    <div class="section-title">Training Profile</div>
+    <div class="profile-card" id="profileCard">
+      <div id="profileContent"></div>
+    </div>
+
     <div class="section-title">Unit</div>
     <div class="unit-toggle" id="unitToggle">
       <button data-unit="lbs" class="active">Pounds</button>
@@ -192,58 +198,6 @@
     </div>
   </section>
 </main>
-
-<!-- Floating Rest Timer Button -->
-<div class="fab">
-  <button class="fab-btn" id="fabRestBtn" title="Rest timer">⏱</button>
-</div>
-
-<!-- Timer Popover -->
-<div class="timer-popover" id="timerPopover">
-  <div class="title">Start Rest</div>
-  <div class="timer-presets" id="timerPresets">
-    <button class="timer-preset" data-sec="45">45s</button>
-    <button class="timer-preset" data-sec="60">1:00</button>
-    <button class="timer-preset" data-sec="90">1:30</button>
-    <button class="timer-preset" data-sec="120">2:00</button>
-    <button class="timer-preset" data-sec="180">3:00</button>
-    <button class="timer-preset" data-sec="240">4:00</button>
-  </div>
-  <div class="custom-row">
-    <div class="num-input-wrap">
-      <button class="step" onclick="adjCustomTimer(-15)">−</button>
-      <input type="number" id="customTimerSec" value="90">
-      <button class="step" onclick="adjCustomTimer(15)">+</button>
-    </div>
-    <button onclick="startCustomTimer()">Start</button>
-  </div>
-</div>
-
-<!-- Rest Timer Overlay -->
-<div class="rest-overlay" id="restOverlay">
-  <div class="rest-card" id="restCard">
-    <div class="rest-ring">
-      <svg viewBox="0 0 60 60">
-        <circle class="bg" cx="30" cy="30" r="26"></circle>
-        <circle class="fg" id="restFg" cx="30" cy="30" r="26"
-                stroke-dasharray="163.36" stroke-dashoffset="0"></circle>
-      </svg>
-      <div class="time" id="restTime">0:00</div>
-    </div>
-    <div class="rest-info">
-      <div class="label">Resting</div>
-      <div class="target" id="restTarget">Tap ⏱ to start</div>
-      <div class="rest-tempo-cue" id="restTempoCue"></div>
-    </div>
-    <div class="rest-actions">
-      <button class="rest-btn" onclick="addRest(30)">+30</button>
-      <button class="rest-btn" onclick="skipRest()">Skip</button>
-    </div>
-    <div id="restNudge" class="rest-nudge" style="display:none;">
-      Running long — <button class="rest-nudge-btn">60s instead?</button>
-    </div>
-  </div>
-</div>
 
 <!-- Swap Sidebar -->
 <div class="sidebar-bg" id="sidebarBg">

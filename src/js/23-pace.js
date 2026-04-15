@@ -2,21 +2,7 @@
 // PACE & SESSION TIMING
 // ============================================================
 
-// Estimate total session duration in minutes for a given day object.
-// Formula: each working set costs ~45s execution + its configured rest (default 90s).
-function estimateSessionMinutes(day) {
-  if (!day) return 0;
-  let totalSec = 0;
-  day.blocks.forEach(block => {
-    block.exercises.forEach(ex => {
-      if (ex.isWarmup) return;
-      const numSets = ex.sets || 3;
-      const rest = (ex.rest != null && ex.rest >= 0) ? ex.rest : 90;
-      totalSec += numSets * (45 + rest);
-    });
-  });
-  return Math.round(totalSec / 60);
-}
+// estimateSessionMinutes() is now in 23a-time-budget.js with full tempo/rep/type awareness.
 
 // Update the pre-start session estimate chip on the workout screen.
 function updateSessionEst() {
@@ -157,23 +143,3 @@ function undoTrim() {
   updatePaceChip();
 }
 
-// Show the rest-nudge suggestion if session is running long and rest > 60s.
-function maybeShowRestNudge(requestedSec) {
-  const nudge = document.getElementById("restNudge");
-  if (!nudge) return;
-  const pace = calcPaceStatus();
-  const isLong = pace && (pace.status === "amber" || pace.status === "red");
-  if (isLong && requestedSec > 60) {
-    nudge.style.display = "";
-    const btn = nudge.querySelector(".rest-nudge-btn");
-    if (btn) {
-      btn.onclick = () => {
-        const lbl = (document.getElementById("restTarget") || {}).textContent || "Rest";
-        startRest(60, lbl);
-        nudge.style.display = "none";
-      };
-    }
-  } else {
-    nudge.style.display = "none";
-  }
-}

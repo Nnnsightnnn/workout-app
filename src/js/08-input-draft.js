@@ -57,21 +57,75 @@ function updateFinishButton() {
   updateSessionEst();
 }
 
+function calcBlockProgress(block) {
+  let total = 0, done = 0;
+  block.exercises.forEach((ex, ei) => {
+    if (ex.isWarmup) return;
+    const numSets = ex.sets || 3;
+    for (let i = 0; i < numSets; i++) {
+      total++;
+      if (getInput(inputKey(block.id, ei, i, "status"), null) === "done") done++;
+    }
+  });
+  return { done, total };
+}
+
 function calcProgress() {
   const day = getCurrentDay();
   if (!day) return { done: 0, total: 0 };
   let total = 0, done = 0;
   day.blocks.forEach(block => {
+    const bp = calcBlockProgress(block);
+    total += bp.total;
+    done += bp.done;
+  });
+  return { done, total };
+}
+
+function calcLiveStats(day) {
+  const draft = getDraft();
+  if (!draft || !day) return { volume: 0, setsDone: 0, setsTotal: 0, prs: 0 };
+  const inputs = draft.inputs;
+  let volume = 0, setsDone = 0, setsTotal = 0;
+  const currentSets = [];
+  day.blocks.forEach(block => {
     block.exercises.forEach((ex, ei) => {
       if (ex.isWarmup) return;
       const numSets = ex.sets || 3;
       for (let i = 0; i < numSets; i++) {
-        total++;
-        if (getInput(inputKey(block.id, ei, i, "status"), null) === "done") done++;
+        setsTotal++;
+        if (inputs[inputKey(block.id, ei, i, "status")] === "done") {
+          setsDone++;
+          const w = inputs[inputKey(block.id, ei, i, "w")] ?? 0;
+          const r = inputs[inputKey(block.id, ei, i, "r")] ?? 0;
+          if (r > 0) {
+            volume += w * r;
+            currentSets.push({ exId: ex.exId || ex.name, weight: w, reps: r });
+          }
+        }
       }
     });
   });
-  return { done, total };
+  // PR detection against history
+  const u = userData();
+  const priorBest = {};
+  if (u) {
+    u.sessions.forEach(s => {
+      s.sets.forEach(set => {
+        const key = set.exId;
+        const score = set.weight * (1 + set.reps / 30);
+        if (!priorBest[key] || score > priorBest[key]) priorBest[key] = score;
+      });
+    });
+  }
+  let prs = 0;
+  currentSets.forEach(s => {
+    if (s.weight > 0) {
+      const score = s.weight * (1 + s.reps / 30);
+      if (!priorBest[s.exId] || score > priorBest[s.exId]) prs++;
+    }
+  });
+  return { volume, setsDone, setsTotal, prs };
 }
 
 function updateProgress() {
