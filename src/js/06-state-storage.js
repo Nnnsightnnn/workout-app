@@ -46,6 +46,40 @@ function getDefaultStore() {
   return { _schemaVersion: APP_VERSION, unit: "lbs", users: [], currentUserId: null, onboarding: null };
 }
 
+// Stable prefix for corrupt-data backups. See preserveCorruptData().
+const CORRUPT_BACKUP_PREFIX = STORAGE_KEY + ".corrupt.";
+
+// Cheap string hash for deduping backups of identical corrupt raw strings.
+function hashString(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
+
+// Called from loadStore's catch when JSON.parse fails on the stored blob.
+// Copies the raw string to a stable-hashed backup key BEFORE loadStore
+// returns defaults, so the next saveStore doesn't overwrite user data.
+// Recover from console with: restoreCorruptBackup("<key>")
+function preserveCorruptData(err) {
+  let raw;
+  try { raw = localStorage.getItem(STORAGE_KEY); } catch (_) { return; }
+  if (!raw) return;
+  const backupKey = CORRUPT_BACKUP_PREFIX + hashString(raw);
+  try {
+    // Already backed up (same hash) — don't spam duplicate keys.
+    if (localStorage.getItem(backupKey) !== null) return;
+    localStorage.setItem(backupKey, raw);
+    console.error(
+      "KN Lifts: stored data could not be parsed. Raw data preserved to '" +
+      backupKey + "'. To recover, run: restoreCorruptBackup('" + backupKey +
+      "'). Error:", err
+    );
+  } catch (e) {
+    // Storage full, quota exceeded, etc. Last-ditch log so the user knows.
+    console.error("KN Lifts: unparseable stored data AND could not save backup:", err, e);
+  }
+}
+
 function loadStore() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -71,7 +105,12 @@ function loadStore() {
       if (u.weeklySchedule === undefined) u.weeklySchedule = null;
     });
     return s;
-  } catch (e) { return getDefaultStore(); }
+  } catch (e) {
+    // Don't silently wipe. Preserve raw bytes to a separate key so a later
+    // saveStore() can't clobber recoverable data.
+    preserveCorruptData(e);
+    return getDefaultStore();
+  }
 }
 function saveStore(s) { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
 

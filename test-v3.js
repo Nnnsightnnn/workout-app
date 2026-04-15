@@ -184,6 +184,126 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     eq(w.state.currentDayId, 2, "next day");
   });
 
+  // -----------------------------------------------------------
+  // GUARD RAILS: migrations, corrupt data, import validation
+  // -----------------------------------------------------------
+
+  // 12. Migrations: legacy shape (no _schemaVersion, missing per-user
+  //     defaults) gets normalized on runMigrations.
+  t("migrations: bootstraps legacy store to v1", () => {
+    w.localStorage.clear();
+    w.localStorage.setItem("kn-lifts-v3", JSON.stringify({
+      users: [{ id: "u_legacy", name: "Legacy" }]
+    }));
+    w.runMigrations();
+    const s = w.loadStore();
+    eq(s._schemaVersion, 1, "schema bumped to v1");
+    const u = s.users[0];
+    eq(u.name, "Legacy", "name preserved through migration");
+    assert(Array.isArray(u.program) && u.program.length > 0, "program filled");
+    assert(Array.isArray(u.sessions), "sessions array created");
+    assert(Array.isArray(u.measurements), "measurements array created");
+    eq(u.templateId, "conjugate5", "templateId defaulted");
+    // Pre-migration backup must exist for recovery
+    assert(
+      w.localStorage.getItem("kn-lifts-backup-premigration"),
+      "pre-migration backup saved"
+    );
+  });
+
+  // 13. Corrupt data: loadStore preserves raw bytes rather than discarding.
+  //     This deliberately triggers console.error; we clip the errors array
+  //     afterward so the harness doesn't count the expected log as a failure.
+  t("corrupt data: loadStore preserves raw in backup key", () => {
+    w.localStorage.clear();
+    const corruptRaw = "this is not valid JSON }{";
+    w.localStorage.setItem("kn-lifts-v3", corruptRaw);
+    const errsBefore = errors.length;
+
+    const s = w.loadStore();
+    eq(s.users.length, 0, "loadStore returned safe defaults");
+    eq(s._schemaVersion, 1, "defaults carry current schema version");
+
+    // Backup key should exist under the corrupt-prefix namespace.
+    const backups = [];
+    for (let i = 0; i < w.localStorage.length; i++) {
+      const k = w.localStorage.key(i);
+      if (k && k.indexOf("kn-lifts-v3.corrupt.") === 0) backups.push(k);
+    }
+    assert(backups.length === 1, "exactly one corrupt backup saved, got " + backups.length);
+    eq(w.localStorage.getItem(backups[0]), corruptRaw, "backup contains raw bytes");
+
+    // Second call on same corrupt data must not create a duplicate backup.
+    w.loadStore();
+    let count = 0;
+    for (let i = 0; i < w.localStorage.length; i++) {
+      const k = w.localStorage.key(i);
+      if (k && k.indexOf("kn-lifts-v3.corrupt.") === 0) count++;
+    }
+    eq(count, 1, "no duplicate backup on repeated corrupt parse");
+
+    // Drop the expected preserveCorruptData error log.
+    errors.length = errsBefore;
+  });
+
+  // 14. Corrupt data: subsequent saveStore() must not clobber the backup.
+  t("corrupt data: backup survives subsequent saves", () => {
+    // Continues from previous test: localStorage has corrupt raw + one backup.
+    const backupsBefore = [];
+    for (let i = 0; i < w.localStorage.length; i++) {
+      const k = w.localStorage.key(i);
+      if (k && k.indexOf("kn-lifts-v3.corrupt.") === 0) backupsBefore.push(k);
+    }
+    assert(backupsBefore.length === 1, "setup: one backup present");
+
+    // Trigger a save via addUser.
+    w.addUser("Recovery Tester");
+
+    // Backup key must still exist and still hold the original raw bytes.
+    const raw = w.localStorage.getItem(backupsBefore[0]);
+    assert(raw === "this is not valid JSON }{", "backup content untouched by save");
+  });
+
+  // 15. restoreCorruptBackup: copies backup bytes back to main key.
+  t("restoreCorruptBackup: restores named backup to main key", () => {
+    // Setup: clear and seed a known backup.
+    w.localStorage.clear();
+    const payload = JSON.stringify({ _schemaVersion: 1, users: [], unit: "kg", currentUserId: null });
+    const key = "kn-lifts-v3.corrupt.test123";
+    w.localStorage.setItem(key, payload);
+
+    const ok = w.restoreCorruptBackup(key);
+    assert(ok, "restoreCorruptBackup returned truthy");
+    eq(w.localStorage.getItem("kn-lifts-v3"), payload, "main key now holds backup content");
+
+    // Invalid keys must be rejected.
+    const errsBefore = errors.length;
+    const bad = w.restoreCorruptBackup("some-random-key");
+    assert(bad === false, "rejected non-corrupt-prefix key");
+    // Drop the expected "invalid backup key" error log.
+    errors.length = errsBefore;
+  });
+
+  // 16. Import validation: reject future-version backups.
+  t("import: rejects future-version backups", () => {
+    const errs = w.validateImportData({
+      _schemaVersion: 999,
+      users: [{ id: "u1", name: "Test", program: [], sessions: [] }]
+    });
+    assert(errs.length > 0, "expected a validation error");
+    assert(
+      errs[0].toLowerCase().indexOf("newer") !== -1,
+      "error message mentions newer version, got: " + errs[0]
+    );
+
+    // Same-version backups still validate cleanly.
+    const ok = w.validateImportData({
+      _schemaVersion: 1,
+      users: [{ id: "u1", name: "Test", program: [], sessions: [] }]
+    });
+    eq(ok.length, 0, "v1 backup validates");
+  });
+
   console.log("\n===== RESULTS =====");
   let pass = 0, fail = 0;
   for (const [n, s, e] of results) {

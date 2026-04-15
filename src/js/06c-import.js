@@ -7,6 +7,16 @@ function validateImportData(data) {
     errors.push("Not a valid JSON object");
     return errors;
   }
+  // Reject backups from a newer app build. Silently importing future-shape
+  // data risks dropping fields the current build doesn't know about, or
+  // running migrations that don't exist yet.
+  if (typeof data._schemaVersion === "number" && data._schemaVersion > APP_VERSION) {
+    errors.push(
+      "Backup is from a newer app version (v" + data._schemaVersion +
+      "). This app is v" + APP_VERSION + " — update the app before importing."
+    );
+    return errors;
+  }
   if (!Array.isArray(data.users)) {
     errors.push("Missing or invalid 'users' array");
   } else {

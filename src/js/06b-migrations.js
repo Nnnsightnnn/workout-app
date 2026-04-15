@@ -73,3 +73,49 @@ function restorePreMigrationBackup() {
   console.log("Restored pre-migration backup. Reload the page.");
   return true;
 }
+
+// ============================================================
+// CORRUPT-DATA RECOVERY (console helpers)
+// ============================================================
+// When loadStore() hits a JSON parse error it preserves the raw bytes to
+// a "kn-lifts-v3.corrupt.<hash>" key via preserveCorruptData(). These
+// helpers let a user or support contact list and restore those backups
+// without hand-editing localStorage.
+
+function listCorruptBackups() {
+  const keys = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.indexOf(CORRUPT_BACKUP_PREFIX) === 0) keys.push(k);
+  }
+  if (keys.length === 0) {
+    console.log("No corrupt-data backups found.");
+    return [];
+  }
+  console.log("Corrupt-data backups (" + keys.length + "):");
+  keys.forEach(k => {
+    const bytes = (localStorage.getItem(k) || "").length;
+    console.log(" - " + k + "  (" + bytes + " bytes)");
+  });
+  console.log("Restore one with: restoreCorruptBackup('<key>')");
+  return keys;
+}
+
+function restoreCorruptBackup(key) {
+  if (!key || typeof key !== "string" || key.indexOf(CORRUPT_BACKUP_PREFIX) !== 0) {
+    console.error("Invalid backup key. Run listCorruptBackups() to see available keys.");
+    return false;
+  }
+  const backup = localStorage.getItem(key);
+  if (backup === null) {
+    console.error("Backup not found: " + key);
+    return false;
+  }
+  localStorage.setItem(STORAGE_KEY, backup);
+  console.log(
+    "Restored from " + key + ". Reload the page. " +
+    "Note: this data was previously unparseable — if the app still can't read it, " +
+    "you may need to hand-edit the JSON or import a known-good backup."
+  );
+  return true;
+}
