@@ -63,6 +63,16 @@ function startRest(seconds, label) {
   document.getElementById("restOverlay").classList.add("active");
   document.getElementById("restCard").classList.remove("done");
   document.getElementById("restTarget").textContent = label || "Rest";
+  const tempoCue = document.getElementById("restTempoCue");
+  if (tempoCue) {
+    if (state.lastCompletedTempo) {
+      tempoCue.textContent = "⏱ " + state.lastCompletedTempo;
+      tempoCue.classList.add("active");
+    } else {
+      tempoCue.textContent = "";
+      tempoCue.classList.remove("active");
+    }
+  }
   maybeShowRestNudge(seconds);
   const tick = () => {
     const rem = Math.max(0, Math.ceil((state.restEndsAt - Date.now()) / 1000));
