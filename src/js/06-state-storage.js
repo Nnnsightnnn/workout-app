@@ -8,7 +8,7 @@ let state = {
   currentDayId: 1,
   workoutStartedAt: null,
   sessionIntervalId: null,
-  restEndsAt: null, restTotal: 0, restIntervalId: null,
+  restEndsAt: null, restTotal: 0, restIntervalId: null, restTimeoutId: null,
   editMode: false,
   lastCompletedTempo: null,  // tempo of last swiped-done set, shown in rest overlay
   pendingExAdd: null,  // { blockId }
