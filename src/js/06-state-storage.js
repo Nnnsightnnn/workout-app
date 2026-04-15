@@ -50,7 +50,7 @@ function newUserRecord(name, templateId, totalWeeks) {
 }
 
 function getDefaultStore() {
-  return { _schemaVersion: APP_VERSION, unit: "lbs", users: [], currentUserId: null, onboarding: null };
+  return { _schemaVersion: APP_VERSION, unit: "lbs", users: [], currentUserId: null, onboarding: null, onboardingDismissedAt: null };
 }
 
 // Stable prefix for corrupt-data backups. See preserveCorruptData().
@@ -96,8 +96,9 @@ function loadStore() {
     if (s.currentUserId && !s.users.find(u => u.id === s.currentUserId)) {
       s.currentUserId = s.users[0]?.id || null;
     }
-    // Defensive default for onboarding
+    // Defensive defaults for onboarding
     if (s.onboarding === undefined) s.onboarding = null;
+    if (s.onboardingDismissedAt === undefined) s.onboardingDismissedAt = null;
     // Fill missing per-user fields
     s.users.forEach(u => {
       if (!u.id) u.id = genId();

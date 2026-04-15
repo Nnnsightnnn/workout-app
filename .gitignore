@@ -10,3 +10,4 @@ node_modules/
 # Do not commit: merge conflicts on this file were a persistent pain point.
 workout-app.html
 dist/
+BACKLOG.md

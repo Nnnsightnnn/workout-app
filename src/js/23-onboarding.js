@@ -27,6 +27,17 @@ const ONBOARDING_STEPS = [
     ]
   },
   {
+    id: "bodyGoal",
+    title: "What's your body composition goal?",
+    type: "single",
+    options: [
+      { value: "fat_loss", label: "Lose Fat",      icon: "🔥", sub: "Lean out while keeping muscle" },
+      { value: "muscle",   label: "Build Muscle",  icon: "💪", sub: "Gain size and strength" },
+      { value: "recomp",   label: "Recomp",        icon: "⚖", sub: "Lose fat + build muscle together" },
+      { value: "maintain",  label: "Maintain",      icon: "✓",  sub: "Keep what I have, stay healthy" }
+    ]
+  },
+  {
     id: "experience",
     title: "How long have you been training?",
     type: "single",
@@ -41,9 +52,32 @@ const ONBOARDING_STEPS = [
     title: "How many days per week can you train?",
     type: "single",
     options: [
+      { value: 2, label: "2 Days / Week", icon: "2", sub: "Tue · Thu" },
       { value: 3, label: "3 Days / Week", icon: "3", sub: "Mon · Wed · Fri" },
       { value: 4, label: "4 Days / Week", icon: "4", sub: "Mon · Tue · Thu · Fri" },
-      { value: 5, label: "5 Days / Week", icon: "5", sub: "Mon through Fri" }
+      { value: 5, label: "5 Days / Week", icon: "5", sub: "Mon through Fri" },
+      { value: 6, label: "6 Days / Week", icon: "6", sub: "Mon through Sat" }
+    ]
+  },
+  {
+    id: "duration",
+    title: "How long can you train per session?",
+    type: "single",
+    options: [
+      { value: 30, label: "30 min",  icon: "⚡", sub: "Quick and efficient" },
+      { value: 45, label: "45 min",  icon: "🎯", sub: "Focused session" },
+      { value: 60, label: "60 min",  icon: "💪", sub: "Standard session" },
+      { value: 90, label: "90 min",  icon: "🏋", sub: "Full training session" }
+    ]
+  },
+  {
+    id: "gender",
+    title: "How should we tailor your program?",
+    type: "single",
+    options: [
+      { value: "male",   label: "Balanced",           icon: "⚖", sub: "Even upper/lower emphasis" },
+      { value: "female", label: "Glute & Lower Focus", icon: "🍑", sub: "More glute, hip, and leg work" },
+      { value: "skip",   label: "No Preference",      icon: "→",  sub: "Use default programming" }
     ]
   },
   {
@@ -82,16 +116,89 @@ const ONBOARDING_STEPS = [
 
 // ---- Template recommendation ----
 function getRecommendedTemplate(a) {
-  if (a.equipment === "bodyweight") return "minimal3";
-  if (a.days === 3) return "jbrown3";
-  if (a.days === 4) {
-    if (a.goal === "athletic") return "athletic4";
-    return "filly4";
+  var days = a.days || 4;
+  var dur = a.duration || 60;
+  var injuries = a.injuries || [];
+  var hasKnees = injuries.includes("knees");
+  var wantsGlutes = a.gender === "female";
+
+  // Equipment gate — bodyweight users
+  if (a.equipment === "bodyweight") {
+    if (days >= 4) return "calisthenics4";
+    return "minimal3";
   }
-  // days === 5
-  if (a.goal === "strength" && a.experience === "advanced") return "conjugate5";
-  if (a.goal === "hypertrophy") return "hypertrophy5";
-  return "conjugate5";
+
+  // Short sessions → time-efficient programs
+  if (dur <= 30) return days <= 3 ? "rpt3" : "rpt3"; // RPT is built for 30-45 min
+  if (dur <= 45 && a.goal !== "athletic") {
+    if (days <= 3) return "rpt3";
+    // 4+ days at 45min works for most programs
+  }
+
+  // Age gate — 40+
+  if (a.age === "40plus") {
+    if (hasKnees) return "kot3";
+    if (days <= 2) return "runner2";
+    if (days <= 3) return "masters3";
+    if (days === 4) return "strength_cond4";
+    return "conjugate5";
+  }
+
+  // Beginner gate
+  if (a.experience === "beginner") {
+    if (days <= 2) return "runner2";
+    if (days === 3) return "ss3"; // Starting Strength — classic novice LP
+    if (days === 4) return "upperlower4";
+    return "beginner3"; // fallback full body
+  }
+
+  // Glute emphasis override
+  if (wantsGlutes) {
+    if (days <= 2) return "glutes2";
+    if (days === 3) return "ppl3"; // PPL with glute pool weighting
+    if (days === 4) return "filly4"; // Filly has good glute work
+    return "hypertrophy5";
+  }
+
+  // Goal × days × experience matrix
+  if (a.goal === "strength") {
+    if (days <= 2) return "runner2";
+    if (days === 3) return a.experience === "advanced" ? "rpt3" : "jbrown3";
+    if (days === 4) {
+      if (a.experience === "advanced") return "wendler4"; // 5/3/1 for experienced
+      return "powerlifting4";
+    }
+    return "conjugate5";
+  }
+
+  if (a.goal === "hypertrophy") {
+    if (days <= 2) return "glutes2";
+    if (days === 3) return "ppl3";
+    if (days === 4) {
+      if (a.bodyGoal === "fat_loss") return "strength_cond4"; // more conditioning
+      if (a.experience === "advanced") return dur >= 90 ? "gvt4" : "gzcl4";
+      return "phul4"; // PHUL for intermediate hypertrophy
+    }
+    if (days === 5) return "hypertrophy5";
+    return "ppl6"; // 6-day
+  }
+
+  if (a.goal === "athletic") {
+    if (days <= 2) return "runner2";
+    if (days === 3) return "jbrown3";
+    if (days === 4) return a.experience === "advanced" ? "prvn4" : "athletic4";
+    return "hybrid5";
+  }
+
+  // General fitness
+  if (days <= 2) return "runner2";
+  if (days === 3) {
+    if (a.bodyGoal === "fat_loss") return "strength_cond4"; // wait, 3 day... use ppl3
+    return "ppl3";
+  }
+  if (days === 4) return "strength_cond4";
+  if (days === 5) return "functional5";
+  return "ppl6"; // 6-day general
 }
 
 function getDefaultRestSeconds(experience) {
@@ -137,6 +244,11 @@ function showOnboardingFlow(redo) {
   _obIsRedo = !!redo;
   if (_obIsRedo) {
     const s = loadStore();
+    // Clear dismissal when user actively opens onboarding from settings
+    if (s.onboardingDismissedAt) {
+      s.onboardingDismissedAt = null;
+      saveStore(s);
+    }
     if (s.onboarding) {
       ONBOARDING_STEPS.forEach(step => {
         if (s.onboarding[step.id] !== undefined) {
@@ -154,6 +266,13 @@ function showOnboardingFlow(redo) {
 function closeOnboarding() {
   const overlay = document.getElementById("onboardingOverlay");
   if (overlay) overlay.classList.remove("active");
+}
+
+function dismissOnboarding() {
+  const s = loadStore();
+  s.onboardingDismissedAt = Date.now();
+  saveStore(s);
+  closeOnboarding();
 }
 
 function _renderObStep() {
@@ -190,6 +309,7 @@ function _renderObStep() {
         <button class="ob-continue-btn" id="obContinueBtn">Finish Setup</button>
         <button class="ob-skip-btn" id="obSkipBtn">Skip questionnaire →</button>
       </div>` : ""}
+      ${!_obIsRedo ? `<button class="ob-dismiss-btn" id="obDismissBtn">Don't show me this again</button>` : ""}
     </div>`;
 
   inner.querySelectorAll(".ob-option").forEach(btn => {
@@ -197,8 +317,10 @@ function _renderObStep() {
   });
   if (isLast) {
     document.getElementById("obContinueBtn").addEventListener("click", _obFinish);
-    document.getElementById("obSkipBtn").addEventListener("click", closeOnboarding);
+    document.getElementById("obSkipBtn").addEventListener("click", dismissOnboarding);
   }
+  const dismissBtn = document.getElementById("obDismissBtn");
+  if (dismissBtn) dismissBtn.addEventListener("click", dismissOnboarding);
 }
 
 function _obSelect(step, rawValue) {

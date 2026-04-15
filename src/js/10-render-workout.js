@@ -192,6 +192,8 @@ function _wireTimeBudgetCard(card, day, breakdown) {
   const valEl = card.querySelector(".tb-target-val");
   const adjPreview = card.querySelector(".tb-adj-preview");
   const startRow = card.querySelector(".tb-start-row");
+  const durationEl = card.querySelector(".picker-duration");
+  const breakdownEl = card.querySelector(".picker-breakdown");
   let currentTarget = parseInt(valEl.textContent, 10);
   let lastBudget = null;
 
@@ -199,6 +201,11 @@ function _wireTimeBudgetCard(card, day, breakdown) {
     if (currentTarget >= breakdown.totalMin) {
       adjPreview.innerHTML = "";
       startRow.innerHTML = `<button class="tb-start-btn primary" data-action="start">Start ~${breakdown.totalMin} min</button>`;
+      durationEl.textContent = `⏱ ~${breakdown.totalMin} min`;
+      const wuMin = Math.round(breakdown.warmupSec / 60);
+      const wkMin = Math.round(breakdown.workingSec / 60);
+      const cdMin = Math.round(breakdown.cooldownSec / 60);
+      breakdownEl.textContent = `WU ${wuMin}m · Work ${wkMin}m · CD ${cdMin}m`;
     } else {
       lastBudget = computeTimeBudget(day, currentTarget);
       let adjHtml = "";
@@ -216,6 +223,12 @@ function _wireTimeBudgetCard(card, day, breakdown) {
       const adjMin = lastBudget.adjustedMin;
       startRow.innerHTML = `<button class="tb-start-btn primary" data-action="adjusted">Start adjusted ~${adjMin} min</button>`
         + `<button class="tb-start-btn secondary" data-action="start">Start as-is ~${breakdown.totalMin} min</button>`;
+      const adjBreakdown = getSessionBreakdown(lastBudget.adjustedDay);
+      durationEl.textContent = `⏱ ~${adjBreakdown.totalMin} min`;
+      const wuMin = Math.round(adjBreakdown.warmupSec / 60);
+      const wkMin = Math.round(adjBreakdown.workingSec / 60);
+      const cdMin = Math.round(adjBreakdown.cooldownSec / 60);
+      breakdownEl.textContent = `WU ${wuMin}m · Work ${wkMin}m · CD ${cdMin}m`;
     }
     wireStartButtons();
   }
@@ -556,7 +569,8 @@ function renderExercise(day, block, ex, bi, ei, isSuperset) {
 }
 
 function renderSetsTable(block, ex, bi, ei) {
-  const bw = ex.bodyweight;
+  const lib = LIB_BY_ID[ex.exId] || ex;
+  const bw = lib.bodyweight;
   const wrap = document.createElement("div");
   wrap.className = "sets-wrap";
 
@@ -633,12 +647,14 @@ function renderSetsTable(block, ex, bi, ei) {
     const weightPart = bw ? "" :
       `<span class="set-chip-weight">${curW}</span><span class="set-chip-x">×</span>`;
 
+    const rpePart = lib.noRpe ? "" :
+      `<span class="set-chip-rpe">RPE <span class="rpe-num">${curP}</span></span>`;
     chip.innerHTML = `
       <div class="set-chip-num">${i+1}</div>
       <div class="set-chip-body">
         ${weightPart}
         <span class="set-chip-reps">${curR} ${repsLabel}</span>
-        <span class="set-chip-rpe">RPE <span class="rpe-num">${curP}</span></span>
+        ${rpePart}
       </div>
       <span class="set-chip-chevron">›</span>
     `;
@@ -724,6 +740,8 @@ function wireChip(chip, block, ex, bi, ei, i, bw) {
 }
 
 function openSetEditor(block, ex, bi, ei, setIdx, bw) {
+  const lib = LIB_BY_ID[ex.exId] || ex;
+  bw = lib.bodyweight || bw;
   const numSets = ex.sets || 3;
   const last = getLastSetsFor(ex.exId || ex.name);
 
@@ -890,28 +908,30 @@ function openSetEditor(block, ex, bi, ei, setIdx, bw) {
     rZone.appendChild(rPills);
     wrap.appendChild(rZone);
 
-    // RPE zone
-    const pZone = document.createElement("div");
-    pZone.className = "set-editor-zone";
-    pZone.innerHTML = `<div class="set-editor-label">RPE — Rate of Perceived Exertion</div>`;
-    const pGrid = document.createElement("div");
-    pGrid.className = "rpe-grid";
-    const rpeValues = [5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10];
-    rpeValues.forEach(v => {
-      const bubble = document.createElement("button");
-      bubble.className = "rpe-bubble" + (v === curP ? " selected" : "") + (v >= 9 ? " rpe-high" : "");
-      bubble.textContent = v % 1 === 0 ? v : v.toFixed(1);
-      bubble.onclick = () => {
-        curP = v;
-        saveInput(pkey, curP);
-        pGrid.querySelectorAll(".rpe-bubble").forEach(b => b.classList.remove("selected"));
-        bubble.classList.add("selected");
-        if (navigator.vibrate) navigator.vibrate(10);
-      };
-      pGrid.appendChild(bubble);
-    });
-    pZone.appendChild(pGrid);
-    wrap.appendChild(pZone);
+    // RPE zone (skip for exercises that don't use RPE)
+    if (!lib.noRpe) {
+      const pZone = document.createElement("div");
+      pZone.className = "set-editor-zone";
+      pZone.innerHTML = `<div class="set-editor-label">RPE — Rate of Perceived Exertion</div>`;
+      const pGrid = document.createElement("div");
+      pGrid.className = "rpe-grid";
+      const rpeValues = [5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10];
+      rpeValues.forEach(v => {
+        const bubble = document.createElement("button");
+        bubble.className = "rpe-bubble" + (v === curP ? " selected" : "") + (v >= 9 ? " rpe-high" : "");
+        bubble.textContent = v % 1 === 0 ? v : v.toFixed(1);
+        bubble.onclick = () => {
+          curP = v;
+          saveInput(pkey, curP);
+          pGrid.querySelectorAll(".rpe-bubble").forEach(b => b.classList.remove("selected"));
+          bubble.classList.add("selected");
+          if (navigator.vibrate) navigator.vibrate(10);
+        };
+        pGrid.appendChild(bubble);
+      });
+      pZone.appendChild(pGrid);
+      wrap.appendChild(pZone);
+    }
 
     // Done button
     const doneBtn = document.createElement("button");

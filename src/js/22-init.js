@@ -290,7 +290,9 @@ function init() {
   initWorkoutScreen(); initSheet(); initSidebar();
 
   const versionEl = document.getElementById("appVersionLabel");
-  if (versionEl) versionEl.textContent = "Build " + APP_BUILD;
+  if (versionEl) versionEl.textContent = "v" + APP_DISPLAY_VERSION;
+  const buildEl = document.getElementById("appBuildLabel");
+  if (buildEl) buildEl.textContent = "Build " + APP_BUILD + " · Schema " + APP_VERSION;
 
   // First-run or empty user list → prompt to create first user
   if (!s.users.length || !s.currentUserId) {
@@ -298,8 +300,8 @@ function init() {
     // Render empty workout screen scaffolding, then prompt
     renderWorkoutScreen();
     openAddUserDialog(true);
-    // Show onboarding questionnaire above the add-user dialog if not yet completed
-    if (!s.onboarding) {
+    // Show onboarding questionnaire above the add-user dialog if not yet completed/dismissed
+    if (!s.onboarding?.completedAt && !s.onboardingDismissedAt) {
       showOnboardingFlow();
     }
     return;
@@ -318,6 +320,11 @@ function init() {
 
   renderUserChip();
   renderWorkoutScreen();
+
+  // Show onboarding if not completed and not dismissed
+  if (!s.onboarding?.completedAt && !s.onboardingDismissedAt) {
+    showOnboardingFlow();
+  }
 }
 
 document.addEventListener("DOMContentLoaded", init);

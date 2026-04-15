@@ -197,7 +197,7 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     }));
     w.runMigrations();
     const s = w.loadStore();
-    eq(s._schemaVersion, 2, "schema bumped to v2");
+    eq(s._schemaVersion, w.getDefaultStore()._schemaVersion, "schema bumped to current version");
     const u = s.users[0];
     eq(u.name, "Legacy", "name preserved through migration");
     assert(Array.isArray(u.program) && u.program.length > 0, "program filled");
@@ -222,7 +222,7 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
 
     const s = w.loadStore();
     eq(s.users.length, 0, "loadStore returned safe defaults");
-    eq(s._schemaVersion, 2, "defaults carry current schema version");
+    eq(s._schemaVersion, w.getDefaultStore()._schemaVersion, "defaults carry current schema version");
 
     // Backup key should exist under the corrupt-prefix namespace.
     const backups = [];

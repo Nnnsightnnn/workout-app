@@ -55,6 +55,14 @@ const MIGRATIONS = [
       });
       return store;
     }
+  },
+  {
+    version: 3,
+    description: "Add onboardingDismissedAt flag for persistent onboarding prompt",
+    migrate(store) {
+      if (store.onboardingDismissedAt === undefined) store.onboardingDismissedAt = null;
+      return store;
+    }
   }
 ];
 

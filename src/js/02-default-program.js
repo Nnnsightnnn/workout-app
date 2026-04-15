@@ -14,6 +14,7 @@ function mkSets(exRef, overrides = {}) {
     perSide: exRef.perSide || false,
     isTime: exRef.isTime || false,
     isDistance: exRef.isDistance || false,
+    noRpe: exRef.noRpe || false,
     tempo: "",
     notes: ""
   }, overrides);

@@ -643,5 +643,319 @@ var PROGRAM_CONFIGS = {
         { letter:"C",  name:"Conditioning", slots:[{ pool:"conditioning", loading:"finisher" }] }
       ]}
     ]
+  },
+
+  // ================================================================
+  // METHODOLOGY-BASED PROGRAMS (from fitness-trainer plugin research)
+  // ================================================================
+
+  // ---- 3-Day Reverse Pyramid Training (RPT) ----
+  rpt3: {
+    phaseConfig: [
+      { name:"Base",     ratio:0.40, color:"#ff6b35", description:"Establish top-set baselines — RPT sets of 6-8" },
+      { name:"Push",     ratio:0.35, color:"#ff2d55", description:"Push top sets heavier — RPT sets of 4-6" },
+      { name:"Deload",   ratio:0.25, color:"#64d2ff", description:"Light top sets — recover" }
+    ],
+    days: [
+      { name:"RPT Upper A", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"Bench RPT", slots:[{ pool:"push_primary", loading:"rpt", rotateEvery:3 }] },
+        { letter:"B",  name:"Row RPT", slots:[{ pool:"pull_horizontal", loading:"rpt", rotateEvery:3 }] },
+        { letter:"C",  name:"Accessories", slots:[{ pool:"delt", loading:"isolation" }, { pool:"tricep", loading:"isolation" }] }
+      ]},
+      { name:"RPT Lower", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"Squat RPT", slots:[{ pool:"squat_primary", loading:"rpt", rotateEvery:3 }] },
+        { letter:"B",  name:"Hinge RPT", slots:[{ pool:"hinge_primary", loading:"rpt", rotateEvery:4 }] },
+        { letter:"C",  name:"Single-Leg + Core", slots:[{ pool:"squat_secondary", loading:"accessory" }, { pool:"core", loading:"accessory" }] }
+      ]},
+      { name:"RPT Upper B", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"OHP RPT", slots:[{ pool:"press_primary", loading:"rpt", rotateEvery:3 }] },
+        { letter:"B",  name:"Pull RPT", slots:[{ pool:"pull_vertical", loading:"rpt", rotateEvery:3 }] },
+        { letter:"C",  name:"Accessories", slots:[{ pool:"bicep", loading:"isolation" }, { pool:"delt", loading:"isolation" }] }
+      ]}
+    ]
+  },
+
+  // ---- 3-Day Knees Over Toes / ATG ----
+  kot3: {
+    phaseConfig: [
+      { name:"Foundation", ratio:0.35, color:"#30d158", description:"Bodyweight only — build ROM and baseline tolerance" },
+      { name:"Load",       ratio:0.40, color:"#ff6b35", description:"Add load progressively — full ATG depth" },
+      { name:"Deload",     ratio:0.25, color:"#64d2ff", description:"Maintain ROM — reduce load" }
+    ],
+    days: [
+      { name:"KOT Lower A — Knee Focus", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"Tibialis + ATG", slots:[{ pool:"kot", loading:"accessory" }, { pool:"kot", loading:"accessory" }] },
+        { letter:"B",  name:"Squat Pattern", slots:[{ pool:"squat_primary", loading:"compound", rotateEvery:3 }] },
+        { letter:"C",  name:"Nordic + Calf", slots:[{ pool:"hinge_secondary", loading:"accessory" }, { pool:"kot", loading:"accessory" }] }
+      ]},
+      { name:"KOT Upper", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"Push + Pull", slots:[{ pool:"push_primary", loading:"compound", rotateEvery:3 }, { pool:"pull_horizontal", loading:"accessory" }] },
+        { letter:"B",  name:"Shoulders + Pull", slots:[{ pool:"press_secondary", loading:"accessory" }, { pool:"pull_vertical", loading:"accessory" }] },
+        { letter:"C",  name:"Arms + Core", slots:[{ pool:"bicep", loading:"isolation" }, { pool:"core", loading:"accessory" }] }
+      ]},
+      { name:"KOT Lower B — Hip Focus", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"Sled + Split Squat", slots:[{ pool:"kot", loading:"accessory" }, { pool:"kot", loading:"accessory" }] },
+        { letter:"B",  name:"Hinge Pattern", slots:[{ pool:"hinge_primary", loading:"compound", rotateEvery:3 }] },
+        { letter:"C",  name:"Glute + Core", slots:[{ pool:"glute", loading:"accessory" }, { pool:"core", loading:"accessory" }] }
+      ]}
+    ]
+  },
+
+  // ---- 5-Day Hybrid Athlete (Viada Concurrent Training) ----
+  hybrid5: {
+    phaseConfig: [
+      { name:"Base Build",    ratio:0.35, color:"#30d158", description:"Build aerobic base + strength foundation simultaneously" },
+      { name:"Intensify",     ratio:0.35, color:"#ff6b35", description:"Push both strength and conditioning — manage interference" },
+      { name:"Peak",          ratio:0.15, color:"#bf5af2", description:"Peak performance in both domains" },
+      { name:"Deload",        ratio:0.15, color:"#64d2ff", description:"Full recovery" }
+    ],
+    days: [
+      { name:"Heavy Lower", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"Primary Squat", slots:[{ pool:"squat_primary", loading:"me", rotateEvery:3 }] },
+        { letter:"B",  name:"Accessory", slots:[{ pool:"hinge_secondary", loading:"accessory" }, { pool:"squat_secondary", loading:"accessory" }] },
+        { letter:"C",  name:"Core", slots:[{ pool:"core", loading:"accessory" }] }
+      ]},
+      { name:"Zone 2 Cardio + Upper", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"Easy Cardio", slots:[{ pool:"conditioning", loading:"finisher" }] },
+        { letter:"B",  name:"Press + Pull", slots:[{ pool:"push_secondary", loading:"accessory" }, { pool:"pull_horizontal", loading:"accessory" }] },
+        { letter:"C",  name:"Shoulders", slots:[{ pool:"delt", loading:"isolation" }] }
+      ]},
+      { name:"Heavy Upper", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"Primary Press", slots:[{ pool:"push_primary", loading:"me", rotateEvery:3 }] },
+        { letter:"B",  name:"Pull + Shoulders", slots:[{ pool:"pull_vertical", loading:"compound" }, { pool:"press_secondary", loading:"accessory" }] },
+        { letter:"C",  name:"Arms", slots:[{ pool:"bicep", loading:"isolation" }, { pool:"tricep", loading:"isolation" }] }
+      ]},
+      { name:"Zone 2 Cardio + Lower", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"Easy Cardio", slots:[{ pool:"conditioning", loading:"finisher" }] },
+        { letter:"B",  name:"Hinge + Single-Leg", slots:[{ pool:"hinge_secondary", loading:"accessory" }, { pool:"squat_secondary", loading:"accessory" }] },
+        { letter:"C",  name:"Core + Carry", slots:[{ pool:"core", loading:"accessory" }, { pool:"carry", loading:"finisher" }] }
+      ]},
+      { name:"Power + Conditioning", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"Power", slots:[{ pool:"power", loading:"power" }, { pool:"power", loading:"power" }] },
+        { letter:"B",  name:"Strength Pair", slots:[{ pool:"hinge_primary", loading:"compound" }, { pool:"pull_horizontal", loading:"accessory" }] },
+        { letter:"C",  name:"Finisher", slots:[{ pool:"conditioning", loading:"finisher" }] }
+      ]}
+    ]
+  },
+
+  // ---- 4-Day PRVN / CrossFit GPP ----
+  prvn4: {
+    phaseConfig: [
+      { name:"GPP Build",   ratio:0.35, color:"#30d158", description:"Build work capacity — moderate strength + conditioning" },
+      { name:"Intensity",   ratio:0.35, color:"#ff6b35", description:"Push loads and MetCon intensity" },
+      { name:"Peak",        ratio:0.15, color:"#bf5af2", description:"Test fitness — heavy + fast" },
+      { name:"Deload",      ratio:0.15, color:"#64d2ff", description:"Recovery week" }
+    ],
+    days: [
+      { name:"Squat + MetCon", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"Strength: Squat", slots:[{ pool:"squat_primary", loading:"compound", rotateEvery:3 }] },
+        { letter:"B",  name:"Accessory Pair", slots:[{ pool:"pull_vertical", loading:"accessory" }, { pool:"core", loading:"accessory" }] },
+        { letter:"C",  name:"MetCon", slots:[{ pool:"conditioning", loading:"finisher" }, { pool:"power", loading:"power" }] }
+      ]},
+      { name:"Press + MetCon", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"Strength: Press", slots:[{ pool:"push_primary", loading:"compound", rotateEvery:3 }] },
+        { letter:"B",  name:"Accessory Pair", slots:[{ pool:"pull_horizontal", loading:"accessory" }, { pool:"delt", loading:"isolation" }] },
+        { letter:"C",  name:"MetCon", slots:[{ pool:"conditioning", loading:"finisher" }, { pool:"carry", loading:"finisher" }] }
+      ]},
+      { name:"Hinge + MetCon", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"Strength: Hinge", slots:[{ pool:"hinge_primary", loading:"compound", rotateEvery:3 }] },
+        { letter:"B",  name:"Accessory Pair", slots:[{ pool:"squat_secondary", loading:"accessory" }, { pool:"pull_horizontal", loading:"accessory" }] },
+        { letter:"C",  name:"MetCon", slots:[{ pool:"conditioning", loading:"finisher" }, { pool:"power", loading:"power" }] }
+      ]},
+      { name:"Full Body MetCon", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"Power Complex", slots:[{ pool:"power", loading:"power" }, { pool:"power", loading:"power" }] },
+        { letter:"B",  name:"Strength Circuit", slots:[{ pool:"push_secondary", loading:"accessory" }, { pool:"squat_secondary", loading:"accessory" }, { pool:"pull_vertical", loading:"accessory" }] },
+        { letter:"C",  name:"Conditioning Finisher", slots:[{ pool:"conditioning", loading:"finisher" }] }
+      ]}
+    ]
+  },
+
+  // ================================================================
+  // NAMED COMMUNITY PROGRAMS
+  // ================================================================
+
+  // ---- Wendler's 5/3/1 (4-Day) ----
+  wendler4: {
+    phaseConfig: [
+      { name:"5s Week",   ratio:0.25, color:"#30d158", description:"3×5 at 65/75/85% — build base" },
+      { name:"3s Week",   ratio:0.25, color:"#ff6b35", description:"3×3 at 70/80/90% — push intensity" },
+      { name:"1s Week",   ratio:0.25, color:"#ff2d55", description:"5/3/1 at 75/85/95% — AMRAP on last set" },
+      { name:"Deload",    ratio:0.25, color:"#64d2ff", description:"3×5 at 40/50/60% — recover and reset" }
+    ],
+    days: [
+      { name:"Squat Day", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"5/3/1 Squat", slots:[{ pool:"squat_primary", loading:"wendler531", rotateEvery:8 }] },
+        { letter:"B",  name:"BBB Squat Accessory", slots:[{ pool:"squat_primary", loading:"accessory", rotateEvery:4 }] },
+        { letter:"C",  name:"Assistance", slots:[{ pool:"hinge_secondary", loading:"accessory" }, { pool:"core", loading:"accessory" }] }
+      ]},
+      { name:"Bench Day", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"5/3/1 Bench", slots:[{ pool:"push_primary", loading:"wendler531", rotateEvery:8 }] },
+        { letter:"B",  name:"BBB Press Accessory", slots:[{ pool:"push_secondary", loading:"accessory" }] },
+        { letter:"C",  name:"Assistance", slots:[{ pool:"pull_horizontal", loading:"accessory" }, { pool:"delt", loading:"isolation" }] }
+      ]},
+      { name:"Deadlift Day", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"5/3/1 Deadlift", slots:[{ pool:"hinge_primary", loading:"wendler531", rotateEvery:8 }] },
+        { letter:"B",  name:"BBB Hinge Accessory", slots:[{ pool:"hinge_secondary", loading:"accessory" }] },
+        { letter:"C",  name:"Assistance", slots:[{ pool:"squat_secondary", loading:"accessory" }, { pool:"core", loading:"accessory" }] }
+      ]},
+      { name:"OHP Day", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"5/3/1 OHP", slots:[{ pool:"press_primary", loading:"wendler531", rotateEvery:8 }] },
+        { letter:"B",  name:"BBB Shoulder Accessory", slots:[{ pool:"press_secondary", loading:"accessory" }] },
+        { letter:"C",  name:"Assistance", slots:[{ pool:"pull_vertical", loading:"accessory" }, { pool:"bicep", loading:"isolation" }] }
+      ]}
+    ]
+  },
+
+  // ---- GZCL Method (4-Day) ----
+  gzcl4: {
+    phaseConfig: [
+      { name:"Base",      ratio:0.40, color:"#30d158", description:"Build volume across all tiers" },
+      { name:"Peak",      ratio:0.35, color:"#ff2d55", description:"Push T1 heavy, maintain T2/T3" },
+      { name:"Deload",    ratio:0.25, color:"#64d2ff", description:"Recovery" }
+    ],
+    days: [
+      { name:"GZCL — Squat", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"T1", name:"Tier 1: Heavy Squat", slots:[{ pool:"squat_primary", loading:"gzcl_t1", rotateEvery:4 }] },
+        { letter:"T2", name:"Tier 2: Moderate Compound", slots:[{ pool:"hinge_secondary", loading:"gzcl_t2" }, { pool:"squat_secondary", loading:"gzcl_t2" }] },
+        { letter:"T3", name:"Tier 3: Pump Work", slots:[{ pool:"core", loading:"isolation" }, { pool:"squat_secondary", loading:"isolation" }] }
+      ]},
+      { name:"GZCL — Bench", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"T1", name:"Tier 1: Heavy Bench", slots:[{ pool:"push_primary", loading:"gzcl_t1", rotateEvery:4 }] },
+        { letter:"T2", name:"Tier 2: Moderate Compound", slots:[{ pool:"pull_horizontal", loading:"gzcl_t2" }, { pool:"push_secondary", loading:"gzcl_t2" }] },
+        { letter:"T3", name:"Tier 3: Pump Work", slots:[{ pool:"tricep", loading:"isolation" }, { pool:"delt", loading:"isolation" }] }
+      ]},
+      { name:"GZCL — Deadlift", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"T1", name:"Tier 1: Heavy Deadlift", slots:[{ pool:"hinge_primary", loading:"gzcl_t1", rotateEvery:4 }] },
+        { letter:"T2", name:"Tier 2: Moderate Compound", slots:[{ pool:"squat_secondary", loading:"gzcl_t2" }, { pool:"pull_horizontal", loading:"gzcl_t2" }] },
+        { letter:"T3", name:"Tier 3: Pump Work", slots:[{ pool:"hinge_secondary", loading:"isolation" }, { pool:"core", loading:"isolation" }] }
+      ]},
+      { name:"GZCL — OHP", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"T1", name:"Tier 1: Heavy OHP", slots:[{ pool:"press_primary", loading:"gzcl_t1", rotateEvery:4 }] },
+        { letter:"T2", name:"Tier 2: Moderate Compound", slots:[{ pool:"pull_vertical", loading:"gzcl_t2" }, { pool:"press_secondary", loading:"gzcl_t2" }] },
+        { letter:"T3", name:"Tier 3: Pump Work", slots:[{ pool:"bicep", loading:"isolation" }, { pool:"delt", loading:"isolation" }] }
+      ]}
+    ]
+  },
+
+  // ---- Starting Strength / StrongLifts (3-Day) ----
+  ss3: {
+    phaseConfig: [
+      { name:"Linear Gains", ratio:0.50, color:"#30d158", description:"Add weight every session — ride the novice wave" },
+      { name:"Intermediate",  ratio:0.25, color:"#ff6b35", description:"Slower progression — weekly PRs" },
+      { name:"Deload",        ratio:0.25, color:"#64d2ff", description:"Reset and rebuild" }
+    ],
+    days: [
+      { name:"Workout A — Squat + Bench", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"Squat", slots:[{ pool:"squat_primary", loading:"compound", rotateEvery:6 }] },
+        { letter:"B",  name:"Bench Press", slots:[{ pool:"push_primary", loading:"compound", rotateEvery:6 }] },
+        { letter:"C",  name:"Row", slots:[{ pool:"pull_horizontal", loading:"compound" }] }
+      ]},
+      { name:"Workout B — Squat + OHP", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"Squat", slots:[{ pool:"squat_primary", loading:"compound", rotateEvery:6 }] },
+        { letter:"B",  name:"Overhead Press", slots:[{ pool:"press_primary", loading:"compound", rotateEvery:6 }] },
+        { letter:"C",  name:"Deadlift", slots:[{ pool:"hinge_primary", loading:"compound" }] }
+      ]},
+      { name:"Workout C — Squat + Bench", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"Squat", slots:[{ pool:"squat_primary", loading:"compound", rotateEvery:6 }] },
+        { letter:"B",  name:"Bench Press", slots:[{ pool:"push_primary", loading:"compound", rotateEvery:6 }] },
+        { letter:"C",  name:"Pull-Up + Core", slots:[{ pool:"pull_vertical", loading:"accessory" }, { pool:"core", loading:"accessory" }] }
+      ]}
+    ]
+  },
+
+  // ---- German Volume Training (4-Day) ----
+  gvt4: {
+    phaseConfig: [
+      { name:"Shock",    ratio:0.50, color:"#ff2d55", description:"10×10 — maximum volume stimulus" },
+      { name:"Adapt",    ratio:0.25, color:"#ff6b35", description:"10×8 — heavier, slightly less volume" },
+      { name:"Deload",   ratio:0.25, color:"#64d2ff", description:"6×10 — recover from the brutality" }
+    ],
+    days: [
+      { name:"GVT Chest + Back", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"10×10 Press", slots:[{ pool:"push_primary", loading:"gvt", rotateEvery:4 }] },
+        { letter:"B",  name:"10×10 Row", slots:[{ pool:"pull_horizontal", loading:"gvt", rotateEvery:4 }] },
+        { letter:"C",  name:"Light Accessory", slots:[{ pool:"delt", loading:"isolation" }] }
+      ]},
+      { name:"GVT Legs", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"10×10 Squat", slots:[{ pool:"squat_primary", loading:"gvt", rotateEvery:4 }] },
+        { letter:"B",  name:"10×10 Leg Curl", slots:[{ pool:"hinge_secondary", loading:"gvt" }] },
+        { letter:"C",  name:"Light Accessory", slots:[{ pool:"core", loading:"isolation" }] }
+      ]},
+      { name:"GVT Shoulders + Arms", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"10×10 OHP", slots:[{ pool:"press_primary", loading:"gvt", rotateEvery:4 }] },
+        { letter:"B",  name:"Superset Arms", slots:[{ pool:"bicep", loading:"accessory" }, { pool:"tricep", loading:"accessory" }] },
+        { letter:"C",  name:"Rear Delts", slots:[{ pool:"delt", loading:"isolation" }] }
+      ]},
+      { name:"GVT Back + Hinge", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"10×10 Pull", slots:[{ pool:"pull_vertical", loading:"gvt", rotateEvery:4 }] },
+        { letter:"B",  name:"10×10 Hinge", slots:[{ pool:"hinge_primary", loading:"gvt", rotateEvery:4 }] },
+        { letter:"C",  name:"Light Accessory", slots:[{ pool:"carry", loading:"finisher" }] }
+      ]}
+    ]
+  },
+
+  // ---- PHUL: Power Hypertrophy Upper Lower (4-Day) ----
+  phul4: {
+    phaseConfig: [
+      { name:"Volume",    ratio:0.40, color:"#ff6b35", description:"Build base — higher reps on hypertrophy days" },
+      { name:"Strength",  ratio:0.35, color:"#ff2d55", description:"Push power days heavier" },
+      { name:"Deload",    ratio:0.25, color:"#64d2ff", description:"Recovery" }
+    ],
+    days: [
+      { name:"Power Upper", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"Heavy Bench", slots:[{ pool:"push_primary", loading:"me", rotateEvery:3 }] },
+        { letter:"B",  name:"Heavy Row + OHP", slots:[{ pool:"pull_horizontal", loading:"compound" }, { pool:"press_primary", loading:"compound" }] },
+        { letter:"C",  name:"Arms", slots:[{ pool:"bicep", loading:"accessory" }, { pool:"tricep", loading:"accessory" }] }
+      ]},
+      { name:"Power Lower", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"Heavy Squat", slots:[{ pool:"squat_primary", loading:"me", rotateEvery:3 }] },
+        { letter:"B",  name:"Heavy Deadlift", slots:[{ pool:"hinge_primary", loading:"compound" }] },
+        { letter:"C",  name:"Single-Leg + Core", slots:[{ pool:"squat_secondary", loading:"accessory" }, { pool:"core", loading:"accessory" }] }
+      ]},
+      { name:"Hypertrophy Upper", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"Volume Press", slots:[{ pool:"push_secondary", loading:"accessory" }, { pool:"push_secondary", loading:"accessory" }] },
+        { letter:"B",  name:"Volume Pull", slots:[{ pool:"pull_vertical", loading:"accessory" }, { pool:"pull_horizontal", loading:"accessory" }] },
+        { letter:"C",  name:"Isolation", slots:[{ pool:"delt", loading:"isolation" }, { pool:"bicep", loading:"isolation" }, { pool:"tricep", loading:"isolation" }] }
+      ]},
+      { name:"Hypertrophy Lower", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"Volume Squat", slots:[{ pool:"squat_secondary", loading:"accessory" }, { pool:"squat_secondary", loading:"accessory" }] },
+        { letter:"B",  name:"Volume Hinge", slots:[{ pool:"glute", loading:"accessory" }, { pool:"hinge_secondary", loading:"accessory" }] },
+        { letter:"C",  name:"Calves + Core", slots:[{ pool:"squat_secondary", loading:"isolation" }, { pool:"core", loading:"accessory" }] }
+      ]}
+    ]
   }
 };

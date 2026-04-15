@@ -53,6 +53,7 @@ var POOLS = {
   glute:           { full:["hipthrust","gluebridge","dbhipabduction","bulgarian","reverselunge","kbswing"], barbell:["hipthrust","gluebridge","dbhipabduction","kbswing"], bodyweight:["gluebridge","dbhipabduction","reverselunge","kbswing"] },
   conditioning:    { full:["assaultbike","echobike","rower","wallball","burpee","boxjump","medballslam","kbswing","sledpush"], barbell:["rower","burpee","boxjump","kbswing"], bodyweight:["burpee","boxjump","jumpsquat"] },
   power:           { full:["hangpowerclean","pushpress","boxjump","jumpsquat","medballslam","kbswing"], barbell:["pushpress","boxjump","jumpsquat","kbswing"], bodyweight:["boxjump","jumpsquat","burpee"] },
+  kot:             { full:["tibraise","atgsplit","slantboardsquat","poliquat","reversesled","nordiccurl","calfraise"], barbell:["tibraise","atgsplit","slantboardsquat","poliquat","nordiccurl","calfraise"], bodyweight:["tibraise","atgsplit","slantboardsquat","poliquat","nordiccurl"] },
   warmup_cardio:   { full:["rower","bikerg","skierg","stairmaster"], barbell:["rower","bikerg","treadmill"], bodyweight:["treadmill","jumpsquat","burpee"] }
 };
 
@@ -89,7 +90,10 @@ function getUserProfile() {
     experience: ob.experience || "intermediate",
     goal: ob.goal || "general",
     daysPerWeek: ob.days || 5,
-    age: ob.age || "30to40"
+    age: ob.age || "30to40",
+    duration: ob.duration || 60,
+    bodyGoal: ob.bodyGoal || "muscle",
+    gender: ob.gender || "skip"
   };
 }
 
@@ -132,11 +136,41 @@ var LOADING = {
     Peak:            [{ s:4, r:5, rest:90, t:"2-1-1-0", n:"Heavy." }, { s:3, r:5, rest:90, t:"2-0-1-0", n:"Near-max." }],
     Deload:          [{ s:3, r:10, rest:45, t:"3-0-1-0", n:"DELOAD: light tempo work." }]
   },
+  rpt: {
+    Accumulation:    [{ s:3, r:6, rest:180, t:"2-0-1-0", n:"RPT: Top set heavy, drop 10% per set." }, { s:3, r:6, rest:180, t:"2-0-1-0", n:"RPT: Beat last week's top set." }, { s:3, r:5, rest:180, t:"2-0-1-0", n:"RPT: Heavier top set, drop 10%." }, { s:2, r:6, rest:150, t:"2-0-1-0", n:"RPT: Light top set. Back-off." }],
+    Intensification: [{ s:3, r:5, rest:210, t:"2-0-1-0", n:"RPT: Heavy top set of 5, drop 10%." }, { s:3, r:4, rest:210, t:"2-0-1-0", n:"RPT: Top set of 4, drop 10%." }, { s:3, r:3, rest:240, t:"2-0-1-0", n:"RPT: Top set of 3, drop 10%." }, { s:2, r:4, rest:210, t:"2-0-1-0", n:"RPT: Moderate top set. Back-off." }],
+    Peak:            [{ s:2, r:3, rest:240, t:"", n:"RPT: Near-max set of 3, one drop set." }, { s:2, r:2, rest:300, t:"", n:"RPT: Heavy double, one back-off." }],
+    Deload:          [{ s:2, r:8, rest:120, t:"2-0-1-0", n:"RPT DELOAD: Light top set." }]
+  },
   power: {
     Accumulation:    [{ s:4, r:5, rest:90, t:"X-0-X-0", n:"Explosive. Full extension." }, { s:4, r:5, rest:90, t:"X-0-X-0", n:"Maintain speed." }, { s:3, r:5, rest:90, t:"X-0-X-0", n:"Quality reps." }, { s:3, r:5, rest:60, t:"X-0-X-0", n:"Back-off." }],
     Intensification: [{ s:5, r:3, rest:120, t:"X-0-X-0", n:"Max power output." }, { s:5, r:3, rest:120, t:"X-0-X-0", n:"Heavier power." }, { s:4, r:3, rest:120, t:"X-0-X-0", n:"Peak power." }, { s:4, r:3, rest:90, t:"X-0-X-0", n:"Maintain." }],
     Peak:            [{ s:4, r:2, rest:150, t:"X-0-X-0", n:"Max intent." }, { s:3, r:2, rest:150, t:"X-0-X-0", n:"Peak." }],
     Deload:          [{ s:3, r:5, rest:60, t:"X-0-X-0", n:"DELOAD: easy power." }]
+  },
+  wendler531: {
+    Accumulation:    [{ s:3, r:5, rest:180, t:"", n:"5s Week: 65% × 5, 75% × 5, 85% × 5+ AMRAP." }, { s:3, r:3, rest:210, t:"", n:"3s Week: 70% × 3, 80% × 3, 90% × 3+ AMRAP." }, { s:3, r:1, rest:240, t:"", n:"1s Week: 75% × 5, 85% × 3, 95% × 1+ AMRAP." }, { s:3, r:5, rest:120, t:"", n:"5s Week: new cycle. Add 5 lbs upper / 10 lbs lower." }],
+    Intensification: [{ s:3, r:5, rest:180, t:"", n:"5s Week: 65% × 5, 75% × 5, 85% × 5+ AMRAP." }, { s:3, r:3, rest:210, t:"", n:"3s Week: 70% × 3, 80% × 3, 90% × 3+ AMRAP." }, { s:3, r:1, rest:240, t:"", n:"1s Week: 75% × 5, 85% × 3, 95% × 1+ AMRAP." }, { s:3, r:5, rest:180, t:"", n:"5s Week: heavier cycle." }],
+    Peak:            [{ s:3, r:3, rest:210, t:"", n:"3s Week: push for PR on AMRAP set." }, { s:3, r:1, rest:240, t:"", n:"1s Week: go for a big AMRAP." }],
+    Deload:          [{ s:3, r:5, rest:120, t:"", n:"DELOAD: 40% × 5, 50% × 5, 60% × 5. Easy." }]
+  },
+  gzcl_t1: {
+    Accumulation:    [{ s:5, r:3, rest:180, t:"2-0-1-0", n:"T1: Heavy compound. Build to a tough triple." }, { s:5, r:3, rest:180, t:"2-0-1-0", n:"T1: Match or beat last week." }, { s:6, r:2, rest:210, t:"2-0-1-0", n:"T1: Heavy doubles." }, { s:4, r:3, rest:150, t:"2-0-1-0", n:"T1: Back-off." }],
+    Intensification: [{ s:6, r:2, rest:210, t:"2-0-1-0", n:"T1: Heavy doubles." }, { s:8, r:1, rest:210, t:"", n:"T1: Heavy singles." }, { s:10, r:1, rest:240, t:"", n:"T1: Max singles. Push it." }, { s:5, r:2, rest:180, t:"2-0-1-0", n:"T1: Back-off doubles." }],
+    Peak:            [{ s:5, r:1, rest:240, t:"", n:"T1: Test. Work to heavy single." }, { s:3, r:1, rest:300, t:"", n:"T1: True max attempt." }],
+    Deload:          [{ s:4, r:3, rest:120, t:"2-0-1-0", n:"T1 DELOAD: ~60% load." }]
+  },
+  gzcl_t2: {
+    Accumulation:    [{ s:3, r:10, rest:90, t:"2-0-1-0", n:"T2: Moderate compound. Controlled reps." }, { s:3, r:10, rest:90, t:"2-0-1-0", n:"T2: Same or slightly heavier." }, { s:3, r:8, rest:90, t:"2-0-1-0", n:"T2: Heavier, fewer reps." }, { s:3, r:10, rest:60, t:"2-0-1-0", n:"T2: Back-off." }],
+    Intensification: [{ s:3, r:8, rest:90, t:"2-0-1-0", n:"T2: Moderate-heavy." }, { s:3, r:8, rest:90, t:"2-0-1-0", n:"T2: Push load." }, { s:3, r:6, rest:120, t:"2-0-1-0", n:"T2: Heavy 6s." }, { s:3, r:8, rest:90, t:"2-0-1-0", n:"T2: Maintain." }],
+    Peak:            [{ s:3, r:6, rest:120, t:"2-0-1-0", n:"T2: Heavy." }, { s:3, r:6, rest:120, t:"2-0-1-0", n:"T2: Support main lift." }],
+    Deload:          [{ s:2, r:10, rest:60, t:"2-0-1-0", n:"T2 DELOAD: light." }]
+  },
+  gvt: {
+    Accumulation:    [{ s:10, r:10, rest:60, t:"4-0-2-0", n:"GVT: 10×10 @55%. Tempo is king. Don't rush." }, { s:10, r:10, rest:60, t:"4-0-2-0", n:"GVT: 10×10 @55-58%. Maintain all 100 reps." }, { s:10, r:10, rest:60, t:"4-0-2-0", n:"GVT: 10×10 @58-60%. This will burn." }, { s:8, r:10, rest:60, t:"4-0-2-0", n:"GVT: 8×10 back-off. Same weight." }],
+    Intensification: [{ s:10, r:10, rest:60, t:"4-0-2-0", n:"GVT: 10×10 @60%. New base." }, { s:10, r:10, rest:60, t:"4-0-2-0", n:"GVT: 10×10 @60-63%." }, { s:10, r:8, rest:75, t:"4-0-2-0", n:"GVT: 10×8 @65%. Heavier, fewer reps." }, { s:8, r:8, rest:75, t:"4-0-2-0", n:"GVT: 8×8 back-off." }],
+    Peak:            [{ s:10, r:6, rest:90, t:"3-0-2-0", n:"GVT: 10×6 @70%. Heavy volume." }, { s:8, r:6, rest:90, t:"3-0-2-0", n:"GVT: 8×6 @72%. Peak volume." }],
+    Deload:          [{ s:6, r:10, rest:60, t:"4-0-2-0", n:"GVT DELOAD: 6×10 @50%. Easy movement." }]
   }
 };
 

@@ -25,6 +25,17 @@ const PROGRAM_TEMPLATES = [
   { id:"runner2", name:"Runner's Strength (2-Day)", description:"Injury prevention + power for runners — minimal gym time.", daysPerWeek:2, days:DEFAULT_PROGRAM.slice(0,2), minWeeks:8, maxWeeks:12, totalWeeks:null, phases:null },
   { id:"functional5", name:"Functional Fitness (5-Day)", description:"Strength, power, conditioning — well-rounded fitness.", daysPerWeek:5, days:DEFAULT_PROGRAM, minWeeks:8, maxWeeks:12, totalWeeks:null, phases:null },
   { id:"calisthenics4", name:"Calisthenics + Weights (4-Day)", description:"Bodyweight skills combined with loaded strength work.", daysPerWeek:4, days:DEFAULT_PROGRAM.slice(0,4), minWeeks:8, maxWeeks:12, totalWeeks:null, phases:null },
+  // Methodology-based programs (from fitness-trainer plugin research)
+  { id:"rpt3", name:"Reverse Pyramid (3-Day)", description:"Heaviest set first, drop 10% per set. Time-efficient strength.", daysPerWeek:3, days:DEFAULT_PROGRAM.slice(0,3), minWeeks:8, maxWeeks:12, totalWeeks:null, phases:null },
+  { id:"kot3", name:"Knees Over Toes / ATG (3-Day)", description:"Joint health first — full ROM, progressive knee conditioning.", daysPerWeek:3, days:DEFAULT_PROGRAM.slice(0,3), minWeeks:8, maxWeeks:12, totalWeeks:null, phases:null },
+  { id:"hybrid5", name:"Hybrid Athlete (5-Day)", description:"Concurrent strength + endurance — Viada method. Don't sacrifice either.", daysPerWeek:5, days:DEFAULT_PROGRAM, minWeeks:8, maxWeeks:12, totalWeeks:null, phases:null },
+  { id:"prvn4", name:"PRVN / CrossFit GPP (4-Day)", description:"Strength block + MetCon per session. Periodized general fitness.", daysPerWeek:4, days:DEFAULT_PROGRAM.slice(0,4), minWeeks:8, maxWeeks:12, totalWeeks:null, phases:null },
+  // Named community programs
+  { id:"wendler4", name:"5/3/1 Wendler (4-Day)", description:"Classic 5/3/1 waves — 3-week cycles with AMRAP sets + BBB accessories.", daysPerWeek:4, days:DEFAULT_PROGRAM.slice(0,4), minWeeks:8, maxWeeks:12, totalWeeks:null, phases:null },
+  { id:"gzcl4", name:"GZCL Method (4-Day)", description:"Tiered training — T1 heavy, T2 moderate, T3 pump. Structured progression.", daysPerWeek:4, days:DEFAULT_PROGRAM.slice(0,4), minWeeks:8, maxWeeks:12, totalWeeks:null, phases:null },
+  { id:"ss3", name:"Starting Strength (3-Day)", description:"Novice linear progression — squat every session, simple compounds, add weight each time.", daysPerWeek:3, days:DEFAULT_PROGRAM.slice(0,3), minWeeks:8, maxWeeks:12, totalWeeks:null, phases:null },
+  { id:"gvt4", name:"German Volume Training (4-Day)", description:"10×10 shock protocol — extreme volume for rapid hypertrophy. Not for the faint.", daysPerWeek:4, days:DEFAULT_PROGRAM.slice(0,4), minWeeks:6, maxWeeks:10, totalWeeks:null, phases:null },
+  { id:"phul4", name:"PHUL (4-Day)", description:"Power Hypertrophy Upper Lower — 2 heavy days + 2 volume days.", daysPerWeek:4, days:DEFAULT_PROGRAM.slice(0,4), minWeeks:8, maxWeeks:12, totalWeeks:null, phases:null },
 ];
 
 // Resolve phases dynamically for any template + totalWeeks

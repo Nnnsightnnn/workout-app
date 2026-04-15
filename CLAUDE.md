@@ -43,6 +43,7 @@ workout-app.html           ← BUILD OUTPUT (single-file distributable)
 index.html                 ← Redirect → workout-app.html (for GitHub Pages)
 test-v3.js                 ← Test harness (jsdom-based, 16 workflow tests)
 .github/workflows/pages.yml ← GitHub Pages auto-deploy on push to main
+BACKLOG.md                 ← Known issues, bugs, and planned work
 CLAUDE.md                  ← This file
 README.md                  ← User-facing documentation
 ```
@@ -120,6 +121,13 @@ Recovery from console: `restorePreMigrationBackup()`
 **[TASK-00001]** Use task tracking for multi-step work
 **[TASK-00002]** Commit format: `"Fix: [Description] (Task: <id>)"`
 > TRIGGER: When starting complex tasks
+
+---
+
+## Backlog [BACKLOG]
+**[BACKLOG-00001]** Known issues, bugs, and planned work are tracked in `BACKLOG.md` at the project root. Check it before starting work to avoid duplicating effort or missing context on known failures.
+**[BACKLOG-00002]** When discovering new bugs or test failures, add them to `BACKLOG.md` rather than leaving them undocumented. Remove entries when resolved.
+> TRIGGER: When encountering test failures, bugs, or planning new work
 
 ---
 
