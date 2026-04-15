@@ -100,6 +100,11 @@ const LIBRARY = [
   { id:"scappushup", name:"Scap Push-Up", muscles:["shoulders","serratus"], cat:"Warmup", defaultRest:0, defaultSets:2, defaultReps:10, bodyweight:true, defaultWeight:0, demoUrl:"https://www.youtube.com/watch?v=fLAf2YG4flw" },
   { id:"thoracicrot", name:"Thoracic Rotation", muscles:["thoracic","upper back"], cat:"Warmup", defaultRest:0, defaultSets:2, defaultReps:8, bodyweight:true, perSide:true, defaultWeight:0, demoUrl:"https://www.youtube.com/watch?v=RbS0I94VEuM" },
   { id:"spiderman", name:"Spiderman Lunge", muscles:["hips","hip flexors","thoracic"], cat:"Warmup", defaultRest:0, defaultSets:2, defaultReps:5, bodyweight:true, perSide:true, defaultWeight:0, demoUrl:"https://www.youtube.com/watch?v=aqwCEOhiEgs" },
+  // Cooldown / Stretching
+  { id:"hipflexorstretch", name:"Hip Flexor Stretch", muscles:["hip flexors","quads"], cat:"Warmup", defaultRest:0, defaultSets:1, defaultReps:45, bodyweight:true, isTime:true, perSide:true, defaultWeight:0, demoUrl:"" },
+  { id:"hamstringstretch", name:"Hamstring Stretch", muscles:["hamstrings"], cat:"Warmup", defaultRest:0, defaultSets:1, defaultReps:45, bodyweight:true, isTime:true, perSide:true, defaultWeight:0, demoUrl:"" },
+  { id:"pigeonpose", name:"Pigeon Pose", muscles:["hips","glutes","hip flexors"], cat:"Warmup", defaultRest:0, defaultSets:1, defaultReps:60, bodyweight:true, isTime:true, perSide:true, defaultWeight:0, demoUrl:"" },
+  { id:"childpose", name:"Child's Pose", muscles:["shoulders","hips","thoracic"], cat:"Warmup", defaultRest:0, defaultSets:1, defaultReps:60, bodyweight:true, isTime:true, defaultWeight:0, demoUrl:"" },
   // Extra Accessories
   { id:"cablefly", name:"Cable Flye", muscles:["chest"], cat:"Push", defaultRest:60, defaultSets:3, defaultReps:12, defaultWeight:25, demoUrl:"https://www.youtube.com/watch?v=Iwe6AmxVf7o" },
   { id:"pecfly", name:"Pec Deck Flye", muscles:["chest"], cat:"Push", defaultRest:60, defaultSets:3, defaultReps:12, defaultWeight:80, demoUrl:"https://www.youtube.com/watch?v=g3T7LsEeDWQ" },

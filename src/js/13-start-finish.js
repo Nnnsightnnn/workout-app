@@ -65,6 +65,19 @@ function finishWorkout() {
     if (s.weight > 0 && (!best || score > best.score)) s.isPR = true;
   });
 
+  // Collect block-level notes (per-session)
+  const blockNotes = {};
+  day.blocks.forEach(block => {
+    const note = inputs[`${block.id}|__note`];
+    if (note && String(note).trim()) {
+      blockNotes[block.id] = { name: block.name, note: String(note).trim() };
+    }
+  });
+  const cooldownNote = inputs["__cooldown|__note"];
+  if (cooldownNote && String(cooldownNote).trim()) {
+    blockNotes["__cooldown"] = { name: "Cool Down", note: String(cooldownNote).trim() };
+  }
+
   const duration = Math.floor((Date.now() - draft.startedAt) / 1000);
   const volume = sets.reduce((a, s) => a + s.weight * s.reps, 0);
   const prCount = sets.filter(s => s.isPR).length;
@@ -74,7 +87,8 @@ function finishWorkout() {
     dayName: day.name,
     startedAt: draft.startedAt,
     finishedAt: Date.now(),
-    duration, sets, volume, prCount
+    duration, sets, volume, prCount,
+    blockNotes
   };
 
   updateUser(u => {

@@ -31,12 +31,18 @@ function renderHistory() {
     const date = new Date(s.finishedAt);
     const dateStr = date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
     const prHtml = s.prCount ? `<span class="pr-badge">🏆 ${s.prCount} PR${s.prCount>1?"s":""}</span>` : "";
+    const notesHtml = (s.blockNotes && Object.keys(s.blockNotes).length > 0)
+      ? `<div class="session-block-notes">${Object.values(s.blockNotes).map(bn =>
+          `<div class="session-block-note"><span class="note-block-name">${bn.name}:</span> ${bn.note}</div>`
+        ).join("")}</div>`
+      : "";
     el.innerHTML = `
       <div class="top">
         <div><div class="date">${dateStr}</div><div class="day-name">Day ${s.dayId} — ${s.dayName}</div></div>
       </div>
       <div class="meta">${s.sets.length} sets · ${formatDuration(s.duration)} · ${s.volume > 0 ? formatVolume(s.volume) + " " + state.unit + " volume" : "bodyweight"}</div>
       <div class="highlights">${prHtml}</div>
+      ${notesHtml}
     `;
     list.appendChild(el);
   });
