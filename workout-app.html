@@ -412,6 +412,49 @@
 
   /* Sets table */
   .sets-wrap { padding: 0 14px 12px; }
+
+  /* Tempo coaching cue */
+  .tempo-cue {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0 7px; border-bottom: 1px solid var(--border);
+    margin-bottom: 2px;
+  }
+  .tempo-cue-label {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--superset); flex-shrink: 0;
+  }
+  .tempo-cue-phases { display: flex; align-items: center; gap: 4px; flex: 1; }
+  .tempo-phase { text-align: center; flex: 1; }
+  .tempo-count {
+    font-size: 18px; font-weight: 800; color: var(--text);
+    font-family: ui-monospace, monospace; line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+  .tempo-phase-name {
+    font-size: 9px; color: var(--text-faint); font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .tempo-divider { color: var(--border); font-size: 13px; user-select: none; }
+
+  /* Previous session row (same workout day) */
+  .prev-session {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 4px;
+    padding: 6px 0 5px; border-bottom: 1px solid var(--border);
+    margin-bottom: 2px;
+  }
+  .prev-label {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text-faint);
+    margin-right: 2px; flex-shrink: 0;
+  }
+  .prev-set {
+    background: var(--bg-card-2); color: var(--text-dim);
+    font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 7px;
+    font-family: ui-monospace, monospace; border: 1px solid var(--border);
+    font-variant-numeric: tabular-nums;
+  }
+  .prev-sep { color: var(--text-faint); font-size: 9px; user-select: none; }
+
   .sets-header {
     display: grid; grid-template-columns: 28px 1fr 1fr 1fr 28px;
     gap: 6px; padding: 6px 0; font-size: 10px;
@@ -629,6 +672,13 @@
   .rest-info .label { font-size: 11px; color: var(--text-dim); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
   .rest-info .target { font-size: 14px; font-weight: 700; margin-top: 3px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rest-tempo-cue {
+    display: none; margin-top: 4px;
+    font-size: 11px; font-weight: 700;
+    color: var(--superset); font-family: ui-monospace, monospace;
+    letter-spacing: 0.04em;
+  }
+  .rest-tempo-cue.active { display: block; }
   .rest-actions { display: flex; gap: 6px; }
   .rest-btn {
     background: var(--bg-card-2); color: var(--text);
@@ -1545,6 +1595,7 @@
     <div class="rest-info">
       <div class="label">Resting</div>
       <div class="target" id="restTarget">Tap ⏱ to start</div>
+      <div class="rest-tempo-cue" id="restTempoCue"></div>
     </div>
     <div class="rest-actions">
       <button class="rest-btn" onclick="addRest(30)">+30</button>
@@ -2398,6 +2449,7 @@ let state = {
   sessionIntervalId: null,
   restEndsAt: null, restTotal: 0, restIntervalId: null,
   editMode: false,
+  lastCompletedTempo: null,  // tempo of last swiped-done set, shown in rest overlay
   pendingExAdd: null,  // { blockId }
   sidebarOpen: false,
   sidebarSelectedEx: null,
@@ -2516,7 +2568,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 1;
-const APP_BUILD = "5e5db2f1";
+const APP_BUILD = "1d6b2e10";
 
 
 // ============================================================
@@ -3575,6 +3627,58 @@ function renderSetsTable(block, ex, bi, ei) {
   const wrap = document.createElement("div");
   wrap.className = "sets-wrap";
 
+  // Tempo coaching cue — shown prominently above the sets when a tempo is prescribed
+  if (ex.tempo) {
+    const parts = ex.tempo.split("-");
+    const labels = ["Down", "Pause", "Up", "Top"];
+    const cue = document.createElement("div");
+    cue.className = "tempo-cue";
+    const lbl = document.createElement("span");
+    lbl.className = "tempo-cue-label";
+    lbl.textContent = "Tempo";
+    cue.appendChild(lbl);
+    const phases = document.createElement("div");
+    phases.className = "tempo-cue-phases";
+    parts.forEach((t, i) => {
+      if (i > 0) {
+        const sep = document.createElement("div");
+        sep.className = "tempo-divider";
+        sep.textContent = "—";
+        phases.appendChild(sep);
+      }
+      const ph = document.createElement("div");
+      ph.className = "tempo-phase";
+      ph.innerHTML = `<div class="tempo-count">${t}</div><div class="tempo-phase-name">${labels[i] || ""}</div>`;
+      phases.appendChild(ph);
+    });
+    cue.appendChild(phases);
+    wrap.appendChild(cue);
+  }
+
+  // Previous session (same day) — what was lifted last time this exact workout day was done
+  const prevSets = getPrevDaySetsFor(state.currentDayId, ex.exId || ex.name);
+  if (prevSets.length) {
+    const prev = document.createElement("div");
+    prev.className = "prev-session";
+    const lbl = document.createElement("span");
+    lbl.className = "prev-label";
+    lbl.textContent = "Last";
+    prev.appendChild(lbl);
+    prevSets.forEach((s, idx) => {
+      if (idx > 0) {
+        const sep = document.createElement("span");
+        sep.className = "prev-sep";
+        sep.textContent = "·";
+        prev.appendChild(sep);
+      }
+      const chip = document.createElement("span");
+      chip.className = "prev-set";
+      chip.textContent = (s.bodyweight || s.weight === 0) ? `${s.reps}r` : `${s.weight}×${s.reps}`;
+      prev.appendChild(chip);
+    });
+    wrap.appendChild(prev);
+  }
+
   const header = document.createElement("div");
   header.className = "sets-header" + (bw ? " bw" : "");
   const repsLabel = ex.isTime ? "Time (s)" : ex.isDistance ? "Dist (m)" : "Reps";
@@ -3700,7 +3804,10 @@ function wireRow(row, block, ex, bi, ei, i, bw) {
     if (dx > 60) {
       const was = row.classList.contains("set-done");
       row.classList.remove("set-done", "set-skipped");
-      if (!was) row.classList.add("set-done");
+      if (!was) {
+        row.classList.add("set-done");
+        state.lastCompletedTempo = ex.tempo || null;
+      }
       saveInput(statusKey, was ? null : "done");
       if (navigator.vibrate) navigator.vibrate(10);
     } else if (dx < -60) {
@@ -3720,6 +3827,18 @@ function wireRow(row, block, ex, bi, ei, i, bw) {
 function getLastSetsFor(exId) {
   const u = userData();
   for (let i = u.sessions.length - 1; i >= 0; i--) {
+    const sets = u.sessions[i].sets.filter(s => s.exId === exId);
+    if (sets.length) return sets;
+  }
+  return [];
+}
+
+// Returns the sets for a given exercise from the most recent session of a specific day.
+// Used to show "last time you did this workout day" per-exercise.
+function getPrevDaySetsFor(dayId, exId) {
+  const u = userData();
+  for (let i = u.sessions.length - 1; i >= 0; i--) {
+    if (u.sessions[i].dayId !== dayId) continue;
     const sets = u.sessions[i].sets.filter(s => s.exId === exId);
     if (sets.length) return sets;
   }
@@ -4160,6 +4279,16 @@ function startRest(seconds, label) {
   document.getElementById("restOverlay").classList.add("active");
   document.getElementById("restCard").classList.remove("done");
   document.getElementById("restTarget").textContent = label || "Rest";
+  const tempoCue = document.getElementById("restTempoCue");
+  if (tempoCue) {
+    if (state.lastCompletedTempo) {
+      tempoCue.textContent = "⏱ " + state.lastCompletedTempo;
+      tempoCue.classList.add("active");
+    } else {
+      tempoCue.textContent = "";
+      tempoCue.classList.remove("active");
+    }
+  }
   if (state.restIntervalId) clearInterval(state.restIntervalId);
   const tick = () => {
     const rem = Math.max(0, Math.ceil((state.restEndsAt - Date.now()) / 1000));
