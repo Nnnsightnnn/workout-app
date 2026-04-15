@@ -1320,3 +1320,131 @@
     }
     .celebration { display: none !important; }
   }
+
+  /* === Onboarding Flow === */
+  .onboarding-overlay {
+    position: fixed; inset: 0; z-index: 80;
+    background: var(--bg);
+    display: none; flex-direction: column;
+    overflow-y: auto; overscroll-behavior: contain;
+  }
+  .onboarding-overlay.active { display: flex; }
+
+  .onboarding-inner { display: flex; flex-direction: column; flex: 1; }
+
+  .ob-progress {
+    height: 5px; background: var(--bg-card-2); flex-shrink: 0;
+  }
+  .ob-progress-fill {
+    height: 100%; background: var(--accent);
+    transition: width 0.4s var(--spring-gentle);
+    border-radius: 0 3px 3px 0;
+  }
+
+  .ob-body {
+    flex: 1; padding: 28px 20px 48px;
+    max-width: 500px; width: 100%; margin: 0 auto;
+    display: flex; flex-direction: column;
+  }
+
+  .ob-step-label {
+    font-size: 11px; font-weight: 700; color: var(--text-faint);
+    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px;
+  }
+
+  .ob-title {
+    font-size: 26px; font-weight: 800; letter-spacing: -0.03em;
+    line-height: 1.15; color: var(--text); margin: 0;
+  }
+
+  .ob-subtitle {
+    font-size: 13px; color: var(--text-dim);
+    margin-top: 8px; margin-bottom: 0; line-height: 1.5;
+  }
+
+  .ob-options {
+    display: flex; flex-direction: column; gap: 10px;
+    margin-top: 22px; flex: 1;
+  }
+
+  .ob-option {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px; border-radius: 18px;
+    background: var(--bg-card); border: 2px solid var(--border);
+    text-align: left; width: 100%;
+    background-image: var(--bubble-shine);
+    box-shadow: var(--pillow);
+    transition: transform 0.15s var(--spring), box-shadow 0.15s ease, border-color 0.15s;
+    cursor: pointer; min-height: 68px;
+  }
+  .ob-option:active { transform: translateY(3px); box-shadow: var(--pillow-pressed); }
+  .ob-option.selected {
+    border-color: var(--accent);
+    background-color: rgba(255,107,53,0.07);
+    background-image: var(--bubble-shine-accent);
+    box-shadow: var(--pillow-accent);
+  }
+
+  .ob-opt-icon {
+    font-size: 24px; flex-shrink: 0;
+    width: 36px; text-align: center; line-height: 1;
+  }
+  .ob-opt-text { flex: 1; min-width: 0; }
+  .ob-opt-label { font-size: 15px; font-weight: 700; color: var(--text); }
+  .ob-opt-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+
+  .ob-opt-check {
+    color: var(--accent); font-size: 14px; font-weight: 800;
+    opacity: 0; flex-shrink: 0;
+    transition: opacity 0.15s; width: 20px; text-align: center;
+  }
+  .ob-option.selected .ob-opt-check { opacity: 1; }
+
+  .ob-actions {
+    margin-top: 24px; display: flex;
+    flex-direction: column; gap: 10px; align-items: center;
+  }
+  .ob-continue-btn {
+    width: 100%; padding: 16px; border-radius: 18px;
+    font-size: 16px; font-weight: 800;
+    background: var(--accent); color: #fff;
+    border: 2px solid var(--accent-dim);
+    background-image: var(--bubble-shine-accent);
+    box-shadow: var(--pillow-accent);
+    transition: transform 0.15s var(--spring), box-shadow 0.15s ease;
+  }
+  .ob-continue-btn:active { transform: translateY(3px); box-shadow: var(--pillow-pressed); }
+
+  .ob-skip-btn {
+    font-size: 13px; color: var(--text-faint);
+    text-decoration: underline; padding: 8px;
+    background: none; border: none; cursor: pointer;
+  }
+
+  /* Injury warning tag — inline chip on exercise cards */
+  .tag.injury-warn {
+    background: rgba(255,214,10,0.15);
+    color: var(--warn);
+    border: 1px solid rgba(255,214,10,0.35);
+  }
+
+  /* Onboarding warm handoff screen */
+  .ob-handoff .ob-title { margin-bottom: 4px; }
+  .ob-program-name {
+    font-size: 22px; font-weight: 800; color: var(--accent);
+    letter-spacing: -0.02em; margin-bottom: 18px; line-height: 1.2;
+  }
+  .ob-reasons {
+    list-style: none; padding: 0; margin: 0 0 20px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .ob-reasons li {
+    font-size: 13px; color: var(--text-dim); line-height: 1.45;
+    padding: 10px 14px; border-radius: 12px;
+    background: var(--bg-card); border: 1.5px solid var(--border);
+  }
+  .ob-reasons li strong { color: var(--text); }
+  .ob-handoff-hint {
+    font-size: 12px; color: var(--text-faint);
+    text-align: center; margin-bottom: 0;
+  }

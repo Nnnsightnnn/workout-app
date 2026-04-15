@@ -1331,6 +1331,134 @@
     }
     .celebration { display: none !important; }
   }
+
+  /* === Onboarding Flow === */
+  .onboarding-overlay {
+    position: fixed; inset: 0; z-index: 80;
+    background: var(--bg);
+    display: none; flex-direction: column;
+    overflow-y: auto; overscroll-behavior: contain;
+  }
+  .onboarding-overlay.active { display: flex; }
+
+  .onboarding-inner { display: flex; flex-direction: column; flex: 1; }
+
+  .ob-progress {
+    height: 5px; background: var(--bg-card-2); flex-shrink: 0;
+  }
+  .ob-progress-fill {
+    height: 100%; background: var(--accent);
+    transition: width 0.4s var(--spring-gentle);
+    border-radius: 0 3px 3px 0;
+  }
+
+  .ob-body {
+    flex: 1; padding: 28px 20px 48px;
+    max-width: 500px; width: 100%; margin: 0 auto;
+    display: flex; flex-direction: column;
+  }
+
+  .ob-step-label {
+    font-size: 11px; font-weight: 700; color: var(--text-faint);
+    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px;
+  }
+
+  .ob-title {
+    font-size: 26px; font-weight: 800; letter-spacing: -0.03em;
+    line-height: 1.15; color: var(--text); margin: 0;
+  }
+
+  .ob-subtitle {
+    font-size: 13px; color: var(--text-dim);
+    margin-top: 8px; margin-bottom: 0; line-height: 1.5;
+  }
+
+  .ob-options {
+    display: flex; flex-direction: column; gap: 10px;
+    margin-top: 22px; flex: 1;
+  }
+
+  .ob-option {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px; border-radius: 18px;
+    background: var(--bg-card); border: 2px solid var(--border);
+    text-align: left; width: 100%;
+    background-image: var(--bubble-shine);
+    box-shadow: var(--pillow);
+    transition: transform 0.15s var(--spring), box-shadow 0.15s ease, border-color 0.15s;
+    cursor: pointer; min-height: 68px;
+  }
+  .ob-option:active { transform: translateY(3px); box-shadow: var(--pillow-pressed); }
+  .ob-option.selected {
+    border-color: var(--accent);
+    background-color: rgba(255,107,53,0.07);
+    background-image: var(--bubble-shine-accent);
+    box-shadow: var(--pillow-accent);
+  }
+
+  .ob-opt-icon {
+    font-size: 24px; flex-shrink: 0;
+    width: 36px; text-align: center; line-height: 1;
+  }
+  .ob-opt-text { flex: 1; min-width: 0; }
+  .ob-opt-label { font-size: 15px; font-weight: 700; color: var(--text); }
+  .ob-opt-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+
+  .ob-opt-check {
+    color: var(--accent); font-size: 14px; font-weight: 800;
+    opacity: 0; flex-shrink: 0;
+    transition: opacity 0.15s; width: 20px; text-align: center;
+  }
+  .ob-option.selected .ob-opt-check { opacity: 1; }
+
+  .ob-actions {
+    margin-top: 24px; display: flex;
+    flex-direction: column; gap: 10px; align-items: center;
+  }
+  .ob-continue-btn {
+    width: 100%; padding: 16px; border-radius: 18px;
+    font-size: 16px; font-weight: 800;
+    background: var(--accent); color: #fff;
+    border: 2px solid var(--accent-dim);
+    background-image: var(--bubble-shine-accent);
+    box-shadow: var(--pillow-accent);
+    transition: transform 0.15s var(--spring), box-shadow 0.15s ease;
+  }
+  .ob-continue-btn:active { transform: translateY(3px); box-shadow: var(--pillow-pressed); }
+
+  .ob-skip-btn {
+    font-size: 13px; color: var(--text-faint);
+    text-decoration: underline; padding: 8px;
+    background: none; border: none; cursor: pointer;
+  }
+
+  /* Injury warning tag — inline chip on exercise cards */
+  .tag.injury-warn {
+    background: rgba(255,214,10,0.15);
+    color: var(--warn);
+    border: 1px solid rgba(255,214,10,0.35);
+  }
+
+  /* Onboarding warm handoff screen */
+  .ob-handoff .ob-title { margin-bottom: 4px; }
+  .ob-program-name {
+    font-size: 22px; font-weight: 800; color: var(--accent);
+    letter-spacing: -0.02em; margin-bottom: 18px; line-height: 1.2;
+  }
+  .ob-reasons {
+    list-style: none; padding: 0; margin: 0 0 20px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .ob-reasons li {
+    font-size: 13px; color: var(--text-dim); line-height: 1.45;
+    padding: 10px 14px; border-radius: 12px;
+    background: var(--bg-card); border: 1.5px solid var(--border);
+  }
+  .ob-reasons li strong { color: var(--text); }
+  .ob-handoff-hint {
+    font-size: 12px; color: var(--text-faint);
+    text-align: center; margin-bottom: 0;
+  }
 </style>
 </head>
 <body>
@@ -1565,6 +1693,11 @@
     <div class="lib-cat" id="sidebarCatRow"></div>
     <div class="bento-grid" id="sidebarGrid"></div>
   </div>
+</div>
+
+<!-- Onboarding Flow (first-run questionnaire, shown above sheet) -->
+<div class="onboarding-overlay" id="onboardingOverlay">
+  <div class="onboarding-inner" id="onboardingInner"></div>
 </div>
 
 <!-- Bottom Sheet -->
@@ -2428,7 +2561,7 @@ function newUserRecord(name, templateId) {
 }
 
 function getDefaultStore() {
-  return { _schemaVersion: APP_VERSION, unit: "lbs", users: [], currentUserId: null };
+  return { _schemaVersion: APP_VERSION, unit: "lbs", users: [], currentUserId: null, onboarding: null };
 }
 
 function loadStore() {
@@ -2440,6 +2573,8 @@ function loadStore() {
     if (s.currentUserId && !s.users.find(u => u.id === s.currentUserId)) {
       s.currentUserId = s.users[0]?.id || null;
     }
+    // Defensive default for onboarding
+    if (s.onboarding === undefined) s.onboarding = null;
     // Fill missing per-user fields
     s.users.forEach(u => {
       if (!u.id) u.id = genId();
@@ -2516,7 +2651,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 1;
-const APP_BUILD = "5e5db2f1";
+const APP_BUILD = "ff9ae624";
 
 
 // ============================================================
@@ -3498,6 +3633,15 @@ function renderExercise(day, block, ex, bi, ei, isSuperset) {
     const t = document.createElement("span");
     t.className = "tag rest";
     t.textContent = `rest ${formatRest(ex.rest)}`;
+    meta.appendChild(t);
+  }
+  // Injury flag: warn if exercise conflicts with user's reported injury history
+  const _warnedExIds = getInjuryWarnings();
+  if (ex.exId && _warnedExIds.has(ex.exId)) {
+    const t = document.createElement("span");
+    t.className = "tag injury-warn";
+    t.title = "May need modification — injury flag active";
+    t.textContent = "⚠ modify";
     meta.appendChild(t);
   }
   info.appendChild(meta);
@@ -5107,6 +5251,10 @@ function init() {
     // Render empty workout screen scaffolding, then prompt
     renderWorkoutScreen();
     openAddUserDialog(true);
+    // Show onboarding questionnaire above the add-user dialog if not yet completed
+    if (!s.onboarding) {
+      showOnboardingFlow();
+    }
     return;
   }
 
@@ -5143,6 +5291,299 @@ try {
   window.PROGRAM_TEMPLATES = PROGRAM_TEMPLATES;
   window.CATEGORIES = CATEGORIES;
 } catch (e) {}
+
+// ============================================================
+// ONBOARDING
+// ============================================================
+
+// Exercise IDs flagged per injury category (warning chip shown, nothing removed)
+const INJURY_EXERCISE_MAP = {
+  lowerback: ["deadlift","sumo","trapbar","rdl","slrdl","goodmorning","kbswing",
+               "backsquat","frontsquat","ssbsquat","pausesquat"],
+  knees:     ["backsquat","frontsquat","pausesquat","ssbsquat","ohsquat","goblet",
+               "bulgarian","stepup"],
+  shoulders: ["strictpress","pushpress","logpress","bench","incbench","tempobench",
+               "cgbench","floorpress","dbbench","inclinedb","dbshoulder","hkpress",
+               "arnold","pushup","dip","pullup","weightedpullup","chinup",
+               "pulldown","facepull"]
+};
+
+const ONBOARDING_STEPS = [
+  {
+    id: "goal",
+    title: "What's your main training goal?",
+    type: "single",
+    options: [
+      { value: "strength",    label: "Strength",             icon: "🏋", sub: "Max lifts & peak power" },
+      { value: "hypertrophy", label: "Hypertrophy",          icon: "📐", sub: "Muscle size & definition" },
+      { value: "athletic",    label: "Athletic Performance", icon: "⚡", sub: "Speed, power & conditioning" },
+      { value: "general",     label: "General Fitness",      icon: "🎯", sub: "Health, endurance & wellness" }
+    ]
+  },
+  {
+    id: "experience",
+    title: "How long have you been training?",
+    type: "single",
+    options: [
+      { value: "beginner",     label: "Beginner",     icon: "🌱", sub: "Under 1 year" },
+      { value: "intermediate", label: "Intermediate", icon: "📈", sub: "1–3 years" },
+      { value: "advanced",     label: "Advanced",     icon: "🏆", sub: "3+ years" }
+    ]
+  },
+  {
+    id: "days",
+    title: "How many days per week can you train?",
+    type: "single",
+    options: [
+      { value: 3, label: "3 Days / Week", icon: "3", sub: "Mon · Wed · Fri" },
+      { value: 4, label: "4 Days / Week", icon: "4", sub: "Mon · Tue · Thu · Fri" },
+      { value: 5, label: "5 Days / Week", icon: "5", sub: "Mon through Fri" }
+    ]
+  },
+  {
+    id: "equipment",
+    title: "What equipment do you have access to?",
+    type: "single",
+    options: [
+      { value: "full",       label: "Full Gym",           icon: "🏋", sub: "Barbells, machines & cables" },
+      { value: "barbell",    label: "Home + Barbell",     icon: "🔧", sub: "Barbell, rack & dumbbells" },
+      { value: "bodyweight", label: "Bodyweight + Bands", icon: "⭕", sub: "No barbell needed" }
+    ]
+  },
+  {
+    id: "age",
+    title: "What's your age range?",
+    type: "single",
+    options: [
+      { value: "under30", label: "Under 30", icon: "⚡", sub: "High volume, fast recovery" },
+      { value: "30to40",  label: "30–40",    icon: "🎯", sub: "Prime performance window" },
+      { value: "40plus",  label: "40+",      icon: "♻",  sub: "Recovery-focused training" }
+    ]
+  },
+  {
+    id: "injuries",
+    title: "Any areas to watch out for?",
+    subtitle: "We'll flag exercises that may need modification — nothing gets removed.",
+    type: "multi",
+    options: [
+      { value: "lowerback", label: "Lower Back", icon: "⚠", sub: "Disc issues, chronic pain" },
+      { value: "knees",     label: "Knees",      icon: "⚠", sub: "Tendon or joint pain" },
+      { value: "shoulders", label: "Shoulders",  icon: "⚠", sub: "Rotator cuff, impingement" },
+      { value: "none",      label: "All Clear",  icon: "✓",  sub: "No known issues" }
+    ]
+  }
+];
+
+// ---- Template recommendation ----
+function getRecommendedTemplate(a) {
+  if (a.equipment === "bodyweight") return "minimal3";
+  if (a.days === 3) return "jbrown3";
+  if (a.days === 4) {
+    if (a.goal === "athletic") return "athletic4";
+    return "filly4";
+  }
+  // days === 5
+  if (a.goal === "strength" && a.experience === "advanced") return "conjugate5";
+  if (a.goal === "hypertrophy") return "hypertrophy5";
+  return "conjugate5";
+}
+
+function getDefaultRestSeconds(experience) {
+  return experience === "beginner" ? 120 : 90;
+}
+
+// Returns a Set of exercise IDs that conflict with the user's reported injuries.
+function getInjuryWarnings() {
+  const s = loadStore();
+  if (!s.onboarding || !s.onboarding.injuries) return new Set();
+  const out = new Set();
+  for (const inj of s.onboarding.injuries) {
+    if (inj === "none") continue;
+    const ids = INJURY_EXERCISE_MAP[inj];
+    if (ids) ids.forEach(id => out.add(id));
+  }
+  return out;
+}
+
+// Persist answers to s.onboarding inside kn-lifts-v3.
+function saveOnboarding(answers) {
+  const s = loadStore();
+  const recommendedTemplate = getRecommendedTemplate(answers);
+  const defaultRestSeconds = getDefaultRestSeconds(answers.experience);
+  s.onboarding = {
+    ...answers,
+    recommendedTemplate,
+    defaultRestSeconds,
+    completedAt: Date.now()
+  };
+  saveStore(s);
+  return s.onboarding;
+}
+
+// ---- Flow state (not persisted) ----
+let _obStep = 0;
+let _obAnswers = {};
+
+function showOnboardingFlow() {
+  _obStep = 0;
+  _obAnswers = {};
+  const overlay = document.getElementById("onboardingOverlay");
+  if (!overlay) return;
+  overlay.classList.add("active");
+  _renderObStep();
+}
+
+function closeOnboarding() {
+  const overlay = document.getElementById("onboardingOverlay");
+  if (overlay) overlay.classList.remove("active");
+}
+
+function _renderObStep() {
+  const inner = document.getElementById("onboardingInner");
+  if (!inner) return;
+  const total = ONBOARDING_STEPS.length;
+  const step = ONBOARDING_STEPS[_obStep];
+  const isLast = _obStep === total - 1;
+  const pct = Math.round((_obStep / total) * 100);
+  const selectedVals = isLast ? (_obAnswers[step.id] || []) : [];
+
+  const optionsHtml = step.options.map(opt => {
+    const isSel = step.type === "multi" && selectedVals.includes(opt.value);
+    return `<button class="ob-option${isSel ? " selected" : ""}" data-value="${opt.value}">
+      <span class="ob-opt-icon">${opt.icon}</span>
+      <div class="ob-opt-text">
+        <div class="ob-opt-label">${opt.label}</div>
+        <div class="ob-opt-sub">${opt.sub}</div>
+      </div>
+      <span class="ob-opt-check">✓</span>
+    </button>`;
+  }).join("");
+
+  inner.innerHTML = `
+    <div class="ob-progress"><div class="ob-progress-fill" style="width:${pct}%"></div></div>
+    <div class="ob-body">
+      <div class="ob-step-label">Step ${_obStep + 1} of ${total}</div>
+      <h2 class="ob-title">${step.title}</h2>
+      ${step.subtitle ? `<p class="ob-subtitle">${step.subtitle}</p>` : ""}
+      <div class="ob-options" id="obOptions">${optionsHtml}</div>
+      ${isLast ? `<div class="ob-actions">
+        <button class="ob-continue-btn" id="obContinueBtn">Finish Setup</button>
+        <button class="ob-skip-btn" id="obSkipBtn">Skip questionnaire →</button>
+      </div>` : ""}
+    </div>`;
+
+  inner.querySelectorAll(".ob-option").forEach(btn => {
+    btn.addEventListener("click", () => _obSelect(step, btn.dataset.value));
+  });
+  if (isLast) {
+    document.getElementById("obContinueBtn").addEventListener("click", _obFinish);
+    document.getElementById("obSkipBtn").addEventListener("click", closeOnboarding);
+  }
+}
+
+function _obSelect(step, rawValue) {
+  // data-value attributes are always strings; convert days to number for template logic
+  const value = step.id === "days" ? parseInt(rawValue, 10) : rawValue;
+
+  if (step.type === "single") {
+    _obAnswers[step.id] = value;
+    setTimeout(() => { _obStep++; _renderObStep(); }, 120);
+  } else {
+    // Multi-select: "none" is mutually exclusive with all other values
+    let arr = _obAnswers[step.id] || [];
+    if (value === "none") {
+      arr = arr.includes("none") ? [] : ["none"];
+    } else {
+      arr = arr.filter(v => v !== "none");
+      const idx = arr.indexOf(value);
+      if (idx >= 0) arr.splice(idx, 1); else arr.push(value);
+    }
+    _obAnswers[step.id] = arr;
+    _renderObStep();
+  }
+}
+
+function _obFinish() {
+  if (!_obAnswers.injuries || !_obAnswers.injuries.length) {
+    _obAnswers.injuries = ["none"];
+  }
+  const onb = saveOnboarding(_obAnswers);
+
+  // Apply experience-based default rest to the custom timer input
+  const timerEl = document.getElementById("customTimerSec");
+  if (timerEl) timerEl.value = onb.defaultRestSeconds;
+
+  // Pre-select the recommended template in the add-user dialog (sheet is open behind overlay)
+  _obPreselectTemplate(onb.recommendedTemplate);
+
+  // Show warm handoff summary screen
+  _renderObHandoff(onb);
+}
+
+// ---- Warm handoff screen ----
+function _buildHandoffReasons(a, tplId) {
+  const goalLabels = { strength: "Strength", hypertrophy: "Hypertrophy",
+                       athletic: "Athletic Performance", general: "General Fitness" };
+  const reasons = [];
+  if (a.goal) reasons.push(`Matches your goal: <strong>${goalLabels[a.goal] || a.goal}</strong>`);
+  if (a.experience === "beginner")     reasons.push("Beginner-friendly: longer rest periods between sets");
+  if (a.experience === "advanced")     reasons.push("Advanced track: high-intensity conjugate periodisation");
+  if (a.equipment === "bodyweight")    reasons.push("No barbell needed — bands & bodyweight throughout");
+  if (a.equipment === "barbell")       reasons.push("Built for home barbell setups");
+  if (a.age === "40plus")              reasons.push("40+ focus: recovery management built in");
+  const flaggedInjuries = (a.injuries || []).filter(i => i !== "none");
+  if (flaggedInjuries.length) {
+    const labels = flaggedInjuries.map(
+      i => ({ lowerback: "lower back", knees: "knees", shoulders: "shoulders" }[i] || i)
+    );
+    const exCount = getInjuryWarnings().size;
+    reasons.push(`⚠ ${exCount} exercise${exCount !== 1 ? "s" : ""} flagged for ${labels.join(" & ")} — nothing removed`);
+  }
+  return reasons;
+}
+
+function _renderObHandoff(onb) {
+  const inner = document.getElementById("onboardingInner");
+  if (!inner) return;
+  const tpl = (typeof PROGRAM_TEMPLATES !== "undefined")
+    ? PROGRAM_TEMPLATES.find(t => t.id === onb.recommendedTemplate) : null;
+  const tplName = tpl ? tpl.name : onb.recommendedTemplate;
+  const reasons = _buildHandoffReasons(_obAnswers, onb.recommendedTemplate);
+  const reasonsHtml = reasons.map(r => `<li>${r}</li>`).join("");
+
+  inner.innerHTML = `
+    <div class="ob-progress"><div class="ob-progress-fill" style="width:100%"></div></div>
+    <div class="ob-body ob-handoff">
+      <div class="ob-step-label">You're all set</div>
+      <h2 class="ob-title">Your program is ready —</h2>
+      <div class="ob-program-name">${tplName}</div>
+      <ul class="ob-reasons">${reasonsHtml}</ul>
+      <p class="ob-handoff-hint">Enter your name below to start training.</p>
+      <div class="ob-actions">
+        <button class="ob-continue-btn" id="obStartBtn">Let's Go →</button>
+      </div>
+    </div>`;
+
+  document.getElementById("obStartBtn").addEventListener("click", () => {
+    closeOnboarding();
+    setTimeout(() => {
+      const nameInput = document.getElementById("newUserName");
+      if (nameInput) nameInput.focus();
+    }, 150);
+  });
+}
+
+function _obPreselectTemplate(tplId) {
+  const hiddenInput = document.getElementById("newUserTpl");
+  if (!hiddenInput) return;
+  hiddenInput.value = tplId;
+  const container = document.getElementById("sheetContent");
+  if (!container) return;
+  container.querySelectorAll(".tpl-option").forEach(el => {
+    el.classList.toggle("active", el.dataset.tpl === tplId);
+  });
+}
+
 </script>
 </body>
 </html>

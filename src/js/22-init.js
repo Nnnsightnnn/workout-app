@@ -313,6 +313,10 @@ function init() {
     // Render empty workout screen scaffolding, then prompt
     renderWorkoutScreen();
     openAddUserDialog(true);
+    // Show onboarding questionnaire above the add-user dialog if not yet completed
+    if (!s.onboarding) {
+      showOnboardingFlow();
+    }
     return;
   }
 
