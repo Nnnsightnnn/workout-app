@@ -1,6 +1,16 @@
 // ============================================================
 // RENDER: Workout
 // ============================================================
+
+// Default cooldown exercises rendered as a virtual block
+const COOLDOWN_EXERCISES = [
+  { exId: "hipflexorstretch", name: "Hip Flexor Stretch", muscles: ["hip flexors"], isTime: true, perSide: true, reps: 45 },
+  { exId: "hamstringstretch", name: "Hamstring Stretch", muscles: ["hamstrings"], isTime: true, reps: 45 },
+  { exId: "thoracicrot", name: "Thoracic Rotation", muscles: ["thoracic", "upper back"], perSide: true, reps: 8 },
+  { exId: "pigeonpose", name: "Pigeon Pose", muscles: ["hips", "glutes"], isTime: true, perSide: true, reps: 60 },
+  { exId: "childpose", name: "Child's Pose", muscles: ["shoulders", "hips", "thoracic"], isTime: true, reps: 60 },
+];
+
 function renderWorkoutScreen() {
   const container = document.getElementById("blocksContainer");
   const u = userData();
@@ -53,6 +63,9 @@ function renderWorkoutScreen() {
     container.appendChild(renderBlock(day, block, bi));
   });
 
+  // Always show cooldown block at end of workout
+  container.appendChild(renderCooldownBlock());
+
   // Staggered card entrance
   container.querySelectorAll(".exercise-card").forEach((card, i) => {
     card.style.setProperty("--card-index", i);
@@ -60,6 +73,7 @@ function renderWorkoutScreen() {
 
   updateFinishButton();
   updateProgress();
+  updatePaceChip();
 }
 
 function renderDayPicker() {
@@ -130,6 +144,7 @@ function renderDayPicker() {
       html += `<span class="picker-block-tag">${b.letter} ${b.name}</span>`;
     });
     html += `</div>`;
+    html += `<div class="picker-duration">⏱ ~${estimateSessionMinutes(d)} min</div>`;
     card.innerHTML = html;
 
     card.onclick = () => {
@@ -162,6 +177,18 @@ function renderBlock(day, block, bi) {
   }
   wrap.appendChild(hdr);
 
+  // Block-level note input (per-session, stored in draft)
+  const noteKey = `${block.id}|__note`;
+  const noteVal = getInput(noteKey, "");
+  const noteInput = document.createElement("input");
+  noteInput.type = "text";
+  noteInput.className = "block-note-input";
+  noteInput.placeholder = "Add a note…";
+  noteInput.value = noteVal;
+  noteInput.addEventListener("click", e => e.stopPropagation());
+  noteInput.addEventListener("change", () => saveInput(noteKey, noteInput.value));
+  wrap.appendChild(noteInput);
+
   block.exercises.forEach((ex, ei) => {
     wrap.appendChild(renderExercise(day, block, ex, bi, ei, isSuperset));
   });
@@ -172,6 +199,122 @@ function renderBlock(day, block, bi) {
     addEx.textContent = "+ Add exercise to this block";
     addEx.onclick = () => openLibrary(block.id);
     wrap.appendChild(addEx);
+  }
+
+  return wrap;
+}
+
+function renderCooldownBlock() {
+  const BLOCK_ID = "__cooldown";
+  const skipKey = `${BLOCK_ID}|skipped`;
+  const noteKey = `${BLOCK_ID}|__note`;
+  const isSkipped = getInput(skipKey, false);
+
+  const wrap = document.createElement("div");
+  wrap.className = "cooldown-block";
+
+  // Header
+  const hdr = document.createElement("div");
+  hdr.className = "block-header";
+
+  const letter = document.createElement("div");
+  letter.className = "block-letter cooldown-letter";
+  letter.textContent = "CD";
+  hdr.appendChild(letter);
+
+  const title = document.createElement("div");
+  title.className = "block-title";
+  title.textContent = "Cool Down";
+  hdr.appendChild(title);
+
+  const skipBtn = document.createElement("button");
+  skipBtn.className = "block-skip-btn" + (isSkipped ? " active" : "");
+  skipBtn.textContent = isSkipped ? "Skipped" : "Skip";
+  skipBtn.onclick = (e) => {
+    e.stopPropagation();
+    saveInput(skipKey, isSkipped ? null : true);
+    renderWorkoutScreen();
+  };
+  hdr.appendChild(skipBtn);
+  wrap.appendChild(hdr);
+
+  // Block note input
+  const noteVal = getInput(noteKey, "");
+  const noteInput = document.createElement("input");
+  noteInput.type = "text";
+  noteInput.className = "block-note-input";
+  noteInput.placeholder = "Add a note…";
+  noteInput.value = noteVal;
+  noteInput.addEventListener("click", e => e.stopPropagation());
+  noteInput.addEventListener("change", () => saveInput(noteKey, noteInput.value));
+  wrap.appendChild(noteInput);
+
+  if (isSkipped) {
+    const msg = document.createElement("div");
+    msg.className = "cooldown-skipped-msg";
+    msg.textContent = "Cool-down skipped";
+    wrap.appendChild(msg);
+  } else {
+    COOLDOWN_EXERCISES.forEach(ex => {
+      const card = document.createElement("div");
+      card.className = "exercise-card";
+
+      const head = document.createElement("div");
+      head.className = "ex-head";
+
+      const info = document.createElement("div");
+      info.className = "ex-info";
+
+      const name = document.createElement("div");
+      name.className = "ex-name";
+      name.textContent = ex.name;
+      info.appendChild(name);
+
+      const meta = document.createElement("div");
+      meta.className = "ex-meta";
+      (ex.muscles || []).forEach(m => {
+        const t = document.createElement("span");
+        t.className = "tag muscle";
+        t.textContent = m;
+        meta.appendChild(t);
+      });
+      if (ex.reps) {
+        const t = document.createElement("span");
+        t.className = "tag rest";
+        t.textContent = ex.isTime ? `${ex.reps}s${ex.perSide ? "/side" : ""}` : `${ex.reps} reps${ex.perSide ? "/side" : ""}`;
+        meta.appendChild(t);
+      }
+      info.appendChild(meta);
+      head.appendChild(info);
+
+      const libRef = LIB_BY_ID[ex.exId];
+      if (libRef && libRef.demoUrl) {
+        const demoBtn = document.createElement("button");
+        demoBtn.className = "ex-demo-btn";
+        demoBtn.textContent = "▶";
+        demoBtn.title = "Watch demo";
+        demoBtn.onclick = (e) => { e.stopPropagation(); window.open(libRef.demoUrl, "_blank"); };
+        head.appendChild(demoBtn);
+      }
+
+      card.appendChild(head);
+
+      const actions = document.createElement("div");
+      actions.className = "sets-wrap";
+      const doneBtn = document.createElement("button");
+      doneBtn.className = "action-btn";
+      doneBtn.style.cssText = "width:100%; padding:10px;";
+      doneBtn.textContent = "Mark done";
+      doneBtn.onclick = () => {
+        doneBtn.classList.toggle("success");
+        doneBtn.textContent = doneBtn.classList.contains("success") ? "✓ Done" : "Mark done";
+        if (navigator.vibrate) navigator.vibrate(10);
+      };
+      actions.appendChild(doneBtn);
+      card.appendChild(actions);
+
+      wrap.appendChild(card);
+    });
   }
 
   return wrap;
