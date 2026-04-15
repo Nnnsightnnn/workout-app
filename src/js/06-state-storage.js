@@ -151,6 +151,9 @@ function getAllUsers() { return loadStore().users; }
 function addUser(name, templateId) {
   const s = loadStore();
   const u = newUserRecord(name, templateId);
+  if (s.onboarding && s.onboarding.physiquePriority) {
+    u.physiquePriority = s.onboarding.physiquePriority;
+  }
   s.users.push(u);
   s.currentUserId = u.id;
   saveStore(s);
