@@ -27,6 +27,24 @@ const ONBOARDING_STEPS = [
     ]
   },
   {
+    id: "physiquePriority",
+    title: "Any physique priorities?",
+    subtitle: "Matching exercises get placed first in your accessory work.",
+    type: "single",
+    layout: "grid",
+    skippable: true,
+    options: [
+      { value: "bigger_arms",     label: "Bigger arms",           icon: "💪", sub: "Curls & tricep extensions" },
+      { value: "bigger_chest",    label: "Bigger chest",          icon: "🫁", sub: "Incline press & cable flyes" },
+      { value: "wider_shoulders", label: "Wider shoulders",       icon: "↔",  sub: "Lateral raises & cables" },
+      { value: "bigger_back",     label: "Bigger back / V-taper", icon: "🔻", sub: "Pulldowns & wide rows" },
+      { value: "stronger_legs",   label: "Stronger legs",         icon: "🦵", sub: "Quads, hamstrings & press" },
+      { value: "glutes",          label: "Glutes",                icon: "🍑", sub: "Hip thrusts & split squats" },
+      { value: "athletic",        label: "Athletic / Lean",       icon: "⚡", sub: "Balanced, no bias" },
+      { value: "none",            label: "Balanced",              icon: "⚖",  sub: "No preference", deemph: true }
+    ]
+  },
+  {
     id: "bodyGoal",
     title: "What's your body composition goal?",
     type: "single",
@@ -281,6 +299,7 @@ function _renderObStep() {
   const total = ONBOARDING_STEPS.length;
   const step = ONBOARDING_STEPS[_obStep];
   const isLast = _obStep === total - 1;
+  const canSkip = !!step.skippable;
   const pct = Math.round((_obStep / total) * 100);
   const selectedVals = step.type === "multi" ? (_obAnswers[step.id] || []) : [];
 
@@ -288,7 +307,8 @@ function _renderObStep() {
     const isSel = step.type === "multi"
       ? selectedVals.includes(opt.value)
       : _obAnswers[step.id] === opt.value;
-    return `<button class="ob-option${isSel ? " selected" : ""}" data-value="${opt.value}">
+    const deemph = opt.deemph ? " ob-opt-deemph" : "";
+    return `<button class="ob-option${isSel ? " selected" : ""}${deemph}" data-value="${opt.value}">
       <span class="ob-opt-icon">${opt.icon}</span>
       <div class="ob-opt-text">
         <div class="ob-opt-label">${opt.label}</div>
@@ -298,16 +318,18 @@ function _renderObStep() {
     </button>`;
   }).join("");
 
+  const gridClass = step.layout === "grid" ? " ob-grid" : "";
+
   inner.innerHTML = `
     <div class="ob-progress"><div class="ob-progress-fill" style="width:${pct}%"></div></div>
     <div class="ob-body">
       <div class="ob-step-label">Step ${_obStep + 1} of ${total}</div>
       <h2 class="ob-title">${step.title}</h2>
       ${step.subtitle ? `<p class="ob-subtitle">${step.subtitle}</p>` : ""}
-      <div class="ob-options" id="obOptions">${optionsHtml}</div>
-      ${isLast ? `<div class="ob-actions">
-        <button class="ob-continue-btn" id="obContinueBtn">Finish Setup</button>
-        <button class="ob-skip-btn" id="obSkipBtn">Skip questionnaire →</button>
+      <div class="ob-options${gridClass}" id="obOptions">${optionsHtml}</div>
+      ${(isLast || canSkip) ? `<div class="ob-actions">
+        ${isLast ? `<button class="ob-continue-btn" id="obContinueBtn">Finish Setup</button>` : ""}
+        <button class="ob-skip-btn" id="obSkipBtn">${isLast ? "Skip questionnaire →" : "Skip →"}</button>
       </div>` : ""}
       ${!_obIsRedo ? `<button class="ob-dismiss-btn" id="obDismissBtn">Don't show me this again</button>` : ""}
     </div>`;
@@ -317,7 +339,16 @@ function _renderObStep() {
   });
   if (isLast) {
     document.getElementById("obContinueBtn").addEventListener("click", _obFinish);
-    document.getElementById("obSkipBtn").addEventListener("click", dismissOnboarding);
+  }
+  if (isLast || canSkip) {
+    document.getElementById("obSkipBtn").addEventListener("click", () => {
+      if (isLast) {
+        dismissOnboarding();
+      } else {
+        _obStep++;
+        _renderObStep();
+      }
+    });
   }
   const dismissBtn = document.getElementById("obDismissBtn");
   if (dismissBtn) dismissBtn.addEventListener("click", dismissOnboarding);
@@ -354,6 +385,13 @@ function _obFinish() {
   // Apply experience-based default rest to the custom timer input
   const timerEl = document.getElementById("customTimerSec");
   if (timerEl) timerEl.value = onb.defaultRestSeconds;
+
+  // Propagate physique priority to current user record (redo path — first-run handled in addUser)
+  if (_obIsRedo && state.userId) {
+    updateUser(u => {
+      u.physiquePriority = _obAnswers.physiquePriority || null;
+    });
+  }
 
   if (_obIsRedo) {
     _renderObHandoffRedo(onb);
@@ -508,14 +546,22 @@ function renderProfileCard() {
                          athletic: "Athletic Performance", general: "General Fitness" };
     const expLabels = { beginner: "Beginner", intermediate: "Intermediate", advanced: "Advanced" };
     const eqLabels = { full: "Full Gym", barbell: "Home + Barbell", bodyweight: "Bodyweight + Bands" };
+    const ppLabels = {
+      bigger_arms: "Bigger arms", bigger_chest: "Bigger chest",
+      wider_shoulders: "Wider shoulders", bigger_back: "Bigger back / V-taper",
+      stronger_legs: "Stronger legs", glutes: "Glutes",
+      athletic: "Athletic / Lean", none: "Balanced"
+    };
     const injList = (ob.injuries || []).filter(i => i !== "none");
     const injText = injList.length
       ? injList.map(i => ({ lowerback: "Lower back", knees: "Knees", shoulders: "Shoulders" }[i] || i)).join(", ")
       : "None";
+    const ppText = ob.physiquePriority ? (ppLabels[ob.physiquePriority] || ob.physiquePriority) : "—";
 
     el.innerHTML = `
       <div class="profile-summary">
         <div class="profile-row"><span class="profile-label">Goal</span><span class="profile-value">${goalLabels[ob.goal] || ob.goal || "—"}</span></div>
+        <div class="profile-row"><span class="profile-label">Physique</span><span class="profile-value">${ppText}</span></div>
         <div class="profile-row"><span class="profile-label">Experience</span><span class="profile-value">${expLabels[ob.experience] || ob.experience || "—"}</span></div>
         <div class="profile-row"><span class="profile-label">Days / week</span><span class="profile-value">${ob.days || "—"}</span></div>
         <div class="profile-row"><span class="profile-label">Equipment</span><span class="profile-value">${eqLabels[ob.equipment] || ob.equipment || "—"}</span></div>
