@@ -340,6 +340,45 @@
   .block-title { font-size: 13px; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; flex: 1; }
   .block-menu { color: var(--text-faint); font-size: 18px; padding: 4px 8px; }
 
+  /* Block-level note input */
+  .block-note-input {
+    display: block; width: 100%;
+    background: transparent; border: none;
+    border-bottom: 1px dashed var(--border);
+    padding: 4px 2px; margin: -2px 0 8px;
+    font-size: 12px; color: var(--text-dim);
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .block-note-input:focus { color: var(--text); border-bottom-color: var(--accent); outline: none; }
+  .block-note-input::placeholder { color: var(--text-faint); }
+
+  /* Cooldown block */
+  .cooldown-block { margin-top: 4px; }
+  .cooldown-letter {
+    color: var(--success); border-color: rgba(48,209,88,0.35);
+    background: rgba(48,209,88,0.08);
+  }
+  .block-skip-btn {
+    font-size: 11px; font-weight: 700; color: var(--text-faint);
+    padding: 3px 8px; border-radius: 8px;
+    border: 1.5px solid var(--border); background: var(--bg-card-2);
+    transition: color 0.15s, background 0.15s;
+  }
+  .block-skip-btn:active { color: var(--text); }
+  .block-skip-btn.active {
+    color: var(--text-dim); background: var(--bg-elev);
+    border-style: dashed;
+  }
+  .cooldown-skipped-msg {
+    font-size: 12px; color: var(--text-faint);
+    padding: 8px 2px; font-style: italic;
+  }
+
+  /* Session block notes in history */
+  .session-block-notes { margin-top: 8px; display: flex; flex-direction: column; gap: 3px; }
+  .session-block-note { font-size: 11px; color: var(--text-dim); line-height: 1.4; }
+  .note-block-name { font-weight: 700; color: var(--text-faint); }
+
   .exercise-card {
     background: var(--bg-card); border-radius: 16px;
     border: 2px solid var(--border);
