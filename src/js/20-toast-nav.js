@@ -60,6 +60,7 @@ function showScreen(name) {
   if (name === "history") renderHistory();
   if (name === "workout") renderWorkoutScreen();
   if (name === "settings") { renderUserSection(); renderBodySection(); renderProgramPicker(); renderProfileCard(); }
+  if (name === "prs") { _prDetailExId = null; renderPRScreen(); }
   // Hide floating timer button off-workout
   document.querySelector(".fab").style.display = name === "workout" ? "" : "none";
 }
