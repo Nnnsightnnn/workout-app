@@ -1350,6 +1350,63 @@
     box-shadow: var(--pillow-accent-sm);
   }
 
+  /* === Pace Chip === */
+  .pace-chip {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: 10px; margin-bottom: 8px;
+    font-size: 12px; font-weight: 700;
+    border: 2px solid var(--border); background: var(--bg-card-2);
+  }
+  .pace-chip::before { content: "●"; font-size: 9px; margin-right: 2px; }
+  .pace-green  { color: var(--success); border-color: rgba(48,209,88,0.3);  background: rgba(48,209,88,0.08); }
+  .pace-green::before  { color: var(--success); }
+  .pace-amber  { color: var(--warn);    border-color: rgba(255,214,10,0.3); background: rgba(255,214,10,0.08); }
+  .pace-amber::before  { color: var(--warn); }
+  .pace-red    { color: var(--danger);  border-color: rgba(255,69,58,0.3);  background: rgba(255,69,58,0.08); }
+  .pace-red::before    { color: var(--danger); }
+
+  /* === Trim Row === */
+  .trim-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .trim-btn {
+    color: var(--danger) !important;
+    border-color: rgba(255,69,58,0.35) !important;
+    background: rgba(255,69,58,0.1) !important;
+  }
+  .trim-btn:active { box-shadow: var(--pillow-pressed) !important; }
+
+  /* === Session Estimate (pre-start) === */
+  .session-est-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 10px; margin-bottom: 8px;
+    background: var(--bg-card-2); border: 2px solid var(--border);
+    color: var(--text-dim); font-size: 12px; font-weight: 600;
+  }
+  .session-est-row .est-icon { font-size: 14px; }
+  .session-est-row .est-badge { font-size: 14px; font-weight: 800; color: var(--text); }
+  .session-est-row .est-detail { color: var(--text-faint); }
+
+  /* === Day Picker Duration Line === */
+  .day-picker-card .picker-duration {
+    font-size: 11px; font-weight: 700; color: var(--text-faint);
+    margin-top: 6px;
+  }
+  .day-picker-card.recommended .picker-duration { color: var(--text-dim); }
+
+  /* === Rest Nudge === */
+  .rest-nudge {
+    margin-top: 8px; padding: 7px 12px; border-radius: 10px;
+    background: rgba(255,214,10,0.12); border: 1px solid rgba(255,214,10,0.3);
+    color: var(--warn); font-size: 12px; font-weight: 600;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  .rest-nudge-btn {
+    background: var(--warn); color: #000; border-radius: 8px;
+    padding: 4px 12px; font-size: 11px; font-weight: 800;
+    flex-shrink: 0; cursor: pointer;
+    transition: transform 0.1s var(--spring);
+  }
+  .rest-nudge-btn:active { transform: var(--squish-sm); }
+
   /* === Reduced Motion === */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
