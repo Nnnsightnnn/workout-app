@@ -49,6 +49,15 @@
       <div class="progress-bar-fill" id="workoutProgressFill"></div>
     </div>
 
+    <div id="paceChip" class="pace-chip" style="display:none;"></div>
+
+    <div id="trimRow" class="trim-row" style="display:none;">
+      <button class="action-btn trim-btn" id="trimBtn" onclick="trimSession()">✂ Trim session</button>
+      <button class="action-btn" id="undoTrimBtn" onclick="undoTrim()">↺ Undo trim</button>
+    </div>
+
+    <div id="sessionEstRow" class="session-est-row" style="display:none;"></div>
+
     <div class="quick-row" id="quickRow">
       <button class="action-btn primary" id="startBtn">▶ Start Workout</button>
     </div>
@@ -229,6 +238,9 @@
     <div class="rest-actions">
       <button class="rest-btn" onclick="addRest(30)">+30</button>
       <button class="rest-btn" onclick="skipRest()">Skip</button>
+    </div>
+    <div id="restNudge" class="rest-nudge" style="display:none;">
+      Running long — <button class="rest-nudge-btn">60s instead?</button>
     </div>
   </div>
 </div>

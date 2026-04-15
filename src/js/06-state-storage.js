@@ -17,6 +17,8 @@ let state = {
   sidebarSwapTarget: null, // { bi, ei }
   sidebarFilterCat: "All",
   dayChosen: false,
+  paceIntervalId: null,
+  trimmedBlocks: null,
 };
 
 function deepClone(o) { return JSON.parse(JSON.stringify(o)); }

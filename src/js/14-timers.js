@@ -13,11 +13,13 @@ function startSessionTimer() {
   };
   tick();
   state.sessionIntervalId = setInterval(tick, 1000);
+  startPaceTicker();
 }
 function stopSessionTimer() {
   if (state.sessionIntervalId) clearInterval(state.sessionIntervalId);
   state.sessionIntervalId = null;
   document.getElementById("sessionPill").classList.remove("active");
+  stopPaceTicker();
 }
 
 function toggleTimerPopover() {
@@ -52,6 +54,7 @@ function startRest(seconds, label) {
       tempoCue.classList.remove("active");
     }
   }
+  maybeShowRestNudge(seconds);
   if (state.restIntervalId) clearInterval(state.restIntervalId);
   const tick = () => {
     const rem = Math.max(0, Math.ceil((state.restEndsAt - Date.now()) / 1000));
