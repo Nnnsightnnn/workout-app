@@ -616,7 +616,7 @@
   .rest-ring .fg {
     stroke: var(--accent);
     stroke-linecap: round;
-    transition: stroke-dashoffset 1s linear;
+    transition: stroke-dashoffset 0.25s linear;
   }
   .rest-ring .time {
     position: absolute; inset: 0;
@@ -2396,7 +2396,7 @@ let state = {
   currentDayId: 1,
   workoutStartedAt: null,
   sessionIntervalId: null,
-  restEndsAt: null, restTotal: 0, restIntervalId: null,
+  restEndsAt: null, restTotal: 0, restIntervalId: null, restTimeoutId: null,
   editMode: false,
   pendingExAdd: null,  // { blockId }
   sidebarOpen: false,
@@ -2516,7 +2516,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 1;
-const APP_BUILD = "5e5db2f1";
+const APP_BUILD = "08e97dba";
 
 
 // ============================================================
@@ -3647,8 +3647,8 @@ function wireRow(row, block, ex, bi, ei, i, bw) {
       const input = btn.parentElement.querySelector("input");
       const newVal = Math.max(0, parseFloat(input.value || 0) + step);
       input.value = newVal;
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-      input.dispatchEvent(new Event("change", { bubbles: true }));
+      // Directly persist — more reliable than synthetic event dispatch
+      if (input.dataset.key) saveInput(input.dataset.key, newVal);
     };
   });
   row.querySelectorAll("input[data-key]").forEach(inp => {
@@ -4154,13 +4154,31 @@ function startCustomTimer() {
   closeTimerPopover();
 }
 
+// Persistent AudioContext — created once on first user gesture so it stays
+// in "running" state on iOS (which suspends newly created contexts automatically).
+let _audioCtx = null;
+function _getAudioCtx() {
+  if (!_audioCtx) {
+    try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+  }
+  return _audioCtx;
+}
+function _resumeAudioCtx() {
+  const ctx = _getAudioCtx();
+  if (ctx && ctx.state === "suspended" && ctx.resume) ctx.resume().catch(() => {});
+}
+
 function startRest(seconds, label) {
+  // Cancel any pending auto-hide from a previous timer that just finished
+  if (state.restTimeoutId) { clearTimeout(state.restTimeoutId); state.restTimeoutId = null; }
+  if (state.restIntervalId) { clearInterval(state.restIntervalId); state.restIntervalId = null; }
+  // Unlock AudioContext while we're in a user-gesture context
+  _resumeAudioCtx();
   state.restEndsAt = Date.now() + seconds * 1000;
   state.restTotal = seconds;
   document.getElementById("restOverlay").classList.add("active");
   document.getElementById("restCard").classList.remove("done");
   document.getElementById("restTarget").textContent = label || "Rest";
-  if (state.restIntervalId) clearInterval(state.restIntervalId);
   const tick = () => {
     const rem = Math.max(0, Math.ceil((state.restEndsAt - Date.now()) / 1000));
     document.getElementById("restTime").textContent = formatRest(rem);
@@ -4172,7 +4190,7 @@ function startRest(seconds, label) {
       document.getElementById("restCard").classList.add("done");
       playBeep();
       if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-      setTimeout(hideRest, 3500);
+      state.restTimeoutId = setTimeout(hideRest, 3500);
     }
   };
   tick();
@@ -4182,13 +4200,15 @@ function addRest(sec) { if (state.restEndsAt) { state.restEndsAt += sec * 1000; 
 function skipRest() { hideRest(); }
 function hideRest() {
   if (state.restIntervalId) clearInterval(state.restIntervalId);
+  if (state.restTimeoutId) { clearTimeout(state.restTimeoutId); state.restTimeoutId = null; }
   state.restIntervalId = null; state.restEndsAt = null;
   document.getElementById("restOverlay").classList.remove("active");
 }
 
 function playBeep() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = _getAudioCtx();
+    if (!ctx) return;
     const osc = ctx.createOscillator(); const gain = ctx.createGain();
     osc.connect(gain); gain.connect(ctx.destination);
     osc.frequency.value = 880;

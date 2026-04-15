@@ -605,7 +605,7 @@
   .rest-ring .fg {
     stroke: var(--accent);
     stroke-linecap: round;
-    transition: stroke-dashoffset 1s linear;
+    transition: stroke-dashoffset 0.25s linear;
   }
   .rest-ring .time {
     position: absolute; inset: 0;

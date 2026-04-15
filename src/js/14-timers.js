@@ -36,13 +36,31 @@ function startCustomTimer() {
   closeTimerPopover();
 }
 
+// Persistent AudioContext — created once on first user gesture so it stays
+// in "running" state on iOS (which suspends newly created contexts automatically).
+let _audioCtx = null;
+function _getAudioCtx() {
+  if (!_audioCtx) {
+    try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+  }
+  return _audioCtx;
+}
+function _resumeAudioCtx() {
+  const ctx = _getAudioCtx();
+  if (ctx && ctx.state === "suspended" && ctx.resume) ctx.resume().catch(() => {});
+}
+
 function startRest(seconds, label) {
+  // Cancel any pending auto-hide from a previous timer that just finished
+  if (state.restTimeoutId) { clearTimeout(state.restTimeoutId); state.restTimeoutId = null; }
+  if (state.restIntervalId) { clearInterval(state.restIntervalId); state.restIntervalId = null; }
+  // Unlock AudioContext while we're in a user-gesture context
+  _resumeAudioCtx();
   state.restEndsAt = Date.now() + seconds * 1000;
   state.restTotal = seconds;
   document.getElementById("restOverlay").classList.add("active");
   document.getElementById("restCard").classList.remove("done");
   document.getElementById("restTarget").textContent = label || "Rest";
-  if (state.restIntervalId) clearInterval(state.restIntervalId);
   const tick = () => {
     const rem = Math.max(0, Math.ceil((state.restEndsAt - Date.now()) / 1000));
     document.getElementById("restTime").textContent = formatRest(rem);
@@ -54,7 +72,7 @@ function startRest(seconds, label) {
       document.getElementById("restCard").classList.add("done");
       playBeep();
       if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-      setTimeout(hideRest, 3500);
+      state.restTimeoutId = setTimeout(hideRest, 3500);
     }
   };
   tick();
@@ -64,13 +82,15 @@ function addRest(sec) { if (state.restEndsAt) { state.restEndsAt += sec * 1000; 
 function skipRest() { hideRest(); }
 function hideRest() {
   if (state.restIntervalId) clearInterval(state.restIntervalId);
+  if (state.restTimeoutId) { clearTimeout(state.restTimeoutId); state.restTimeoutId = null; }
   state.restIntervalId = null; state.restEndsAt = null;
   document.getElementById("restOverlay").classList.remove("active");
 }
 
 function playBeep() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = _getAudioCtx();
+    if (!ctx) return;
     const osc = ctx.createOscillator(); const gain = ctx.createGain();
     osc.connect(gain); gain.connect(ctx.destination);
     osc.frequency.value = 880;
