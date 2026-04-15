@@ -8,7 +8,7 @@ let state = {
   currentDayId: 1,
   workoutStartedAt: null,
   sessionIntervalId: null,
-  restEndsAt: null, restTotal: 0, restIntervalId: null,
+  restEndsAt: null, restTotal: 0, restIntervalId: null, restTimeoutId: null,
   editMode: false,
   pendingExAdd: null,  // { blockId }
   sidebarOpen: false,

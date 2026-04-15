@@ -534,8 +534,8 @@ function wireRow(row, block, ex, bi, ei, i, bw) {
       const input = btn.parentElement.querySelector("input");
       const newVal = Math.max(0, parseFloat(input.value || 0) + step);
       input.value = newVal;
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-      input.dispatchEvent(new Event("change", { bubbles: true }));
+      // Directly persist — more reliable than synthetic event dispatch
+      if (input.dataset.key) saveInput(input.dataset.key, newVal);
     };
   });
   row.querySelectorAll("input[data-key]").forEach(inp => {
