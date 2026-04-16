@@ -96,6 +96,11 @@ function finishWorkout() {
     showToast("Nothing to save");
     return;
   }
+  // If paused, account for paused time before computing duration
+  if (draft.pausedAt) {
+    draft.startedAt += Date.now() - draft.pausedAt;
+    draft.pausedAt = null;
+  }
   const day = getCurrentDay();
   const inputs = draft.inputs;
 

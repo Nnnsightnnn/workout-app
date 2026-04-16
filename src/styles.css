@@ -165,10 +165,15 @@
     display: none; align-items: center; gap: 5px;
     font-variant-numeric: tabular-nums; font-weight: 700;
     background: var(--bg-card); padding: 5px 9px; border-radius: 9px;
-    font-size: 13px;
+    font-size: 13px; cursor: pointer;
+    transition: transform 0.15s var(--spring), opacity 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
   }
   .session-pill.active { display: flex; }
+  .session-pill:active { transform: scale(0.93); }
   .session-pill::before { content: "●"; color: var(--success); animation: pulse 2s infinite; font-size: 10px; }
+  .session-pill.paused { opacity: 0.7; }
+  .session-pill.paused::before { content: "⏸"; animation: none; color: var(--text-dim); font-size: 11px; }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
   /* === Header Rest Pill === */
@@ -190,6 +195,15 @@
   .rest-pill-header.done .rest-pill-arc { stroke: var(--success); }
   .rest-pill-time { letter-spacing: -0.02em; color: var(--accent); }
   .rest-pill-header.done .rest-pill-time { color: var(--success); }
+  .rest-pill-close {
+    display: flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--border);
+    background: var(--bg-card); color: var(--text-dim); font-size: 14px; font-weight: 700;
+    cursor: pointer; padding: 0; margin-left: 2px; line-height: 1;
+    transition: transform 0.15s var(--spring), background 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .rest-pill-close:active { transform: scale(0.85); background: var(--danger); color: #fff; border-color: var(--danger); }
 
   .header-action-btn {
     display: none; align-items: center; justify-content: center; gap: 4px;

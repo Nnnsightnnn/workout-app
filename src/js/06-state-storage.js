@@ -109,6 +109,7 @@ function loadStore() {
       if (!u.program) u.program = [];
       if (!u.sessions) u.sessions = [];
       if (u.draft === undefined) u.draft = null;
+      if (u.draft && u.draft.pausedAt === undefined) u.draft.pausedAt = null;
       if (u.lastDoneDayId === undefined) u.lastDoneDayId = null;
       if (!u.measurements) u.measurements = [];
       if (!u.templateId) u.templateId = "conjugate5";

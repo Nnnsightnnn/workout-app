@@ -89,6 +89,16 @@ const MIGRATIONS = [
       // No per-entry rewrite needed.
       return store;
     }
+  },
+  {
+    version: 6,
+    description: "Add pausedAt to draft for session timer pause/resume",
+    migrate(store) {
+      store.users.forEach(u => {
+        if (u.draft && u.draft.pausedAt === undefined) u.draft.pausedAt = null;
+      });
+      return store;
+    }
   }
 ];
 

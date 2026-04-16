@@ -10,7 +10,7 @@ function getDraft() {
 function ensureDraft() {
   updateUser(u => {
     if (!u.draft || u.draft.dayId !== state.currentDayId) {
-      u.draft = { dayId: state.currentDayId, startedAt: Date.now(), inputs: {} };
+      u.draft = { dayId: state.currentDayId, startedAt: Date.now(), inputs: {}, pausedAt: null };
     }
   });
   state.workoutStartedAt = getDraft().startedAt;
@@ -22,7 +22,7 @@ function saveInput(key, value) {
   const user = s.users.find(u => u.id === state.userId);
   if (!user) return;
   if (!user.draft || user.draft.dayId !== state.currentDayId) {
-    user.draft = { dayId: state.currentDayId, startedAt: Date.now(), inputs: {} };
+    user.draft = { dayId: state.currentDayId, startedAt: Date.now(), inputs: {}, pausedAt: null };
     state.workoutStartedAt = user.draft.startedAt;
     startSessionTimer();
   }

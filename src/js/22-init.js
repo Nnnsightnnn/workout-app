@@ -257,6 +257,11 @@ function initWorkoutScreen() {
   document.getElementById("headerStartBtn").onclick = startWorkout;
   document.getElementById("headerFinishBtn").onclick = handleFinishButton;
   document.getElementById("restPill").onclick = openRestSheet;
+  document.getElementById("sessionPill").onclick = toggleSessionTimer;
+  document.getElementById("restPillClose").onclick = (e) => {
+    e.stopPropagation();
+    hideHeaderRest();
+  };
 }
 function initSidebar() {
   document.getElementById("sidebarCloseBtn").onclick = closeSidebar;

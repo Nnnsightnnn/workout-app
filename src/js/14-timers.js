@@ -5,6 +5,19 @@ function startSessionTimer() {
   if (!state.workoutStartedAt) return;
   const el = document.getElementById("sessionPill");
   el.classList.add("active");
+
+  // If draft is paused, show frozen time without starting interval
+  const draft = getDraft();
+  if (draft && draft.pausedAt) {
+    if (state.sessionIntervalId) clearInterval(state.sessionIntervalId);
+    state.sessionIntervalId = null;
+    const sec = Math.floor((draft.pausedAt - state.workoutStartedAt) / 1000);
+    el.textContent = formatDuration(sec);
+    el.classList.add("paused");
+    return;
+  }
+
+  el.classList.remove("paused");
   if (state.sessionIntervalId) clearInterval(state.sessionIntervalId);
   const tick = () => {
     if (!state.workoutStartedAt) return;
@@ -18,8 +31,40 @@ function startSessionTimer() {
 function stopSessionTimer() {
   if (state.sessionIntervalId) clearInterval(state.sessionIntervalId);
   state.sessionIntervalId = null;
-  document.getElementById("sessionPill").classList.remove("active");
+  const el = document.getElementById("sessionPill");
+  el.classList.remove("active", "paused");
   stopPaceTicker();
+}
+
+function pauseSessionTimer() {
+  const draft = getDraft();
+  if (!draft || draft.pausedAt) return;
+  if (state.sessionIntervalId) clearInterval(state.sessionIntervalId);
+  state.sessionIntervalId = null;
+  stopPaceTicker();
+  updateUser(u => { if (u.draft) u.draft.pausedAt = Date.now(); });
+  const el = document.getElementById("sessionPill");
+  el.classList.add("paused");
+}
+
+function resumeSessionTimer() {
+  const draft = getDraft();
+  if (!draft || !draft.pausedAt) return;
+  const pausedFor = Date.now() - draft.pausedAt;
+  updateUser(u => {
+    if (!u.draft) return;
+    u.draft.startedAt += pausedFor;
+    u.draft.pausedAt = null;
+  });
+  state.workoutStartedAt = getDraft().startedAt;
+  document.getElementById("sessionPill").classList.remove("paused");
+  startSessionTimer();
+}
+
+function toggleSessionTimer() {
+  const draft = getDraft();
+  if (!draft) return;
+  draft.pausedAt ? resumeSessionTimer() : pauseSessionTimer();
 }
 
 // ============================================================
