@@ -33,10 +33,9 @@ _None currently tracked._
 
 1. **Onboarding navigation** — add back/next navigation so users can move between onboarding steps
 2. **Day-of-week selector** — after "how many days/week" step, let user pick which specific days (Mon/Tue/Wed etc.)
-3. **Glossary X button** — add a close/exit button to the glossary modal
-4. **Measurements tracking** — in user profile, add body measurements (weight, body fat %, arms, chest, waist, etc.) so users can track progress over time
-5. **Workout preview** — before starting a workout, show a preview screen listing all blocks/exercises so user knows what's coming; tap to start
-6. **Rethink age-range gating** — the current age-range selection in onboarding may unfairly restrict users; make it informational/optional rather than a hard filter that changes exercise selection
+3. **Measurements tracking** — in user profile, add body measurements (weight, body fat %, arms, chest, waist, etc.) so users can track progress over time
+4. **Workout preview** — before starting a workout, show a preview screen listing all blocks/exercises so user knows what's coming; tap to start
+5. **Rethink age-range gating** — the current age-range selection in onboarding may unfairly restrict users; make it informational/optional rather than a hard filter that changes exercise selection
 
 ---
 

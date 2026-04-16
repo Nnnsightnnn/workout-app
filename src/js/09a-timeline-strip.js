@@ -224,7 +224,7 @@ function openSessionDetail(session) {
 
   const wrap = document.createElement("div");
   wrap.innerHTML = `
-    <h3>${dateStr}</h3>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><h3 style="margin:0;">${dateStr}</h3><button class="icon-btn" onclick="closeSheet()" title="Close">✕</button></div>
     <div class="tl-detail-day">Day ${session.dayId} — ${session.dayName}</div>
     <div class="tl-detail-meta">${session.sets.length} sets · ${formatDuration(session.duration)} · ${session.volume > 0 ? formatVolume(session.volume) + " " + state.unit : "bodyweight"}</div>
     ${prHtml}
@@ -288,7 +288,7 @@ function openAddWorkout(dateMs) {
 
   const wrap = document.createElement("div");
   wrap.innerHTML = `
-    <h3>Log Workout</h3>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><h3 style="margin:0;">Log Workout</h3><button class="icon-btn" onclick="closeSheet()" title="Close">✕</button></div>
     <div style="color:var(--text-dim);font-size:12px;margin-bottom:12px;">${dateStr}</div>
     <p style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">Pick a workout day to log for this date.</p>
   `;
@@ -316,7 +316,7 @@ function openLogSets(dateMs, day) {
 
   const wrap = document.createElement("div");
   wrap.innerHTML = `
-    <h3>${day.name}</h3>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><h3 style="margin:0;">${day.name}</h3><button class="icon-btn" onclick="closeSheet()" title="Close">✕</button></div>
     <div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">${dateStr} — ${day.sub || ""}</div>
   `;
 

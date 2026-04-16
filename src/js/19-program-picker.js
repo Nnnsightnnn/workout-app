@@ -29,7 +29,7 @@ function renderProgramPicker() {
 function openProgramPicker() {
   const u = userData();
   const current = u ? u.templateId : "conjugate5";
-  let html = '<h3>Choose Program</h3><p style="color:var(--text-dim);font-size:12px;margin-bottom:12px;">Switching replaces your current program. Session history is kept.</p>';
+  let html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><h3 style="margin:0;">Choose Program</h3><button class="icon-btn" onclick="closeSheet()" title="Close">✕</button></div><p style="color:var(--text-dim);font-size:12px;margin-bottom:12px;">Switching replaces your current program. Session history is kept.</p>';
   html += '<button class="sheet-item" onclick="closeSheet();openFullGlossary();" style="margin-bottom:12px;"><span class="icon">?</span><span>Glossary — What do these terms mean?</span></button>';
   html += '<div class="tpl-option custom-builder-tile" onclick="closeSheet();openProgramBuilder()">' +
     '<div class="tpl-head"><div class="tpl-badge">+</div><div class="tpl-name">Build Your Own</div></div>' +
@@ -68,7 +68,7 @@ function openDurationPicker(templateId) {
 
   const wrap = document.createElement("div");
   wrap.innerHTML = `
-    <h3>${tpl.name}</h3>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><h3 style="margin:0;">${tpl.name}</h3><button class="icon-btn" onclick="closeSheet()" title="Close">✕</button></div>
     <p style="color:var(--text-dim);font-size:12px;margin-bottom:12px;">${tpl.description}</p>
     <p style="font-weight:700;font-size:14px;margin-bottom:8px;">How many days per week?</p>
   `;
@@ -197,7 +197,7 @@ function openWeekControl() {
 
   const wrap = document.createElement("div");
   wrap.innerHTML = `
-    <h3>Week ${u.currentWeek || 1} of ${u.totalWeeks || "?"}</h3>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><h3 style="margin:0;">Week ${u.currentWeek || 1} of ${u.totalWeeks || "?"}</h3><button class="icon-btn" onclick="closeSheet()" title="Close">✕</button></div>
     ${phase ? `<div style="color:${phase.color};font-weight:700;font-size:14px;margin-bottom:8px;">${phase.name}</div>
     <div style="color:var(--text-dim);font-size:12px;margin-bottom:12px;">${phase.description || ""}</div>` : ""}
   `;

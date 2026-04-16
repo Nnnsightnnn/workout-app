@@ -17,7 +17,7 @@ function closeSheet() {
 function openDayPicker() {
   const u = userData();
   const wrap = document.createElement("div");
-  wrap.innerHTML = `<h3>Switch Day</h3><p style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">Your next in rotation is highlighted.</p>`;
+  wrap.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><h3 style="margin:0;">Switch Day</h3><button class="icon-btn" onclick="closeSheet()" title="Close">✕</button></div><p style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">Your next in rotation is highlighted.</p>`;
   const next = (u.lastDoneDayId == null) ? 1 : (u.lastDoneDayId % u.program.length) + 1;
   u.program.forEach(d => {
     const btn = document.createElement("button");
@@ -48,7 +48,7 @@ function switchDay(dayId) {
 
 function openLibrary(blockId) {
   const wrap = document.createElement("div");
-  wrap.innerHTML = `<h3>Add Exercise</h3>`;
+  wrap.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><h3 style="margin:0;">Add Exercise</h3><button class="icon-btn" onclick="closeSheet()" title="Close">✕</button></div>`;
   const search = document.createElement("input");
   search.className = "lib-search";
   search.placeholder = "Search exercises…";
@@ -105,7 +105,7 @@ function openLibrary(blockId) {
 
 function openExerciseMenu(block, ex, bi, ei) {
   const wrap = document.createElement("div");
-  wrap.innerHTML = `<h3>${ex.name}</h3>`;
+  wrap.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><h3 style="margin:0;">${ex.name}</h3><button class="icon-btn" onclick="closeSheet()" title="Close">✕</button></div>`;
 
   // Watch Demo link
   const libRef = LIB_BY_ID[ex.exId];
@@ -273,7 +273,7 @@ function openExerciseMenu(block, ex, bi, ei) {
 
 function openBlockMenu(block, bi) {
   const wrap = document.createElement("div");
-  wrap.innerHTML = `<h3>Block ${block.letter} — ${block.name}</h3>`;
+  wrap.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><h3 style="margin:0;">Block ${block.letter} — ${block.name}</h3><button class="icon-btn" onclick="closeSheet()" title="Close">✕</button></div>`;
   const day = getCurrentDay();
 
   // Rename block
@@ -366,7 +366,7 @@ function openCustomizeDay() {
   const day = getCurrentDay();
   if (!day) return;
   const wrap = document.createElement("div");
-  wrap.innerHTML = `<h3>Customize Day</h3>`;
+  wrap.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><h3 style="margin:0;">Customize Day</h3><button class="icon-btn" onclick="closeSheet()" title="Close">✕</button></div>`;
 
   // Add Block
   const addBlockBtn = document.createElement("button");
@@ -385,7 +385,7 @@ function openCustomizeDay() {
       openLibrary(day.blocks[0].id);
     } else {
       // Show block picker
-      wrap.innerHTML = `<h3>Add to which block?</h3>`;
+      wrap.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><h3 style="margin:0;">Add to which block?</h3><button class="icon-btn" onclick="closeSheet()" title="Close">✕</button></div>`;
       day.blocks.forEach(b => {
         const btn = document.createElement("button");
         btn.className = "sheet-item";

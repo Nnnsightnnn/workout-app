@@ -46,6 +46,21 @@ function _nextLetter(blocks) {
   return letters[blocks.length] || ("B" + (blocks.length + 1));
 }
 
+// Wraps an h3 element in a flex row with a close ✕ button on the right.
+function _builderHeaderRow(headEl) {
+  const row = document.createElement("div");
+  row.style.cssText = "display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;";
+  headEl.style.margin = "0";
+  row.appendChild(headEl);
+  const close = document.createElement("button");
+  close.className = "icon-btn";
+  close.title = "Close";
+  close.textContent = "✕";
+  close.onclick = () => closeSheet();
+  row.appendChild(close);
+  return row;
+}
+
 // ---------- Step 1: Setup ----------
 function _renderBuilderStep1() {
   const wrap = document.createElement("div");
@@ -53,7 +68,7 @@ function _renderBuilderStep1() {
 
   const head = document.createElement("h3");
   head.textContent = "Build Your Own";
-  wrap.appendChild(head);
+  wrap.appendChild(_builderHeaderRow(head));
 
   const sub = document.createElement("p");
   sub.className = "step-sub";
@@ -153,7 +168,7 @@ function _renderBuilderStep2() {
 
   const head = document.createElement("h3");
   head.textContent = _builderState.name;
-  wrap.appendChild(head);
+  wrap.appendChild(_builderHeaderRow(head));
 
   const sub = document.createElement("p");
   sub.className = "step-sub";
@@ -247,7 +262,7 @@ function _renderBuilderStep3() {
 
   const head = document.createElement("h3");
   head.textContent = day.name;
-  wrap.appendChild(head);
+  wrap.appendChild(_builderHeaderRow(head));
 
   const sub = document.createElement("p");
   sub.className = "step-sub";
@@ -342,7 +357,7 @@ function _renderBuilderStep4() {
 
   const head = document.createElement("h3");
   head.textContent = day.name + " · " + block.name;
-  wrap.appendChild(head);
+  wrap.appendChild(_builderHeaderRow(head));
 
   const sub = document.createElement("p");
   sub.className = "step-sub";

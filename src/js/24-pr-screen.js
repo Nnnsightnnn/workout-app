@@ -24,7 +24,8 @@ function _renderPRDashboard(container) {
 
   let html = `
     <div class="pr-dashboard-header">
-      <div>
+      <button class="icon-btn pr-back-btn" id="prHomeBtn" title="Back to workout">←</button>
+      <div style="flex:1;">
         <h2>Personal Records</h2>
         <p class="pr-subtitle">Your tracked lifts and all-time bests.</p>
       </div>
@@ -114,6 +115,9 @@ function _bindPRDashboardEvents(container) {
   // Pin new lift
   const pinBtn = document.getElementById("prPinBtn");
   if (pinBtn) pinBtn.onclick = _openPinLiftPicker;
+  // Back to workout screen
+  const homeBtn = document.getElementById("prHomeBtn");
+  if (homeBtn) homeBtn.onclick = () => showScreen("workout");
 }
 
 // ── Lift Detail ───────────────────────────────────────────────
@@ -311,7 +315,7 @@ function _openPinLiftPicker() {
   });
 
   let html = `
-    <h3>Pin a Lift</h3>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><h3 style="margin:0;">Pin a Lift</h3><button class="icon-btn" onclick="closeSheet()" title="Close">✕</button></div>
     <p style="color:var(--text-dim); font-size:12px; margin-bottom:12px;">
       Choose an exercise to track on your PR dashboard.
     </p>

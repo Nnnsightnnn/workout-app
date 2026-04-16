@@ -109,8 +109,9 @@ function openAddUserDialog(isFirstRun) {
         <div class="tpl-desc">${tpl.description}</div>
       </div>`;
   });
+  const closeBtn = isFirstRun ? "" : `<button class="icon-btn" onclick="closeSheet()" title="Close">✕</button>`;
   const html = `
-    <h3>${isFirstRun ? "Welcome — who's training?" : "Add a new user"}</h3>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><h3 style="margin:0;">${isFirstRun ? "Welcome — who's training?" : "Add a new user"}</h3>${closeBtn}</div>
     <p style="color:var(--text-dim); font-size:12px; margin-bottom:10px;">
       Each user gets their own program, weights, and session history.
     </p>
@@ -153,7 +154,7 @@ function selectNewUserTpl(el, tplId) {
 
 function openRenameDialog(user) {
   const html = `
-    <h3>Rename user</h3>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><h3 style="margin:0;">Rename user</h3><button class="icon-btn" onclick="closeSheet()" title="Close">✕</button></div>
     <input type="text" class="name-input" id="renameInput" value="" maxlength="40" autocomplete="off">
     <div class="sheet-actions">
       <button id="renameCancel">Cancel</button>
