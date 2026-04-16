@@ -17,7 +17,7 @@ function closeSheet() {
 function openDayPicker() {
   const u = userData();
   const wrap = document.createElement("div");
-  wrap.innerHTML = `<h3>Pick a Workout</h3><p style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">Your next in rotation is highlighted.</p>`;
+  wrap.innerHTML = `<h3>Switch Day</h3><p style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">Your next in rotation is highlighted.</p>`;
   const next = (u.lastDoneDayId == null) ? 1 : (u.lastDoneDayId % u.program.length) + 1;
   u.program.forEach(d => {
     const btn = document.createElement("button");
@@ -116,6 +116,25 @@ function openExerciseMenu(block, ex, bi, ei) {
     demo.onclick = () => window.open(libRef.demoUrl, "_blank");
     wrap.appendChild(demo);
   }
+
+  // Rename exercise
+  const renameRow = document.createElement("div");
+  renameRow.className = "field";
+  renameRow.style.marginBottom = "10px";
+  renameRow.innerHTML = `<label>Exercise name</label>`;
+  const renameInput = document.createElement("input");
+  renameInput.type = "text";
+  renameInput.value = ex.name;
+  renameRow.appendChild(renameInput);
+  renameInput.addEventListener("change", () => {
+    const newName = renameInput.value.trim();
+    if (newName && newName !== ex.name) {
+      mutateDay(d => { d.blocks[bi].exercises[ei].name = newName; });
+      wrap.querySelector("h3").textContent = newName;
+      showToast("Renamed", "success");
+    }
+  });
+  wrap.appendChild(renameRow);
 
   // Edit sets/reps/rest/tempo
   const fields = document.createElement("div");
@@ -252,9 +271,64 @@ function openExerciseMenu(block, ex, bi, ei) {
   openSheet(wrap);
 }
 
-function openBlockMenu(block) {
+function openBlockMenu(block, bi) {
   const wrap = document.createElement("div");
   wrap.innerHTML = `<h3>Block ${block.letter} — ${block.name}</h3>`;
+  const day = getCurrentDay();
+
+  // Rename block
+  const renameRow = document.createElement("div");
+  renameRow.className = "field" ;
+  renameRow.style.marginBottom = "12px";
+  renameRow.innerHTML = `<label>Block name</label>`;
+  const renameInput = document.createElement("input");
+  renameInput.type = "text";
+  renameInput.value = block.name;
+  renameInput.placeholder = "Block name";
+  renameRow.appendChild(renameInput);
+  const renameSave = document.createElement("button");
+  renameSave.className = "sheet-item";
+  renameSave.innerHTML = `<span class="icon">✓</span> Rename`;
+  renameSave.onclick = () => {
+    const newName = renameInput.value.trim();
+    if (newName && newName !== block.name) {
+      mutateDay(d => { d.blocks[bi].name = newName; });
+      closeSheet(); renderWorkoutScreen();
+      showToast("Renamed", "success");
+    }
+  };
+  wrap.appendChild(renameRow);
+  wrap.appendChild(renameSave);
+
+  // Move up
+  if (bi > 0) {
+    const up = document.createElement("button");
+    up.className = "sheet-item";
+    up.innerHTML = `<span class="icon">↑</span> Move block up`;
+    up.onclick = () => {
+      mutateDay(d => {
+        [d.blocks[bi - 1], d.blocks[bi]] = [d.blocks[bi], d.blocks[bi - 1]];
+      });
+      closeSheet(); renderWorkoutScreen();
+    };
+    wrap.appendChild(up);
+  }
+
+  // Move down
+  if (bi < day.blocks.length - 1) {
+    const dn = document.createElement("button");
+    dn.className = "sheet-item";
+    dn.innerHTML = `<span class="icon">↓</span> Move block down`;
+    dn.onclick = () => {
+      mutateDay(d => {
+        [d.blocks[bi], d.blocks[bi + 1]] = [d.blocks[bi + 1], d.blocks[bi]];
+      });
+      closeSheet(); renderWorkoutScreen();
+    };
+    wrap.appendChild(dn);
+  }
+
+  // Delete block
   const del = document.createElement("button");
   del.className = "sheet-item danger";
   del.innerHTML = `<span class="icon">🗑</span> Delete entire block`;
@@ -286,4 +360,65 @@ function addBlock() {
   renderWorkoutScreen();
   // Immediately open library for the new block
   openLibrary(newBlock.id);
+}
+
+function openCustomizeDay() {
+  const day = getCurrentDay();
+  if (!day) return;
+  const wrap = document.createElement("div");
+  wrap.innerHTML = `<h3>Customize Day</h3>`;
+
+  // Add Block
+  const addBlockBtn = document.createElement("button");
+  addBlockBtn.className = "sheet-item";
+  addBlockBtn.innerHTML = `<span class="icon">+</span> Add block`;
+  addBlockBtn.onclick = () => { closeSheet(); addBlock(); };
+  wrap.appendChild(addBlockBtn);
+
+  // Add Exercise — pick block then open library
+  const addExBtn = document.createElement("button");
+  addExBtn.className = "sheet-item";
+  addExBtn.innerHTML = `<span class="icon">+</span> Add exercise`;
+  addExBtn.onclick = () => {
+    if (day.blocks.length === 1) {
+      closeSheet();
+      openLibrary(day.blocks[0].id);
+    } else {
+      // Show block picker
+      wrap.innerHTML = `<h3>Add to which block?</h3>`;
+      day.blocks.forEach(b => {
+        const btn = document.createElement("button");
+        btn.className = "sheet-item";
+        btn.innerHTML = `<span class="icon">${b.letter}</span> ${b.name}`;
+        btn.onclick = () => { closeSheet(); openLibrary(b.id); };
+        wrap.appendChild(btn);
+      });
+    }
+  };
+  wrap.appendChild(addExBtn);
+
+  // Reset to Default
+  const resetBtn = document.createElement("button");
+  resetBtn.className = "sheet-item";
+  resetBtn.innerHTML = `<span class="icon">↺</span> Reset to default`;
+  resetBtn.onclick = () => { closeSheet(); resetCurrentDay(); };
+  wrap.appendChild(resetBtn);
+
+  // Block list
+  if (day.blocks.length > 0) {
+    const divider = document.createElement("div");
+    divider.className = "section-title";
+    divider.style.marginTop = "14px";
+    divider.textContent = "Blocks";
+    wrap.appendChild(divider);
+    day.blocks.forEach((b, bi) => {
+      const row = document.createElement("button");
+      row.className = "sheet-item";
+      row.innerHTML = `<span class="icon">${b.letter}</span> ${b.name} <span style="opacity:0.5;margin-left:auto;">${b.exercises.length} ex</span>`;
+      row.onclick = () => { closeSheet(); openBlockMenu(b, bi); };
+      wrap.appendChild(row);
+    });
+  }
+
+  openSheet(wrap);
 }

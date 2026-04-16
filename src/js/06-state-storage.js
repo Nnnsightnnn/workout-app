@@ -10,7 +10,6 @@ let state = {
   sessionIntervalId: null,
   restEndsAt: null, restTotal: 0, restIntervalId: null,
   restCardEl: null,
-  editMode: false,
   pendingExAdd: null,  // { blockId }
   sidebarOpen: false,
   sidebarSelectedEx: null,
@@ -22,6 +21,7 @@ let state = {
   workoutView: "chapters",   // 'chapters' | 'focus'
   focusBlockIdx: null,        // index into day.blocks (-1 = cooldown)
   focusExIdx: 0,              // exercise index within focused block
+  previewBlockIdx: null,       // pre-start block preview (null = auto, "cd" = cooldown)
 };
 
 function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
@@ -178,6 +178,34 @@ function deleteUserRec(id) {
   }
   saveStore(s);
 }
+function renderDataInfo() {
+  const el = document.getElementById("dataInfoCard");
+  if (!el) return;
+  const s = loadStore();
+  const raw = localStorage.getItem(STORAGE_KEY) || "";
+  const sizeBytes = new Blob([raw]).size;
+  const sizeLabel = sizeBytes < 1024 ? sizeBytes + " B"
+    : sizeBytes < 1048576 ? (sizeBytes / 1024).toFixed(1) + " KB"
+    : (sizeBytes / 1048576).toFixed(1) + " MB";
+  const totalSessions = s.users.reduce((n, u) => n + (u.sessions || []).length, 0);
+  const totalMeasurements = s.users.reduce((n, u) => n + (u.measurements || []).length, 0);
+
+  el.innerHTML = `
+    <div class="data-info-card">
+      <div class="data-info-header">Your data stays on this device</div>
+      <div class="data-info-rows">
+        <div class="data-info-row"><span class="data-info-label">Stored in</span><span>Browser localStorage</span></div>
+        <div class="data-info-row"><span class="data-info-label">Privacy</span><span>No servers &middot; no cloud &middot; no tracking</span></div>
+        <div class="data-info-row"><span class="data-info-label">Size</span><span>${sizeLabel}</span></div>
+        <div class="data-info-row"><span class="data-info-label">Users</span><span>${s.users.length}</span></div>
+        <div class="data-info-row"><span class="data-info-label">Sessions</span><span>${totalSessions}</span></div>
+        <div class="data-info-row"><span class="data-info-label">Measurements</span><span>${totalMeasurements}</span></div>
+      </div>
+      <p class="data-info-help">Export downloads a backup file. Import restores from a backup. Reset restores default programs (keeps history).</p>
+    </div>
+  `;
+}
+
 function switchUser(id) {
   if (typeof clearUndoToast === 'function') clearUndoToast();
   const s = loadStore();

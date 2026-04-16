@@ -112,22 +112,6 @@ function renderWorkoutScreen() {
   }
   document.getElementById("daySub").textContent = weekLabel + (day.sub || "");
 
-  // Color Zones: day-bar badge gradient from muscle groups
-  const dayColors = [];
-  day.blocks.forEach(b => b.exercises.forEach(e => {
-    if (e.isWarmup) return;
-    const g = groupMuscle((e.muscles || [])[0]);
-    const c = g && GROUP_COLORS[g];
-    if (c && !dayColors.includes(c)) dayColors.push(c);
-  }));
-  if (dayColors.length >= 2) {
-    badge.style.background = `linear-gradient(135deg, ${dayColors.slice(0,3).join(', ')})`;
-    badge.style.color = '#fff';
-  } else if (dayColors.length === 1) {
-    badge.style.background = dayColors[0]; badge.style.color = '#fff';
-  } else {
-    badge.style.background = ''; badge.style.color = '';
-  }
 
   renderTimelineStrip();
 
@@ -142,37 +126,55 @@ function renderWorkoutScreen() {
   container.innerHTML = "";
 
   // View dispatcher: chapters/focus when workout active, flat list otherwise
-  if (state.workoutStartedAt && !state.editMode && state.workoutView === "focus" && state.focusBlockIdx != null) {
+  if (state.workoutStartedAt && state.workoutView === "focus" && state.focusBlockIdx != null) {
     renderFocusView(container, day);
     renderStatsBar(container, day);
-  } else if (state.workoutStartedAt && !state.editMode) {
+  } else if (state.workoutStartedAt) {
     renderChaptersView(container, day);
     renderStatsBar(container, day);
   } else {
-    // Original flat rendering (pre-start + edit mode)
-    if (!state.editMode) {
-      let firstIncompleteIdx = 0;
-      for (let i = 0; i < day.blocks.length; i++) {
-        const bp = calcBlockProgress(day.blocks[i]);
-        if (bp.done < bp.total) { firstIncompleteIdx = i; break; }
-      }
-      const heroBlock = day.blocks[firstIncompleteIdx];
-      const heroBtn = document.createElement("button");
-      heroBtn.className = "chapter-start-btn chapter-start-hero";
-      heroBtn.textContent = "Start Block " + heroBlock.letter;
-      heroBtn.addEventListener("click", () => {
-        startWorkout();
-        state.workoutView = "focus";
-        state.focusBlockIdx = firstIncompleteIdx;
-        state.focusExIdx = 0;
+    // Pre-start: show only one block at a time, switchable via pill tabs
+    let firstIncompleteIdx = 0;
+    for (let i = 0; i < day.blocks.length; i++) {
+      const bp = calcBlockProgress(day.blocks[i]);
+      if (bp.done < bp.total) { firstIncompleteIdx = i; break; }
+    }
+    const selectedIdx = state.previewBlockIdx != null ? state.previewBlockIdx : firstIncompleteIdx;
+
+    // Block strip — compact horizontal list of all blocks
+    const strip = document.createElement("div");
+    strip.className = "block-strip";
+    day.blocks.forEach((block, bi) => {
+      const bp = calcBlockProgress(block);
+      const isDone = bp.total > 0 && bp.done === bp.total;
+      const isActive = bi === selectedIdx;
+      const chip = document.createElement("div");
+      chip.className = "block-strip-chip" + (isActive ? " active" : "") + (isDone ? " done" : "");
+      chip.innerHTML = `<span class="block-strip-letter">${block.letter}</span><span class="block-strip-name">${block.name}</span>`;
+      chip.addEventListener("click", () => {
+        state.previewBlockIdx = bi;
         renderWorkoutScreen();
       });
-      container.appendChild(heroBtn);
-    }
-    day.blocks.forEach((block, bi) => {
-      container.appendChild(renderBlock(day, block, bi));
+      strip.appendChild(chip);
     });
-    container.appendChild(renderCooldownBlock());
+    // Cooldown chip
+    const cdChip = document.createElement("div");
+    cdChip.className = "block-strip-chip" + (selectedIdx === "cd" ? " active" : "");
+    cdChip.innerHTML = '<span class="block-strip-letter">CD</span><span class="block-strip-name">Cool Down</span>';
+    cdChip.addEventListener("click", () => {
+      state.previewBlockIdx = "cd";
+      renderWorkoutScreen();
+    });
+    strip.appendChild(cdChip);
+    container.appendChild(strip);
+
+    // Render the selected block or cooldown as compact bento preview
+    if (selectedIdx === "cd") {
+      container.appendChild(renderCooldownPreview());
+    } else {
+      container.appendChild(renderBlockPreview(day, day.blocks[selectedIdx], selectedIdx));
+    }
+
     container.querySelectorAll(".exercise-card").forEach((card, i) => {
       card.style.setProperty("--card-index", i);
     });
@@ -188,9 +190,10 @@ function renderDayPicker() {
   const u = userData();
   if (!u) return;
 
+  const tpl = PROGRAM_TEMPLATES.find(t => t.id === u.templateId) || PROGRAM_TEMPLATES[0];
   document.getElementById("dayBadge").textContent = "⊞";
-  document.getElementById("dayName").textContent = "Choose Your Workout";
-  document.getElementById("daySub").textContent = "Pick a workout type to get started";
+  document.getElementById("dayName").textContent = "Today's Workout";
+  document.getElementById("daySub").textContent = tpl.name + (u.totalWeeks ? " · Week " + (u.currentWeek || 1) + " of " + u.totalWeeks : "");
 
   // Hide start/finish buttons
   document.getElementById("startBtn").style.display = "none";
@@ -200,36 +203,15 @@ function renderDayPicker() {
 
   container.innerHTML = "";
 
-  // Program template selector (flat list — all templates, any day count)
-  const programSelector = document.createElement("div");
-  programSelector.className = "program-selector";
-
-  const programList = document.createElement("div");
-  programList.className = "program-filtered-list";
-
-  PROGRAM_TEMPLATES.forEach(tpl => {
-    const item = document.createElement("div");
-    item.className = "program-list-item" + (tpl.id === u.templateId ? " active" : "");
-    const nativeDays = tpl.daysPerWeek;
-    item.innerHTML = `<div class="pli-badge">${nativeDays}d</div><div class="pli-name">${tpl.name}</div>`;
-    item.onclick = () => {
-      if (tpl.id === u.templateId) return;
-      openDurationPicker(tpl.id);
-    };
-    programList.appendChild(item);
-  });
-
-  programSelector.appendChild(programList);
-  container.appendChild(programSelector);
-
-  // Day cards
   const next = determineDefaultDay();
+  const nextDay = u.program.find(d => d.id === next) || u.program[0];
   const picker = document.createElement("div");
   picker.className = "day-picker";
 
-  u.program.forEach(d => {
+  // Build a day card helper
+  function buildDayCard(d, isHero) {
     const card = document.createElement("div");
-    card.className = "day-picker-card" + (d.id === next ? " recommended" : "");
+    card.className = "day-picker-card" + (isHero ? " recommended" : "");
 
     const breakdown = getSessionBreakdown(d);
     const wuMin = Math.round(breakdown.warmupSec / 60);
@@ -237,7 +219,6 @@ function renderDayPicker() {
     const cdMin = Math.round(breakdown.cooldownSec / 60);
 
     let html = "";
-    if (d.id === next) html += `<div class="picker-rec">Recommended — next in rotation</div>`;
     html += `<div class="picker-label">${d.name}</div>`;
     html += `<div class="picker-sub">${d.sub || ""}</div>`;
     html += `<div class="picker-blocks">`;
@@ -245,10 +226,9 @@ function renderDayPicker() {
       html += `<span class="picker-block-tag">${b.letter} ${b.name}</span>`;
     });
     html += `</div>`;
-    html += `<div class="picker-duration">⏱ ~${breakdown.totalMin} min</div>`;
-    html += `<div class="picker-breakdown">WU ${wuMin}m · Work ${wkMin}m · CD ${cdMin}m</div>`;
+    html += `<div class="picker-duration">\u23F1 ~${breakdown.totalMin} min</div>`;
+    html += `<div class="picker-breakdown">WU ${wuMin}m \u00b7 Work ${wkMin}m \u00b7 CD ${cdMin}m</div>`;
 
-    // Time target stepper
     const defaultTarget = Math.round(breakdown.totalMin / 5) * 5;
     html += `<div class="tb-target-row" data-day-id="${d.id}">`;
     html += `<span class="tb-target-label">Target</span>`;
@@ -257,22 +237,37 @@ function renderDayPicker() {
     html += `<span class="tb-target-unit">min</span>`;
     html += `<button class="tb-step tb-up" data-dir="1">+</button>`;
     html += `</div>`;
-
-    // Adjustment preview (populated dynamically)
     html += `<div class="tb-adj-preview" data-day-id="${d.id}"></div>`;
-
-    // Start buttons
     html += `<div class="tb-start-row" data-day-id="${d.id}">`;
     html += `<button class="tb-start-btn primary" data-day-id="${d.id}">Start</button>`;
     html += `</div>`;
 
     card.innerHTML = html;
-
-    // Wire stepper and start — stop card-level click from firing
     _wireTimeBudgetCard(card, d, breakdown);
+    return card;
+  }
 
-    picker.appendChild(card);
-  });
+  // Show only the next-in-rotation card
+  picker.appendChild(buildDayCard(nextDay, true));
+
+  // "Other workouts" toggle for remaining days
+  const others = u.program.filter(d => d.id !== nextDay.id);
+  if (others.length) {
+    const toggle = document.createElement("button");
+    toggle.className = "day-picker-toggle";
+    toggle.textContent = "Other workouts (" + others.length + ")";
+    const otherWrap = document.createElement("div");
+    otherWrap.className = "day-picker-others";
+    otherWrap.style.display = "none";
+    others.forEach(d => otherWrap.appendChild(buildDayCard(d, false)));
+    toggle.onclick = () => {
+      const showing = otherWrap.style.display !== "none";
+      otherWrap.style.display = showing ? "none" : "";
+      toggle.textContent = (showing ? "Other workouts" : "Hide other workouts") + " (" + others.length + ")";
+    };
+    picker.appendChild(toggle);
+    picker.appendChild(otherWrap);
+  }
 
   container.appendChild(picker);
 }
@@ -337,7 +332,7 @@ function _wireTimeBudgetCard(card, day, breakdown) {
         }
         state.currentDayId = day.id;
         state.dayChosen = true;
-        renderWorkoutScreen();
+        startWorkout();
       });
     });
   }
@@ -357,6 +352,114 @@ function _wireTimeBudgetCard(card, day, breakdown) {
   updateAdjustments();
 }
 
+function renderBlockPreview(day, block, bi) {
+  const wrap = document.createElement("div");
+  const isSuperset = block.exercises.length > 1;
+
+  // Block header (same as renderBlock)
+  const hdr = document.createElement("div");
+  hdr.className = "block-header";
+  const blockMin = Math.round(estimateBlockSec(block) / 60);
+  hdr.innerHTML = `
+    <div class="block-letter ${isSuperset ? 'superset' : ''}">${block.letter}</div>
+    <div class="block-title">${block.name}${isSuperset ? ' <span style="color:var(--superset);">· Superset</span>' : ''}</div>
+    <span class="block-time-badge">~${blockMin}m</span>
+  `;
+  const menu = document.createElement("button");
+  menu.className = "block-menu";
+  menu.textContent = "⋯";
+  menu.onclick = () => openBlockMenu(block, bi);
+  hdr.appendChild(menu);
+  wrap.appendChild(hdr);
+
+  // Bento grid of exercise tiles
+  const grid = document.createElement("div");
+  grid.className = "block-preview-grid";
+  block.exercises.forEach(ex => {
+    const tile = document.createElement("div");
+    tile.className = "block-preview-tile" + (ex.isWarmup ? " warmup" : "");
+    const mColor = primaryMuscleColor(ex.muscles);
+    if (mColor) tile.style.borderLeftColor = mColor;
+
+    const name = document.createElement("div");
+    name.className = "tile-name";
+    name.textContent = ex.name;
+    tile.appendChild(name);
+
+    if (ex.muscles && ex.muscles.length) {
+      const muscle = document.createElement("span");
+      muscle.className = "tile-muscle";
+      muscle.textContent = ex.muscles[0];
+      const mc = GROUP_COLORS[groupMuscle(ex.muscles[0])];
+      if (mc) { muscle.style.background = mc + '22'; muscle.style.color = mc; }
+      tile.appendChild(muscle);
+    }
+
+    const sets = document.createElement("div");
+    sets.className = "tile-sets";
+    const numSets = ex.sets || 3;
+    if (ex.isWarmup) {
+      sets.textContent = "warmup";
+    } else if (ex.isTime) {
+      sets.textContent = numSets + "×" + (ex.reps || 30) + "s";
+    } else if (ex.isDistance) {
+      sets.textContent = numSets + "×" + (ex.reps || 100) + "m";
+    } else {
+      sets.textContent = numSets + "×" + (ex.reps || 8);
+    }
+    tile.appendChild(sets);
+
+    grid.appendChild(tile);
+  });
+  wrap.appendChild(grid);
+  return wrap;
+}
+
+function renderCooldownPreview() {
+  const wrap = document.createElement("div");
+
+  const hdr = document.createElement("div");
+  hdr.className = "block-header";
+  hdr.innerHTML = `
+    <div class="block-letter" style="background:var(--success);color:#fff">CD</div>
+    <div class="block-title">Cool Down</div>
+    <span class="block-time-badge">~5m</span>
+  `;
+  wrap.appendChild(hdr);
+
+  const grid = document.createElement("div");
+  grid.className = "block-preview-grid";
+  getCooldownExercises(state.currentDayId).forEach(ex => {
+    const tile = document.createElement("div");
+    tile.className = "block-preview-tile";
+
+    const name = document.createElement("div");
+    name.className = "tile-name";
+    name.textContent = ex.name;
+    tile.appendChild(name);
+
+    if (ex.muscles && ex.muscles.length) {
+      const muscle = document.createElement("span");
+      muscle.className = "tile-muscle";
+      muscle.textContent = ex.muscles[0];
+      const mc = GROUP_COLORS[groupMuscle(ex.muscles[0])];
+      if (mc) { muscle.style.background = mc + '22'; muscle.style.color = mc; }
+      tile.appendChild(muscle);
+    }
+
+    const info = document.createElement("div");
+    info.className = "tile-sets";
+    info.textContent = ex.isTime
+      ? (ex.reps || 30) + "s" + (ex.perSide ? "/side" : "")
+      : (ex.reps || 8) + " reps" + (ex.perSide ? "/side" : "");
+    tile.appendChild(info);
+
+    grid.appendChild(tile);
+  });
+  wrap.appendChild(grid);
+  return wrap;
+}
+
 function renderBlock(day, block, bi) {
   const wrap = document.createElement("div");
   const isSuperset = block.exercises.length > 1;
@@ -369,13 +472,11 @@ function renderBlock(day, block, bi) {
     <div class="block-title">${block.name}${isSuperset ? ' <span style="color:var(--superset);">· Superset</span>' : ''}</div>
     <span class="block-time-badge">~${blockMin}m</span>
   `;
-  if (state.editMode) {
-    const menu = document.createElement("button");
-    menu.className = "block-menu";
-    menu.textContent = "⋯";
-    menu.onclick = () => openBlockMenu(block);
-    hdr.appendChild(menu);
-  }
+  const menu = document.createElement("button");
+  menu.className = "block-menu";
+  menu.textContent = "⋯";
+  menu.onclick = () => openBlockMenu(block, bi);
+  hdr.appendChild(menu);
   wrap.appendChild(hdr);
 
   // Block-level note input (per-session, stored in draft)
@@ -394,13 +495,11 @@ function renderBlock(day, block, bi) {
     wrap.appendChild(renderExercise(day, block, ex, bi, ei, isSuperset));
   });
 
-  if (state.editMode) {
-    const addEx = document.createElement("button");
-    addEx.className = "add-ex-row";
-    addEx.textContent = "+ Add exercise to this block";
-    addEx.onclick = () => openLibrary(block.id);
-    wrap.appendChild(addEx);
-  }
+  const addEx = document.createElement("button");
+  addEx.className = "add-ex-row";
+  addEx.textContent = "+ Add exercise";
+  addEx.onclick = () => openLibrary(block.id);
+  wrap.appendChild(addEx);
 
   return wrap;
 }
@@ -549,12 +648,6 @@ function renderExercise(day, block, ex, bi, ei, isSuperset) {
   const name = document.createElement("div");
   name.className = "ex-name";
   name.textContent = ex.name;
-  if (state.editMode) {
-    name.contentEditable = "true";
-    name.onblur = () => {
-      mutateDay(d => { d.blocks[bi].exercises[ei].name = name.textContent.trim() || ex.name; });
-    };
-  }
   info.appendChild(name);
 
   const meta = document.createElement("div");
@@ -1071,7 +1164,9 @@ function renderChaptersView(container, day) {
     const pct = bp.total > 0 ? Math.round((bp.done / bp.total) * 100) : 0;
 
     const card = document.createElement("div");
-    card.className = "chapter-card" + (isDone ? " chapter-done" : "") + (isActive ? " chapter-active" : "");
+    card.className = "chapter-card"
+      + (isDone ? " chapter-done chapter-compact" : "")
+      + (isActive ? " chapter-active chapter-hero" : "");
     card.style.setProperty("--card-index", bi);
 
     const exCount = block.exercises.filter(e => !e.isWarmup).length;
@@ -1088,6 +1183,23 @@ function renderChaptersView(container, day) {
       ? `background:linear-gradient(135deg,${blockColors.slice(0,3).join(",")});color:#fff`
       : blockColors.length === 1 ? `background:${blockColors[0]};color:#fff` : "";
 
+    // SVG progress ring for active card, chevron for others
+    const ringR = 18, ringC = 2 * Math.PI * ringR;
+    const ringDash = (pct / 100) * ringC;
+    const ringColor = isDone ? "var(--success)" : "var(--accent)";
+    const chevronOrRing = isActive
+      ? `<svg class="chapter-ring" viewBox="0 0 44 44" width="44" height="44">
+           <circle cx="22" cy="22" r="${ringR}" fill="none" stroke="var(--bg-card-2)" stroke-width="4"/>
+           <circle cx="22" cy="22" r="${ringR}" fill="none" stroke="${ringColor}" stroke-width="4"
+             stroke-linecap="round" stroke-dasharray="${ringDash} ${ringC}" stroke-dashoffset="0"
+             transform="rotate(-90 22 22)" class="chapter-ring-fill"/>
+           <text x="22" y="23" text-anchor="middle" dominant-baseline="central"
+             fill="var(--text)" font-size="11" font-weight="700">${bp.done}/${bp.total}</text>
+         </svg>`
+      : `<div class="chapter-chevron">${isDone ? "✓" : "›"}</div>`;
+
+    card.style.setProperty("--pct", pct + "%");
+
     card.innerHTML = `
       <div class="chapter-top">
         <div class="chapter-letter" style="${badgeStyle}">${block.letter}</div>
@@ -1101,12 +1213,30 @@ function renderChaptersView(container, day) {
             <span>~${blockMin}m</span>
           </div>
         </div>
-        <div class="chapter-chevron">${isDone ? "✓" : "›"}</div>
+        ${chevronOrRing}
       </div>
       <div class="chapter-progress">
         <div class="chapter-progress-fill${isDone ? " complete" : ""}" style="width:${pct}%"></div>
       </div>
     `;
+
+    // Hero card: add exercise pills
+    if (isActive) {
+      const pillsWrap = document.createElement("div");
+      pillsWrap.className = "chapter-hero-exercises";
+      block.exercises.forEach((ex, ei) => {
+        if (ex.isWarmup) return;
+        const exBp = { done: 0, total: ex.sets || 3 };
+        for (let si = 0; si < exBp.total; si++) {
+          if (getInput(inputKey(block.id, ei, si, "status"), null) === "done") exBp.done++;
+        }
+        const pill = document.createElement("span");
+        pill.className = "chapter-hero-ex" + (exBp.done === exBp.total ? " ex-done" : "");
+        pill.textContent = ex.name;
+        pillsWrap.appendChild(pill);
+      });
+      card.appendChild(pillsWrap);
+    }
 
     card.addEventListener("click", () => {
       state.workoutView = "focus";
@@ -1174,7 +1304,7 @@ function renderFocusView(container, day) {
 
   if (!block && !isCooldown) {
     state.workoutView = "chapters";
-    renderChaptersView(container, day);
+    renderWorkoutScreen();
     return;
   }
 

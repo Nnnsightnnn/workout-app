@@ -114,7 +114,6 @@ function importData() {
         state.currentDayId = determineDefaultDay();
         state.workoutStartedAt = null;
         state.dayChosen = false;
-        state.editMode = false;
 
         const draft = getDraft();
         if (draft) {

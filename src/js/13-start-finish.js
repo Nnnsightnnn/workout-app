@@ -3,12 +3,27 @@
 // ============================================================
 function startWorkout() {
   state.trimmedBlocks = null;
-  state.workoutView = "chapters";
-  state.focusBlockIdx = null;
-  state.focusExIdx = 0;
+  state.previewBlockIdx = null;
   ensureDraft();
+
+  // Jump straight to focus view on first incomplete block
+  const day = getCurrentDay();
+  let targetIdx = 0;
+  let allDone = true;
+  if (day) {
+    for (let i = 0; i < day.blocks.length; i++) {
+      const bp = calcBlockProgress(day.blocks[i]);
+      if (bp.done < bp.total) { targetIdx = i; allDone = false; break; }
+    }
+  }
+
+  state.workoutView = "focus";
+  state.focusBlockIdx = allDone ? -1 : targetIdx;
+  state.focusExIdx = 0;
+
   updateFinishButton();
-  showToast("Workout started 💪", "success");
+  showToast(getRandomQuote(), "quote", 3500);
+  renderWorkoutScreen();
 }
 
 function finishWorkout() {

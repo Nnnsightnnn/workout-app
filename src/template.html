@@ -38,10 +38,27 @@
         <div class="name" id="dayName">Max Effort Lower</div>
         <div class="sub" id="daySub">ME Lower + Upper Accessory</div>
       </div>
-      <button class="icon-btn" id="homeDayBtn" title="Back to day picker">⌂</button>
-      <button class="icon-btn" id="pickDayBtn" title="Switch day">📅</button>
-      <button class="icon-btn" id="swapSidebarBtn" title="Exercise browser">⊞</button>
-      <button class="icon-btn" id="editToggleBtn" title="Edit mode">✎</button>
+      <button class="icon-btn" id="homeDayBtn" title="Home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
+          <path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V19a1 1 0 001 1h12a1 1 0 001-1V9.5"/>
+        </svg>
+      </button>
+      <button class="icon-btn" id="pickDayBtn" title="Switch day">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
+          <rect x="3" y="5" width="18" height="16" rx="2"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+      </button>
+      <button class="icon-btn" id="libraryBtn" title="Exercise library">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
+          <path d="M12 7C9 4.5 6 4 2 5v13c4-1 7-.5 10 2"/><path d="M12 7c3-2.5 6-3 10-2v13c-4-1-7-.5-10 2"/>
+        </svg>
+      </button>
+      <button class="icon-btn" id="customizeDayBtn" title="Customize day">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
+          <line x1="7" y1="4" x2="7" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="17" y1="4" x2="17" y2="20"/>
+          <circle cx="7" cy="8" r="2.5" fill="var(--bg-card-2)" stroke-width="2.2"/><circle cx="12" cy="15" r="2.5" fill="var(--bg-card-2)" stroke-width="2.2"/><circle cx="17" cy="10" r="2.5" fill="var(--bg-card-2)" stroke-width="2.2"/>
+        </svg>
+      </button>
     </div>
 
     <div id="timelineStrip"></div>
@@ -65,19 +82,9 @@
       <button class="action-btn primary" id="startBtn">▶ Start Workout</button>
     </div>
 
-    <div class="edit-banner">
-      <div class="edit-banner-title">Edit Mode</div>
-      <div class="edit-hint"><span class="edit-hint-icon">tap</span> Exercise name to rename it</div>
-      <div class="edit-hint"><span class="edit-hint-icon">⋯</span> Block/exercise menu to reorder, move, or delete</div>
-      <div class="edit-hint"><span class="edit-hint-icon">+</span> Add exercises to any block</div>
-    </div>
-
     <div id="blocksContainer"></div>
 
-    <button class="add-block-btn" id="addBlockBtn">+ Add Block</button>
-
     <div class="quick-row" style="margin-top: 14px;">
-      <button class="action-btn" id="resetDayBtn">↺ Reset to Default</button>
       <button class="action-btn success" id="finishBtn" style="display:none">✓ Finish Workout</button>
     </div>
 
@@ -93,16 +100,28 @@
 
   <!-- History -->
   <section class="screen" id="screen-history">
-    <h2>History</h2>
-    <p style="color: var(--text-dim); font-size: 12px; margin-bottom: 14px;">Last 30 days of training.</p>
-    <div class="history-stats">
-      <div class="donut-wrap">
-        <svg class="donut" id="muscleDonut" viewBox="0 0 100 100"></svg>
-        <div class="donut-legend" id="donutLegend"></div>
+    <div class="settings-header">
+      <h2>History</h2>
+      <button class="icon-btn" id="historyCloseBtn" title="Back to workout">✕</button>
+    </div>
+    <div class="history-tabs" id="historyTabs">
+      <button class="history-tab active" data-tab="prs">PRs</button>
+      <button class="history-tab" data-tab="balance">Balance</button>
+    </div>
+    <div class="history-pane active" id="pane-prs">
+      <div id="prBoard"></div>
+      <div class="section-title">Recent Sessions</div>
+      <div id="sessionList"></div>
+    </div>
+    <div class="history-pane" id="pane-balance">
+      <p style="color: var(--text-dim); font-size: 12px; margin-bottom: 14px;">Last 30 days of training.</p>
+      <div class="history-stats">
+        <div class="donut-wrap">
+          <svg class="donut" id="muscleDonut" viewBox="0 0 100 100"></svg>
+          <div class="donut-legend" id="donutLegend"></div>
+        </div>
       </div>
     </div>
-    <div class="section-title">Recent Sessions</div>
-    <div id="sessionList"></div>
   </section>
 
   <!-- Settings -->
@@ -167,6 +186,14 @@
       </div>
     </div>
 
+    <div class="section-title">Glossary</div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="action-btn" onclick="openFullGlossary()">Browse All Terms</button>
+    </div>
+    <p style="color: var(--text-faint); font-size: 11px; margin-top: 10px; line-height:1.5;">
+      Training terms, acronyms, and program methodologies explained.
+    </p>
+
     <div class="section-title">Body Weight</div>
     <div class="body-card" id="bodyCard">
       <div id="bodyContent"></div>
@@ -194,9 +221,7 @@
       <button class="action-btn" onclick="importData()">Import Backup</button>
       <button class="action-btn" onclick="resetAllProgram()">Reset All Programs</button>
     </div>
-    <p style="color: var(--text-faint); font-size: 11px; margin-top: 10px; line-height:1.5;">
-      Export downloads all your data as a backup file. Import restores from a backup (replaces current data). Reset restores each user's template program (keeps session history).
-    </p>
+    <div id="dataInfoCard"></div>
 
     <div class="section-title">About</div>
     <div class="about-card">
@@ -240,6 +265,20 @@
     <div id="sheetContent"></div>
   </div>
 </div>
+
+<!-- Glossary FAB -->
+<button class="glossary-fab" id="glossaryFab" onclick="openFullGlossary()" title="Glossary">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="8" x2="16" y2="8"/><line x1="9" y1="12" x2="14" y2="12"/>
+  </svg>
+</button>
+
+<!-- Timer FAB -->
+<button class="glossary-fab timer-fab" id="timerFab" onclick="openStandaloneTimer()" title="Rest timer">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+    <circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3l2 2"/><path d="M19 3l-2 2"/><line x1="12" y1="1" x2="12" y2="3"/>
+  </svg>
+</button>
 
 <!-- Bottom Nav -->
 <nav class="bottom">

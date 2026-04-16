@@ -227,9 +227,9 @@ var WU_MOBILITY = [
   ["kneetowall","pronetrap","squattostand"]
 ];
 
-function buildWarmup(blockId, weekNum, dayId, equipment, injuredIds) {
+function buildWarmup(blockId, weekNum, dayId, equipment, injuredIds, programSeed) {
   var cardioPool = getPool("warmup_cardio", equipment, injuredIds);
-  var offset = (weekNum - 1) * 7 + ((dayId || 1) - 1);
+  var offset = (weekNum - 1) * 7 + ((dayId || 1) - 1) + (programSeed || 0);
   var cardioId = cardioPool[offset % cardioPool.length];
   var cardio = LIB_BY_ID[cardioId];
   var mobSet = WU_MOBILITY[offset % WU_MOBILITY.length];
@@ -256,14 +256,14 @@ function getFinisherLoading(exId) {
 
 // --- Day builder from config ---
 
-function buildDayFromConfig(dayCfg, dayId, weekNum, phaseName, wip, equipment, injuredIds, experience) {
+function buildDayFromConfig(dayCfg, dayId, weekNum, phaseName, wip, equipment, injuredIds, experience, programSeed) {
   var pfx = "d" + dayId;
   var blocks = [];
   var primaryName = "";
 
   dayCfg.blocks.forEach(function(bCfg, bi) {
     if (bCfg.type === "warmup") {
-      blocks.push(buildWarmup(pfx + "-wu", weekNum, dayId, equipment, injuredIds));
+      blocks.push(buildWarmup(pfx + "-wu", weekNum, dayId, equipment, injuredIds, programSeed));
       return;
     }
 
@@ -325,10 +325,13 @@ function generateWeek(templateId, weekNum, totalWeeks, daysPerWeek) {
   var numDays = daysPerWeek || configDays.length;
   numDays = Math.max(2, Math.min(7, numDays));
 
+  var programSeed = 0;
+  for (var i = 0; i < templateId.length; i++) programSeed += templateId.charCodeAt(i);
+
   var result = [];
   for (var di = 0; di < numDays; di++) {
     var dayCfg = configDays[di % configDays.length];
-    var day = buildDayFromConfig(dayCfg, di + 1, weekNum, loadingPhase, wip, profile.equipment, injuredIds, profile.experience);
+    var day = buildDayFromConfig(dayCfg, di + 1, weekNum, loadingPhase, wip, profile.equipment, injuredIds, profile.experience, programSeed);
     day.sub = (day.sub || "").replace(loadingPhase, phaseName);
     if (di >= configDays.length) {
       day.name = dayCfg.name + " (B)";

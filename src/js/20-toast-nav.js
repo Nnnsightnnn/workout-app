@@ -4,14 +4,14 @@
 let toastTimer = null;
 let _undoPending = null; // { session, userId, timerId, onExpire }
 
-function showToast(msg, type = "") {
+function showToast(msg, type = "", duration = 1900) {
   if (_undoPending) clearUndoToast();
   const t = document.getElementById("toast");
   t.innerHTML = "";
   t.textContent = msg;
   t.className = "toast show " + type;
   if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.className = "toast " + type; }, 1900);
+  toastTimer = setTimeout(() => { t.className = "toast " + type; }, duration);
 }
 
 function showUndoToast(msg, onExpire) {
@@ -59,8 +59,12 @@ function showScreen(name) {
   document.querySelectorAll("nav.bottom button").forEach(b => b.classList.toggle("active", b.dataset.screen === name));
   if (name === "history") renderHistory();
   if (name === "workout") renderWorkoutScreen();
-  if (name === "settings") { renderUserSection(); renderBodySection(); renderProgramPicker(); renderProfileCard(); }
+  if (name === "settings") { renderUserSection(); renderBodySection(); renderProgramPicker(); renderProfileCard(); renderDataInfo(); }
   if (name === "prs") { _prDetailExId = null; renderPRScreen(); }
-  // Hide floating timer button off-workout
-  document.querySelector(".fab").style.display = name === "workout" ? "" : "none";
+  // Show FABs on workout + history screens
+  var showFabs = (name === "workout" || name === "history");
+  var gfab = document.getElementById("glossaryFab");
+  if (gfab) gfab.style.display = showFabs ? "" : "none";
+  var tfab = document.getElementById("timerFab");
+  if (tfab) tfab.style.display = showFabs ? "" : "none";
 }

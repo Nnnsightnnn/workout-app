@@ -98,7 +98,45 @@ var GLOSSARY = {
   },
   "Volume": { short:"Total Work Done", long:"Sets × reps × weight. Higher volume = more growth stimulus, but also more fatigue. Balance is key." },
   "Hypertrophy": { short:"Muscle Growth", long:"Training for muscle size. Typically 3-4 sets of 8-12 reps with moderate weight and controlled tempo." },
-  "Concurrent": { short:"Training Multiple Qualities", long:"Building strength and endurance at the same time. Requires careful programming to avoid interference." }
+  "Concurrent": { short:"Training Multiple Qualities", long:"Building strength and endurance at the same time. Requires careful programming to avoid interference." },
+
+  // --- Set types & techniques ---
+  "Drop Set": {
+    short:"Strip Weight, Keep Going",
+    long:"Hit failure, immediately reduce weight 20-30%, and rep out again. Can drop 2-3 times. Maximizes muscle fatigue and pump in minimal time.",
+    svg:'<svg viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg"><rect x="10" y="8" width="50" height="60" rx="6" fill="'+_gc.red+'" opacity="0.85"/><rect x="70" y="22" width="50" height="46" rx="6" fill="'+_gc.orange+'" opacity="0.85"/><rect x="130" y="38" width="50" height="30" rx="6" fill="'+_gc.green+'" opacity="0.85"/><text x="35" y="35" text-anchor="middle" fill="#fff" font-size="10" font-weight="800">100%</text><text x="35" y="50" text-anchor="middle" fill="#fff" font-size="8">8 reps</text><text x="95" y="45" text-anchor="middle" fill="#fff" font-size="10" font-weight="800">75%</text><text x="95" y="58" text-anchor="middle" fill="#fff" font-size="8">10 reps</text><text x="155" y="53" text-anchor="middle" fill="#fff" font-size="10" font-weight="800">50%</text><text x="155" y="63" text-anchor="middle" fill="#fff" font-size="8">12 reps</text><path d="M62,38 L68,38" stroke="'+_gc.dim+'" stroke-width="2" marker-end="url(#darr)"/><path d="M122,48 L128,48" stroke="'+_gc.dim+'" stroke-width="2" marker-end="url(#darr)"/><text x="100" y="78" text-anchor="middle" fill="'+_gc.dim+'" font-size="8" font-weight="700">No rest between drops</text><defs><marker id="darr" viewBox="0 0 6 6" refX="5" refY="3" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L6,3 L0,6Z" fill="'+_gc.dim+'"/></marker></defs></svg>'
+  },
+  "Giant Set": { short:"3+ Exercises, No Rest", long:"Three or more exercises performed back-to-back with no rest between. Extremely time-efficient and great for hypertrophy. Common in functional bodybuilding." },
+  "Rest-Pause": { short:"Micro-Rest, More Reps", long:"Hit failure, rack the weight for 10-15 seconds, then rep out again. Repeat 1-2 times. Squeezes more volume from a single working weight." },
+  "Back-off Set": { short:"Lighter Set After Top Work", long:"After your heaviest sets, drop weight 10-20% for 1-2 additional sets. Adds quality volume without the fatigue cost of more heavy work." },
+  "Time Under Tension": { short:"TUT — Slow & Controlled", long:"Deliberately slowing rep speed to keep muscles loaded longer. A 4-second eccentric turns a set of 8 into 40+ seconds of work. Drives hypertrophy through metabolic stress." },
+
+  // --- Training splits & frequency ---
+  "Full Body": { short:"Every Muscle, Every Session", long:"Hit all major muscle groups each workout. Typically 3 days per week. Great for beginners and time-crunched lifters. Higher frequency per muscle than bro splits." },
+  "Upper/Lower": { short:"Split by Half", long:"Alternate upper-body and lower-body days. Usually 4 sessions per week. Good balance of frequency and recovery for intermediates." },
+  "Bro Split": { short:"One Muscle Group Per Day", long:"Chest Monday, Back Tuesday, etc. Each muscle trained once per week with high volume. Popular in bodybuilding. Works if you can train 5-6 days." },
+  "High Frequency": { short:"3+ Times Per Muscle Per Week", long:"Training each muscle group 3 or more times per week with moderate volume per session. Research suggests higher frequency can accelerate skill and strength gains." },
+
+  // --- Periodization phases ---
+  "Peak": { short:"Competition Prep Phase", long:"1-2 weeks of very heavy singles and doubles at 90-100% to express maximum strength. Follows an intensification block. Volume drops sharply." },
+  "Linear Progression": {
+    short:"Add Weight Every Session",
+    long:"The simplest progression model: add 5 lbs to the bar each workout. Works until you can no longer recover between sessions. The foundation of novice programs like Starting Strength and StrongLifts.",
+    svg:'<svg viewBox="0 0 200 70" xmlns="http://www.w3.org/2000/svg"><line x1="15" y1="60" x2="185" y2="10" stroke="'+_gc.green+'" stroke-width="3" stroke-linecap="round"/><circle cx="15" cy="60" r="4" fill="'+_gc.green+'"/><circle cx="57" cy="47" r="4" fill="'+_gc.green+'"/><circle cx="100" cy="34" r="4" fill="'+_gc.green+'"/><circle cx="142" cy="21" r="4" fill="'+_gc.orange+'"/><circle cx="185" cy="10" r="4" fill="'+_gc.red+'"/><text x="15" y="72" text-anchor="middle" fill="'+_gc.dim+'" font-size="7">135</text><text x="57" y="72" text-anchor="middle" fill="'+_gc.dim+'" font-size="7">145</text><text x="100" y="72" text-anchor="middle" fill="'+_gc.dim+'" font-size="7">155</text><text x="142" y="72" text-anchor="middle" fill="'+_gc.dim+'" font-size="7">165</text><text x="185" y="72" text-anchor="middle" fill="'+_gc.dim+'" font-size="7">175</text><text x="100" y="6" text-anchor="middle" fill="'+_gc.green+'" font-size="8" font-weight="700">+5 lbs each session</text></svg>'
+  },
+  "Wave Loading": {
+    short:"Heavy-Light Alternating Sets",
+    long:"Alternate between heavier and lighter sets within a session (e.g., 3 reps, 5 reps, 3 reps, 5 reps). The lighter sets feel easier after the heavy ones, letting you lift more than usual. Potentiates the nervous system.",
+    svg:'<svg viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg"><rect x="10" y="10" width="30" height="55" rx="4" fill="'+_gc.red+'" opacity="0.85"/><rect x="48" y="30" width="30" height="35" rx="4" fill="'+_gc.orange+'" opacity="0.85"/><rect x="86" y="8" width="30" height="57" rx="4" fill="'+_gc.red+'" opacity="0.85"/><rect x="124" y="28" width="30" height="37" rx="4" fill="'+_gc.orange+'" opacity="0.85"/><rect x="162" y="5" width="30" height="60" rx="4" fill="'+_gc.red+'" opacity="0.85"/><text x="25" y="42" text-anchor="middle" fill="#fff" font-size="9" font-weight="800">3 rep</text><text x="63" y="52" text-anchor="middle" fill="#fff" font-size="9" font-weight="800">5 rep</text><text x="101" y="40" text-anchor="middle" fill="#fff" font-size="9" font-weight="800">3 rep</text><text x="139" y="50" text-anchor="middle" fill="#fff" font-size="9" font-weight="800">5 rep</text><text x="177" y="39" text-anchor="middle" fill="#fff" font-size="9" font-weight="800">3 rep</text><path d="M25,68 Q44,75 63,68 T101,68 T139,68 T177,68" stroke="'+_gc.purple+'" stroke-width="2" fill="none"/></svg>'
+  },
+
+  // --- Other ---
+  "Accommodation": { short:"Adaptation Stalls Gains", long:"Your body adapts to the same stimulus over time, and progress slows. The fix: rotate exercises, vary rep ranges, or change intensity. This is why conjugate training switches lifts every 3 weeks." },
+  "RIR": {
+    short:"Reps In Reserve",
+    long:"How many reps you could still do. RIR 2 = stopped with 2 reps left. Closely related to RPE: RPE 8 = RIR 2. Some lifters find RIR more intuitive than the RPE scale.",
+    svg:'<svg viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="rirg" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="'+_gc.red+'"/><stop offset="50%" stop-color="'+_gc.orange+'"/><stop offset="100%" stop-color="'+_gc.green+'"/></linearGradient></defs><rect x="10" y="15" width="180" height="18" rx="9" fill="url(#rirg)" opacity="0.85"/><text x="28" y="28" text-anchor="middle" fill="#fff" font-size="9" font-weight="800">0</text><text x="100" y="28" text-anchor="middle" fill="#fff" font-size="10" font-weight="800">3</text><text x="172" y="28" text-anchor="middle" fill="#fff" font-size="10" font-weight="800">5+</text><text x="28" y="48" text-anchor="middle" fill="'+_gc.red+'" font-size="7" font-weight="700">Failure</text><text x="100" y="48" text-anchor="middle" fill="'+_gc.orange+'" font-size="7" font-weight="700">Hard but safe</text><text x="172" y="48" text-anchor="middle" fill="'+_gc.green+'" font-size="7" font-weight="700">Warm-up</text></svg>'
+  }
 };
 
 // Get glossary term for a template ID (maps program IDs to glossary keys)

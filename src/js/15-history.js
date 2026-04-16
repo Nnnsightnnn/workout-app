@@ -2,22 +2,132 @@
 // HISTORY
 // ============================================================
 function renderHistory() {
+  const tabs = document.getElementById("historyTabs");
+  if (!tabs._wired) {
+    tabs._wired = true;
+    tabs.addEventListener("click", e => {
+      const btn = e.target.closest(".history-tab");
+      if (!btn) return;
+      const tabName = btn.dataset.tab;
+      tabs.querySelectorAll(".history-tab").forEach(t => t.classList.toggle("active", t === btn));
+      document.querySelectorAll("#screen-history .history-pane").forEach(p =>
+        p.classList.toggle("active", p.id === "pane-" + tabName)
+      );
+      if (tabName === "prs") { renderPRBoard(); renderSessionList(); }
+      if (tabName === "balance") renderBalanceTab();
+    });
+  }
+  const activeTab = tabs.querySelector(".history-tab.active");
+  const tabName = activeTab ? activeTab.dataset.tab : "prs";
+  if (tabName === "prs") { renderPRBoard(); renderSessionList(); }
+  if (tabName === "balance") renderBalanceTab();
+}
+
+function renderPRBoard() {
+  const u = userData();
+  const board = document.getElementById("prBoard");
+
+  if (!u.sessions.length) {
+    board.innerHTML = `<div class="empty">No PRs yet. Complete a workout to see your records.</div>`;
+    return;
+  }
+
+  // Build PR map from all sessions
+  const prMap = {};
+  u.sessions.forEach(s => {
+    s.sets.forEach(set => {
+      const key = set.exId;
+      if (!prMap[key]) prMap[key] = {
+        exName: set.exName,
+        maxWeight: 0, maxWeightReps: 0,
+        bestScore: 0, bestScoreWeight: 0, bestScoreReps: 0,
+        bestReps: 0, isBodyweight: true
+      };
+      const rec = prMap[key];
+      if (set.weight > 0) {
+        rec.isBodyweight = false;
+        if (set.weight > rec.maxWeight || (set.weight === rec.maxWeight && set.reps > rec.maxWeightReps)) {
+          rec.maxWeight = set.weight;
+          rec.maxWeightReps = set.reps;
+        }
+        const score = set.weight * (1 + set.reps / 30);
+        if (score > rec.bestScore) {
+          rec.bestScore = score;
+          rec.bestScoreWeight = set.weight;
+          rec.bestScoreReps = set.reps;
+        }
+      } else {
+        if (set.reps > rec.bestReps) rec.bestReps = set.reps;
+      }
+    });
+  });
+
+  // Group by exercise category
+  const catGroups = {};
+  Object.entries(prMap).forEach(([exId, rec]) => {
+    const lib = LIB_BY_ID[exId];
+    const cat = lib ? lib.cat : "Other";
+    if (cat === "Warmup") return;
+    if (!catGroups[cat]) catGroups[cat] = [];
+    catGroups[cat].push({ exId, ...rec });
+  });
+
+  const orderedCats = CATEGORIES.filter(c => c !== "Warmup" && catGroups[c]);
+  if (catGroups["Other"]) orderedCats.push("Other");
+
+  if (orderedCats.length === 0) {
+    board.innerHTML = `<div class="empty">No PRs yet. Complete a workout to see your records.</div>`;
+    return;
+  }
+
+  let html = "";
+  orderedCats.forEach(cat => {
+    html += `<div class="pr-cat-header">${cat}</div>`;
+    const exercises = catGroups[cat].sort((a, b) => {
+      if (!a.isBodyweight && b.isBodyweight) return -1;
+      if (a.isBodyweight && !b.isBodyweight) return 1;
+      if (!a.isBodyweight) return b.bestScore - a.bestScore;
+      return b.bestReps - a.bestReps;
+    });
+    exercises.forEach(ex => {
+      if (ex.isBodyweight) {
+        html += `<div class="pr-card">
+          <div class="pr-ex-name">${ex.exName}</div>
+          <div class="pr-stats">
+            <div class="pr-stat">
+              <div class="pr-label">Best Reps</div>
+              <div class="pr-value bodyweight">${ex.bestReps}</div>
+            </div>
+          </div>
+        </div>`;
+      } else {
+        const e1rm = Math.round(ex.bestScore);
+        html += `<div class="pr-card">
+          <div class="pr-ex-name">${ex.exName}</div>
+          <div class="pr-stats">
+            <div class="pr-stat">
+              <div class="pr-label">Max Weight</div>
+              <div class="pr-value">${ex.maxWeight} ${state.unit}</div>
+              <div class="pr-detail">${ex.maxWeightReps} rep${ex.maxWeightReps !== 1 ? "s" : ""}</div>
+            </div>
+            <div class="pr-stat">
+              <div class="pr-label">Best e1RM</div>
+              <div class="pr-value">${e1rm} ${state.unit}</div>
+              <div class="pr-detail">${ex.bestScoreWeight} × ${ex.bestScoreReps}</div>
+            </div>
+          </div>
+        </div>`;
+      }
+    });
+  });
+  board.innerHTML = html;
+}
+
+function renderSessionList() {
   const u = userData();
   const now = Date.now();
   const thirtyAgo = now - 30*24*3600*1000;
   const recent = u.sessions.filter(s => s.finishedAt > thirtyAgo).slice().reverse();
-
-  const counts = {};
-  recent.forEach(s => {
-    s.sets.forEach(set => {
-      (set.muscles || []).forEach(m => {
-        const g = groupMuscle(m);
-        if (!g) return;
-        counts[g] = (counts[g] || 0) + 1;
-      });
-    });
-  });
-  renderDonut(counts);
 
   const list = document.getElementById("sessionList");
   if (!recent.length) {
@@ -46,6 +156,25 @@ function renderHistory() {
     `;
     list.appendChild(el);
   });
+}
+
+function renderBalanceTab() {
+  const u = userData();
+  const now = Date.now();
+  const thirtyAgo = now - 30*24*3600*1000;
+  const recent = u.sessions.filter(s => s.finishedAt > thirtyAgo);
+
+  const counts = {};
+  recent.forEach(s => {
+    s.sets.forEach(set => {
+      (set.muscles || []).forEach(m => {
+        const g = groupMuscle(m);
+        if (!g) return;
+        counts[g] = (counts[g] || 0) + 1;
+      });
+    });
+  });
+  renderDonut(counts);
 }
 
 function groupMuscle(m) {

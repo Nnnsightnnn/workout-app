@@ -41,6 +41,7 @@ function setupPWA() {
 function initUserPicker() {
   document.getElementById("userChip").onclick = () => showScreen('settings');
   document.getElementById("settingsCloseBtn").onclick = () => showScreen('workout');
+  document.getElementById("historyCloseBtn").onclick = () => showScreen('workout');
 }
 
 function renderUserChip() {
@@ -244,27 +245,17 @@ function initTools() {
 function initWorkoutScreen() {
   document.getElementById("homeDayBtn").onclick = () => {
     state.dayChosen = false;
-    state.editMode = false;
-    document.body.classList.remove("editing");
-    document.getElementById("editToggleBtn").classList.remove("active");
     renderWorkoutScreen();
   };
   document.getElementById("pickDayBtn").onclick = openDayPicker;
-  document.getElementById("swapSidebarBtn").onclick = () => {
+  document.getElementById("libraryBtn").onclick = () => {
     state.sidebarOpen ? closeSidebar() : openSidebar();
   };
-  document.getElementById("editToggleBtn").onclick = () => {
-    state.editMode = !state.editMode;
-    document.getElementById("editToggleBtn").classList.toggle("active", state.editMode);
-    document.body.classList.toggle("editing", state.editMode);
-    renderWorkoutScreen();
-  };
+  document.getElementById("customizeDayBtn").onclick = openCustomizeDay;
   document.getElementById("startBtn").onclick = startWorkout;
   document.getElementById("finishBtn").onclick = finishWorkout;
   document.getElementById("headerStartBtn").onclick = startWorkout;
   document.getElementById("headerFinishBtn").onclick = finishWorkout;
-  document.getElementById("resetDayBtn").onclick = resetCurrentDay;
-  document.getElementById("addBlockBtn").onclick = addBlock;
 }
 function initSidebar() {
   document.getElementById("sidebarCloseBtn").onclick = closeSidebar;
@@ -316,6 +307,19 @@ function init() {
     state.dayChosen = true;
     state.workoutStartedAt = draft.startedAt;
     startSessionTimer();
+    // Resume into focus view on first incomplete block
+    const day = getCurrentDay();
+    if (day) {
+      let idx = 0;
+      let allDone = true;
+      for (let i = 0; i < day.blocks.length; i++) {
+        const bp = calcBlockProgress(day.blocks[i]);
+        if (bp.done < bp.total) { idx = i; allDone = false; break; }
+      }
+      state.workoutView = "focus";
+      state.focusBlockIdx = allDone ? -1 : idx;
+      state.focusExIdx = 0;
+    }
   }
 
   renderUserChip();

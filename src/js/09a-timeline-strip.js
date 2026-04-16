@@ -113,26 +113,6 @@ function renderTimelineStrip() {
     infoRow.appendChild(streakEl);
   }
 
-  // Forge counter — lifetime volume
-  if (sessions.length > 0) {
-    const totalVol = sessions.reduce((sum, s) => sum + (s.volume || 0), 0);
-    const forgeEl = document.createElement("div");
-    forgeEl.className = "tl-forge";
-    if (totalVol > 0) {
-      const volStr = totalVol >= 1000000 ? (totalVol / 1000000).toFixed(1) + "M"
-        : totalVol >= 10000 ? (totalVol / 1000).toFixed(1) + "k"
-        : totalVol.toLocaleString();
-      forgeEl.innerHTML = `<span class="tl-forge-num">${volStr}</span><span class="tl-forge-unit">${state.unit}</span><span class="tl-forge-label">lifted</span>`;
-    } else {
-      const totalSets = sessions.reduce((sum, s) => sum + (s.sets ? s.sets.length : 0), 0);
-      forgeEl.innerHTML = `<span class="tl-forge-num">${totalSets}</span><span class="tl-forge-label">sets done</span>`;
-    }
-    infoRow.appendChild(forgeEl);
-  }
-
-  // Fuel Orb — weekly progress fill
-  infoRow.appendChild(buildFuelOrb(sessions, u));
-
   var displayTotalWeeks = u.totalWeeks || (tpl && tpl.totalWeeks);
   if (displayTotalWeeks && weekNum) {
     const phaseEl = document.createElement("div");
@@ -442,116 +422,92 @@ function openLogSets(dateMs, day) {
 }
 
 // ============================================================
-// STAMP CARD — Hanko-style session collection
+// FUEL CELL — Weekly progress liquid fill (hero visual)
 // ============================================================
 function renderStampCard() {
   const el = document.getElementById("stampCard");
   if (!el) return;
   const u = userData();
-  if (!u || !u.sessions || !u.sessions.length) { el.style.display = "none"; return; }
+  if (!u) { el.style.display = "none"; return; }
 
   el.style.display = "";
   el.innerHTML = "";
 
-  const sessions = u.sessions;
-  const total = sessions.length;
-  const CARD = 10;
-  const done = Math.floor(total / CARD);
-  const cur = total % CARD;
-  const full = cur === 0 && done > 0;
-  const filled = full ? CARD : cur;
-  const base = full ? (done - 1) * CARD : done * CARD;
-
-  const wrap = document.createElement("div");
-  wrap.className = "stamp-card" + (full ? " stamp-card-complete" : "");
-
-  for (let i = 0; i < CARD; i++) {
-    const stamp = document.createElement("div");
-    if (i < filled) {
-      const s = sessions[base + i];
-      const color = s ? getDayPrimaryColor(s) : null;
-      const init = s && s.dayName ? s.dayName.charAt(0) : "";
-      stamp.className = "stamp filled" + (i === filled - 1 && !full ? " newest" : "");
-      if (color) stamp.style.setProperty("--stamp-color", color);
-      stamp.innerHTML = `<span class="stamp-initial">${init}</span>`;
-    } else {
-      stamp.className = "stamp empty";
-    }
-    wrap.appendChild(stamp);
-  }
-
-  const ctr = document.createElement("div");
-  ctr.className = "stamp-counter";
-  ctr.innerHTML = `<span class="stamp-counter-num">${filled}/${CARD}</span>` +
-    (done > 0 ? `<span class="stamp-counter-cards">${done} done</span>` : "");
-  wrap.appendChild(ctr);
-
-  el.appendChild(wrap);
-}
-
-// ============================================================
-// FUEL ORB — Weekly progress liquid fill
-// ============================================================
-function getWeeklyProgress(sessions, u) {
+  const sessions = u.sessions || [];
   const target = u.program ? u.program.length : (u.daysPerWeek || 4);
   let completed = 0;
 
   if (u.currentWeek) {
-    // Structured program: count unique day IDs done this week
     const weekSessions = sessions.filter(s => s.programWeek === u.currentWeek);
     completed = new Set(weekSessions.map(s => s.dayId)).size;
   } else {
-    // Fallback: count sessions in the last 7 days
     const weekAgo = Date.now() - 7 * 86400000;
     completed = sessions.filter(s => s.finishedAt >= weekAgo).length;
   }
-
-  return { completed: Math.min(completed, target), target };
-}
-
-function buildFuelOrb(sessions, u) {
-  const { completed, target } = getWeeklyProgress(sessions, u);
-  const pct = target > 0 ? Math.min(completed / target, 1) : 0;
+  completed = Math.min(completed, target);
+  const pct = target > 0 ? completed / target : 0;
   const isFull = pct >= 1;
 
-  const wrap = document.createElement("div");
-  wrap.className = "fuel-orb" + (isFull ? " fuel-full" : "") + (pct === 0 ? " fuel-empty" : "");
+  // Lifetime volume for subtitle
+  const totalVol = sessions.reduce((sum, s) => sum + (s.volume || 0), 0);
+  const volStr = totalVol >= 1000000 ? (totalVol / 1000000).toFixed(1) + "M"
+    : totalVol >= 10000 ? (totalVol / 1000).toFixed(1) + "k"
+    : totalVol > 0 ? totalVol.toLocaleString()
+    : null;
 
-  // SVG dimensions
-  const size = 44;
-  const r = 19;
-  const cx = size / 2;
-  const cy = size / 2;
+  const card = document.createElement("div");
+  card.className = "fuel-cell" + (isFull ? " fuel-full" : "");
 
-  // Liquid level: pct 0 = bottom of circle, 1 = top
-  // Map pct to Y position within the circle (top of liquid surface)
-  // Circle spans from cy-r (top=3) to cy+r (bottom=41)
-  const liquidTop = cy + r - (pct * 2 * r); // 41 at 0%, 3 at 100%
+  // Top line: label + count
+  const header = document.createElement("div");
+  header.className = "fuel-header";
+  header.innerHTML = `<span class="fuel-title">Effort</span><span class="fuel-count">${completed} <span class="fuel-of">of</span> ${target}</span>`;
+  card.appendChild(header);
 
-  // Wave path for liquid surface
-  const wAmp = pct > 0 && pct < 1 ? 2.5 : 0;
-  const wY = liquidTop;
-  const wave1 = `M0,${wY} Q${size*0.25},${wY - wAmp} ${size*0.5},${wY} T${size},${wY} L${size},${size} L0,${size} Z`;
-  const wave2 = `M0,${wY + 1} Q${size*0.25},${wY + 1 + wAmp} ${size*0.5},${wY + 1} T${size},${wY + 1} L${size},${size} L0,${size} Z`;
+  // Tank bar
+  const tank = document.createElement("div");
+  tank.className = "fuel-tank";
 
-  // Color based on fill level
-  const fillColor = isFull ? "#ffd60a" : pct >= 0.6 ? "#ff8c42" : "#ff6b35";
-  const fillColorDim = isFull ? "#cc9a00" : pct >= 0.6 ? "#cc5428" : "#cc4420";
+  const liquid = document.createElement("div");
+  liquid.className = "fuel-liquid";
+  liquid.style.setProperty("--pct", (pct * 100) + "%");
 
-  wrap.innerHTML = `<svg viewBox="0 0 ${size} ${size}" class="fuel-orb-svg">
-    <defs>
-      <clipPath id="orbClip"><circle cx="${cx}" cy="${cy}" r="${r}"/></clipPath>
-      <linearGradient id="orbGrad" x1="0" y1="1" x2="0" y2="0">
-        <stop offset="0%" stop-color="${fillColorDim}"/>
-        <stop offset="100%" stop-color="${fillColor}"/>
-      </linearGradient>
-    </defs>
-    <circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--bg-card)" stroke="var(--border)" stroke-width="2"/>
-    ${pct > 0 ? `<path d="${wave1}" fill="url(#orbGrad)" clip-path="url(#orbClip)" class="orb-wave orb-wave-1"/>` : ""}
-    ${pct > 0 ? `<path d="${wave2}" fill="url(#orbGrad)" clip-path="url(#orbClip)" class="orb-wave orb-wave-2" opacity="0.5"/>` : ""}
-    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${pct > 0 ? fillColor + '44' : 'var(--border)'}" stroke-width="2" ${pct === 0 ? 'stroke-dasharray="3 3"' : ""}/>
-    <text x="${cx}" y="${cy + 1}" text-anchor="middle" dominant-baseline="central" class="orb-text">${completed}/${target}</text>
-  </svg>`;
+  // Animated wave surface at the leading edge
+  if (pct > 0 && pct < 1) {
+    const wave = document.createElement("div");
+    wave.className = "fuel-wave";
+    liquid.appendChild(wave);
+  }
 
-  return wrap;
+  // Inner shimmer
+  if (pct > 0) {
+    const sheen = document.createElement("div");
+    sheen.className = "fuel-sheen";
+    liquid.appendChild(sheen);
+  }
+
+  tank.appendChild(liquid);
+
+  // Segment markers
+  for (let i = 1; i < target; i++) {
+    const seg = document.createElement("div");
+    seg.className = "fuel-seg";
+    seg.style.left = ((i / target) * 100) + "%";
+    tank.appendChild(seg);
+  }
+
+  card.appendChild(tank);
+
+  // Bottom line: volume + sessions
+  if (volStr || sessions.length > 0) {
+    const footer = document.createElement("div");
+    footer.className = "fuel-footer";
+    const parts = [];
+    if (volStr) parts.push(volStr + " " + state.unit + " lifetime");
+    if (sessions.length > 0) parts.push(sessions.length + " workouts total");
+    footer.textContent = parts.join(" · ");
+    card.appendChild(footer);
+  }
+
+  el.appendChild(card);
 }

@@ -186,6 +186,98 @@ function addInlineRest(sec) {
 }
 
 // ============================================================
+// STANDALONE REST TIMER (bottom sheet)
+// ============================================================
+let _saTimerId = null;
+let _saEndsAt = null;
+let _saTotal = 0;
+
+function openStandaloneTimer() {
+  _resumeAudioCtx();
+  if (_saTimerId) { clearInterval(_saTimerId); _saTimerId = null; }
+
+  const defaultSec = 90;
+  _saEndsAt = Date.now() + defaultSec * 1000;
+  _saTotal = defaultSec;
+
+  const html = `
+    <div class="sa-timer">
+      <div class="sa-timer-time">${formatRest(defaultSec)}</div>
+      <div class="sa-timer-pills">
+        <button class="rest-pill" data-sec="45">45s</button>
+        <button class="rest-pill" data-sec="60">1:00</button>
+        <button class="rest-pill active" data-sec="90">1:30</button>
+        <button class="rest-pill" data-sec="120">2:00</button>
+        <button class="rest-pill" data-sec="180">3:00</button>
+      </div>
+      <div class="sa-timer-actions">
+        <button class="rest-inline-btn" data-action="add30">+30</button>
+        <button class="rest-inline-btn" data-action="stop">Stop</button>
+      </div>
+      <div class="rest-inline-bar"><div class="rest-inline-fill sa-timer-fill"></div></div>
+    </div>
+  `;
+
+  openSheet(html);
+
+  const root = document.getElementById("sheetContent");
+  root.addEventListener("click", function handler(e) {
+    const pill = e.target.closest(".rest-pill");
+    if (pill) {
+      const sec = parseInt(pill.dataset.sec);
+      _saEndsAt = Date.now() + sec * 1000;
+      _saTotal = sec;
+      root.querySelectorAll(".rest-pill").forEach(p => p.classList.remove("active"));
+      pill.classList.add("active");
+      const wrap = root.querySelector(".sa-timer");
+      if (wrap) wrap.classList.remove("done");
+      if (!_saTimerId) _startSaTick(root);
+      return;
+    }
+    const btn = e.target.closest(".rest-inline-btn");
+    if (btn) {
+      if (btn.dataset.action === "add30") {
+        if (_saEndsAt) { _saEndsAt += 30 * 1000; _saTotal += 30; }
+        const wrap = root.querySelector(".sa-timer");
+        if (wrap) wrap.classList.remove("done");
+        if (!_saTimerId) _startSaTick(root);
+      } else if (btn.dataset.action === "stop") {
+        if (_saTimerId) { clearInterval(_saTimerId); _saTimerId = null; }
+        _saEndsAt = null;
+        closeSheet();
+      }
+    }
+  });
+
+  _startSaTick(root);
+}
+
+function _startSaTick(root) {
+  const tick = () => {
+    const timeEl = root.querySelector(".sa-timer-time");
+    const fillEl = root.querySelector(".sa-timer-fill");
+    const wrap = root.querySelector(".sa-timer");
+    if (!timeEl || !_saEndsAt) return;
+
+    const rem = Math.max(0, Math.ceil((_saEndsAt - Date.now()) / 1000));
+    timeEl.textContent = formatRest(rem);
+    const frac = _saTotal > 0 ? rem / _saTotal : 0;
+    fillEl.style.width = (frac * 100) + "%";
+
+    if (rem === 0) {
+      clearInterval(_saTimerId);
+      _saTimerId = null;
+      if (wrap) wrap.classList.add("done");
+      playBeep();
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+      setTimeout(() => { _saEndsAt = null; closeSheet(); }, 2000);
+    }
+  };
+  tick();
+  _saTimerId = setInterval(tick, 250);
+}
+
+// ============================================================
 // FORMAT UTILITIES
 // ============================================================
 function formatDuration(sec) {
