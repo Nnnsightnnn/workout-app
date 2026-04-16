@@ -115,14 +115,6 @@ function renderWorkoutScreen() {
 
   renderTimelineStrip();
 
-  // Preserve rest timer state before DOM clear
-  if (state.restIntervalId && state.restEndsAt) {
-    clearInterval(state.restIntervalId);
-    state.restIntervalId = null;
-    state.restCardEl = null;
-    // restEndsAt and restTotal are preserved for reattach
-  }
-
   container.innerHTML = "";
 
   // View dispatcher: chapters/focus when workout active, flat list otherwise
@@ -584,18 +576,16 @@ function renderCooldownBlock() {
         t.textContent = ex.isTime ? `${ex.reps}s${ex.perSide ? "/side" : ""}` : `${ex.reps} reps${ex.perSide ? "/side" : ""}`;
         meta.appendChild(t);
       }
+      const _libRef2 = LIB_BY_ID[ex.exId];
+      if (_libRef2 && _libRef2.demoUrl) {
+        const dt = document.createElement("span");
+        dt.className = "tag demo-tag";
+        dt.textContent = "▶ demo";
+        dt.onclick = (e) => { e.stopPropagation(); window.open(_libRef2.demoUrl, "_blank"); };
+        meta.appendChild(dt);
+      }
       info.appendChild(meta);
       head.appendChild(info);
-
-      const libRef = LIB_BY_ID[ex.exId];
-      if (libRef && libRef.demoUrl) {
-        const demoBtn = document.createElement("button");
-        demoBtn.className = "ex-demo-btn";
-        demoBtn.textContent = "▶";
-        demoBtn.title = "Watch demo";
-        demoBtn.onclick = (e) => { e.stopPropagation(); window.open(libRef.demoUrl, "_blank"); };
-        head.appendChild(demoBtn);
-      }
 
       card.appendChild(head);
 
@@ -681,6 +671,20 @@ function renderExercise(day, block, ex, bi, ei, isSuperset) {
     t.textContent = "⚠ modify";
     meta.appendChild(t);
   }
+  // Demo video tag in meta row
+  const _libRef = LIB_BY_ID[ex.exId];
+  const _demoUrl = _libRef && _libRef.demoUrl;
+  if (_demoUrl) {
+    const dt = document.createElement("span");
+    dt.className = "tag demo-tag";
+    dt.textContent = "▶ demo";
+    dt.onclick = (e) => {
+      e.stopPropagation();
+      window.open(_demoUrl, "_blank");
+    };
+    meta.appendChild(dt);
+  }
+
   info.appendChild(meta);
   head.appendChild(info);
 
@@ -696,20 +700,7 @@ function renderExercise(day, block, ex, bi, ei, isSuperset) {
   };
   head.appendChild(swapBtn);
 
-  // Demo video link
-  const libRef = LIB_BY_ID[ex.exId];
-  const demoUrl = libRef && libRef.demoUrl;
-  if (demoUrl) {
-    const demoBtn = document.createElement("button");
-    demoBtn.className = "ex-demo-btn";
-    demoBtn.textContent = "▶";
-    demoBtn.title = "Watch demo";
-    demoBtn.onclick = (e) => {
-      e.stopPropagation();
-      window.open(demoUrl, "_blank");
-    };
-    head.appendChild(demoBtn);
-  }
+  // Demo video link — rendered as tag in meta row below
 
   const menuBtn = document.createElement("button");
   menuBtn.className = "ex-menu-btn";
@@ -828,7 +819,7 @@ function renderSetsTable(block, ex, bi, ei) {
     chip.className = "set-chip";
 
     const weightPart = bw ? "" :
-      `<span class="set-chip-weight">${curW}</span><span class="set-chip-x">×</span>`;
+      `<span class="set-chip-weight" data-field="w">${curW}</span><span class="set-chip-x">×</span>`;
 
     const rpePart = lib.noRpe ? "" :
       `<span class="set-chip-rpe">RPE <span class="rpe-num">${curP}</span></span>`;
@@ -836,7 +827,7 @@ function renderSetsTable(block, ex, bi, ei) {
       <div class="set-chip-num">${i+1}</div>
       <div class="set-chip-body">
         ${weightPart}
-        <span class="set-chip-reps">${curR} ${repsLabel}</span>
+        <span class="set-chip-reps" data-field="r">${curR} ${repsLabel}</span>
         ${rpePart}
       </div>
       <span class="set-chip-chevron">›</span>
@@ -897,7 +888,7 @@ function wireChip(chip, block, ex, bi, ei, i, bw) {
         if (!was) {
           chip.classList.add("set-done");
           const card = chip.closest(".exercise-card");
-          if (card && state.workoutStartedAt) showInlineRest(card, 90);
+          if (state.workoutStartedAt) showHeaderRest(90);
         }
         saveInput(statusKey, was ? null : "done");
         if (navigator.vibrate) navigator.vibrate(10);
@@ -911,15 +902,39 @@ function wireChip(chip, block, ex, bi, ei, i, bw) {
       setTimeout(() => { chip.style.transition = ""; }, 160);
       return;
     }
-    // Tap — open set editor
+    // Tap — open set editor (skip if tapping a quick-edit field)
+    if (e.target.closest("[data-field]")) return;
     openSetEditor(block, ex, bi, ei, i, bw);
   }, { passive: true });
 
   // Desktop click fallback (no touch)
   chip.addEventListener("click", (e) => {
     if (isSwiping) return;
+    if (e.target.closest("[data-field]")) return;
     openSetEditor(block, ex, bi, ei, i, bw);
   });
+
+  // Inline quick-edit: tap weight or reps span directly
+  const weightSpan = chip.querySelector(".set-chip-weight");
+  const repsSpan = chip.querySelector(".set-chip-reps");
+
+  function attachInlineEdit(span, field) {
+    if (!span) return;
+    let handled = false;
+    span.addEventListener("touchend", (e) => {
+      if (isSwiping) return;
+      e.stopPropagation();
+      handled = true;
+      openInlineEditor(span, field, block, ex, bi, ei, i, bw);
+    });
+    span.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (handled) { handled = false; return; }
+      openInlineEditor(span, field, block, ex, bi, ei, i, bw);
+    });
+  }
+  attachInlineEdit(weightSpan, "w");
+  attachInlineEdit(repsSpan, "r");
 }
 
 function openSetEditor(block, ex, bi, ei, setIdx, bw) {
@@ -1143,36 +1158,138 @@ function updateQuickPills(container, activeVal) {
 }
 
 // ============================================================
+// INLINE QUICK-EDIT POPOVER
+// ============================================================
+function dismissInlineEditor() {
+  document.querySelectorAll(".inline-edit-backdrop, .inline-edit-popover").forEach(el => el.remove());
+}
+
+function openInlineEditor(anchorEl, field, block, ex, bi, ei, setIdx, bw) {
+  dismissInlineEditor();
+
+  const lib = LIB_BY_ID[ex.exId] || ex;
+  const last = getLastSetsFor(ex.exId || ex.name);
+  const lastSet = last[setIdx] || last[last.length - 1];
+  const key = inputKey(block.id, ei, setIdx, field);
+
+  let curVal, step, label, unitLabel, commonVals;
+  if (field === "w") {
+    curVal = getInput(key, lastSet?.weight ?? ex.defaultWeight ?? 0);
+    step = state.unit === "lbs" ? 5 : 2.5;
+    label = `Weight (${state.unit})`;
+    unitLabel = state.unit;
+    commonVals = state.unit === "lbs" ? [45, 95, 135, 185, 225, 275, 315] : [20, 40, 60, 80, 100, 120, 140];
+  } else {
+    curVal = getInput(key, lastSet?.reps ?? ex.reps);
+    step = ex.isTime ? 5 : ex.isDistance ? 10 : 1;
+    label = ex.isTime ? "Time (sec)" : ex.isDistance ? "Distance (m)" : "Reps";
+    unitLabel = ex.isTime ? "s" : ex.isDistance ? "m" : "reps";
+    commonVals = ex.isTime ? [15, 30, 45, 60, 90, 120] : ex.isDistance ? [50, 100, 200, 400, 800, 1000] : [1, 3, 5, 8, 10, 12, 15, 20];
+  }
+
+  // Backdrop
+  const backdrop = document.createElement("div");
+  backdrop.className = "inline-edit-backdrop";
+  backdrop.addEventListener("click", dismissInlineEditor);
+  backdrop.addEventListener("touchend", (e) => { e.preventDefault(); dismissInlineEditor(); });
+
+  // Popover
+  const pop = document.createElement("div");
+  pop.className = "inline-edit-popover";
+
+  // Label
+  const lbl = document.createElement("div");
+  lbl.className = "inline-edit-label";
+  lbl.textContent = label;
+
+  // Stepper row
+  const row = document.createElement("div");
+  row.className = "inline-edit-stepper-row";
+
+  const minus = document.createElement("button");
+  minus.className = "inline-edit-stepper";
+  minus.textContent = "\u2212";
+
+  const valDisplay = document.createElement("div");
+  valDisplay.className = "inline-edit-value";
+  valDisplay.innerHTML = `${curVal}<small>${unitLabel}</small>`;
+
+  const plus = document.createElement("button");
+  plus.className = "inline-edit-stepper";
+  plus.textContent = "+";
+
+  // Quick pills
+  const pills = document.createElement("div");
+  pills.className = "inline-edit-pills";
+
+  function updateVal(newVal) {
+    curVal = newVal;
+    valDisplay.innerHTML = `${curVal}<small>${unitLabel}</small>`;
+    saveInput(key, curVal);
+    // Update chip text in-place
+    if (field === "w") {
+      anchorEl.textContent = curVal;
+    } else {
+      const rl = ex.isTime ? "s" : ex.isDistance ? "m" : "reps";
+      anchorEl.textContent = curVal + " " + rl;
+    }
+    pills.querySelectorAll(".inline-edit-pill").forEach(p =>
+      p.classList.toggle("active", parseFloat(p.textContent) === curVal)
+    );
+    if (navigator.vibrate) navigator.vibrate(10);
+  }
+
+  minus.onclick = () => updateVal(Math.max(0, curVal - step));
+  plus.onclick = () => updateVal(curVal + step);
+
+  commonVals.forEach(v => {
+    const pill = document.createElement("button");
+    pill.className = "inline-edit-pill" + (v === curVal ? " active" : "");
+    pill.textContent = v;
+    pill.onclick = () => updateVal(v);
+    pills.appendChild(pill);
+  });
+
+  row.appendChild(minus);
+  row.appendChild(valDisplay);
+  row.appendChild(plus);
+  pop.appendChild(lbl);
+  pop.appendChild(row);
+  pop.appendChild(pills);
+
+  document.body.appendChild(backdrop);
+  document.body.appendChild(pop);
+
+  // Position popover near the anchor
+  const rect = anchorEl.getBoundingClientRect();
+  const popW = pop.offsetWidth;
+  const popH = pop.offsetHeight;
+  let left = rect.left + rect.width / 2 - popW / 2;
+  left = Math.max(8, Math.min(left, window.innerWidth - popW - 8));
+  let top = rect.top - popH - 8;
+  if (top < 8) top = rect.bottom + 8;
+  pop.style.left = left + "px";
+  pop.style.top = top + "px";
+
+  requestAnimationFrame(() => pop.classList.add("active"));
+}
+
+// ============================================================
 // CHAPTERS VIEW (Command Center)
 // ============================================================
 function renderChaptersView(container, day) {
   const wrap = document.createElement("div");
   wrap.className = "chapters-view chapters-enter";
 
-  // Find first incomplete block for active highlight
-  let activeBlockIdx = -1;
-  for (let i = 0; i < day.blocks.length; i++) {
-    const bp = calcBlockProgress(day.blocks[i]);
-    if (bp.done < bp.total) { activeBlockIdx = i; break; }
-  }
-  if (activeBlockIdx === -1) activeBlockIdx = day.blocks.length; // all done, cooldown is active
-
+  let tileIdx = 0;
   day.blocks.forEach((block, bi) => {
     const bp = calcBlockProgress(block);
     const isDone = bp.total > 0 && bp.done === bp.total;
-    const isActive = bi === activeBlockIdx;
-    const pct = bp.total > 0 ? Math.round((bp.done / bp.total) * 100) : 0;
+    const isSuperset = block.exercises.filter(e => !e.isWarmup).length > 1;
 
-    const card = document.createElement("div");
-    card.className = "chapter-card"
-      + (isDone ? " chapter-done chapter-compact" : "")
-      + (isActive ? " chapter-active chapter-hero" : "");
-    card.style.setProperty("--card-index", bi);
-
-    const exCount = block.exercises.filter(e => !e.isWarmup).length;
-    const blockMin = Math.round(estimateBlockSec(block) / 60);
-
-    // Muscle colors for block badge
+    // Block header row
+    const hdr = document.createElement("div");
+    hdr.className = "bento-block-header" + (isDone ? " done" : "");
     const blockColors = [];
     block.exercises.forEach(e => {
       if (e.isWarmup) return;
@@ -1182,112 +1299,122 @@ function renderChaptersView(container, day) {
     const badgeStyle = blockColors.length >= 2
       ? `background:linear-gradient(135deg,${blockColors.slice(0,3).join(",")});color:#fff`
       : blockColors.length === 1 ? `background:${blockColors[0]};color:#fff` : "";
+    hdr.innerHTML = `<div class="chapter-letter" style="${badgeStyle}">${block.letter}</div>`
+      + `<span class="bento-block-name">${block.name}${isSuperset ? ' <span style="color:var(--superset);">· Superset</span>' : ''}</span>`
+      + `<span class="bento-block-progress">${bp.done}/${bp.total}</span>`;
+    wrap.appendChild(hdr);
 
-    // SVG progress ring for active card, chevron for others
-    const ringR = 18, ringC = 2 * Math.PI * ringR;
-    const ringDash = (pct / 100) * ringC;
-    const ringColor = isDone ? "var(--success)" : "var(--accent)";
-    const chevronOrRing = isActive
-      ? `<svg class="chapter-ring" viewBox="0 0 44 44" width="44" height="44">
-           <circle cx="22" cy="22" r="${ringR}" fill="none" stroke="var(--bg-card-2)" stroke-width="4"/>
-           <circle cx="22" cy="22" r="${ringR}" fill="none" stroke="${ringColor}" stroke-width="4"
-             stroke-linecap="round" stroke-dasharray="${ringDash} ${ringC}" stroke-dashoffset="0"
-             transform="rotate(-90 22 22)" class="chapter-ring-fill"/>
-           <text x="22" y="23" text-anchor="middle" dominant-baseline="central"
-             fill="var(--text)" font-size="11" font-weight="700">${bp.done}/${bp.total}</text>
-         </svg>`
-      : `<div class="chapter-chevron">${isDone ? "✓" : "›"}</div>`;
+    // Bento grid of exercise tiles
+    const grid = document.createElement("div");
+    grid.className = "bento-exercise-grid";
 
-    card.style.setProperty("--pct", pct + "%");
+    block.exercises.forEach((ex, ei) => {
+      if (ex.isWarmup) return;
+      const numSets = ex.sets || 3;
+      let exDone = 0;
+      for (let si = 0; si < numSets; si++) {
+        if (getInput(inputKey(block.id, ei, si, "status"), null) === "done") exDone++;
+      }
+      const exComplete = exDone === numSets;
+      const exPct = numSets > 0 ? Math.round((exDone / numSets) * 100) : 0;
 
-    card.innerHTML = `
-      <div class="chapter-top">
-        <div class="chapter-letter" style="${badgeStyle}">${block.letter}</div>
-        <div class="chapter-info">
-          <div class="chapter-name">${block.name}</div>
-          <div class="chapter-meta">
-            <span>${exCount} exercise${exCount !== 1 ? "s" : ""}</span>
-            <span>·</span>
-            <span>${bp.done}/${bp.total} sets</span>
-            <span>·</span>
-            <span>~${blockMin}m</span>
-          </div>
-        </div>
-        ${chevronOrRing}
-      </div>
-      <div class="chapter-progress">
-        <div class="chapter-progress-fill${isDone ? " complete" : ""}" style="width:${pct}%"></div>
-      </div>
-    `;
+      const tile = document.createElement("div");
+      tile.className = "bento-ex-tile" + (exComplete ? " complete" : "") + (exDone > 0 && !exComplete ? " partial" : "");
+      tile.style.setProperty("--card-index", tileIdx++);
 
-    // Hero card: add exercise pills
-    if (isActive) {
-      const pillsWrap = document.createElement("div");
-      pillsWrap.className = "chapter-hero-exercises";
-      block.exercises.forEach((ex, ei) => {
-        if (ex.isWarmup) return;
-        const exBp = { done: 0, total: ex.sets || 3 };
-        for (let si = 0; si < exBp.total; si++) {
-          if (getInput(inputKey(block.id, ei, si, "status"), null) === "done") exBp.done++;
-        }
-        const pill = document.createElement("span");
-        pill.className = "chapter-hero-ex" + (exBp.done === exBp.total ? " ex-done" : "");
-        pill.textContent = ex.name;
-        pillsWrap.appendChild(pill);
+      const mColor = primaryMuscleColor(ex.muscles);
+      if (mColor) tile.style.borderLeftColor = mColor;
+
+      const name = document.createElement("div");
+      name.className = "bento-ex-name";
+      name.textContent = ex.name;
+      tile.appendChild(name);
+
+      if (ex.muscles && ex.muscles.length) {
+        const muscle = document.createElement("span");
+        muscle.className = "bento-ex-muscle";
+        muscle.textContent = ex.muscles[0];
+        const mc = GROUP_COLORS[groupMuscle(ex.muscles[0])];
+        if (mc) { muscle.style.background = mc + '22'; muscle.style.color = mc; }
+        tile.appendChild(muscle);
+      }
+
+      const setsInfo = document.createElement("div");
+      setsInfo.className = "bento-ex-sets";
+      if (ex.isTime) {
+        setsInfo.textContent = `${exDone}/${numSets} × ${ex.reps || 30}s`;
+      } else if (ex.isDistance) {
+        setsInfo.textContent = `${exDone}/${numSets} × ${ex.reps || 100}m`;
+      } else {
+        setsInfo.textContent = `${exDone}/${numSets} × ${ex.reps || 8}`;
+      }
+      tile.appendChild(setsInfo);
+
+      // Mini progress bar
+      const prog = document.createElement("div");
+      prog.className = "bento-ex-progress";
+      prog.innerHTML = `<div class="bento-ex-progress-fill${exComplete ? ' complete' : ''}" style="width:${exPct}%"></div>`;
+      tile.appendChild(prog);
+
+      tile.addEventListener("click", () => {
+        state.workoutView = "focus";
+        state.focusBlockIdx = bi;
+        state.focusExIdx = ei;
+        renderWorkoutScreen();
       });
-      card.appendChild(pillsWrap);
+
+      grid.appendChild(tile);
+    });
+
+    wrap.appendChild(grid);
+  });
+
+  // Cooldown tile
+  const cdSkipped = getInput("__cooldown|skipped", false);
+  const cdHdr = document.createElement("div");
+  cdHdr.className = "bento-block-header" + (cdSkipped ? " done" : "");
+  cdHdr.innerHTML = `<div class="chapter-letter" style="background:var(--success);color:#fff">CD</div>`
+    + `<span class="bento-block-name">Cool Down</span>`;
+  wrap.appendChild(cdHdr);
+
+  const cdGrid = document.createElement("div");
+  cdGrid.className = "bento-exercise-grid";
+  getCooldownExercises(state.currentDayId).forEach((ex, ci) => {
+    const tile = document.createElement("div");
+    tile.className = "bento-ex-tile cd-tile";
+    tile.style.setProperty("--card-index", tileIdx++);
+
+    const name = document.createElement("div");
+    name.className = "bento-ex-name";
+    name.textContent = ex.name;
+    tile.appendChild(name);
+
+    if (ex.muscles && ex.muscles.length) {
+      const muscle = document.createElement("span");
+      muscle.className = "bento-ex-muscle";
+      muscle.textContent = ex.muscles[0];
+      const mc = GROUP_COLORS[groupMuscle(ex.muscles[0])];
+      if (mc) { muscle.style.background = mc + '22'; muscle.style.color = mc; }
+      tile.appendChild(muscle);
     }
 
-    card.addEventListener("click", () => {
+    const info = document.createElement("div");
+    info.className = "bento-ex-sets";
+    info.textContent = ex.isTime
+      ? (ex.reps || 30) + "s" + (ex.perSide ? "/side" : "")
+      : (ex.reps || 8) + " reps" + (ex.perSide ? "/side" : "");
+    tile.appendChild(info);
+
+    tile.addEventListener("click", () => {
       state.workoutView = "focus";
-      state.focusBlockIdx = bi;
-      state.focusExIdx = 0;
+      state.focusBlockIdx = -1;
+      state.focusExIdx = ci;
       renderWorkoutScreen();
     });
 
-    if (isActive && !isDone) {
-      const startBtn = document.createElement("button");
-      startBtn.className = "chapter-start-btn";
-      startBtn.textContent = "Start Block " + block.letter;
-      startBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        state.workoutView = "focus";
-        state.focusBlockIdx = bi;
-        state.focusExIdx = 0;
-        renderWorkoutScreen();
-      });
-      card.appendChild(startBtn);
-    }
-
-    wrap.appendChild(card);
+    cdGrid.appendChild(tile);
   });
-
-  // Cooldown chapter card
-  const cdSkipped = getInput("__cooldown|skipped", false);
-  const cdCard = document.createElement("div");
-  cdCard.className = "chapter-card chapter-cooldown" + (cdSkipped ? " chapter-done" : "") + (activeBlockIdx >= day.blocks.length ? " chapter-active" : "");
-  cdCard.style.setProperty("--card-index", day.blocks.length);
-  cdCard.innerHTML = `
-    <div class="chapter-top">
-      <div class="chapter-letter" style="background:var(--success);color:#fff">CD</div>
-      <div class="chapter-info">
-        <div class="chapter-name">Cool Down</div>
-        <div class="chapter-meta">
-          <span>${getCooldownExercises(state.currentDayId).length} stretches</span>
-          <span>·</span>
-          <span>~5m</span>
-        </div>
-      </div>
-      <div class="chapter-chevron">${cdSkipped ? "✓" : "›"}</div>
-    </div>
-  `;
-  cdCard.addEventListener("click", () => {
-    state.workoutView = "focus";
-    state.focusBlockIdx = -1;
-    state.focusExIdx = 0;
-    renderWorkoutScreen();
-  });
-  wrap.appendChild(cdCard);
+  wrap.appendChild(cdGrid);
 
   container.appendChild(wrap);
 }
@@ -1407,12 +1534,6 @@ function renderFocusView(container, day) {
     wireFocusSwipe(cardWrap, exCount);
     wrap.appendChild(cardWrap);
 
-    // Reattach rest timer if active
-    if (state.restEndsAt && state.restEndsAt > Date.now() && !state.restIntervalId) {
-      const remainSec = Math.ceil((state.restEndsAt - Date.now()) / 1000);
-      showInlineRest(card, remainSec);
-    }
-
     // Check block completion
     const bp = calcBlockProgress(block);
     if (bp.total > 0 && bp.done === bp.total) {
@@ -1524,18 +1645,16 @@ function buildCooldownFocusCard(ex) {
     t.textContent = ex.isTime ? `${ex.reps}s${ex.perSide ? "/side" : ""}` : `${ex.reps} reps${ex.perSide ? "/side" : ""}`;
     meta.appendChild(t);
   }
+  const _libRef3 = LIB_BY_ID[ex.exId];
+  if (_libRef3 && _libRef3.demoUrl) {
+    const dt = document.createElement("span");
+    dt.className = "tag demo-tag";
+    dt.textContent = "▶ demo";
+    dt.onclick = (e) => { e.stopPropagation(); window.open(_libRef3.demoUrl, "_blank"); };
+    meta.appendChild(dt);
+  }
   info.appendChild(meta);
   head.appendChild(info);
-
-  const libRef = LIB_BY_ID[ex.exId];
-  if (libRef && libRef.demoUrl) {
-    const demoBtn = document.createElement("button");
-    demoBtn.className = "ex-demo-btn";
-    demoBtn.textContent = "▶";
-    demoBtn.title = "Watch demo";
-    demoBtn.onclick = (e) => { e.stopPropagation(); window.open(libRef.demoUrl, "_blank"); };
-    head.appendChild(demoBtn);
-  }
   card.appendChild(head);
 
   const actions = document.createElement("div");

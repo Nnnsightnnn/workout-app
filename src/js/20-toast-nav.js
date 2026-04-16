@@ -59,12 +59,6 @@ function showScreen(name) {
   document.querySelectorAll("nav.bottom button").forEach(b => b.classList.toggle("active", b.dataset.screen === name));
   if (name === "history") renderHistory();
   if (name === "workout") renderWorkoutScreen();
-  if (name === "settings") { renderUserSection(); renderBodySection(); renderProgramPicker(); renderProfileCard(); renderDataInfo(); }
+  if (name === "settings") { renderProgramPicker(); renderProfileCard(); renderBodySection(); renderUserSection(); renderDataInfo(); }
   if (name === "prs") { _prDetailExId = null; renderPRScreen(); }
-  // Show FABs on workout + history screens
-  var showFabs = (name === "workout" || name === "history");
-  var gfab = document.getElementById("glossaryFab");
-  if (gfab) gfab.style.display = showFabs ? "" : "none";
-  var tfab = document.getElementById("timerFab");
-  if (tfab) tfab.style.display = showFabs ? "" : "none";
 }

@@ -54,6 +54,35 @@ function updateFinishButton() {
   document.getElementById("finishBtn").style.display = started ? "" : "none";
   document.getElementById("headerStartBtn").classList.toggle("active", !started);
   document.getElementById("headerFinishBtn").classList.toggle("active", started);
+
+  // Dynamic label based on context
+  if (started) {
+    const day = getCurrentDay();
+    const inFocus = state.workoutView === "focus" && state.focusBlockIdx != null && state.focusBlockIdx >= 0;
+
+    if (inFocus && day) {
+      // Check if there are more incomplete blocks after current
+      let hasMoreBlocks = false;
+      for (let i = state.focusBlockIdx + 1; i < day.blocks.length; i++) {
+        const bp = calcBlockProgress(day.blocks[i]);
+        if (bp.done < bp.total) { hasMoreBlocks = true; break; }
+      }
+
+      if (hasMoreBlocks) {
+        const block = day.blocks[state.focusBlockIdx];
+        const lbl = block ? "✓ Block " + block.letter + " →" : "Next →";
+        document.getElementById("finishBtn").textContent = lbl;
+        document.getElementById("headerFinishBtn").textContent = "Next →";
+      } else {
+        document.getElementById("finishBtn").textContent = "✓ Finish Workout";
+        document.getElementById("headerFinishBtn").textContent = "✓ Finish";
+      }
+    } else {
+      document.getElementById("finishBtn").textContent = "✓ Finish Workout";
+      document.getElementById("headerFinishBtn").textContent = "✓ Finish";
+    }
+  }
+
   updateSessionEst();
 }
 

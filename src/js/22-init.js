@@ -231,7 +231,7 @@ function initUnitToggle() {
 }
 function initNav() {
   document.getElementById("logoBtn").onclick = () => showScreen("workout");
-  document.querySelectorAll("nav.bottom button").forEach(btn => {
+  document.querySelectorAll("nav.bottom button[data-screen]").forEach(btn => {
     btn.onclick = () => showScreen(btn.dataset.screen);
   });
 }
@@ -253,9 +253,10 @@ function initWorkoutScreen() {
   };
   document.getElementById("customizeDayBtn").onclick = openCustomizeDay;
   document.getElementById("startBtn").onclick = startWorkout;
-  document.getElementById("finishBtn").onclick = finishWorkout;
+  document.getElementById("finishBtn").onclick = handleFinishButton;
   document.getElementById("headerStartBtn").onclick = startWorkout;
-  document.getElementById("headerFinishBtn").onclick = finishWorkout;
+  document.getElementById("headerFinishBtn").onclick = handleFinishButton;
+  document.getElementById("restPill").onclick = openRestSheet;
 }
 function initSidebar() {
   document.getElementById("sidebarCloseBtn").onclick = closeSidebar;

@@ -19,8 +19,16 @@
   <div class="header-left">
     <div class="logo" id="logoBtn">K&amp;N <span>Lifts</span></div>
     <div class="session-pill" id="sessionPill">00:00</div>
+    <div class="rest-pill-header" id="restPill">
+      <svg class="rest-pill-ring" viewBox="0 0 28 28" width="28" height="28">
+        <circle cx="14" cy="14" r="12" fill="none" stroke="var(--border)" stroke-width="2.5"/>
+        <circle class="rest-pill-arc" cx="14" cy="14" r="12" fill="none" stroke="var(--accent)" stroke-width="2.5"
+          stroke-dasharray="75.4" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 14 14)"/>
+      </svg>
+      <span class="rest-pill-time" id="restPillTime">1:30</span>
+    </div>
     <button class="header-action-btn primary" id="headerStartBtn">▶ Start</button>
-    <button class="header-action-btn success" id="headerFinishBtn">✓ Finish</button>
+    <button class="header-action-btn success" id="headerFinishBtn">✓ Sets</button>
   </div>
   <button class="user-chip" id="userChip" title="Switch user">
     <span class="user-chip-avatar" id="userChipAvatar">?</span>
@@ -85,7 +93,7 @@
     <div id="blocksContainer"></div>
 
     <div class="quick-row" style="margin-top: 14px;">
-      <button class="action-btn success" id="finishBtn" style="display:none">✓ Finish Workout</button>
+      <button class="action-btn success" id="finishBtn" style="display:none">✓ Sets Complete</button>
     </div>
 
     <div style="text-align:center; color: var(--text-faint); font-size: 11px; margin-top: 20px;">
@@ -132,8 +140,29 @@
     </div>
     <p style="color: var(--text-dim); font-size: 12px; margin-bottom: 14px;">Account, tools, and preferences.</p>
 
+    <div class="section-title">Program</div>
+    <div class="program-card" id="programCard">
+      <div id="programContent"></div>
+    </div>
+
+    <div class="section-title">Training Profile</div>
+    <div class="profile-card" id="profileCard">
+      <div id="profileContent"></div>
+    </div>
+
+    <div class="section-title">Body Weight</div>
+    <div class="body-card" id="bodyCard">
+      <div id="bodyContent"></div>
+    </div>
+
     <div class="section-title">Users</div>
     <div id="userSection"></div>
+
+    <div class="section-title">Unit</div>
+    <div class="unit-toggle" id="unitToggle">
+      <button data-unit="lbs" class="active">Pounds</button>
+      <button data-unit="kg">Kilograms</button>
+    </div>
 
     <div class="section-title">Plate Calculator</div>
     <div class="plate-card">
@@ -194,27 +223,6 @@
       Training terms, acronyms, and program methodologies explained.
     </p>
 
-    <div class="section-title">Body Weight</div>
-    <div class="body-card" id="bodyCard">
-      <div id="bodyContent"></div>
-    </div>
-
-    <div class="section-title">Program</div>
-    <div class="program-card" id="programCard">
-      <div id="programContent"></div>
-    </div>
-
-    <div class="section-title">Training Profile</div>
-    <div class="profile-card" id="profileCard">
-      <div id="profileContent"></div>
-    </div>
-
-    <div class="section-title">Unit</div>
-    <div class="unit-toggle" id="unitToggle">
-      <button data-unit="lbs" class="active">Pounds</button>
-      <button data-unit="kg">Kilograms</button>
-    </div>
-
     <div class="section-title">Data</div>
     <div style="display:flex; gap:8px; flex-wrap:wrap;">
       <button class="action-btn" onclick="exportData()">Export JSON</button>
@@ -266,22 +274,20 @@
   </div>
 </div>
 
-<!-- Glossary FAB -->
-<button class="glossary-fab" id="glossaryFab" onclick="openFullGlossary()" title="Glossary">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
-    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="8" x2="16" y2="8"/><line x1="9" y1="12" x2="14" y2="12"/>
-  </svg>
-</button>
-
-<!-- Timer FAB -->
-<button class="glossary-fab timer-fab" id="timerFab" onclick="openStandaloneTimer()" title="Rest timer">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
-    <circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3l2 2"/><path d="M19 3l-2 2"/><line x1="12" y1="1" x2="12" y2="3"/>
-  </svg>
-</button>
-
 <!-- Bottom Nav -->
 <nav class="bottom">
+  <button id="timerFab" onclick="openStandaloneTimer()" title="Rest timer">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3l2 2"/><path d="M19 3l-2 2"/><line x1="12" y1="1" x2="12" y2="3"/>
+    </svg>
+    Timer
+  </button>
+  <button id="glossaryFab" onclick="openFullGlossary()" title="Glossary">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="8" x2="16" y2="8"/><line x1="9" y1="12" x2="14" y2="12"/>
+    </svg>
+    Glossary
+  </button>
   <button data-screen="prs">
     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/>

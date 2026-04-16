@@ -171,6 +171,26 @@
   .session-pill::before { content: "●"; color: var(--success); animation: pulse 2s infinite; font-size: 10px; }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
+  /* === Header Rest Pill === */
+  .rest-pill-header {
+    display: none; align-items: center; gap: 4px;
+    background: var(--bg-card); padding: 3px 9px 3px 3px;
+    border-radius: 9px; border: 2px solid var(--border);
+    font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    box-shadow: var(--pillow-sm);
+    transition: transform 0.15s var(--spring), box-shadow 0.15s ease, border-color 0.3s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .rest-pill-header.active { display: flex; }
+  .rest-pill-header:active { transform: var(--squish-sm); box-shadow: var(--pillow-pressed); }
+  .rest-pill-header.done { border-color: var(--success); }
+  .rest-pill-ring { flex-shrink: 0; }
+  .rest-pill-arc { transition: stroke-dashoffset 0.25s linear, stroke 0.3s ease; }
+  .rest-pill-header.done .rest-pill-arc { stroke: var(--success); }
+  .rest-pill-time { letter-spacing: -0.02em; color: var(--accent); }
+  .rest-pill-header.done .rest-pill-time { color: var(--success); }
+
   .header-action-btn {
     display: none; align-items: center; justify-content: center; gap: 4px;
     padding: 5px 10px; border-radius: 10px; font-size: 12px; font-weight: 800;
@@ -413,15 +433,14 @@
   .tag.tempo { background: rgba(94,92,230,0.15); color: var(--superset); font-family: ui-monospace, monospace; }
   .tag.rest { background: rgba(48,209,88,0.12); color: var(--success); }
   .tag.target { background: var(--bg-card-2); }
-  .ex-demo-btn {
-    width: 36px; height: 36px; border-radius: 10px;
-    background: var(--bg-card-2); color: var(--accent);
-    font-size: 11px; display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; border: 2px solid var(--border);
-    box-shadow: var(--pillow-sm);
-    transition: transform 0.15s var(--spring), box-shadow 0.15s ease;
+  .tag.demo-tag {
+    background: rgba(255,107,53,0.18); color: var(--accent);
+    cursor: pointer; padding: 3px 9px; border-radius: 10px;
+    font-size: 10px; font-weight: 700;
+    border: 1.5px solid rgba(255,107,53,0.3);
+    transition: background 0.15s, transform 0.1s;
   }
-  .ex-demo-btn:active { transform: var(--squish-sm); box-shadow: var(--pillow-pressed); }
+  .tag.demo-tag:active { transform: scale(0.93); background: rgba(255,107,53,0.3); }
   .ex-menu-btn {
     color: var(--text-faint); font-size: 20px;
     padding: 4px 6px; height: 32px;
@@ -603,6 +622,83 @@
     opacity: 0.5;
   }
 
+  /* ── Inline quick-edit popover ── */
+  .set-chip-weight[data-field],
+  .set-chip-reps[data-field] {
+    border-radius: 6px; padding: 2px 4px; margin: -2px -4px;
+    transition: background 0.12s ease;
+  }
+  .set-chip-weight[data-field]:active,
+  .set-chip-reps[data-field]:active {
+    background: rgba(255,255,255,0.08);
+  }
+  .inline-edit-backdrop {
+    position: fixed; inset: 0; z-index: 58;
+  }
+  .inline-edit-popover {
+    position: fixed; z-index: 59;
+    background: var(--bg-card); border: 2px solid var(--border);
+    border-radius: 16px; padding: 12px;
+    box-shadow: var(--pillow-lg, 0 6px 0 rgba(0,0,0,0.4));
+    background-image: var(--bubble-shine);
+    min-width: 220px; max-width: 300px;
+    opacity: 0; transform: scale(0.92) translateY(6px);
+    transition: opacity 0.15s ease, transform 0.2s var(--spring);
+  }
+  .inline-edit-popover.active {
+    opacity: 1; transform: scale(1) translateY(0);
+  }
+  .inline-edit-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--text-faint); margin-bottom: 8px;
+    text-align: center;
+  }
+  .inline-edit-stepper-row {
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    margin-bottom: 8px;
+  }
+  .inline-edit-stepper {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--bg-card-2); border: 2px solid var(--border);
+    color: var(--text); font-size: 20px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--pillow-sm); background-image: var(--bubble-shine);
+    transition: transform 0.15s var(--spring), box-shadow 0.15s ease;
+    user-select: none; -webkit-user-select: none; flex-shrink: 0;
+  }
+  .inline-edit-stepper:active {
+    transform: var(--squish-sm); box-shadow: var(--pillow-pressed);
+  }
+  .inline-edit-value {
+    font-size: 24px; font-weight: 800; color: var(--text);
+    min-width: 60px; text-align: center;
+    font-variant-numeric: tabular-nums; line-height: 1;
+  }
+  .inline-edit-value small {
+    display: block; font-size: 11px; font-weight: 600;
+    color: var(--text-faint); margin-top: 2px;
+  }
+  .inline-edit-pills {
+    display: flex; gap: 5px; overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; padding: 2px 0;
+  }
+  .inline-edit-pills::-webkit-scrollbar { display: none; }
+  .inline-edit-pill {
+    flex-shrink: 0; padding: 6px 10px; border-radius: 10px;
+    background: var(--bg-card-2); border: 2px solid var(--border);
+    color: var(--text-dim); font-size: 12px; font-weight: 700;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.3);
+    transition: transform 0.15s var(--spring), box-shadow 0.12s ease, background 0.12s ease;
+    font-variant-numeric: tabular-nums;
+    user-select: none; -webkit-user-select: none;
+  }
+  .inline-edit-pill:active { transform: translateY(2px); box-shadow: none; }
+  .inline-edit-pill.active {
+    background: var(--accent); color: #fff; border-color: var(--accent-dim, var(--accent));
+    box-shadow: 0 2px 0 rgba(0,0,0,0.3);
+  }
+
   /* ── Set editor (bottom sheet) ── */
   .set-editor { padding: 4px 0; }
   .set-editor-header {
@@ -745,36 +841,7 @@
     transform: var(--squish-sm); box-shadow: var(--pillow-pressed);
   }
 
-  /* === Inline Rest Timer === */
-  .rest-inline {
-    margin-top: 10px; padding: 10px 12px;
-    background: var(--bg-card-2);
-    border: 2px solid var(--border);
-    border-radius: 14px;
-    overflow: hidden;
-    transition: max-height 0.3s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease;
-    box-shadow: var(--pillow-sm);
-  }
-  .rest-inline.done {
-    border-color: var(--success);
-    box-shadow: 0 3px 0 rgba(48,209,88,0.25);
-  }
-  .rest-inline-top {
-    display: flex; align-items: center; gap: 8px;
-    flex-wrap: wrap;
-  }
-  .rest-inline-time {
-    font-size: 18px; font-weight: 800;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: -0.02em;
-    min-width: 48px;
-    color: var(--accent);
-  }
-  .rest-inline.done .rest-inline-time { color: var(--success); }
-  .rest-inline-pills {
-    display: flex; gap: 4px; flex: 1; min-width: 0;
-    flex-wrap: wrap;
-  }
+  /* === Rest Timer Shared Controls === */
   .rest-pill {
     padding: 4px 10px;
     border-radius: 10px;
@@ -820,7 +887,7 @@
     border-radius: 3px;
     transition: width 0.25s linear;
   }
-  .rest-inline.done .rest-inline-fill { background: var(--success); }
+  .sa-timer.done .rest-inline-fill { background: var(--success); }
 
   /* === Bottom Sheet (day picker, library, ex menu) === */
   .sheet-bg {
@@ -1167,29 +1234,6 @@
   }
   .glossary-info:active { opacity: 1; transform: scale(1.2); }
 
-  /* === Glossary FAB === */
-  .glossary-fab {
-    position: fixed;
-    bottom: calc(68px + env(safe-area-inset-bottom, 6px));
-    right: 16px;
-    width: 48px; height: 48px;
-    border-radius: 50%;
-    background: var(--bg-card);
-    border: 2px solid var(--border);
-    color: var(--accent);
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: var(--pillow-lg);
-    z-index: 29;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-    cursor: pointer;
-  }
-  .glossary-fab:active {
-    transform: translateY(3px);
-    box-shadow: 0 0 0 var(--border);
-  }
-  .timer-fab {
-    bottom: calc(68px + 56px + env(safe-area-inset-bottom, 6px));
-  }
 
   /* === Standalone Timer (bottom sheet) === */
   .sa-timer { text-align: center; padding: 8px 0; }
@@ -2158,145 +2202,98 @@
      CHAPTERS VIEW (Command Center)
      ============================================================ */
   .chapters-view {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    display: flex; flex-direction: column; gap: 6px;
     padding-bottom: 80px;
   }
-  .chapter-card {
-    --pct: 0%;
-    background: var(--bg-card);
-    border: 2px solid var(--border);
-    border-radius: 16px;
-    padding: 14px 16px;
-    background-image:
-      linear-gradient(90deg, rgba(255,107,53,0.10) var(--pct), transparent var(--pct)),
-      var(--bubble-shine);
-    box-shadow: var(--pillow);
-    cursor: pointer;
-    transition: transform 0.15s var(--spring), box-shadow 0.15s ease, opacity 0.3s, background-image 0.4s ease;
-    animation: chapterEnter 0.35s var(--spring-gentle) backwards;
-    animation-delay: calc(var(--card-index, 0) * 60ms);
+
+  /* Block header row */
+  .bento-block-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0 4px;
   }
-  .chapter-card:active {
-    transform: var(--squish);
-    box-shadow: var(--pillow-pressed);
-  }
-  .chapter-card.chapter-active {
-    border-color: var(--accent);
-    box-shadow: var(--pillow-accent);
-  }
-  .chapter-card.chapter-done {
-    opacity: 0.65;
-    background-image:
-      linear-gradient(90deg, rgba(48,209,88,0.12) 100%, transparent 100%),
-      var(--bubble-shine);
-  }
-  .chapter-card.chapter-done .chapter-chevron {
-    color: var(--success);
-    font-weight: 800;
-  }
-  .chapter-top {
-    display: flex; align-items: center; gap: 12px;
-  }
-  .chapter-letter {
-    width: 36px; height: 36px;
-    display: flex; align-items: center; justify-content: center;
-    border-radius: 10px;
-    font-size: 14px; font-weight: 800;
-    background: var(--bg-card-2);
-    border: 2px solid var(--border);
-    flex-shrink: 0;
-  }
-  .chapter-info { flex: 1; min-width: 0; }
-  .chapter-name {
-    font-size: 15px; font-weight: 700; color: var(--text);
+  .bento-block-header.done { opacity: 0.55; }
+  .bento-block-name {
+    font-size: 14px; font-weight: 700; color: var(--text);
+    flex: 1; min-width: 0;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .chapter-meta {
-    display: flex; gap: 6px; margin-top: 3px;
-    font-size: 12px; color: var(--text-dim);
+  .bento-block-progress {
+    font-size: 12px; font-weight: 700; color: var(--text-dim);
+    flex-shrink: 0;
   }
-  .chapter-chevron {
-    font-size: 20px; color: var(--text-faint);
-    flex-shrink: 0; margin-left: auto;
+
+  /* Bento exercise grid */
+  .bento-exercise-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
   }
-  .chapter-progress {
+  .bento-ex-tile {
+    background: var(--bg-card);
+    border: 2px solid var(--border);
+    border-left: 3px solid var(--border);
+    border-radius: 14px;
+    padding: 12px;
+    cursor: pointer;
+    box-shadow: var(--pillow-sm);
+    transition: transform 0.15s var(--spring), box-shadow 0.15s ease, border-color 0.2s;
+    animation: bentoTileEnter 0.3s var(--spring-gentle) backwards;
+    animation-delay: calc(var(--card-index, 0) * 40ms);
+  }
+  .bento-ex-tile:active {
+    transform: var(--squish-sm);
+    box-shadow: var(--pillow-pressed);
+  }
+  .bento-ex-tile.partial {
+    border-color: var(--accent);
+    background-image: var(--bubble-shine);
+  }
+  .bento-ex-tile.complete {
+    border-color: var(--success);
+    opacity: 0.7;
+    background-image:
+      linear-gradient(90deg, rgba(48,209,88,0.08) 100%, transparent 100%),
+      var(--bubble-shine);
+  }
+  .bento-ex-name {
+    font-size: 13px; font-weight: 700; line-height: 1.3;
+    color: var(--text);
+  }
+  .bento-ex-muscle {
+    font-size: 10px; margin-top: 4px; font-weight: 600;
+    border-radius: 4px; display: inline-block;
+    padding: 1px 5px;
+  }
+  .bento-ex-sets {
+    font-size: 11px; color: var(--text-faint); margin-top: 4px; font-weight: 600;
+  }
+  .bento-ex-tile.complete .bento-ex-sets { color: var(--success); }
+  .bento-ex-progress {
     height: 3px; background: var(--bg-card-2);
-    border-radius: 2px; margin-top: 10px; overflow: hidden;
+    border-radius: 2px; margin-top: 8px; overflow: hidden;
   }
-  .chapter-progress-fill {
+  .bento-ex-progress-fill {
     height: 100%; background: var(--accent);
     border-radius: 2px;
     transition: width 0.4s var(--spring);
   }
-  .chapter-progress-fill.complete { background: var(--success); }
+  .bento-ex-progress-fill.complete { background: var(--success); }
 
-  /* Hero card (active block) — spans full width */
-  .chapter-hero {
-    grid-column: 1 / -1;
-    padding: 16px 18px 14px;
-  }
-  .chapter-hero .chapter-letter {
-    width: 42px; height: 42px;
-    font-size: 16px;
-  }
-  .chapter-hero .chapter-name {
-    font-size: 17px;
-  }
-  .chapter-hero-exercises {
-    display: flex; flex-wrap: wrap; gap: 5px;
-    margin-top: 10px; padding-top: 10px;
-    border-top: 1px solid var(--border);
-  }
-  .chapter-hero-ex {
-    font-size: 11px; font-weight: 600;
-    padding: 3px 9px; border-radius: 8px;
+  /* Keep chapter-letter for block headers and focus view */
+  .chapter-letter {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px;
+    font-size: 13px; font-weight: 800;
     background: var(--bg-card-2);
-    border: 1px solid var(--border);
-    color: var(--text-dim);
-    white-space: nowrap;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
   }
-  .chapter-hero-ex.ex-done {
-    color: var(--success); border-color: rgba(48,209,88,0.3);
-    background: rgba(48,209,88,0.08);
-  }
-
-  /* Compact card (done blocks) — 1x1 tile */
-  .chapter-compact {
-    padding: 10px 14px;
-  }
-  .chapter-compact .chapter-letter {
-    width: 30px; height: 30px;
-    font-size: 12px; border-radius: 8px;
-  }
-  .chapter-compact .chapter-name {
-    font-size: 13px;
-  }
-  .chapter-compact .chapter-meta { display: none; }
-  .chapter-compact .chapter-progress { display: none; }
-
-  /* Cooldown card — spans full width */
-  .chapter-cooldown {
-    grid-column: 1 / -1;
+  .chapter-name {
+    font-size: 15px; font-weight: 700; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
 
-  /* Progress ring on active card */
-  .chapter-ring {
-    flex-shrink: 0; margin-left: auto;
-  }
-  .chapter-ring-fill {
-    transition: stroke-dasharray 0.6s var(--spring-gentle);
-  }
-
-  @keyframes chapterEnter {
-    from { opacity: 0; transform: translateY(12px) scale(0.97); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-  }
-  /* Hero entrance — slightly bigger spring */
-  .chapter-hero {
-    animation: heroEnter 0.4s var(--spring-gentle) backwards;
-  }
-  @keyframes heroEnter {
-    from { opacity: 0; transform: translateY(16px) scale(0.95); }
+  @keyframes bentoTileEnter {
+    from { opacity: 0; transform: translateY(10px) scale(0.96); }
     to { opacity: 1; transform: translateY(0) scale(1); }
   }
   .chapters-enter {
@@ -2370,17 +2367,6 @@
   @keyframes focusCardIn {
     from { opacity: 0; transform: translateX(20px); }
     to { opacity: 1; transform: translateX(0); }
-  }
-  /* Enlarged rest timer in focus mode */
-  .focus-card-wrap .rest-inline {
-    padding: 20px 16px;
-    margin: 14px -2px -2px;
-    border-radius: 0 0 14px 14px;
-    border-top: 2px solid var(--border);
-    background: var(--bg-elev);
-  }
-  .focus-card-wrap .rest-inline-time {
-    font-size: 32px;
   }
   .focus-block-done {
     text-align: center;
@@ -2620,8 +2606,8 @@
   .pin-picker-item.pinned .pin-picker-status { color: var(--accent); }
 
   @media (prefers-reduced-motion: reduce) {
-    .chapter-card, .chapters-enter, .focus-enter,
+    .bento-ex-tile, .chapters-enter, .focus-enter,
     .focus-card-wrap .exercise-card, .stats-bar,
     .focus-block-done { animation: none; }
-    .chapter-progress-fill { transition: none; }
+    .bento-ex-progress-fill { transition: none; }
   }

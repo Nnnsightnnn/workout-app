@@ -26,6 +26,63 @@ function startWorkout() {
   renderWorkoutScreen();
 }
 
+function completeCurrentBlock() {
+  const day = getCurrentDay();
+  if (!day || state.focusBlockIdx == null || state.focusBlockIdx < 0) return false;
+  const block = day.blocks[state.focusBlockIdx];
+  if (!block) return false;
+
+  // Mark all incomplete sets in this block as done with defaults
+  block.exercises.forEach((ex, ei) => {
+    if (ex.isWarmup) return;
+    const numSets = ex.sets || 3;
+    const last = getLastSetsFor(ex.exId || ex.name);
+    for (let i = 0; i < numSets; i++) {
+      const sKey = inputKey(block.id, ei, i, "status");
+      if (getInput(sKey, null) === "done" || getInput(sKey, null) === "skipped") continue;
+      saveInput(sKey, "done");
+      const lastSet = last[i] || last[last.length - 1];
+      const rkey = inputKey(block.id, ei, i, "r");
+      if (getInput(rkey, null) == null) saveInput(rkey, lastSet?.reps ?? ex.reps);
+      const wkey = inputKey(block.id, ei, i, "w");
+      if (getInput(wkey, null) == null) saveInput(wkey, lastSet?.weight ?? ex.defaultWeight ?? 0);
+      const pkey = inputKey(block.id, ei, i, "p");
+      if (getInput(pkey, null) == null) saveInput(pkey, 7);
+    }
+  });
+
+  renderWorkoutScreen();
+  showToast("✓ Block " + block.letter + " complete", "success");
+  return true;
+}
+
+function handleFinishButton() {
+  // In focus view: complete current block and advance to next
+  if (state.workoutStartedAt && state.workoutView === "focus" && state.focusBlockIdx != null && state.focusBlockIdx >= 0) {
+    const day = getCurrentDay();
+    if (day) {
+      // Auto-complete remaining sets in current block
+      completeCurrentBlock();
+
+      // Find next incomplete block
+      let nextBlockIdx = null;
+      for (let i = state.focusBlockIdx + 1; i < day.blocks.length; i++) {
+        const bp = calcBlockProgress(day.blocks[i]);
+        if (bp.done < bp.total) { nextBlockIdx = i; break; }
+      }
+
+      if (nextBlockIdx !== null) {
+        state.focusBlockIdx = nextBlockIdx;
+        state.focusExIdx = 0;
+        renderWorkoutScreen();
+        return;
+      }
+      // All blocks done — fall through to finishWorkout
+    }
+  }
+  finishWorkout();
+}
+
 function finishWorkout() {
   const draft = getDraft();
   if (!draft) {
@@ -34,6 +91,26 @@ function finishWorkout() {
   }
   const day = getCurrentDay();
   const inputs = draft.inputs;
+
+  // Auto-complete: fill in defaults for any sets the user didn't touch
+  day.blocks.forEach(block => {
+    block.exercises.forEach((ex, ei) => {
+      if (ex.isWarmup) return;
+      const last = getLastSetsFor(ex.exId || ex.name);
+      for (let i = 0; i < ex.sets; i++) {
+        const sKey = inputKey(block.id, ei, i, "status");
+        if (inputs[sKey] === "skipped") continue;
+        if (!inputs[sKey]) inputs[sKey] = "done";
+        const lastSet = last[i] || last[last.length - 1];
+        const rkey = inputKey(block.id, ei, i, "r");
+        if (inputs[rkey] == null) inputs[rkey] = lastSet?.reps ?? ex.reps;
+        const wkey = inputKey(block.id, ei, i, "w");
+        if (inputs[wkey] == null) inputs[wkey] = lastSet?.weight ?? ex.defaultWeight ?? 0;
+        const pkey = inputKey(block.id, ei, i, "p");
+        if (inputs[pkey] == null) inputs[pkey] = 7;
+      }
+    });
+  });
 
   // Build the sets array from all exercises' inputs
   const sets = [];
@@ -44,7 +121,6 @@ function finishWorkout() {
         const w = inputs[inputKey(block.id, ei, i, "w")] ?? 0;
         const r = inputs[inputKey(block.id, ei, i, "r")];
         const p = inputs[inputKey(block.id, ei, i, "p")] ?? 7;
-        // Only include sets that have a reps entry or that were skipped
         if (r == null || r === 0) continue;
         if (inputs[inputKey(block.id, ei, i, "status")] === "skipped") continue;
         sets.push({
@@ -61,10 +137,6 @@ function finishWorkout() {
       }
     });
   });
-
-  if (sets.length === 0) {
-    if (!confirm("No sets logged with reps. Finish anyway?")) return;
-  }
 
   // PR detection (computed against history before this save)
   const u = userData();
@@ -121,12 +193,15 @@ function finishWorkout() {
     u.lastDoneDayId = day.id;
   });
 
+  const hasSuperset = day.blocks.some(b => b.exercises.filter(e => !e.isWarmup).length > 1);
+  const completeLabel = hasSuperset ? "Superset Complete" : "Sets Complete";
+
   state.trimmedBlocks = null;
   state.workoutView = "chapters";
   state.focusBlockIdx = null;
   state.focusExIdx = 0;
   stopSessionTimer();
-  hideInlineRest();
+  hideHeaderRest();
   state.workoutStartedAt = null;
 
   // Check if this completes the week (all days done)
@@ -144,8 +219,8 @@ function finishWorkout() {
       }
       renderWorkoutScreen();
       const msg2 = prCount > 0
-        ? `🏆 Saved! ${sets.length} sets, ${prCount} PR${prCount>1?'s':''}!`
-        : `✓ Saved! ${sets.length} sets in ${formatDuration(duration)}`;
+        ? `🏆 ${completeLabel}! ${sets.length} sets, ${prCount} PR${prCount>1?'s':''}!`
+        : `✓ ${completeLabel}! ${sets.length} sets in ${formatDuration(duration)}`;
       setTimeout(() => showToast(msg2, prCount > 0 ? "pr" : "success"), 1500);
       return;
     }
@@ -157,7 +232,7 @@ function finishWorkout() {
   renderWorkoutScreen();
 
   const msg = prCount > 0
-    ? `🏆 Saved! ${sets.length} sets, ${prCount} PR${prCount>1?'s':''}!`
-    : `✓ Saved! ${sets.length} sets in ${formatDuration(duration)}`;
+    ? `🏆 ${completeLabel}! ${sets.length} sets, ${prCount} PR${prCount>1?'s':''}!`
+    : `✓ ${completeLabel}! ${sets.length} sets in ${formatDuration(duration)}`;
   showToast(msg, prCount > 0 ? "pr" : "success");
 }

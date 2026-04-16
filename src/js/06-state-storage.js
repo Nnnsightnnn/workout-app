@@ -9,7 +9,7 @@ let state = {
   workoutStartedAt: null,
   sessionIntervalId: null,
   restEndsAt: null, restTotal: 0, restIntervalId: null,
-  restCardEl: null,
+  restActiveSec: 90,
   pendingExAdd: null,  // { blockId }
   sidebarOpen: false,
   sidebarSelectedEx: null,

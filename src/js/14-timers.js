@@ -54,123 +54,75 @@ function playBeep() {
   } catch (e) {}
 }
 
-function showInlineRest(cardEl, seconds) {
-  // Dismiss any existing inline rest timer
-  hideInlineRest();
-  // Unlock AudioContext while we're in a user-gesture context
+const _restCircumference = 2 * Math.PI * 12; // r=12 from SVG
+
+function showHeaderRest(seconds) {
+  hideHeaderRest();
   _resumeAudioCtx();
 
-  state.restCardEl = cardEl;
   state.restEndsAt = Date.now() + seconds * 1000;
   state.restTotal = seconds;
+  state.restActiveSec = seconds;
 
-  // Build the inline timer element
-  const el = document.createElement("div");
-  el.className = "rest-inline";
-  el.innerHTML = `
-    <div class="rest-inline-top">
-      <span class="rest-inline-time">${formatRest(seconds)}</span>
-      <div class="rest-inline-pills">
-        <button class="rest-pill" data-sec="45">45s</button>
-        <button class="rest-pill" data-sec="60">1:00</button>
-        <button class="rest-pill" data-sec="90">1:30</button>
-        <button class="rest-pill" data-sec="120">2:00</button>
-        <button class="rest-pill" data-sec="180">3:00</button>
-      </div>
-      <button class="rest-inline-btn" data-action="add30">+30</button>
-      <button class="rest-inline-btn" data-action="skip">Skip</button>
-    </div>
-    <div class="rest-inline-bar"><div class="rest-inline-fill"></div></div>`;
+  const pill = document.getElementById("restPill");
+  const timeEl = document.getElementById("restPillTime");
+  const arc = pill.querySelector(".rest-pill-arc");
 
-  // Mark initial active pill
-  const activePill = el.querySelector(`.rest-pill[data-sec="${seconds}"]`);
-  if (activePill) activePill.classList.add("active");
+  pill.classList.add("active");
+  pill.classList.remove("done");
 
-  // Event delegation
-  el.addEventListener("click", (e) => {
-    const pill = e.target.closest(".rest-pill");
-    if (pill) {
-      const sec = parseInt(pill.dataset.sec);
-      setRestDuration(sec);
-      el.querySelectorAll(".rest-pill").forEach(p => p.classList.remove("active"));
-      pill.classList.add("active");
-      return;
-    }
-    const btn = e.target.closest(".rest-inline-btn");
-    if (btn) {
-      if (btn.dataset.action === "add30") addInlineRest(30);
-      else if (btn.dataset.action === "skip") hideInlineRest();
-    }
-  });
-
-  cardEl.appendChild(el);
-
-  // Force layout then expand
-  el.style.maxHeight = "0";
-  requestAnimationFrame(() => {
-    el.style.maxHeight = el.scrollHeight + "px";
-  });
-
-  // Start tick
   const tick = () => {
     const rem = Math.max(0, Math.ceil((state.restEndsAt - Date.now()) / 1000));
-    const timeEl = el.querySelector(".rest-inline-time");
-    const fillEl = el.querySelector(".rest-inline-fill");
-    if (!timeEl) return;
     timeEl.textContent = formatRest(rem);
     const frac = state.restTotal > 0 ? rem / state.restTotal : 0;
-    fillEl.style.width = (frac * 100) + "%";
+    arc.style.strokeDashoffset = _restCircumference * (1 - frac);
 
     if (rem === 0) {
       clearInterval(state.restIntervalId);
       state.restIntervalId = null;
-      el.classList.add("done");
+      pill.classList.add("done");
       playBeep();
       if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-      setTimeout(hideInlineRest, 2000);
+      setTimeout(hideHeaderRest, 2000);
     }
   };
   tick();
   state.restIntervalId = setInterval(tick, 250);
 }
 
-function hideInlineRest() {
+function hideHeaderRest() {
   if (state.restIntervalId) clearInterval(state.restIntervalId);
   state.restIntervalId = null;
   state.restEndsAt = null;
-  const existing = state.restCardEl && state.restCardEl.querySelector(".rest-inline");
-  if (existing) {
-    existing.style.maxHeight = "0";
-    existing.addEventListener("transitionend", () => existing.remove(), { once: true });
-    // Fallback removal if transition doesn't fire
-    setTimeout(() => { if (existing.parentNode) existing.remove(); }, 400);
-  }
-  state.restCardEl = null;
+  const pill = document.getElementById("restPill");
+  pill.classList.remove("active", "done");
 }
 
 function setRestDuration(seconds) {
-  if (!state.restCardEl) return;
   state.restEndsAt = Date.now() + seconds * 1000;
   state.restTotal = seconds;
-  const el = state.restCardEl.querySelector(".rest-inline");
-  if (el) el.classList.remove("done");
-  // Restart tick if it was cleared (timer had finished)
+  state.restActiveSec = seconds;
+
+  const pill = document.getElementById("restPill");
+  pill.classList.remove("done");
+  pill.classList.add("active");
+
   if (!state.restIntervalId) {
+    const timeEl = document.getElementById("restPillTime");
+    const arc = pill.querySelector(".rest-pill-arc");
+
     const tick = () => {
       const rem = Math.max(0, Math.ceil((state.restEndsAt - Date.now()) / 1000));
-      const timeEl = el && el.querySelector(".rest-inline-time");
-      const fillEl = el && el.querySelector(".rest-inline-fill");
-      if (!timeEl) return;
       timeEl.textContent = formatRest(rem);
       const frac = state.restTotal > 0 ? rem / state.restTotal : 0;
-      fillEl.style.width = (frac * 100) + "%";
+      arc.style.strokeDashoffset = _restCircumference * (1 - frac);
       if (rem === 0) {
         clearInterval(state.restIntervalId);
         state.restIntervalId = null;
-        if (el) el.classList.add("done");
+        pill.classList.add("done");
         playBeep();
         if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-        setTimeout(hideInlineRest, 2000);
+        setTimeout(hideHeaderRest, 2000);
       }
     };
     tick();
@@ -178,7 +130,7 @@ function setRestDuration(seconds) {
   }
 }
 
-function addInlineRest(sec) {
+function addRestTime(sec) {
   if (state.restEndsAt) {
     state.restEndsAt += sec * 1000;
     state.restTotal += sec;
@@ -186,95 +138,87 @@ function addInlineRest(sec) {
 }
 
 // ============================================================
-// STANDALONE REST TIMER (bottom sheet)
+// REST TIMER SHEET (full controls via bottom sheet)
 // ============================================================
-let _saTimerId = null;
-let _saEndsAt = null;
-let _saTotal = 0;
+let _restSheetSyncId = null;
 
-function openStandaloneTimer() {
-  _resumeAudioCtx();
-  if (_saTimerId) { clearInterval(_saTimerId); _saTimerId = null; }
-
-  const defaultSec = 90;
-  _saEndsAt = Date.now() + defaultSec * 1000;
-  _saTotal = defaultSec;
+function openRestSheet() {
+  const rem = state.restEndsAt ? Math.max(0, Math.ceil((state.restEndsAt - Date.now()) / 1000)) : 0;
+  const activeSec = state.restActiveSec || 90;
 
   const html = `
     <div class="sa-timer">
-      <div class="sa-timer-time">${formatRest(defaultSec)}</div>
+      <div class="sa-timer-time">${formatRest(rem)}</div>
       <div class="sa-timer-pills">
-        <button class="rest-pill" data-sec="45">45s</button>
-        <button class="rest-pill" data-sec="60">1:00</button>
-        <button class="rest-pill active" data-sec="90">1:30</button>
-        <button class="rest-pill" data-sec="120">2:00</button>
-        <button class="rest-pill" data-sec="180">3:00</button>
+        <button class="rest-pill${activeSec === 45 ? " active" : ""}" data-sec="45">45s</button>
+        <button class="rest-pill${activeSec === 60 ? " active" : ""}" data-sec="60">1:00</button>
+        <button class="rest-pill${activeSec === 90 ? " active" : ""}" data-sec="90">1:30</button>
+        <button class="rest-pill${activeSec === 120 ? " active" : ""}" data-sec="120">2:00</button>
+        <button class="rest-pill${activeSec === 180 ? " active" : ""}" data-sec="180">3:00</button>
       </div>
       <div class="sa-timer-actions">
         <button class="rest-inline-btn" data-action="add30">+30</button>
-        <button class="rest-inline-btn" data-action="stop">Stop</button>
+        <button class="rest-inline-btn" data-action="skip">Skip</button>
       </div>
-      <div class="rest-inline-bar"><div class="rest-inline-fill sa-timer-fill"></div></div>
+      <div class="rest-inline-bar"><div class="rest-inline-fill" id="restSheetFill"></div></div>
     </div>
   `;
 
   openSheet(html);
 
   const root = document.getElementById("sheetContent");
-  root.addEventListener("click", function handler(e) {
+
+  // Sync sheet display with running header timer
+  if (_restSheetSyncId) clearInterval(_restSheetSyncId);
+  _restSheetSyncId = setInterval(() => {
+    const timeEl = root.querySelector(".sa-timer-time");
+    const fillEl = root.querySelector("#restSheetFill");
+    const wrap = root.querySelector(".sa-timer");
+    if (!timeEl) { clearInterval(_restSheetSyncId); _restSheetSyncId = null; return; }
+    if (!state.restEndsAt) {
+      timeEl.textContent = formatRest(0);
+      fillEl.style.width = "0%";
+      return;
+    }
+    const r = Math.max(0, Math.ceil((state.restEndsAt - Date.now()) / 1000));
+    timeEl.textContent = formatRest(r);
+    const frac = state.restTotal > 0 ? r / state.restTotal : 0;
+    fillEl.style.width = (frac * 100) + "%";
+    if (r === 0 && wrap) wrap.classList.add("done");
+  }, 250);
+
+  // Event delegation for sheet controls
+  root.addEventListener("click", (e) => {
     const pill = e.target.closest(".rest-pill");
     if (pill) {
       const sec = parseInt(pill.dataset.sec);
-      _saEndsAt = Date.now() + sec * 1000;
-      _saTotal = sec;
+      setRestDuration(sec);
       root.querySelectorAll(".rest-pill").forEach(p => p.classList.remove("active"));
       pill.classList.add("active");
       const wrap = root.querySelector(".sa-timer");
       if (wrap) wrap.classList.remove("done");
-      if (!_saTimerId) _startSaTick(root);
       return;
     }
     const btn = e.target.closest(".rest-inline-btn");
     if (btn) {
       if (btn.dataset.action === "add30") {
-        if (_saEndsAt) { _saEndsAt += 30 * 1000; _saTotal += 30; }
+        addRestTime(30);
         const wrap = root.querySelector(".sa-timer");
         if (wrap) wrap.classList.remove("done");
-        if (!_saTimerId) _startSaTick(root);
-      } else if (btn.dataset.action === "stop") {
-        if (_saTimerId) { clearInterval(_saTimerId); _saTimerId = null; }
-        _saEndsAt = null;
+      } else if (btn.dataset.action === "skip") {
+        hideHeaderRest();
         closeSheet();
       }
     }
   });
-
-  _startSaTick(root);
 }
 
-function _startSaTick(root) {
-  const tick = () => {
-    const timeEl = root.querySelector(".sa-timer-time");
-    const fillEl = root.querySelector(".sa-timer-fill");
-    const wrap = root.querySelector(".sa-timer");
-    if (!timeEl || !_saEndsAt) return;
-
-    const rem = Math.max(0, Math.ceil((_saEndsAt - Date.now()) / 1000));
-    timeEl.textContent = formatRest(rem);
-    const frac = _saTotal > 0 ? rem / _saTotal : 0;
-    fillEl.style.width = (frac * 100) + "%";
-
-    if (rem === 0) {
-      clearInterval(_saTimerId);
-      _saTimerId = null;
-      if (wrap) wrap.classList.add("done");
-      playBeep();
-      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-      setTimeout(() => { _saEndsAt = null; closeSheet(); }, 2000);
-    }
-  };
-  tick();
-  _saTimerId = setInterval(tick, 250);
+function openStandaloneTimer() {
+  _resumeAudioCtx();
+  if (!state.restEndsAt || state.restEndsAt <= Date.now()) {
+    showHeaderRest(90);
+  }
+  openRestSheet();
 }
 
 // ============================================================
