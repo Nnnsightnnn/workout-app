@@ -154,7 +154,10 @@ function openGlossary(term) {
   var entry = GLOSSARY[term];
   if (!entry) return;
   var html = '<div style="padding:4px 0;">';
-  html += '<h3 style="margin:0 0 4px;">' + term + '</h3>';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">';
+  html += '<h3 style="margin:0;">' + term + '</h3>';
+  html += '<button class="icon-btn" onclick="closeSheet()" title="Close">✕</button>';
+  html += '</div>';
   html += '<div style="color:var(--accent);font-weight:700;font-size:13px;margin-bottom:8px;">' + entry.short + '</div>';
   if (entry.svg) {
     html += '<div style="max-width:260px;margin:0 auto 12px;padding:8px;background:var(--card-bg);border-radius:12px;border:1px solid var(--border);">' + entry.svg + '</div>';
@@ -171,7 +174,10 @@ function openGlossaryForTemplate(tplId) {
 
 function openFullGlossary() {
   var keys = Object.keys(GLOSSARY).sort();
-  var html = '<h3>Glossary</h3>';
+  var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
+  html += '<h3 style="margin:0;">Glossary</h3>';
+  html += '<button class="icon-btn" onclick="closeSheet()" title="Close">✕</button>';
+  html += '</div>';
   html += '<div style="max-height:60vh;overflow-y:auto;">';
   keys.forEach(function(k) {
     var e = GLOSSARY[k];

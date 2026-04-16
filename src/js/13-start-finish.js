@@ -2,6 +2,13 @@
 // START / FINISH WORKOUT
 // ============================================================
 function startWorkout() {
+  // Show the full-day preview first; the CTA on that screen calls _beginWorkoutFocus().
+  state.previewBlockIdx = null;
+  state.workoutView = "preview";
+  renderWorkoutScreen();
+}
+
+function _beginWorkoutFocus() {
   state.trimmedBlocks = null;
   state.previewBlockIdx = null;
   ensureDraft();

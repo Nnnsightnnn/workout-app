@@ -77,6 +77,18 @@ const MIGRATIONS = [
       });
       return store;
     }
+  },
+  {
+    version: 5,
+    description: "Add onboarding.selectedDays; measurements stay additive (no field rename)",
+    migrate(store) {
+      if (store.onboarding && store.onboarding.selectedDays === undefined) {
+        store.onboarding.selectedDays = null;
+      }
+      // measurements[] is additive — old {date, weight} entries stay valid.
+      // No per-entry rewrite needed.
+      return store;
+    }
   }
 ];
 

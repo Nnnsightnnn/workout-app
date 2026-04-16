@@ -104,7 +104,6 @@ function openAddUserDialog(isFirstRun) {
     tplCards += `
       <div class="tpl-option${i === 0 ? ' active' : ''}" data-tpl="${tpl.id}" onclick="selectNewUserTpl(this, '${tpl.id}')">
         <div class="tpl-head">
-          <div class="tpl-badge">${tpl.daysPerWeek}d</div>
           <div class="tpl-name">${tpl.name}</div>
         </div>
         <div class="tpl-desc">${tpl.description}</div>

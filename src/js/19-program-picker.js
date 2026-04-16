@@ -13,7 +13,6 @@ function renderProgramPicker() {
   const phaseLabel = phase ? ` · <span style="color:${phase.color}">${phase.name}</span>` : "";
   el.innerHTML = `
     <div class="program-current">
-      <div class="program-badge">${u.daysPerWeek || tpl.daysPerWeek}d</div>
       <div class="program-info">
         <div class="name">${tpl.name}</div>
         <div class="desc">${tpl.description}</div>
@@ -32,13 +31,16 @@ function openProgramPicker() {
   const current = u ? u.templateId : "conjugate5";
   let html = '<h3>Choose Program</h3><p style="color:var(--text-dim);font-size:12px;margin-bottom:12px;">Switching replaces your current program. Session history is kept.</p>';
   html += '<button class="sheet-item" onclick="closeSheet();openFullGlossary();" style="margin-bottom:12px;"><span class="icon">?</span><span>Glossary — What do these terms mean?</span></button>';
+  html += '<div class="tpl-option custom-builder-tile" onclick="closeSheet();openProgramBuilder()">' +
+    '<div class="tpl-head"><div class="tpl-badge">+</div><div class="tpl-name">Build Your Own</div></div>' +
+    '<div class="tpl-desc">Pick days, blocks, and exercises yourself.</div></div>';
   PROGRAM_TEMPLATES.forEach(tpl => {
+    if (tpl.id === "custom") return;
     var glossaryKey = (typeof TEMPLATE_GLOSSARY !== "undefined") ? TEMPLATE_GLOSSARY[tpl.id] : null;
     var infoBtn = glossaryKey ? ' <span class="glossary-info" onclick="event.stopPropagation();openGlossary(\'' + glossaryKey.replace(/'/g,"\\'") + '\')">ⓘ</span>' : "";
     html += `
       <div class="tpl-option${tpl.id === current ? ' active' : ''}" onclick="openDurationPicker('${tpl.id}')">
         <div class="tpl-head">
-          <div class="tpl-badge">${tpl.daysPerWeek}d</div>
           <div class="tpl-name">${tpl.name}${infoBtn}</div>
         </div>
         <div class="tpl-desc">${tpl.description}</div>

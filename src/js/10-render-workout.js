@@ -117,6 +117,14 @@ function renderWorkoutScreen() {
 
   container.innerHTML = "";
 
+  // Phase 6: full-day preview (shown between Start tap and actual session start)
+  if (state.workoutView === "preview") {
+    renderDayPreview(container, day);
+    updateFinishButton();
+    updateProgress();
+    return;
+  }
+
   // View dispatcher: chapters/focus when workout active, flat list otherwise
   if (state.workoutStartedAt && state.workoutView === "focus" && state.focusBlockIdx != null) {
     renderFocusView(container, day);
@@ -342,6 +350,56 @@ function _wireTimeBudgetCard(card, day, breakdown) {
 
   // Initial wiring
   updateAdjustments();
+}
+
+function renderDayPreview(container, day) {
+  const screen = document.createElement("div");
+  screen.className = "preview-screen";
+
+  // Header: day name + block count + total estimate
+  const totalSec = estimateSessionSeconds(day);
+  const totalMin = Math.max(1, Math.round(totalSec / 60));
+  const header = document.createElement("div");
+  header.className = "preview-header";
+  header.innerHTML = `
+    <div class="preview-title">${day.name}</div>
+    <div class="preview-meta">${day.blocks.length} block${day.blocks.length === 1 ? '' : 's'} · ~${totalMin}m</div>
+  `;
+  screen.appendChild(header);
+
+  // All blocks (warmups already dimmed inside renderBlockPreview via .warmup class)
+  day.blocks.forEach((block, bi) => {
+    screen.appendChild(renderBlockPreview(day, block, bi));
+  });
+
+  // Cooldown summary
+  screen.appendChild(renderCooldownPreview());
+
+  container.appendChild(screen);
+
+  // Fixed bottom CTA bar: Back + Start Workout
+  const bar = document.createElement("div");
+  bar.className = "preview-cta-bar";
+
+  const back = document.createElement("button");
+  back.className = "preview-back-btn";
+  back.textContent = "← Back";
+  back.addEventListener("click", () => {
+    // workoutStartedAt is still null, so this falls through to the pre-start block-strip branch
+    state.workoutView = "chapters";
+    renderWorkoutScreen();
+  });
+
+  const start = document.createElement("button");
+  start.className = "preview-start-btn";
+  start.textContent = "Start Workout →";
+  start.addEventListener("click", () => {
+    _beginWorkoutFocus();
+  });
+
+  bar.appendChild(back);
+  bar.appendChild(start);
+  container.appendChild(bar);
 }
 
 function renderBlockPreview(day, block, bi) {

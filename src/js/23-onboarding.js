@@ -78,6 +78,23 @@ const ONBOARDING_STEPS = [
     ]
   },
   {
+    id: "selectedDays",
+    title: "Which days work for you?",
+    subtitle: "Pick the days you can train. We'll auto-pick if you skip.",
+    type: "multi",
+    skippable: true,
+    layout: "chips",
+    options: [
+      { value: "mon", label: "Mon", icon: "M", sub: "" },
+      { value: "tue", label: "Tue", icon: "T", sub: "" },
+      { value: "wed", label: "Wed", icon: "W", sub: "" },
+      { value: "thu", label: "Thu", icon: "T", sub: "" },
+      { value: "fri", label: "Fri", icon: "F", sub: "" },
+      { value: "sat", label: "Sat", icon: "S", sub: "" },
+      { value: "sun", label: "Sun", icon: "S", sub: "" }
+    ]
+  },
+  {
     id: "duration",
     title: "How long can you train per session?",
     type: "single",
@@ -110,12 +127,13 @@ const ONBOARDING_STEPS = [
   },
   {
     id: "age",
-    title: "What's your age range?",
+    title: "Age range (optional)",
     type: "single",
+    skippable: true,
     options: [
-      { value: "under30", label: "Under 30", icon: "⚡", sub: "High volume, fast recovery" },
-      { value: "30to40",  label: "30–40",    icon: "🎯", sub: "Prime performance window" },
-      { value: "40plus",  label: "40+",      icon: "♻",  sub: "Recovery-focused training" }
+      { value: "under30", label: "Under 30", icon: "⚡", sub: "Generally faster recovery" },
+      { value: "30to40",  label: "30–40",    icon: "🎯", sub: "Balanced training capacity" },
+      { value: "40plus",  label: "40+",      icon: "♻",  sub: "Recovery may benefit from extra attention" }
     ]
   },
   {
@@ -318,18 +336,22 @@ function _renderObStep() {
     </button>`;
   }).join("");
 
-  const gridClass = step.layout === "grid" ? " ob-grid" : "";
+  const gridClass = step.layout === "grid"  ? " ob-grid"
+                  : step.layout === "chips" ? " ob-chips"
+                  : "";
+  const showContinue = step.type === "multi" || isLast || canSkip;
 
   inner.innerHTML = `
     <div class="ob-progress"><div class="ob-progress-fill" style="width:${pct}%"></div></div>
     <div class="ob-body">
+      ${_obStep > 0 ? `<div class="ob-nav-row"><button class="ob-back-btn" id="obBackBtn">← Back</button></div>` : ""}
       <div class="ob-step-label">Step ${_obStep + 1} of ${total}</div>
       <h2 class="ob-title">${step.title}</h2>
       ${step.subtitle ? `<p class="ob-subtitle">${step.subtitle}</p>` : ""}
       <div class="ob-options${gridClass}" id="obOptions">${optionsHtml}</div>
-      ${(isLast || canSkip) ? `<div class="ob-actions">
-        ${isLast ? `<button class="ob-continue-btn" id="obContinueBtn">Finish Setup</button>` : ""}
-        <button class="ob-skip-btn" id="obSkipBtn">${isLast ? "Skip questionnaire →" : "Skip →"}</button>
+      ${showContinue ? `<div class="ob-actions">
+        ${(isLast || step.type === "multi") ? `<button class="ob-continue-btn" id="obContinueBtn">${isLast ? "Finish Setup" : "Continue →"}</button>` : ""}
+        ${(isLast || canSkip) ? `<button class="ob-skip-btn" id="obSkipBtn">${isLast ? "Skip questionnaire →" : "Skip →"}</button>` : ""}
       </div>` : ""}
       ${!_obIsRedo ? `<button class="ob-dismiss-btn" id="obDismissBtn">Don't show me this again</button>` : ""}
     </div>`;
@@ -337,8 +359,13 @@ function _renderObStep() {
   inner.querySelectorAll(".ob-option").forEach(btn => {
     btn.addEventListener("click", () => _obSelect(step, btn.dataset.value));
   });
-  if (isLast) {
-    document.getElementById("obContinueBtn").addEventListener("click", _obFinish);
+  const backEl = document.getElementById("obBackBtn");
+  if (backEl) backEl.addEventListener("click", () => { _obStep--; _renderObStep(); });
+  const continueEl = document.getElementById("obContinueBtn");
+  if (continueEl) {
+    continueEl.addEventListener("click", () => {
+      if (isLast) { _obFinish(); } else { _obStep++; _renderObStep(); }
+    });
   }
   if (isLast || canSkip) {
     document.getElementById("obSkipBtn").addEventListener("click", () => {
@@ -412,7 +439,7 @@ function _buildHandoffReasons(a, tplId) {
   if (a.experience === "advanced")     reasons.push("Advanced track: high-intensity conjugate periodisation");
   if (a.equipment === "bodyweight")    reasons.push("No barbell needed — bands & bodyweight throughout");
   if (a.equipment === "barbell")       reasons.push("Built for home barbell setups");
-  if (a.age === "40plus")              reasons.push("40+ focus: recovery management built in");
+  if (a.age === "40plus")              reasons.push("You mentioned 40+ — this template includes recovery-friendly programming");
   const flaggedInjuries = (a.injuries || []).filter(i => i !== "none");
   if (flaggedInjuries.length) {
     const labels = flaggedInjuries.map(

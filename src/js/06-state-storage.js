@@ -101,6 +101,7 @@ function loadStore() {
     // Defensive defaults for onboarding
     if (s.onboarding === undefined) s.onboarding = null;
     if (s.onboardingDismissedAt === undefined) s.onboardingDismissedAt = null;
+    if (s.onboarding && s.onboarding.selectedDays === undefined) s.onboarding.selectedDays = null;
     // Fill missing per-user fields
     s.users.forEach(u => {
       if (!u.id) u.id = genId();
