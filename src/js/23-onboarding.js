@@ -16,9 +16,10 @@ const INJURY_EXERCISE_MAP = {
 
 const ONBOARDING_STEPS = [
   {
-    id: "goal",
-    title: "What's your main training goal?",
-    type: "single",
+    id: "goals",
+    title: "What are your training goals?",
+    subtitle: "Pick all that apply — we'll find the best match.",
+    type: "multi",
     options: [
       { value: "strength",    label: "Strength",             icon: "🏋", sub: "Max lifts & peak power" },
       { value: "hypertrophy", label: "Hypertrophy",          icon: "📐", sub: "Muscle size & definition" },
@@ -158,6 +159,13 @@ function getRecommendedTemplate(a) {
   var hasKnees = injuries.includes("knees");
   var wantsGlutes = a.gender === "female";
 
+  // Resolve primary goal: goals[] (new) or goal (legacy fallback)
+  var goals = a.goals && a.goals.length ? a.goals : (a.goal ? [a.goal] : ["general"]);
+  var primaryGoal = goals[0];
+  var hasStrength = goals.includes("strength");
+  var hasHypertrophy = goals.includes("hypertrophy");
+  var hasAthletic = goals.includes("athletic");
+
   // Equipment gate — bodyweight users
   if (a.equipment === "bodyweight") {
     if (days >= 4) return "calisthenics4";
@@ -166,7 +174,7 @@ function getRecommendedTemplate(a) {
 
   // Short sessions → time-efficient programs
   if (dur <= 30) return days <= 3 ? "rpt3" : "rpt3"; // RPT is built for 30-45 min
-  if (dur <= 45 && a.goal !== "athletic") {
+  if (dur <= 45 && !hasAthletic) {
     if (days <= 3) return "rpt3";
     // 4+ days at 45min works for most programs
   }
@@ -196,8 +204,15 @@ function getRecommendedTemplate(a) {
     return "hypertrophy5";
   }
 
-  // Goal × days × experience matrix
-  if (a.goal === "strength") {
+  // Multi-goal combos: strength + hypertrophy → powerbuilding
+  if (hasStrength && hasHypertrophy) {
+    if (days <= 3) return "jbrown3";
+    if (days === 4) return "phul4"; // PHUL blends strength + hypertrophy
+    return "conjugate5";
+  }
+
+  // Primary goal × days × experience matrix
+  if (primaryGoal === "strength") {
     if (days <= 2) return "runner2";
     if (days === 3) return a.experience === "advanced" ? "rpt3" : "jbrown3";
     if (days === 4) {
@@ -207,7 +222,7 @@ function getRecommendedTemplate(a) {
     return "conjugate5";
   }
 
-  if (a.goal === "hypertrophy") {
+  if (primaryGoal === "hypertrophy") {
     if (days <= 2) return "glutes2";
     if (days === 3) return "ppl3";
     if (days === 4) {
@@ -219,7 +234,7 @@ function getRecommendedTemplate(a) {
     return "ppl6"; // 6-day
   }
 
-  if (a.goal === "athletic") {
+  if (primaryGoal === "athletic") {
     if (days <= 2) return "runner2";
     if (days === 3) return "jbrown3";
     if (days === 4) return a.experience === "advanced" ? "prvn4" : "athletic4";
@@ -404,6 +419,9 @@ function _obSelect(step, rawValue) {
 }
 
 function _obFinish() {
+  if (!_obAnswers.goals || !_obAnswers.goals.length) {
+    _obAnswers.goals = ["general"];
+  }
   if (!_obAnswers.injuries || !_obAnswers.injuries.length) {
     _obAnswers.injuries = ["none"];
   }
@@ -434,7 +452,11 @@ function _buildHandoffReasons(a, tplId) {
   const goalLabels = { strength: "Strength", hypertrophy: "Hypertrophy",
                        athletic: "Athletic Performance", general: "General Fitness" };
   const reasons = [];
-  if (a.goal) reasons.push(`Matches your goal: <strong>${goalLabels[a.goal] || a.goal}</strong>`);
+  const goals = a.goals && a.goals.length ? a.goals : (a.goal ? [a.goal] : []);
+  if (goals.length) {
+    const goalText = goals.map(g => goalLabels[g] || g).join(" + ");
+    reasons.push(`Matches your goal${goals.length > 1 ? "s" : ""}: <strong>${goalText}</strong>`);
+  }
   if (a.experience === "beginner")     reasons.push("Beginner-friendly: longer rest periods between sets");
   if (a.experience === "advanced")     reasons.push("Advanced track: high-intensity conjugate periodisation");
   if (a.equipment === "bodyweight")    reasons.push("No barbell needed — bands & bodyweight throughout");
@@ -587,7 +609,7 @@ function renderProfileCard() {
 
     el.innerHTML = `
       <div class="profile-summary">
-        <div class="profile-row"><span class="profile-label">Goal</span><span class="profile-value">${goalLabels[ob.goal] || ob.goal || "—"}</span></div>
+        <div class="profile-row"><span class="profile-label">Goal${((ob.goals && ob.goals.length > 1) || false) ? "s" : ""}</span><span class="profile-value">${(ob.goals && ob.goals.length ? ob.goals.map(g => goalLabels[g] || g).join(", ") : goalLabels[ob.goal] || ob.goal) || "—"}</span></div>
         <div class="profile-row"><span class="profile-label">Physique</span><span class="profile-value">${ppText}</span></div>
         <div class="profile-row"><span class="profile-label">Experience</span><span class="profile-value">${expLabels[ob.experience] || ob.experience || "—"}</span></div>
         <div class="profile-row"><span class="profile-label">Days / week</span><span class="profile-value">${ob.days || "—"}</span></div>

@@ -99,6 +99,19 @@ const MIGRATIONS = [
       });
       return store;
     }
+  },
+  {
+    version: 7,
+    description: "Convert onboarding.goal (string) to onboarding.goals (array) for multi-goal support",
+    migrate(store) {
+      if (store.onboarding) {
+        if (!store.onboarding.goals) {
+          store.onboarding.goals = store.onboarding.goal ? [store.onboarding.goal] : ["general"];
+        }
+        delete store.onboarding.goal;
+      }
+      return store;
+    }
   }
 ];
 
