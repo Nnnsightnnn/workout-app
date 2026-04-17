@@ -50,7 +50,6 @@ function hasAnyInput() {
 
 function updateFinishButton() {
   const started = state.workoutStartedAt != null || hasAnyInput();
-  document.getElementById("startBtn").style.display = started ? "none" : "";
   document.getElementById("finishBtn").style.display = started ? "" : "none";
   document.getElementById("headerStartBtn").classList.toggle("active", !started);
   document.getElementById("headerFinishBtn").classList.toggle("active", started);

@@ -2,7 +2,7 @@
 // START / FINISH WORKOUT
 // ============================================================
 function startWorkout() {
-  // Show the full-day preview first; the CTA on that screen calls _beginWorkoutFocus().
+  // Show the full-day preview first; tapping the workout card calls _beginWorkoutFocus().
   state.previewBlockIdx = null;
   state.workoutView = "preview";
   renderWorkoutScreen();

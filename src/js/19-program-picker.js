@@ -1,6 +1,65 @@
 // ============================================================
 // PROGRAM PICKER
 // ============================================================
+var _previewCache = {};
+
+function generateSamplePreview(templateId, daysPerWeek, totalWeeks) {
+  var key = templateId + "|" + daysPerWeek + "|" + totalWeeks;
+  if (_previewCache[key]) return _previewCache[key];
+  var week = resolveWeekProgram(templateId, 1, totalWeeks, daysPerWeek);
+  _previewCache[key] = week;
+  return week;
+}
+
+function renderSamplePreview(container, templateId, daysPerWeek, totalWeeks) {
+  container.innerHTML = "";
+  var week = generateSamplePreview(templateId, daysPerWeek, totalWeeks);
+  if (!week || !week.length) {
+    container.innerHTML = '<div style="color:var(--text-dim);font-size:12px;padding:8px;">No preview available for this program.</div>';
+    return;
+  }
+
+  var selectedIdx = 0;
+  var dayContent = document.createElement("div");
+
+  function renderDay(idx) {
+    dayContent.innerHTML = "";
+    var day = week[idx];
+    var breakdown = getSessionBreakdown(day);
+
+    var hdr = document.createElement("div");
+    hdr.style.cssText = "padding:8px 0 4px;";
+    hdr.innerHTML = '<div style="font-size:16px;font-weight:700;">' + day.name + '</div>'
+      + '<div style="color:var(--text-dim);font-size:12px;">' + (day.sub || '') + '</div>'
+      + '<div style="font-size:12px;margin-top:4px;">\u23F1 ~' + breakdown.totalMin + ' min'
+      + ' <span style="color:var(--text-dim);">\u00b7 WU ' + Math.round(breakdown.warmupSec / 60) + 'm \u00b7 Work ' + Math.round(breakdown.workingSec / 60) + 'm \u00b7 CD ' + Math.round(breakdown.cooldownSec / 60) + 'm</span></div>';
+    dayContent.appendChild(hdr);
+
+    day.blocks.forEach(function(block, bi) {
+      dayContent.appendChild(renderBlockPreview(day, block, bi, true));
+    });
+
+    dayContent.appendChild(renderCooldownPreviewForDay(day.id));
+
+    strip.querySelectorAll(".block-strip-chip").forEach(function(chip, ci) {
+      chip.classList.toggle("active", ci === idx);
+    });
+  }
+
+  // Day tabs
+  var strip = document.createElement("div");
+  strip.className = "block-strip";
+  week.forEach(function(day, di) {
+    var chip = document.createElement("div");
+    chip.className = "block-strip-chip" + (di === 0 ? " active" : "");
+    chip.innerHTML = '<span class="block-strip-letter">D' + (di + 1) + '</span><span class="block-strip-name">' + day.name.split("—")[0].trim() + '</span>';
+    chip.addEventListener("click", function() { selectedIdx = di; renderDay(di); });
+    strip.appendChild(chip);
+  });
+  container.appendChild(strip);
+  container.appendChild(dayContent);
+  renderDay(0);
+}
 function renderProgramPicker() {
   const el = document.getElementById("programContent");
   if (!el) return;
@@ -89,6 +148,7 @@ function openDurationPicker(templateId) {
         b.classList.toggle("selected", parseInt(b.dataset.day) === selectedDays);
       });
       updateStartBtn();
+      if (previewOpen) renderSamplePreview(previewContainer, templateId, selectedDays, selectedWeeks);
     };
     dayBtnGrid.appendChild(btn);
   }
@@ -130,7 +190,7 @@ function openDurationPicker(templateId) {
     btn.dataset.wk = wk;
     btn.textContent = wk + " wk";
     btn.style.cssText = "flex:1;padding:10px;font-size:14px;font-weight:700;";
-    btn.onclick = function() { selectedWeeks = wk; updatePreview(); updateStartBtn(); };
+    btn.onclick = function() { selectedWeeks = wk; updatePreview(); updateStartBtn(); if (previewOpen) renderSamplePreview(previewContainer, templateId, selectedDays, selectedWeeks); };
     btnGrid.appendChild(btn);
   });
   wrap.appendChild(btnGrid);
@@ -139,6 +199,26 @@ function openDurationPicker(templateId) {
   previewEl.style.cssText = "font-size:12px;margin-bottom:16px;line-height:1.6;";
   wrap.appendChild(previewEl);
   updatePreview();
+
+  // Sample workout preview toggle
+  var previewOpen = false;
+  const previewToggle = document.createElement("button");
+  previewToggle.className = "schedule-day-btn";
+  previewToggle.textContent = "Preview Sample Workout ▾";
+  previewToggle.style.cssText = "width:100%;padding:10px;font-size:13px;font-weight:700;margin-bottom:8px;";
+  const previewContainer = document.createElement("div");
+  previewContainer.className = "sample-preview-wrap";
+  previewContainer.style.display = "none";
+  previewToggle.onclick = function() {
+    previewOpen = !previewOpen;
+    previewContainer.style.display = previewOpen ? "" : "none";
+    previewToggle.textContent = previewOpen ? "Hide Preview ▴" : "Preview Sample Workout ▾";
+    if (previewOpen) {
+      renderSamplePreview(previewContainer, templateId, selectedDays, selectedWeeks);
+    }
+  };
+  wrap.appendChild(previewToggle);
+  wrap.appendChild(previewContainer);
 
   const actions = document.createElement("div");
   actions.className = "sheet-actions";

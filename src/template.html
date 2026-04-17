@@ -87,10 +87,6 @@
 
     <div id="sessionEstRow" class="session-est-row" style="display:none;"></div>
 
-    <div class="quick-row" id="quickRow">
-      <button class="action-btn primary" id="startBtn">▶ Start Workout</button>
-    </div>
-
     <div id="blocksContainer"></div>
 
     <div class="quick-row" style="margin-top: 14px;">
@@ -245,6 +241,10 @@
         <span class="hanko-text">K&amp;N</span>
       </div>
     </div>
+    <button class="action-btn" onclick="openInfoGuide()" style="margin-top:8px;">App Guide</button>
+    <p style="color: var(--text-faint); font-size: 11px; margin-top: 6px; line-height:1.5;">
+      Learn how the app works, what it does, and why it's different.
+    </p>
   </section>
 </main>
 
@@ -260,6 +260,11 @@
     <div class="lib-cat" id="sidebarCatRow"></div>
     <div class="bento-grid" id="sidebarGrid"></div>
   </div>
+</div>
+
+<!-- Info Guide Overlay -->
+<div class="info-guide-overlay" id="infoGuideOverlay">
+  <div id="infoGuideInner"></div>
 </div>
 
 <!-- Onboarding Flow (first-run questionnaire, shown above sheet) -->

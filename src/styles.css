@@ -1546,7 +1546,7 @@
     transition: transform 0.15s var(--spring), box-shadow 0.15s ease, border-color 0.15s;
     animation: breathe var(--breathe-dur) ease-in-out infinite;
   }
-  .day-picker-card:active {
+  .day-picker-card:not(.expanded):active {
     transform: var(--squish);
     box-shadow: var(--pillow-pressed);
   }
@@ -1572,6 +1572,28 @@
     font-size: 10px; font-weight: 800; text-transform: uppercase;
     letter-spacing: 0.06em; color: var(--accent); margin-bottom: 6px;
   }
+
+  /* --- Day picker card expand/collapse --- */
+  .dpc-expand-hint {
+    font-size: 10px; font-weight: 700; color: var(--accent);
+    margin-top: 8px; opacity: 0.7;
+    display: flex; align-items: center; gap: 4px;
+    transition: opacity 0.25s ease;
+  }
+  .day-picker-card.expanded .dpc-expand-hint { opacity: 0.4; }
+  .dpc-chevron {
+    display: inline-block;
+    transition: transform 0.35s var(--spring-gentle);
+    font-size: 12px;
+  }
+  .day-picker-card.expanded .dpc-chevron { transform: rotate(180deg); }
+  .dpc-controls-outer {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.35s var(--spring-gentle);
+  }
+  .day-picker-card.expanded .dpc-controls-outer { grid-template-rows: 1fr; }
+  .dpc-controls-inner { overflow: hidden; min-height: 0; }
 
   /* Block strip — compact horizontal block overview */
   .block-strip {
@@ -1616,6 +1638,92 @@
     font-size: 11px; color: var(--text-faint); margin-top: 4px; font-weight: 600;
   }
   .block-preview-tile.warmup { opacity: 0.55; }
+  .block-preview-tile.tappable {
+    cursor: pointer;
+    transition: transform 0.15s var(--spring), opacity 0.15s ease;
+  }
+  .block-preview-tile.tappable:active {
+    transform: scale(0.96); opacity: 0.8;
+  }
+
+  /* Exercise preview sheet */
+  .ex-preview { padding: 2px 0; }
+  .ex-preview-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 10px;
+  }
+  .ex-preview-name { font-size: 20px; font-weight: 800; line-height: 1.25; flex: 1; }
+  .ex-preview-muscles {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;
+  }
+  .ex-preview-tag {
+    font-size: 12px; font-weight: 700; padding: 3px 9px;
+    border-radius: 8px; display: inline-block;
+  }
+  .ex-preview-equip {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;
+  }
+  .ex-preview-equip-tag {
+    font-size: 11px; padding: 3px 8px; border-radius: 8px;
+    background: var(--bg-card-2); border: 1px solid var(--border);
+    color: var(--text-dim); font-weight: 600;
+  }
+  .ex-preview-demo-btn {
+    width: 100%; padding: 14px; border-radius: 14px;
+    background: var(--bg-card-2); border: 2px solid var(--accent);
+    font-size: 14px; font-weight: 700; color: var(--accent);
+    box-shadow: var(--pillow-accent-sm);
+    margin-bottom: 12px; min-height: 44px; cursor: pointer;
+    transition: transform 0.15s var(--spring), box-shadow 0.15s ease;
+  }
+  .ex-preview-demo-btn:active {
+    transform: var(--squish); box-shadow: var(--pillow-pressed);
+  }
+  .ex-preview-fields { margin-bottom: 12px; }
+  .ex-preview-rx {
+    background: var(--bg-card-2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 10px 12px; margin-bottom: 12px;
+  }
+  .ex-preview-rx-row {
+    display: flex; justify-content: space-between; padding: 4px 0;
+  }
+  .ex-preview-rx-row + .ex-preview-rx-row { border-top: 1px solid var(--border); }
+  .ex-preview-rx-label { color: var(--text-dim); font-size: 12px; font-weight: 600; }
+  .ex-preview-rx-value { font-weight: 700; font-size: 13px; }
+  .ex-preview-history { margin-bottom: 12px; }
+  .ex-preview-history-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text-faint); margin-bottom: 6px;
+  }
+  .ex-preview-history-chips {
+    display: flex; flex-wrap: wrap; gap: 5px;
+  }
+  .ex-preview-nav {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 10px; border-top: 1px solid var(--border);
+  }
+  .ex-preview-nav-btn {
+    min-width: 44px; min-height: 44px; border-radius: 14px;
+    background: var(--bg-card-2); border: 2px solid var(--border);
+    font-size: 20px; font-weight: 700; cursor: pointer;
+    box-shadow: var(--pillow-sm);
+    transition: transform 0.15s var(--spring), box-shadow 0.15s ease;
+  }
+  .ex-preview-nav-btn:disabled { opacity: 0.3; cursor: default; }
+  .ex-preview-nav-btn:active:not(:disabled) {
+    transform: var(--squish-sm); box-shadow: var(--pillow-pressed);
+  }
+  .ex-preview-counter { font-size: 12px; color: var(--text-dim); font-weight: 600; }
+
+  /* Sample workout preview in program picker */
+  .sample-preview-wrap {
+    max-height: 50vh; overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--border); border-radius: 12px;
+    padding: 8px; background: var(--bg-card-2);
+    margin-bottom: 12px;
+  }
+  .sample-preview-wrap::-webkit-scrollbar { display: none; }
 
   .day-picker-toggle {
     width: 100%; padding: 12px; margin-top: 4px;
@@ -2287,6 +2395,155 @@
   .ob-handoff-hint {
     font-size: 12px; color: var(--text-faint);
     text-align: center; margin-bottom: 0;
+  }
+
+  /* ============================================================
+     INFO GUIDE
+     ============================================================ */
+  .info-guide-overlay {
+    position: fixed; inset: 0; z-index: 75;
+    background: var(--bg);
+    display: none; flex-direction: column;
+    overflow: hidden; overscroll-behavior: contain;
+  }
+  .info-guide-overlay.active { display: flex; }
+
+  .ig-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px 0; flex-shrink: 0;
+  }
+  .ig-page-label {
+    font-size: 11px; font-weight: 700; color: var(--text-faint);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .ig-close {
+    width: 36px; height: 36px; border-radius: 12px;
+    background: var(--bg-card-2); border: 2px solid var(--border);
+    color: var(--text-dim); font-size: 16px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--pillow-sm);
+    transition: transform 0.1s var(--spring), box-shadow 0.1s;
+    cursor: pointer;
+  }
+  .ig-close:active { transform: translateY(2px); box-shadow: var(--pillow-pressed); }
+
+  .ig-body {
+    flex: 1; overflow-y: auto;
+    padding: 20px 20px 28px;
+    max-width: 500px; width: 100%; margin: 0 auto;
+    animation: igPageIn 0.3s var(--spring-gentle);
+  }
+  @keyframes igPageIn {
+    from { opacity: 0; transform: translateX(30px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  .ig-title {
+    font-size: 26px; font-weight: 800; letter-spacing: -0.03em;
+    line-height: 1.15; color: var(--text); margin: 0;
+  }
+  .ig-subtitle {
+    font-size: 13px; color: var(--text-dim);
+    margin-top: 6px; margin-bottom: 0; line-height: 1.5;
+  }
+
+  /* 2-column card grid */
+  .ig-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    margin-top: 20px;
+  }
+  .ig-card {
+    background: var(--bg-card); border: 2px solid var(--border);
+    border-radius: 16px; padding: 14px;
+    background-image: var(--bubble-shine);
+    box-shadow: var(--pillow-sm);
+  }
+  .ig-card-icon { font-size: 22px; display: block; margin-bottom: 6px; line-height: 1; }
+  .ig-card-title { font-size: 14px; font-weight: 700; color: var(--text); line-height: 1.3; }
+  .ig-card-desc { font-size: 11px; color: var(--text-dim); margin-top: 3px; line-height: 1.4; }
+
+  /* Numbered step list */
+  .ig-steps {
+    display: flex; flex-direction: column; gap: 10px;
+    margin-top: 20px;
+  }
+  .ig-step {
+    display: flex; align-items: flex-start; gap: 12px;
+    background: var(--bg-card); border: 2px solid var(--border);
+    border-radius: 16px; padding: 14px;
+    background-image: var(--bubble-shine);
+    box-shadow: var(--pillow-sm);
+  }
+  .ig-step-num {
+    width: 32px; height: 32px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px;
+    background: var(--accent); color: #fff;
+    font-size: 15px; font-weight: 800;
+    box-shadow: 0 3px 0 var(--accent-dim);
+  }
+  .ig-step-body { flex: 1; min-width: 0; }
+  .ig-step-title { font-size: 14px; font-weight: 700; color: var(--text); line-height: 1.3; }
+  .ig-step-desc { font-size: 11px; color: var(--text-dim); margin-top: 3px; line-height: 1.4; }
+
+  /* Dot navigation */
+  .ig-dots {
+    display: flex; justify-content: center; gap: 10px;
+    margin-bottom: 12px;
+  }
+  .ig-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--bg-card-2); border: 2px solid var(--border);
+    cursor: pointer; padding: 0;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s var(--spring);
+  }
+  .ig-dot.active {
+    background: var(--accent); border-color: var(--accent);
+    transform: scale(1.3);
+  }
+
+  /* Bottom nav area */
+  .ig-nav {
+    flex-shrink: 0; padding: 10px 20px 24px;
+    max-width: 500px; width: 100%; margin: 0 auto;
+  }
+  .ig-nav-btns {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px;
+  }
+  .ig-nav-btn {
+    padding: 10px 18px; border-radius: 14px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    background: var(--bg-card-2); color: var(--text-dim);
+    border: 2px solid var(--border);
+    box-shadow: var(--pillow-sm);
+    transition: transform 0.1s var(--spring), box-shadow 0.1s;
+  }
+  .ig-nav-btn:active { transform: translateY(2px); box-shadow: var(--pillow-pressed); }
+  .ig-nav-btn.ig-nav-primary {
+    background: var(--accent); color: #fff;
+    border-color: var(--accent-dim);
+    background-image: var(--bubble-shine-accent);
+    box-shadow: var(--pillow-accent-sm);
+  }
+  .ig-nav-btn.ig-nav-primary:active { box-shadow: var(--pillow-pressed); }
+
+  /* Footer with hanko + version */
+  .ig-footer {
+    display: flex; flex-direction: column; align-items: center;
+    margin-top: 24px; padding-top: 16px;
+    border-top: 1px solid var(--border);
+    gap: 8px;
+  }
+  .ig-footer .hanko-stamp {
+    width: 52px; height: 52px; font-size: 12px;
+  }
+  .ig-footer-version {
+    font-size: 11px; color: var(--text-faint); font-weight: 600;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ig-body { animation: none; }
   }
 
   /* ============================================================

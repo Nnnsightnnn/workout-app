@@ -252,7 +252,6 @@ function initWorkoutScreen() {
     state.sidebarOpen ? closeSidebar() : openSidebar();
   };
   document.getElementById("customizeDayBtn").onclick = openCustomizeDay;
-  document.getElementById("startBtn").onclick = startWorkout;
   document.getElementById("finishBtn").onclick = handleFinishButton;
   document.getElementById("headerStartBtn").onclick = startWorkout;
   document.getElementById("headerFinishBtn").onclick = handleFinishButton;
@@ -275,6 +274,11 @@ function initSheet() {
     if (e.target.id === "sheetBg") closeSheet();
   });
 }
+function initInfoGuide() {
+  document.getElementById("infoGuideOverlay").addEventListener("click", e => {
+    if (e.target.id === "infoGuideOverlay") closeInfoGuide();
+  });
+}
 
 function init() {
   runMigrations();
@@ -284,7 +288,7 @@ function init() {
 
   setupPWA();
   initUserPicker(); initUnitToggle(); initNav(); initTools();
-  initWorkoutScreen(); initSheet(); initSidebar();
+  initWorkoutScreen(); initSheet(); initSidebar(); initInfoGuide();
 
   const versionEl = document.getElementById("appVersionLabel");
   if (versionEl) versionEl.textContent = "v" + APP_DISPLAY_VERSION;

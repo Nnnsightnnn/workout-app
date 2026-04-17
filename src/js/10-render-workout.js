@@ -196,7 +196,6 @@ function renderDayPicker() {
   document.getElementById("daySub").textContent = tpl.name + (u.totalWeeks ? " · Week " + (u.currentWeek || 1) + " of " + u.totalWeeks : "");
 
   // Hide start/finish buttons
-  document.getElementById("startBtn").style.display = "none";
   document.getElementById("finishBtn").style.display = "none";
   document.getElementById("headerStartBtn").classList.remove("active");
   document.getElementById("headerFinishBtn").classList.remove("active");
@@ -228,7 +227,9 @@ function renderDayPicker() {
     html += `</div>`;
     html += `<div class="picker-duration">\u23F1 ~${breakdown.totalMin} min</div>`;
     html += `<div class="picker-breakdown">WU ${wuMin}m \u00b7 Work ${wkMin}m \u00b7 CD ${cdMin}m</div>`;
+    html += `<div class="dpc-expand-hint"><span class="dpc-chevron">\u25BE</span> Adjust time</div>`;
 
+    html += `<div class="dpc-controls-outer"><div class="dpc-controls-inner">`;
     const defaultTarget = Math.round(breakdown.totalMin / 5) * 5;
     html += `<div class="tb-target-row" data-day-id="${d.id}">`;
     html += `<span class="tb-target-label">Target</span>`;
@@ -241,8 +242,24 @@ function renderDayPicker() {
     html += `<div class="tb-start-row" data-day-id="${d.id}">`;
     html += `<button class="tb-start-btn primary" data-day-id="${d.id}">Start</button>`;
     html += `</div>`;
+    html += `</div></div>`;
 
     card.innerHTML = html;
+
+    // Tapping the card starts the workout
+    card.addEventListener("click", (e) => {
+      if (e.target.closest(".dpc-controls-inner") || e.target.closest(".dpc-expand-hint")) return;
+      state.currentDayId = d.id;
+      state.dayChosen = true;
+      startWorkout();
+    });
+
+    // "Adjust time" link toggles the config panel
+    card.querySelector(".dpc-expand-hint").addEventListener("click", (e) => {
+      e.stopPropagation();
+      card.classList.toggle("expanded");
+    });
+
     _wireTimeBudgetCard(card, d, breakdown);
     return card;
   }
@@ -385,7 +402,7 @@ function renderDayPreview(container, day) {
   back.className = "preview-back-btn";
   back.textContent = "← Back";
   back.addEventListener("click", () => {
-    // workoutStartedAt is still null, so this falls through to the pre-start block-strip branch
+    state.dayChosen = false;
     state.workoutView = "chapters";
     renderWorkoutScreen();
   });
@@ -402,7 +419,7 @@ function renderDayPreview(container, day) {
   container.appendChild(bar);
 }
 
-function renderBlockPreview(day, block, bi) {
+function renderBlockPreview(day, block, bi, readOnly) {
   const wrap = document.createElement("div");
   const isSuperset = block.exercises.length > 1;
 
@@ -415,19 +432,22 @@ function renderBlockPreview(day, block, bi) {
     <div class="block-title">${block.name}${isSuperset ? ' <span style="color:var(--superset);">· Superset</span>' : ''}</div>
     <span class="block-time-badge">~${blockMin}m</span>
   `;
-  const menu = document.createElement("button");
-  menu.className = "block-menu";
-  menu.textContent = "⋯";
-  menu.onclick = () => openBlockMenu(block, bi);
-  hdr.appendChild(menu);
+  if (!readOnly) {
+    const menu = document.createElement("button");
+    menu.className = "block-menu";
+    menu.textContent = "⋯";
+    menu.onclick = () => openBlockMenu(block, bi);
+    hdr.appendChild(menu);
+  }
   wrap.appendChild(hdr);
 
   // Bento grid of exercise tiles
   const grid = document.createElement("div");
   grid.className = "block-preview-grid";
-  block.exercises.forEach(ex => {
+  block.exercises.forEach((ex, exIdx) => {
     const tile = document.createElement("div");
-    tile.className = "block-preview-tile" + (ex.isWarmup ? " warmup" : "");
+    tile.className = "block-preview-tile" + (!readOnly ? " tappable" : "") + (ex.isWarmup ? " warmup" : "");
+    if (!readOnly) tile.onclick = () => openExercisePreviewSheet(block.exercises, exIdx, false, block, bi);
     const mColor = primaryMuscleColor(ex.muscles);
     if (mColor) tile.style.borderLeftColor = mColor;
 
@@ -479,7 +499,54 @@ function renderCooldownPreview() {
 
   const grid = document.createElement("div");
   grid.className = "block-preview-grid";
-  getCooldownExercises(state.currentDayId).forEach(ex => {
+  const cdExercises = getCooldownExercises(state.currentDayId);
+  cdExercises.forEach((ex, exIdx) => {
+    const tile = document.createElement("div");
+    tile.className = "block-preview-tile tappable";
+    tile.onclick = () => openExercisePreviewSheet(cdExercises, exIdx, true);
+
+    const name = document.createElement("div");
+    name.className = "tile-name";
+    name.textContent = ex.name;
+    tile.appendChild(name);
+
+    if (ex.muscles && ex.muscles.length) {
+      const muscle = document.createElement("span");
+      muscle.className = "tile-muscle";
+      muscle.textContent = ex.muscles[0];
+      const mc = GROUP_COLORS[groupMuscle(ex.muscles[0])];
+      if (mc) { muscle.style.background = mc + '22'; muscle.style.color = mc; }
+      tile.appendChild(muscle);
+    }
+
+    const info = document.createElement("div");
+    info.className = "tile-sets";
+    info.textContent = ex.isTime
+      ? (ex.reps || 30) + "s" + (ex.perSide ? "/side" : "")
+      : (ex.reps || 8) + " reps" + (ex.perSide ? "/side" : "");
+    tile.appendChild(info);
+
+    grid.appendChild(tile);
+  });
+  wrap.appendChild(grid);
+  return wrap;
+}
+
+function renderCooldownPreviewForDay(dayId) {
+  const wrap = document.createElement("div");
+
+  const hdr = document.createElement("div");
+  hdr.className = "block-header";
+  hdr.innerHTML = `
+    <div class="block-letter" style="background:var(--success);color:#fff">CD</div>
+    <div class="block-title">Cool Down</div>
+    <span class="block-time-badge">~5m</span>
+  `;
+  wrap.appendChild(hdr);
+
+  const grid = document.createElement("div");
+  grid.className = "block-preview-grid";
+  getCooldownExercises(dayId).forEach(ex => {
     const tile = document.createElement("div");
     tile.className = "block-preview-tile";
 
