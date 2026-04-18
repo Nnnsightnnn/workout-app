@@ -27,6 +27,15 @@ function openDayPicker() {
     btn.onclick = () => { switchDay(d.id); closeSheet(); };
     wrap.appendChild(btn);
   });
+
+  // View Full Program link
+  var progBtn = document.createElement("button");
+  progBtn.className = "sheet-item";
+  progBtn.style.marginTop = "8px";
+  progBtn.innerHTML = '<span class="icon" style="font-size:14px;">\u25A6</span> View Full Program';
+  progBtn.onclick = function() { closeSheet(); setTimeout(openLookAhead, 80); };
+  wrap.appendChild(progBtn);
+
   openSheet(wrap);
 }
 

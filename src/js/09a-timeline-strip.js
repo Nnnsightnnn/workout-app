@@ -160,6 +160,23 @@ function renderTimelineStrip() {
     } else if (isPast || isToday) {
       pill.classList.add("tappable");
       pill.onclick = () => openAddWorkout(dateMs);
+    } else if (typeof _laTrainingPattern === "function" && u.daysPerWeek && u.totalWeeks) {
+      // Future pill — check if it's a projected training day
+      const pattern = _laTrainingPattern(u.daysPerWeek);
+      const dow = d.getDay();
+      const dayIdx = pattern.indexOf(dow);
+      if (dayIdx !== -1 && dayIdx < u.daysPerWeek && dayIdx < u.program.length) {
+        const targetDayId = u.program[dayIdx].id;
+        const isActive = state.dayChosen && state.currentDayId === targetDayId && !isToday;
+        pill.classList.add("tappable");
+        if (isActive) {
+          pill.classList.add("active-day");
+        } else {
+          pill.classList.add("scheduled");
+        }
+        pill.classList.remove("future");
+        pill.onclick = () => switchDay(targetDayId);
+      }
     }
 
     strip.appendChild(pill);
