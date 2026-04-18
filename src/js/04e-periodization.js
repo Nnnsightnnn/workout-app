@@ -88,7 +88,7 @@ function getUserProfile() {
     equipment: ob.equipment || "full",
     injuries: ob.injuries || ["none"],
     experience: ob.experience || "intermediate",
-    goal: ob.goal || "general",
+    goals: ob.goals || (ob.goal ? [ob.goal] : ["general"]),
     daysPerWeek: ob.days || 5,
     age: ob.age || "30to40",
     duration: ob.duration || 60,
