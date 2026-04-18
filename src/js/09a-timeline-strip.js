@@ -157,9 +157,17 @@ function renderTimelineStrip() {
 
     if (session) {
       pill.onclick = () => openSessionDetail(session);
-    } else if (isPast || isToday) {
+    } else if (isPast) {
       pill.classList.add("tappable");
       pill.onclick = () => openAddWorkout(dateMs);
+    } else if (isToday) {
+      pill.classList.add("tappable");
+      pill.onclick = () => {
+        state.dayChosen = false;
+        stopSessionTimer();
+        state.workoutStartedAt = null;
+        renderWorkoutScreen();
+      };
     } else if (typeof _laTrainingPattern === "function" && u.daysPerWeek && u.totalWeeks) {
       // Future pill — check if it's a projected training day
       const pattern = _laTrainingPattern(u.daysPerWeek);
