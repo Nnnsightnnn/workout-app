@@ -1,0 +1,4 @@
+{
+  "bucket": "PASTE_BUCKET_NAME_FROM_SAM_OUTPUT_HERE",
+  "region": "us-east-1"
+}

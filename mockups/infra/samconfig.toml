@@ -1,0 +1,10 @@
+[default.build.parameters]
+use_container = false
+
+[default.deploy.parameters]
+stack_name          = "kn-lifts-mockup-assets"
+region              = "us-east-1"
+capabilities        = "CAPABILITY_IAM"
+resolve_s3          = true
+confirm_changeset   = true
+parameter_overrides = "BudgetEmail=\"kjautry@gmail.com\""

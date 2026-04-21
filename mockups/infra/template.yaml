@@ -1,0 +1,68 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  K&N Lifts mockup design assets bucket.
+  Private S3 bucket for skin textures, patterns, and images.
+  Assets are downloaded at build time and inlined — never served to end users.
+
+Parameters:
+  BudgetEmail:
+    Type: String
+    Description: Email for billing alerts
+
+Resources:
+  # ─── S3 Bucket (Private — no public access) ───
+  AssetsBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      # No BucketName — CloudFormation auto-generates
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: CleanOldVersions
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+
+  # ─── Budget Alarm ───
+  BudgetAlarm:
+    Type: AWS::Budgets::Budget
+    Properties:
+      Budget:
+        BudgetName: !Sub '${AWS::StackName}-budget'
+        BudgetLimit:
+          Amount: 2
+          Unit: USD
+        TimeUnit: MONTHLY
+        BudgetType: COST
+        CostFilters: {}
+      NotificationsWithSubscribers:
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 80
+          Subscribers:
+            - SubscriptionType: EMAIL
+              Address: !Ref BudgetEmail
+
+Outputs:
+  AssetsBucket:
+    Description: S3 bucket name — put this in mockups/config.json
+    Value: !Ref AssetsBucket
+  AssetsBucketArn:
+    Description: Bucket ARN
+    Value: !GetAtt AssetsBucket.Arn
+  Region:
+    Description: Deployment region
+    Value: !Ref AWS::Region

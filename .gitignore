@@ -11,3 +11,10 @@ node_modules/
 workout-app.html
 dist/
 BACKLOG.md
+
+# Mockup system — generated output, cached assets, fonts, and bundled libs
+mockups/dist/
+mockups/fonts/
+mockups/lib/
+mockups/assets/
+mockups/config.json
