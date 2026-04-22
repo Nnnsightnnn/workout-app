@@ -76,6 +76,7 @@ function getCooldownExercises(dayId) {
 const COOLDOWN_EXERCISES = CD_STRETCHES;
 
 function renderWorkoutScreen() {
+  state._rpPromptShownThisRender = false; // reset per-render prompt gate (§6)
   const container = document.getElementById("blocksContainer");
   const u = userData();
 
@@ -925,6 +926,11 @@ function renderSetsTable(block, ex, bi, ei) {
     wrap.appendChild(prev);
   }
 
+  // RP suggestion chip / inline prompt (Workstream B §3.6)
+  if (typeof injectRpHint === "function") {
+    injectRpHint(wrap, ex, userData());
+  }
+
   const last = getLastSetsFor(ex.exId || ex.name);
   const numSets = ex.sets || 3;
   const repsLabel = ex.isTime ? "s" : ex.isDistance ? "m" : "reps";
@@ -1074,7 +1080,22 @@ function openSetEditor(block, ex, bi, ei, setIdx, bw) {
     const rkey = inputKey(block.id, ei, si, "r");
     const pkey = inputKey(block.id, ei, si, "p");
 
-    let curW = getInput(wkey, lastSet?.weight ?? ex.defaultWeight ?? 0);
+    // Compute suggested weight (RP A+ engine) as the default when user hasn't entered one
+    let weightDefault = lastSet?.weight ?? ex.defaultWeight ?? 0;
+    let rpSuggestion  = null;
+    if (typeof suggestedWeight === "function") {
+      const u = userData();
+      if (u && u.rp && u.rp.enabled && !bw) {
+        const draft = getDraft();
+        const targetRIR = (draft && draft.targetRIR != null) ? draft.targetRIR : 2;
+        rpSuggestion = suggestedWeight(ex.exId, ex.reps, targetRIR);
+        if (rpSuggestion.reason === "history" && rpSuggestion.weight > 0) {
+          weightDefault = rpSuggestion.weight;
+        }
+      }
+    }
+
+    let curW = getInput(wkey, weightDefault);
     let curR = getInput(rkey, lastSet?.reps ?? ex.reps);
     let curP = getInput(pkey, 7);
 
@@ -1107,6 +1128,16 @@ function openSetEditor(block, ex, bi, ei, setIdx, bw) {
     header.appendChild(title);
     header.appendChild(nextBtn);
     wrap.appendChild(header);
+
+    // RP suggestion badge inside set editor
+    if (rpSuggestion && rpSuggestion.reason === "history" && rpSuggestion.weight > 0) {
+      const badge = document.createElement("div");
+      badge.className = "rp-editor-suggestion";
+      badge.innerHTML =
+        `<span class="rp-editor-suggestion-val">${rpSuggestion.weight} ${state.unit}</span>` +
+        `<span class="rp-editor-suggestion-why">Based on history · ${rpSuggestion.confidence} confidence</span>`;
+      wrap.appendChild(badge);
+    }
 
     // Weight zone (skip for bodyweight)
     if (!bw) {

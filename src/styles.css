@@ -3397,3 +3397,106 @@
 .la-detail-duration {
   font-size: 12px; color: var(--text-dim); margin-top: 4px;
 }
+/* ============================================================
+   RP ENGINE — A+ Autoregulation (Workstream B)
+   ============================================================ */
+
+/* Suggestion chip on exercise card */
+.rp-suggestion-row {
+  margin: 6px 0 4px;
+}
+.rp-suggestion-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 10px; border-radius: 20px;
+  border: 1.5px solid var(--accent); background: rgba(255,107,53,0.08);
+  font-size: 13px; font-weight: 600;
+}
+.rp-suggestion-label {
+  color: var(--text-dim); font-weight: 500; font-size: 12px;
+}
+.rp-suggestion-val {
+  color: var(--accent); font-weight: 700;
+}
+.rp-suggestion-why {
+  color: var(--text-faint); font-size: 11px; font-weight: 400;
+}
+.rp-conf-high .rp-suggestion-chip,
+.rp-suggestion-chip.rp-conf-high { border-color: var(--success); background: rgba(48,209,88,0.07); }
+.rp-conf-high .rp-suggestion-val  { color: var(--success); }
+.rp-conf-med .rp-suggestion-chip,
+.rp-suggestion-chip.rp-conf-med  { border-color: var(--warn); background: rgba(255,214,10,0.07); }
+.rp-conf-med .rp-suggestion-val   { color: var(--warn); }
+/* low/cold: accent orange (default) */
+
+/* Stale bodyweight banner */
+.rp-stale-bw-banner {
+  font-size: 12px; color: var(--warn); padding: 4px 0;
+  display: block;
+}
+
+/* Inline prompt card (§3.7) */
+.rp-prompt {
+  background: var(--bg-card-2);
+  border: 2px solid var(--accent);
+  border-radius: 14px;
+  padding: 14px;
+  margin: 8px 0;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.rp-prompt-q {
+  font-size: 15px; font-weight: 700; color: var(--text);
+}
+.rp-prompt-ctx {
+  font-size: 13px; color: var(--text-dim); line-height: 1.4;
+}
+.rp-prompt-input-row {
+  display: flex; align-items: center; gap: 8px; margin: 4px 0;
+}
+.rp-prompt-number-input {
+  width: 80px; padding: 10px 12px;
+  background: var(--bg-elev); border: 2px solid var(--border);
+  border-radius: 10px; color: var(--text); font-size: 16px;
+  font-weight: 700; text-align: center;
+  -webkit-appearance: none; appearance: none;
+}
+.rp-prompt-number-input:focus { border-color: var(--accent); outline: none; }
+.rp-prompt-number-input-sm { width: 60px; }
+.rp-prompt-x {
+  font-size: 16px; color: var(--text-dim); font-weight: 500;
+}
+.rp-prompt-unit {
+  font-size: 13px; color: var(--text-dim);
+}
+.rp-prompt-actions {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 2px;
+}
+.rp-prompt-save {
+  flex: 1; min-width: 120px; padding: 12px 16px;
+  background: var(--accent); color: #fff; border: none;
+  border-radius: 12px; font-size: 15px; font-weight: 700;
+  box-shadow: 0 3px 0 var(--accent-dim);
+  cursor: pointer; touch-action: manipulation;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.rp-prompt-save:active {
+  transform: translateY(3px); box-shadow: none;
+}
+.rp-prompt-skip {
+  padding: 8px 12px; background: none; border: none;
+  color: var(--text-faint); font-size: 13px; cursor: pointer;
+  touch-action: manipulation;
+}
+.rp-prompt-skip:active { opacity: 0.5; }
+
+/* RP suggestion badge inside set editor */
+.rp-editor-suggestion {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px; background: rgba(255,107,53,0.07);
+  border-radius: 10px; margin: 6px 0 0;
+}
+.rp-editor-suggestion-val {
+  font-size: 16px; font-weight: 700; color: var(--accent);
+}
+.rp-editor-suggestion-why {
+  font-size: 12px; color: var(--text-faint);
+}

@@ -436,6 +436,201 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     assert(sec2 > 0, "cooldown time for day 2 is positive");
   });
 
+  // -----------------------------------------------------------
+  // RP ENGINE — Workstream B (Chunk 2)
+  // -----------------------------------------------------------
+
+  t("migration v9: u.rp container added to existing user", () => {
+    w.localStorage.clear();
+    // Simulate a v8 user (no u.rp)
+    const fakeV8 = {
+      _schemaVersion: 8,
+      unit: "lbs",
+      users: [{ id: "u_v8", name: "V8User", program: [], sessions: [],
+                measurements: [], templateId: "conjugate5",
+                draft: null, lastDoneDayId: null,
+                programStartDate: Date.now(), weeklySchedule: null,
+                currentWeek: 1, totalWeeks: 10, daysPerWeek: 5 }],
+      currentUserId: "u_v8",
+      onboarding: null,
+      onboardingDismissedAt: null
+    };
+    w.localStorage.setItem("kn-lifts-v3", JSON.stringify(fakeV8));
+    w.runMigrations();
+    const s = w.loadStore();
+    eq(s._schemaVersion, 9, "schema version is 9");
+    const u = s.users[0];
+    assert(u.rp, "u.rp exists");
+    eq(u.rp.enabled, false, "rp.enabled defaults to false");
+    assert(typeof u.rp.coldStartAnchors === "object", "coldStartAnchors is object");
+    eq(u.rp.rpeCalibrationCompletedAt, null, "calibration null");
+    eq(u.rp.lastDeloadRecommendedAt, null, "deload null");
+    eq(u.rp.dismissedDeloadForWeek, null, "dismissedDeload null");
+  });
+
+  t("userBodyweightAt: returns null when no measurements", () => {
+    w.localStorage.clear();
+    const u = w.addUser("BwTester");
+    // No measurements
+    const result = w.userBodyweightAt(Date.now());
+    eq(result, null, "null when no measurements");
+  });
+
+  t("userBodyweightAt: returns value when measurement exists (not stale)", () => {
+    const now = Date.now();
+    // Add a measurement 5 days ago
+    w.updateUser(u => {
+      u.measurements = [{ date: new Date(now - 5 * 86400000).toISOString().slice(0, 10), weight: 185, unit: "lbs" }];
+    });
+    const result = w.userBodyweightAt(now);
+    assert(result !== null, "result is not null");
+    eq(result.value, 185, "weight is 185");
+    eq(result.stale, false, "not stale (5 days old)");
+  });
+
+  t("userBodyweightAt: marks stale when latest entry >30 days old", () => {
+    const now = Date.now();
+    w.updateUser(u => {
+      u.measurements = [{ date: new Date(now - 35 * 86400000).toISOString().slice(0, 10), weight: 180, unit: "lbs" }];
+    });
+    const result = w.userBodyweightAt(now);
+    assert(result !== null, "result not null");
+    eq(result.stale, true, "stale when 35 days old");
+  });
+
+  t("userBodyweightAt: interpolates between two bracketing entries", () => {
+    const now = Date.now();
+    const t1 = now - 10 * 86400000;
+    const t2 = now - 0;               // now
+    w.updateUser(u => {
+      u.measurements = [
+        { date: new Date(t1).toISOString().slice(0, 10), weight: 180, unit: "lbs" },
+        { date: new Date(t2).toISOString().slice(0, 10), weight: 190, unit: "lbs" }
+      ];
+    });
+    // Query at midpoint (5 days ago)
+    const mid = now - 5 * 86400000;
+    const result = w.userBodyweightAt(mid);
+    assert(result !== null, "result not null");
+    // Should be ~185 (halfway between 180 and 190)
+    assert(result.value >= 184 && result.value <= 186,
+      `expected ~185, got ${result.value}`);
+  });
+
+  t("bodyweightE1RM: totalLoad = bw + addedWeight", () => {
+    // set.weight = added weight (e.g. weight vest)
+    const set = { weight: 25, reps: 5, exId: "pullup" };
+    const e1rm = w.bodyweightE1RM(set, 180); // 180 lbs bodyweight + 25 lbs added
+    const expected = w.calcE1RM(205, 5);
+    eq(e1rm, expected, "bodyweightE1RM uses totalLoad");
+  });
+
+  t("recentE1RM: returns cold-start on empty history", () => {
+    w.localStorage.clear();
+    w.addUser("E1RMTester");
+    const result = w.recentE1RM("bench");
+    eq(result.confidence, "cold-start", "cold-start on no sessions");
+    eq(result.value, null, "no value");
+  });
+
+  t("recentE1RM: returns weighted value from sessions", () => {
+    // Seed sessions with known weights/reps
+    const now = Date.now();
+    w.updateUser(u => {
+      u.sessions = [
+        { id: "s1", finishedAt: now - 20 * 86400000, sets: [{ exId: "bench", weight: 135, reps: 5, rpe: 8, muscles: ["chest","triceps","front delts"] }] },
+        { id: "s2", finishedAt: now - 10 * 86400000, sets: [{ exId: "bench", weight: 145, reps: 5, rpe: 8, muscles: ["chest","triceps","front delts"] }] },
+        { id: "s3", finishedAt: now - 3 * 86400000,  sets: [{ exId: "bench", weight: 155, reps: 5, rpe: 8, muscles: ["chest","triceps","front delts"] }] },
+      ];
+    });
+    const result = w.recentE1RM("bench", { now });
+    assert(result.value !== null, "value not null");
+    assert(result.value > 0, "positive e1rm");
+    // Most-recent session (155×5) has weight 0.5 → e1rm ≈ 181
+    // Second session (145×5) has weight 0.3 → e1rm ≈ 169
+    // Third session (135×5) has weight 0.2 → e1rm ≈ 157.5
+    // Weighted avg should be between 157 and 185
+    assert(result.value > 150 && result.value < 200,
+      `e1rm ${result.value} should be in [150,200]`);
+    assert(result.sampleSize >= 1, "sampleSize >= 1");
+  });
+
+  t("suggestedWeight: returns disabled when u.rp.enabled=false", () => {
+    w.localStorage.clear();
+    w.addUser("SWTester");
+    // Default: rp.enabled = false
+    const result = w.suggestedWeight("bench", 5, 2);
+    eq(result.reason, "disabled", "disabled when not RP-enabled");
+    eq(result.weight, null, "no numeric default");
+  });
+
+  t("suggestedWeight: needs-rpe-calibration when calibration not completed", () => {
+    w.updateUser(u => {
+      u.rp.enabled = true;
+      u.rp.rpeCalibrationCompletedAt = null;
+    });
+    const result = w.suggestedWeight("bench", 5, 2);
+    eq(result.reason, "needs-rpe-calibration", "calibration required first");
+    eq(result.weight, null, "no numeric default");
+  });
+
+  t("suggestedWeight: cold-start with no history, no anchor", () => {
+    w.updateUser(u => {
+      u.rp.enabled = true;
+      u.rp.rpeCalibrationCompletedAt = Date.now();
+      u.sessions = [];
+    });
+    const result = w.suggestedWeight("bench", 5, 2);
+    eq(result.reason, "cold-start", "cold-start reason");
+    eq(result.weight, null, "no numeric default on cold-start");
+  });
+
+  t("suggestedWeight: needs-bodyweight for bodyweight exercise with no measurements", () => {
+    w.updateUser(u => {
+      u.rp.enabled = true;
+      u.rp.rpeCalibrationCompletedAt = Date.now();
+      u.measurements = [];
+    });
+    const result = w.suggestedWeight("pullup", 6, 2);
+    eq(result.reason, "needs-bodyweight", "bodyweight required");
+    eq(result.weight, null, "no numeric default");
+  });
+
+  t("suggestedWeight: returns history result with real sessions", () => {
+    const now = Date.now();
+    w.updateUser(u => {
+      u.rp.enabled = true;
+      u.rp.rpeCalibrationCompletedAt = now;
+      u.sessions = [
+        { id: "s1", finishedAt: now - 7 * 86400000, sets: [{ exId: "bench", weight: 185, reps: 5, rpe: 8, muscles: ["chest","triceps","front delts"] }] },
+        { id: "s2", finishedAt: now - 3 * 86400000, sets: [{ exId: "bench", weight: 190, reps: 5, rpe: 8, muscles: ["chest","triceps","front delts"] }] },
+      ];
+    });
+    const result = w.suggestedWeight("bench", 5, 2, { now });
+    eq(result.reason, "history", "history reason when sessions exist");
+    assert(result.weight !== null, "weight is not null");
+    assert(result.weight > 0, "weight is positive");
+    // Epley for 190×5: e1rm ≈ 221.7; weight for 5 reps + 2 RIR = 221.7/(1+7/30) ≈ 181
+    assert(result.weight >= 150 && result.weight <= 250,
+      `weight ${result.weight} expected in [150,250]`);
+    // Must be rounded to nearest 5
+    eq(result.weight % 5, 0, "rounded to nearest 5 lbs");
+  });
+
+  t("suggestedWeight: cold-start anchor produces history result", () => {
+    const now = Date.now();
+    w.updateUser(u => {
+      u.rp.enabled = true;
+      u.rp.rpeCalibrationCompletedAt = now;
+      u.sessions = [];
+      u.rp.coldStartAnchors = { "bench": { weight: 155, reps: 5, dateMs: now - 1000 } };
+    });
+    const result = w.suggestedWeight("bench", 5, 2, { now });
+    eq(result.reason, "history", "anchor promotes to history result");
+    assert(result.weight !== null, "weight not null with anchor");
+    eq(result.confidence, "low", "low confidence from anchor");
+  });
+
   console.log("\n===== RESULTS =====");
   let pass = 0, fail = 0;
   for (const [n, s, e] of results) {

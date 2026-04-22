@@ -157,6 +157,26 @@ const MIGRATIONS = [
       store.v8ToastPending = true;
       return store;
     }
+  },
+  {
+    version: 9,
+    description: "Add u.rp container for A+ autoregulation (Workstream B)",
+    migrate(store) {
+      store.users.forEach(u => {
+        if (!u.rp) {
+          u.rp = {
+            enabled: false,
+            rpeCalibrationCompletedAt: null,
+            rpeCalibrationMethod: null,
+            coldStartAnchors: {},
+            lastDeloadRecommendedAt: null,
+            dismissedDeloadForWeek: null
+          };
+        }
+        // Bodyweight data stays in u.measurements[] — no copy, no mirror (§9.1 [R-1])
+      });
+      return store;
+    }
   }
 ];
 

@@ -118,6 +118,17 @@ function loadStore() {
       if (u.currentWeek === undefined) u.currentWeek = 1;
       if (u.totalWeeks === undefined) u.totalWeeks = null;
       if (u.daysPerWeek === undefined) u.daysPerWeek = null;
+      // Defensive default for u.rp (added in v9)
+      if (!u.rp) {
+        u.rp = {
+          enabled: false,
+          rpeCalibrationCompletedAt: null,
+          rpeCalibrationMethod: null,
+          coldStartAnchors: {},
+          lastDeloadRecommendedAt: null,
+          dismissedDeloadForWeek: null
+        };
+      }
     });
     return s;
   } catch (e) {
