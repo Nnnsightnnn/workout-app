@@ -129,6 +129,18 @@ function loadStore() {
           dismissedDeloadForWeek: null
         };
       }
+      // Defensive defaults for session edit fields (Workstream D)
+      // Also cleans up _original audit entries older than 7 days.
+      const sevenDaysAgo = Date.now() - 7 * 86400000;
+      (u.sessions || []).forEach(s => {
+        if (s.editedAt === undefined) s.editedAt = null;
+        if (s.originalFinishedAt === undefined) s.originalFinishedAt = null;
+        (s.sets || []).forEach(set => {
+          if (set._original && set._original.editedAt < sevenDaysAgo) {
+            delete set._original;
+          }
+        });
+      });
     });
     return s;
   } catch (e) {

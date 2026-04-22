@@ -231,6 +231,7 @@ function openSessionDetail(session) {
   const date = new Date(session.finishedAt);
   const dateStr = date.toLocaleDateString(undefined, { weekday:"long", month:"short", day:"numeric" });
   const prHtml = session.prCount ? `<div class="tl-detail-pr">🏆 ${session.prCount} PR${session.prCount>1?"s":""}</div>` : "";
+  const editedBadge = session.editedAt ? `<div style="font-size:11px;color:var(--text-dim);margin-top:2px;">Edited ${new Date(session.editedAt).toLocaleDateString()}</div>` : "";
 
   // Group sets by exercise
   const exGroups = {};
@@ -249,12 +250,23 @@ function openSessionDetail(session) {
 
   const wrap = document.createElement("div");
   wrap.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><h3 style="margin:0;">${dateStr}</h3><button class="icon-btn" onclick="closeSheet()" title="Close">✕</button></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <h3 style="margin:0;">${dateStr}</h3>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="icon-btn" id="tl-edit-btn" title="Edit workout" style="font-size:13px;padding:4px 10px;">Edit</button>
+        <button class="icon-btn" onclick="closeSheet()" title="Close">✕</button>
+      </div>
+    </div>
     <div class="tl-detail-day">Day ${session.dayId} — ${session.dayName}</div>
     <div class="tl-detail-meta">${session.sets.length} sets · ${formatDuration(session.duration)} · ${session.volume > 0 ? formatVolume(session.volume) + " " + state.unit : "bodyweight"}</div>
     ${prHtml}
+    ${editedBadge}
     <div class="tl-detail-exercises">${exHtml}</div>
   `;
+
+  wrap.querySelector("#tl-edit-btn").onclick = () => {
+    openSessionEditor(session);
+  };
 
   const del = document.createElement("button");
   del.className = "sheet-item danger";
@@ -280,6 +292,7 @@ function deleteSession(sessionId) {
   updateUser(u => {
     u.sessions = u.sessions.filter(s => s.id !== sessionId);
   });
+  recomputeAllIsPR();
 }
 
 function undoDeleteSession() {
@@ -300,6 +313,7 @@ function undoDeleteSession() {
   const t = document.getElementById("toast");
   t.className = "toast";
   t.innerHTML = "";
+  recomputeAllIsPR();
   renderTimelineStrip();
   renderHistory();
   showToast("Session restored", "success");
@@ -345,7 +359,7 @@ function openLogSets(dateMs, day) {
     <div style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">${dateStr} — ${day.sub || ""}</div>
   `;
 
-  // Build exercise rows with editable weight/reps
+  // Build exercise rows with editable weight/reps/RPE
   const exRows = [];
   day.blocks.forEach(block => {
     block.exercises.forEach(ex => {
@@ -355,9 +369,13 @@ function openLogSets(dateMs, day) {
       const defW = lastSet ? lastSet.weight : (ex.defaultWeight || 0);
       const defR = lastSet ? lastSet.reps : (ex.reps || 8);
 
+      // Per-exercise state tracked in exRows entry
+      const exEntry = { ex, sets: ex.sets, rpe: null };
+
       const row = document.createElement("div");
       row.className = "tl-log-row";
-      row.innerHTML = `
+
+      const fieldsHtml = `
         <div class="tl-log-name">${ex.name}</div>
         <div class="tl-log-fields">
           <span class="tl-log-label">${ex.sets}×</span>
@@ -366,8 +384,44 @@ function openLogSets(dateMs, day) {
           <input type="number" class="tl-log-input" data-field="r" value="${defR}" min="0" placeholder="reps">
         </div>
       `;
+      row.innerHTML = fieldsHtml;
+
+      // RPE picker — pills for null (skip) and 6-10
+      const rpePicker = document.createElement("div");
+      rpePicker.className = "tl-log-rpe";
+      rpePicker.style.cssText = "display:flex;gap:3px;align-items:center;margin-top:4px;flex-wrap:wrap;";
+      const rpeLabel = document.createElement("span");
+      rpeLabel.style.cssText = "font-size:11px;color:var(--text-dim);margin-right:2px;";
+      rpeLabel.textContent = "RPE:";
+      rpePicker.appendChild(rpeLabel);
+
+      [null, 6, 7, 8, 9, 10].forEach(val => {
+        const pill = document.createElement("button");
+        pill.style.cssText = "font-size:11px;padding:2px 6px;border-radius:6px;min-width:24px;";
+        pill.textContent = val === null ? "—" : val;
+        pill.title = val === null ? "Skip RPE" : "RPE " + val;
+        pill.dataset.rpeVal = val === null ? "" : String(val);
+
+        const updatePills = () => {
+          rpePicker.querySelectorAll("button").forEach(b => {
+            const bVal = b.dataset.rpeVal === "" ? null : Number(b.dataset.rpeVal);
+            const sel = bVal === exEntry.rpe;
+            b.style.background   = sel ? "var(--accent)"  : "";
+            b.style.color        = sel ? "#fff"            : "";
+            b.style.borderColor  = sel ? "var(--accent)"  : "";
+          });
+        };
+
+        pill.onclick = () => {
+          exEntry.rpe = val;
+          updatePills();
+        };
+        rpePicker.appendChild(pill);
+      });
+
+      row.appendChild(rpePicker);
       wrap.appendChild(row);
-      exRows.push({ ex, row, sets: ex.sets });
+      exRows.push({ ex, row, sets: ex.sets, exEntry });
     });
   });
 
@@ -385,7 +439,7 @@ function openLogSets(dateMs, day) {
   saveBtn.onclick = () => {
     // Build session from the form values
     const sets = [];
-    exRows.forEach(({ ex, row, sets: numSets }) => {
+    exRows.forEach(({ ex, row, sets: numSets, exEntry }) => {
       const wInput = row.querySelector('[data-field="w"]');
       const rInput = row.querySelector('[data-field="r"]');
       const w = wInput ? parseFloat(wInput.value) || 0 : 0;
@@ -399,7 +453,7 @@ function openLogSets(dateMs, day) {
           setIdx: i + 1,
           weight: ex.bodyweight ? 0 : w,
           reps: r,
-          rpe: 7,
+          rpe: exEntry ? exEntry.rpe : null,  // null = user skipped RPE entry
           bodyweight: !!ex.bodyweight,
           isPR: false
         });
@@ -434,6 +488,7 @@ function openLogSets(dateMs, day) {
       if (u.sessions.length > 365) u.sessions = u.sessions.slice(-365);
     });
 
+    recomputeAllIsPR();
     closeSheet();
     renderTimelineStrip();
     renderHistory();

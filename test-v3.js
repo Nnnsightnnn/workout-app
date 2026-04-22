@@ -631,6 +631,155 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     eq(result.confidence, "low", "low confidence from anchor");
   });
 
+  // -----------------------------------------------------------
+  // WORKSTREAM D — Session Edit, recomputeAllIsPR, _original, revert
+  // -----------------------------------------------------------
+
+  t("recomputeAllIsPR: flags correct on 5-session fixture", () => {
+    w.localStorage.clear();
+    w.addUser("PRTester");
+    const now = Date.now();
+    // Session 1: bench 135×5 e1rm≈157.5
+    // Session 2: bench 145×5 e1rm≈169.2 — PR
+    // Session 3: bench 155×5 e1rm≈180.8 — PR
+    // Session 4: bench 150×5 e1rm≈175.0 — NOT PR (below session 3)
+    // Session 5: bench 160×5 e1rm≈186.7 — PR
+    w.updateUser(u => {
+      u.sessions = [
+        { id: "s1", finishedAt: now - 40*86400000, prCount: 0, volume: 675, sets: [
+          { exId: "bench", exName: "Bench", weight: 135, reps: 5, rpe: 8, isPR: false, muscles: [] }
+        ]},
+        { id: "s2", finishedAt: now - 30*86400000, prCount: 0, volume: 725, sets: [
+          { exId: "bench", exName: "Bench", weight: 145, reps: 5, rpe: 8, isPR: false, muscles: [] }
+        ]},
+        { id: "s3", finishedAt: now - 20*86400000, prCount: 0, volume: 775, sets: [
+          { exId: "bench", exName: "Bench", weight: 155, reps: 5, rpe: 8, isPR: false, muscles: [] }
+        ]},
+        { id: "s4", finishedAt: now - 10*86400000, prCount: 0, volume: 750, sets: [
+          { exId: "bench", exName: "Bench", weight: 150, reps: 5, rpe: 8, isPR: false, muscles: [] }
+        ]},
+        { id: "s5", finishedAt: now - 1*86400000, prCount: 0, volume: 800, sets: [
+          { exId: "bench", exName: "Bench", weight: 160, reps: 5, rpe: 8, isPR: false, muscles: [] }
+        ]}
+      ];
+    });
+    w.recomputeAllIsPR();
+    const u = w.userData();
+    // s1 is first — first set for exercise is always a PR
+    eq(u.sessions[0].sets[0].isPR, true, "s1 is PR (first ever)");
+    eq(u.sessions[1].sets[0].isPR, true, "s2 is PR (145>135)");
+    eq(u.sessions[2].sets[0].isPR, true, "s3 is PR (155>145)");
+    eq(u.sessions[3].sets[0].isPR, false, "s4 not PR (150<155)");
+    eq(u.sessions[4].sets[0].isPR, true, "s5 is PR (160>155)");
+    // prCounts
+    eq(u.sessions[0].prCount, 1, "s1 prCount=1");
+    eq(u.sessions[1].prCount, 1, "s2 prCount=1");
+    eq(u.sessions[2].prCount, 1, "s3 prCount=1");
+    eq(u.sessions[3].prCount, 0, "s4 prCount=0");
+    eq(u.sessions[4].prCount, 1, "s5 prCount=1");
+  });
+
+  t("saveSessionEdits: edit → volume and prCount update, isPR recomputed", () => {
+    // Continue from above user — edit s3's bench weight downward so s2 becomes the last PR
+    const u = w.userData();
+    // s3 has bench 155×5. Edit it down to 140×5 (below 145 in s2).
+    const s3 = w.deepClone(u.sessions.find(s => s.id === "s3"));
+    s3.sets[0].weight = 140;
+    w.saveSessionEdits(s3);
+
+    const u2 = w.userData();
+    const s3after = u2.sessions.find(s => s.id === "s3");
+    eq(s3after.sets[0].weight, 140, "weight updated to 140");
+    eq(s3after.sets[0].isPR, false, "s3 no longer a PR (140 < 145)");
+    // s2 (145) is still PR, s4 (150) is now PR, s5 (160) is PR
+    const s4after = u2.sessions.find(s => s.id === "s4");
+    eq(s4after.sets[0].isPR, true, "s4 is now a PR after edit");
+    // _original captured
+    assert(s3after.sets[0]._original, "_original captured on edit");
+    eq(s3after.sets[0]._original.weight, 155, "_original.weight is pre-edit value");
+  });
+
+  t("saveSessionEdits: second edit does NOT overwrite _original", () => {
+    const u = w.userData();
+    const s3 = w.deepClone(u.sessions.find(s => s.id === "s3"));
+    const origWeight = s3.sets[0]._original.weight; // should be 155 from first edit
+    // Second edit: weight 140→135
+    s3.sets[0].weight = 135;
+    w.saveSessionEdits(s3);
+
+    const u2 = w.userData();
+    const s3after = u2.sessions.find(s => s.id === "s3");
+    eq(s3after.sets[0].weight, 135, "weight is now 135");
+    eq(s3after.sets[0]._original.weight, origWeight, "_original still holds first pre-edit value (155)");
+  });
+
+  t("revertSession: restores pre-edit values within 7 days", () => {
+    w.revertSession("s3");
+    const u = w.userData();
+    const s3 = u.sessions.find(s => s.id === "s3");
+    eq(s3.sets[0].weight, 155, "weight restored to 155 via _original");
+    eq(s3.sets[0]._original, undefined, "_original cleared after revert");
+    eq(s3.editedAt, null, "editedAt cleared");
+    // PR flags should be correct again: s3 (155) > s2 (145) → s3 is PR
+    eq(s3.sets[0].isPR, true, "s3 is PR again after revert");
+  });
+
+  t("revertSession after 7 days: _original is gone (loadStore cleanup)", () => {
+    // Simulate an _original that is 8 days old — loadStore should drop it.
+    const eightDaysAgo = Date.now() - 8 * 86400000;
+    w.updateUser(u => {
+      const s = u.sessions.find(x => x.id === "s3");
+      if (s) {
+        // Plant a stale _original
+        s.sets[0]._original = {
+          weight: 200, reps: 5, rpe: 8, bodyweight: false, isPR: true,
+          editedAt: eightDaysAgo
+        };
+      }
+    });
+    // loadStore runs the cleanup
+    const u = w.loadStore();
+    const s3 = u.users.find(u2 => u2.name === "PRTester").sessions.find(s => s.id === "s3");
+    eq(s3.sets[0]._original, undefined, "_original older than 7 days cleared by loadStore");
+  });
+
+  t("deleteSession: recomputeAllIsPR fires, PR flags correct after delete", () => {
+    // State: s1(135),s2(145),s3(155),s4(150),s5(160) — s3 and s5 are PRs.
+    // Deleting s5 (160) → s3 (155) remains peak; s4 (150) is still below s3.
+    const u0 = w.userData();
+    const s5Before = w.deepClone(u0.sessions.find(s => s.id === "s5"));
+    assert(s5Before, "s5 exists before delete");
+    w.deleteSession("s5");
+    let u1 = w.userData();
+    assert(!u1.sessions.find(s => s.id === "s5"), "s5 removed");
+    eq(u1.sessions.find(s => s.id === "s3").sets[0].isPR, true, "s3(155) is PR after s5 deleted");
+    eq(u1.sessions.find(s => s.id === "s4").sets[0].isPR, false, "s4(150) not PR (below s3)");
+
+    // Simulate session restore (what undoDeleteSession does data-layer wise)
+    // _undoPending is a let-variable — not settable from test; test the data path directly.
+    w.updateUser(u => {
+      u.sessions.push(s5Before);
+      u.sessions.sort((a, b) => a.finishedAt - b.finishedAt);
+    });
+    w.recomputeAllIsPR();
+    let u2 = w.userData();
+    const s5back = u2.sessions.find(s => s.id === "s5");
+    assert(s5back, "s5 restored in storage");
+    eq(s5back.sets[0].isPR, true, "s5(160) is PR again after restore");
+    eq(u2.sessions.find(s => s.id === "s3").sets[0].isPR, true, "s3(155) still PR");
+    eq(u2.sessions.find(s => s.id === "s4").sets[0].isPR, false, "s4(150) still not PR");
+  });
+
+  t("openLogSets: retroactive session has null RPE (not hardcoded 7)", () => {
+    // Verify that the exRows array in openLogSets defaults rpe to null.
+    // We test the data-layer path: the session saved via the button onclick uses exEntry.rpe = null.
+    // We can exercise this by directly checking that rpe: 7 no longer appears in the source function
+    // (structural check — the actual onclick is DOM-driven).
+    const src = w.openLogSets.toString();
+    assert(src.indexOf("rpe: 7") === -1, "hardcoded rpe: 7 removed from openLogSets");
+    assert(src.indexOf("exEntry.rpe") !== -1, "exEntry.rpe used instead");
+  });
+
   console.log("\n===== RESULTS =====");
   let pass = 0, fail = 0;
   for (const [n, s, e] of results) {
