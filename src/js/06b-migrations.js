@@ -236,6 +236,19 @@ const MIGRATIONS = [
       });
       return store;
     }
+  },
+  {
+    version: 12,
+    description: "Add mesocycle.flagsForNextMeso + completedSessionsByWeek (Workstream B-fatigue, Chunk 5)",
+    migrate(store) {
+      store.users.forEach(u => {
+        ((u.rp && u.rp.mesocycles) || []).forEach(meso => {
+          if (!meso.flagsForNextMeso) meso.flagsForNextMeso = {};
+          if (!meso.completedSessionsByWeek) meso.completedSessionsByWeek = {};
+        });
+      });
+      return store;
+    }
   }
 ];
 

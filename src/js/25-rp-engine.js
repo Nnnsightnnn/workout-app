@@ -618,7 +618,9 @@ function startMesocycle(opts) {
       repRangeSchedule,
       perMuscleVolume,
       exerciseSelection: selection,
-      daysPerWeek
+      daysPerWeek,
+      completedSessionsByWeek: {},
+      flagsForNextMeso: {}
     };
 
     if (!u.rp.mesocycles) u.rp.mesocycles = [];
@@ -799,80 +801,179 @@ function _getRepRangeForWeek(mesocycle, weekNum) {
   return [8, 12]; // fallback
 }
 
+// --- isMicrocycleBoundary ------------------------------------------
+
+// Returns true when all sessions for the current week are complete.
+// Pure function — reads completedSessionsByWeek stamped by finishWorkout.
+function isMicrocycleBoundary(mesocycle, now) {
+  if (!mesocycle) return false;
+  const week      = mesocycle.currentWeek || 1;
+  const byWeek    = mesocycle.completedSessionsByWeek || {};
+  const completed = byWeek[week] || 0;
+  if (completed === 0) return false;
+  return completed >= (mesocycle.daysPerWeek || 4);
+}
+
 // --- captureSessionFeedback ----------------------------------------
 
-// Saves 3-question feedback (per muscle) to a session after finishWorkout.
+// Saves per-muscle feedback to a session. If all sessions for the current
+// microcycle week are now complete, triggers week advance automatically.
 // feedback = { [muscle]: { pump: 0-3, soreness: 0-3, workload: 0-3 } }
+//          | { skipped: true }
 function captureSessionFeedback(sessionId, feedback) {
+  let mesoId = null;
   updateUser(u => {
     const s = (u.sessions || []).find(x => x.id === sessionId);
-    if (s) s.feedback = feedback || {};
+    if (!s) return;
+    s.feedback = feedback || {};
+    mesoId = s.mesocycleId || null;
   });
+  if (mesoId) {
+    const u = userData();
+    const meso = u ? getMesocycle(u, mesoId) : null;
+    if (meso && !meso.finishedAt && isMicrocycleBoundary(meso, Date.now())) {
+      _rpAdvanceMesocycleWeek(mesoId);
+    }
+  }
 }
 
 // --- adjustVolumeFromFeedback --------------------------------------
 
-// At week boundary, reads prior-week feedback from sessions and plans next-week sets.
-// Mutates mesocycle.perMuscleVolume in place. Returns a summary of deltas.
-// plan §4.5 progression rules:
-//   avgWorkload <= 1 → +2 sets (undershoot)
-//   avgWorkload == 2 → +1 set
-//   avgWorkload == 3 && avgSoreness <= 2 → hold (0)
-//   avgWorkload == 3 && avgSoreness == 3 → -1 set (approaching MRV)
-// Clamp to MRV. Principle §1.4: fatigue recommends, does not force.
-function adjustVolumeFromFeedback(mesocycle, weekNum, u) {
-  const nextWeek = weekNum + 1;
-  if (nextWeek > mesocycle.lengthWeeks) return {}; // no more weeks to plan
+// Reads last-week feedback for all muscles in the mesocycle and returns
+// per-muscle delta recommendations. Does NOT mutate anything.
+// Returns { [muscle]: { delta: number, reason: string } }
+//
+// Reasons: 'cold-start' | 'no-feedback' | 'at-mrv' | 'at-mev' | 'feedback' | 'no-change'
+// North Star (§1.1): engine must return an explicit reason for every muscle — no silent defaults.
+function adjustVolumeFromFeedback(u, mesocycle) {
+  const weekNum = mesocycle ? (mesocycle.currentWeek || 1) : 1;
+  const muscles = Object.keys((mesocycle && mesocycle.perMuscleVolume) || {});
+  const allMesoSessions = (u.sessions || []).filter(s => s.mesocycleId === mesocycle.id);
 
-  const sessions = (u.sessions || []).filter(
-    s => s.mesocycleId === mesocycle.id && s.mesoWeek === weekNum
-  );
+  if (!allMesoSessions.length) {
+    const result = {};
+    muscles.forEach(m => { result[m] = { delta: 0, reason: "cold-start" }; });
+    return result;
+  }
 
-  const deltas = {};
+  const weekSessions = allMesoSessions.filter(s => s.mesoWeek === weekNum);
+  const result = {};
 
-  Object.keys(mesocycle.perMuscleVolume).forEach(muscle => {
+  muscles.forEach(muscle => {
     const vol = mesocycle.perMuscleVolume[muscle];
-    const thisWeekEntry = vol.find(v => v.week === weekNum);
-    const nextWeekEntry = vol.find(v => v.week === nextWeek);
-    if (!thisWeekEntry || !nextWeekEntry) return;
+    const weekEntry = vol ? vol.find(v => v.week === weekNum) : null;
+    const currentSets = weekEntry ? (weekEntry.plannedSets || 0) : 0;
+    const lm = rpLandmarks(u, muscle);
 
-    const currentSets = thisWeekEntry.plannedSets || 0;
-    if (currentSets <= 0) {
-      nextWeekEntry.plannedSets = 0;
-      deltas[muscle] = 0;
+    const fb = [];
+    weekSessions.forEach(s => {
+      if (!s.feedback || s.feedback.skipped) return;
+      if (s.feedback[muscle]) fb.push(s.feedback[muscle]);
+    });
+
+    if (!fb.length) {
+      result[muscle] = { delta: 0, reason: "no-feedback" };
       return;
     }
 
-    // Aggregate feedback for this muscle across sessions
-    const fb = [];
-    sessions.forEach(s => {
-      if (s.feedback && s.feedback[muscle]) {
-        fb.push(s.feedback[muscle]);
-      }
-    });
+    const avg = key => fb.reduce((sum, x) => sum + (x[key] || 0), 0) / fb.length;
+    const avgPump     = avg("pump");
+    const avgSoreness = avg("soreness");
+    const avgWorkload = avg("workload");
 
-    let delta = 0;
-    if (fb.length === 0) {
-      // No feedback → hold flat (N-7: first week of new meso runs on MEV, no feedback yet)
-      delta = 0;
+    let rawDelta;
+    if (avgSoreness >= 2.5 && avgWorkload >= 2.5)                      rawDelta = -1;
+    else if (avgPump <= 1 && avgSoreness <= 1 && avgWorkload <= 1)      rawDelta = +1;
+    else                                                                rawDelta = 0;
+
+    if (rawDelta > 0 && currentSets >= lm.mrv) {
+      result[muscle] = { delta: 0, reason: "at-mrv" };
+    } else if (rawDelta < 0 && currentSets <= lm.mev) {
+      result[muscle] = { delta: 0, reason: "at-mev" };
     } else {
-      const avg = key => fb.reduce((sum, x) => sum + (x[key] || 0), 0) / fb.length;
-      const avgWorkload  = avg("workload");
-      const avgSoreness  = avg("soreness");
-
-      if (avgWorkload <= 1)                           delta = +2;
-      else if (avgWorkload <= 2)                      delta = +1;
-      else if (avgWorkload >= 3 && avgSoreness <= 2)  delta = 0;
-      else                                            delta = -1;
+      result[muscle] = { delta: rawDelta, reason: rawDelta !== 0 ? "feedback" : "no-change" };
     }
-
-    const lm = rpLandmarks(u, muscle);
-    const nextSets = Math.min(Math.max(currentSets + delta, 0), lm.mrv);
-    nextWeekEntry.plannedSets = nextSets;
-    deltas[muscle] = delta;
   });
 
-  return deltas;
+  return result;
+}
+
+// --- applyVolumeAdjustments ----------------------------------------
+
+// Applies delta map from adjustVolumeFromFeedback to next week's plannedSets.
+// Mutates mesocycle.perMuscleVolume[muscle][nextWeek].plannedSets in place.
+// Clamps result to [MEV, MRV].
+function applyVolumeAdjustments(mesocycle, weekNum, adjustments, u) {
+  const nextWeek = weekNum + 1;
+  if (nextWeek > mesocycle.lengthWeeks) return;
+  Object.keys(adjustments).forEach(muscle => {
+    const vol = mesocycle.perMuscleVolume[muscle];
+    if (!vol) return;
+    const thisEntry = vol.find(v => v.week === weekNum);
+    const nextEntry = vol.find(v => v.week === nextWeek);
+    if (!thisEntry || !nextEntry) return;
+    const { delta } = adjustments[muscle];
+    const currentSets = thisEntry.plannedSets || 0;
+    const lm = rpLandmarks(u, muscle);
+    nextEntry.plannedSets = Math.min(Math.max(currentSets + delta, lm.mev || 0), lm.mrv);
+  });
+}
+
+// --- checkResensitizationFlags -------------------------------------
+
+// Flags muscles that have been at or above MRV for ≥2 consecutive trailing weeks,
+// indicating a need to rotate exercises in the next mesocycle.
+// Mutates mesocycle.flagsForNextMeso in place.
+function checkResensitizationFlags(u, mesocycle) {
+  if (!mesocycle || !mesocycle.perMuscleVolume) return;
+  if (!mesocycle.flagsForNextMeso) mesocycle.flagsForNextMeso = {};
+  Object.keys(mesocycle.perMuscleVolume).forEach(muscle => {
+    const vol = mesocycle.perMuscleVolume[muscle];
+    const lm  = rpLandmarks(u, muscle);
+    if (!lm.mrv) return;
+    let trailing = 0;
+    for (let w = mesocycle.currentWeek; w >= 1; w--) {
+      const entry = vol.find(v => v.week === w);
+      if (entry && entry.plannedSets >= lm.mrv) trailing++;
+      else break;
+    }
+    if (trailing >= 2) mesocycle.flagsForNextMeso[muscle] = "needs-resensitization";
+  });
+}
+
+// --- _rpAdvanceMesocycleWeek ---------------------------------------
+
+// Orchestrates end-of-week advance: compute volume deltas, apply them to next
+// week's planned sets, check resensitization flags, bump currentWeek, regenerate
+// the program for the new week (or close the meso if last week done).
+function _rpAdvanceMesocycleWeek(mesoId) {
+  const u = userData();
+  if (!u) return;
+  const meso = getMesocycle(u, mesoId);
+  if (!meso || meso.finishedAt) return;
+
+  const weekNum  = meso.currentWeek || 1;
+  const nextWeek = weekNum + 1;
+
+  // Compute adjustments from current read-only snapshot
+  const adjustments = adjustVolumeFromFeedback(u, meso);
+
+  updateUser(uMut => {
+    const m = getMesocycle(uMut, mesoId);
+    if (!m) return;
+    applyVolumeAdjustments(m, weekNum, adjustments, uMut);
+    checkResensitizationFlags(uMut, m);
+    if (nextWeek > m.lengthWeeks) {
+      m.finishedAt = Date.now();
+      uMut.rp.currentMesocycleId = null;
+    } else {
+      m.currentWeek = nextWeek;
+      uMut.program = generateRpWeek(m, nextWeek, uMut);
+    }
+  });
+
+  if (typeof showToast === "function") showToast("Week " + nextWeek + " loaded!", "success");
+  if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
 }
 
 // --- recomputeMesocycleState ---------------------------------------
@@ -924,7 +1025,16 @@ function buildFeedbackSheet(trainedMuscles, onSave) {
 
   const hdr = document.createElement("div");
   hdr.style.cssText = "display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;";
-  hdr.innerHTML = `<h3 style="margin:0;">Session Check-In</h3><button class="icon-btn" onclick="closeSheet()" title="Skip">✕</button>`;
+  const hdrTitle = document.createElement("h3");
+  hdrTitle.style.margin = "0";
+  hdrTitle.textContent = "Session Check-In";
+  const hdrClose = document.createElement("button");
+  hdrClose.className = "icon-btn";
+  hdrClose.title = "Skip";
+  hdrClose.textContent = "✕";
+  hdrClose.onclick = () => { onSave({ skipped: true }); closeSheet(); };
+  hdr.appendChild(hdrTitle);
+  hdr.appendChild(hdrClose);
   wrap.appendChild(hdr);
 
   const note = document.createElement("p");
@@ -1007,7 +1117,7 @@ function buildFeedbackSheet(trainedMuscles, onSave) {
 
   const skipBtn = document.createElement("button");
   skipBtn.textContent = "Skip";
-  skipBtn.onclick = () => { onSave({}); closeSheet(); };
+  skipBtn.onclick = () => { onSave({ skipped: true }); closeSheet(); };
   footer.appendChild(skipBtn);
 
   wrap.appendChild(footer);
@@ -1038,7 +1148,7 @@ function maybeShowRpFeedbackSheet(day, sessionId) {
   if (typeof openSheet === "function") openSheet(content);
 }
 
-// Expose Chunk 4 internals on window for test harness.
+// Expose internals on window for test harness.
 // Must be at the END of this file so all consts are defined first (const = no TDZ hoisting).
 try {
   if (typeof window !== "undefined") {
@@ -1048,6 +1158,10 @@ try {
     window.chooseNewExercises = chooseNewExercises;
     window.generateRpWeek = generateRpWeek;
     window.adjustVolumeFromFeedback = adjustVolumeFromFeedback;
+    window.applyVolumeAdjustments = applyVolumeAdjustments;
+    window.isMicrocycleBoundary = isMicrocycleBoundary;
+    window.checkResensitizationFlags = checkResensitizationFlags;
+    window._rpAdvanceMesocycleWeek = _rpAdvanceMesocycleWeek;
     window.recomputeMesocycleState = recomputeMesocycleState;
     window.captureSessionFeedback = captureSessionFeedback;
     window.getActiveMesocycle = getActiveMesocycle;

@@ -458,7 +458,7 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     w.localStorage.setItem("kn-lifts-v3", JSON.stringify(fakeV8));
     w.runMigrations();
     const s = w.loadStore();
-    eq(s._schemaVersion, 11, "schema version is 11 (v9+v10+v11 all applied)"); // updated from 9 → Chunk 4 adds v10+v11
+    eq(s._schemaVersion, 12, "schema version is 12 (v9+v10+v11+v12 all applied)");
     const u = s.users[0];
     assert(u.rp, "u.rp exists");
     eq(u.rp.enabled, false, "rp.enabled defaults to false");
@@ -785,8 +785,8 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
   // ============================================================
 
   // ---- Migration v10/v11 shape ----------------------------------
-  t("migration v10: APP_VERSION bumped to 11", () => {
-    eq(w.APP_VERSION, 11, "APP_VERSION must be 11");
+  t("migration v12: APP_VERSION bumped to 12", () => {
+    eq(w.APP_VERSION, 12, "APP_VERSION must be 12");
   });
 
   t("migration v10: RP_VOLUME_LANDMARKS defined with all 19 muscles", () => {
@@ -979,44 +979,47 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     };
   }
 
-  t("adjustVolumeFromFeedback: no feedback → hold flat (delta 0)", () => {
+  t("adjustVolumeFromFeedback: no sessions → cold-start (delta 0)", () => {
     const u = w.userData();
     const FAKE_ID = "fb-test-nofb-" + Date.now();
     const meso = _makeFeedbackTestMeso(FAKE_ID, "chest", 8, 5);
-    // No sessions with this mesoId → no feedback → hold flat
-    const deltas = w.adjustVolumeFromFeedback(meso, 1, u);
-    eq(deltas["chest"], 0, "no feedback → delta 0 for chest");
-    eq(meso.perMuscleVolume["chest"][1].plannedSets, 8, "week 2 = week 1 + 0 = 8");
+    // No sessions with this mesoId → cold-start
+    const deltas = w.adjustVolumeFromFeedback(u, meso);
+    eq(deltas["chest"].delta, 0, "cold-start → delta 0 for chest");
+    eq(deltas["chest"].reason, "cold-start", "reason = cold-start");
   });
 
-  t("adjustVolumeFromFeedback: workload≤1 → +2 sets", () => {
+  t("adjustVolumeFromFeedback: all-low feedback (0,0,0) → +1 set", () => {
     const FAKE_ID = "fb-test-wl0-" + Date.now();
     const meso = _makeFeedbackTestMeso(FAKE_ID, "chest", 8, 5);
     _injectMesoSession(FAKE_ID, 1, { chest: { pump: 0, soreness: 0, workload: 0 } });
     const u = w.userData();
-    const deltas = w.adjustVolumeFromFeedback(meso, 1, u);
-    eq(deltas["chest"], 2, "workload=0 → +2");
-    eq(meso.perMuscleVolume["chest"][1].plannedSets, 10, "week 2 = 8 + 2 = 10");
+    const deltas = w.adjustVolumeFromFeedback(u, meso);
+    eq(deltas["chest"].delta, 1, "all-low → +1");
+    w.applyVolumeAdjustments(meso, 1, deltas, u);
+    eq(meso.perMuscleVolume["chest"][1].plannedSets, 9, "week 2 = 8 + 1 = 9");
   });
 
-  t("adjustVolumeFromFeedback: workload=1 → +2 sets", () => {
+  t("adjustVolumeFromFeedback: all-low feedback (1,1,1) → +1 set", () => {
     const FAKE_ID = "fb-test-wl1-" + Date.now();
     const meso = _makeFeedbackTestMeso(FAKE_ID, "chest", 8, 5);
     _injectMesoSession(FAKE_ID, 1, { chest: { pump: 1, soreness: 1, workload: 1 } });
     const u = w.userData();
-    const deltas = w.adjustVolumeFromFeedback(meso, 1, u);
-    eq(deltas["chest"], 2, "workload=1 → +2");
-    eq(meso.perMuscleVolume["chest"][1].plannedSets, 10, "week 2 = 8 + 2 = 10");
+    const deltas = w.adjustVolumeFromFeedback(u, meso);
+    eq(deltas["chest"].delta, 1, "all-low → +1");
+    w.applyVolumeAdjustments(meso, 1, deltas, u);
+    eq(meso.perMuscleVolume["chest"][1].plannedSets, 9, "week 2 = 8 + 1 = 9");
   });
 
-  t("adjustVolumeFromFeedback: workload=2 → +1 set", () => {
+  t("adjustVolumeFromFeedback: sweet-spot feedback → hold (0)", () => {
     const FAKE_ID = "fb-test-wl2-" + Date.now();
     const meso = _makeFeedbackTestMeso(FAKE_ID, "chest", 8, 5);
     _injectMesoSession(FAKE_ID, 1, { chest: { pump: 2, soreness: 1, workload: 2 } });
     const u = w.userData();
-    const deltas = w.adjustVolumeFromFeedback(meso, 1, u);
-    eq(deltas["chest"], 1, "workload=2 → +1");
-    eq(meso.perMuscleVolume["chest"][1].plannedSets, 9, "week 2 = 8 + 1 = 9");
+    const deltas = w.adjustVolumeFromFeedback(u, meso);
+    eq(deltas["chest"].delta, 0, "sweet-spot → hold (0)");
+    w.applyVolumeAdjustments(meso, 1, deltas, u);
+    eq(meso.perMuscleVolume["chest"][1].plannedSets, 8, "week 2 = 8 + 0 = 8");
   });
 
   t("adjustVolumeFromFeedback: workload=3, soreness≤2 → hold (0)", () => {
@@ -1024,44 +1027,48 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     const meso = _makeFeedbackTestMeso(FAKE_ID, "chest", 12, 5);
     _injectMesoSession(FAKE_ID, 1, { chest: { pump: 2, soreness: 2, workload: 3 } });
     const u = w.userData();
-    const deltas = w.adjustVolumeFromFeedback(meso, 1, u);
-    eq(deltas["chest"], 0, "workload=3, soreness=2 → hold (0)");
+    const deltas = w.adjustVolumeFromFeedback(u, meso);
+    eq(deltas["chest"].delta, 0, "workload=3, soreness=2 → hold (0)");
+    w.applyVolumeAdjustments(meso, 1, deltas, u);
     eq(meso.perMuscleVolume["chest"][1].plannedSets, 12, "week 2 = 12 + 0 = 12");
   });
 
-  t("adjustVolumeFromFeedback: workload=3, soreness=3 → -1 set", () => {
+  t("adjustVolumeFromFeedback: high soreness+workload → -1 set", () => {
     const FAKE_ID = "fb-test-minus-" + Date.now();
     const meso = _makeFeedbackTestMeso(FAKE_ID, "chest", 14, 5);
     _injectMesoSession(FAKE_ID, 1, { chest: { pump: 1, soreness: 3, workload: 3 } });
     const u = w.userData();
-    const deltas = w.adjustVolumeFromFeedback(meso, 1, u);
-    eq(deltas["chest"], -1, "workload=3, soreness=3 → -1");
+    const deltas = w.adjustVolumeFromFeedback(u, meso);
+    eq(deltas["chest"].delta, -1, "high sor+wkld → -1");
+    w.applyVolumeAdjustments(meso, 1, deltas, u);
     eq(meso.perMuscleVolume["chest"][1].plannedSets, 13, "week 2 = 14 - 1 = 13");
   });
 
-  t("adjustVolumeFromFeedback: clamped to MRV (cannot exceed)", () => {
+  t("adjustVolumeFromFeedback: at MRV → reason='at-mrv', delta=0", () => {
     const FAKE_ID = "fb-test-mrv-" + Date.now();
     const mrv = w.RP_VOLUME_LANDMARKS["chest"].mrv; // 22
     const meso = _makeFeedbackTestMeso(FAKE_ID, "chest", mrv, 5); // start AT MRV
-    _injectMesoSession(FAKE_ID, 1, { chest: { pump: 0, soreness: 0, workload: 0 } }); // +2 requested
+    _injectMesoSession(FAKE_ID, 1, { chest: { pump: 0, soreness: 0, workload: 0 } }); // all-low
     const u = w.userData();
-    w.adjustVolumeFromFeedback(meso, 1, u);
-    assert(meso.perMuscleVolume["chest"][1].plannedSets <= mrv,
-      "week 2 chest clamped to MRV " + mrv + ", got " + meso.perMuscleVolume["chest"][1].plannedSets);
-    eq(meso.perMuscleVolume["chest"][1].plannedSets, mrv, "exactly at MRV (22)");
+    const deltas = w.adjustVolumeFromFeedback(u, meso);
+    eq(deltas["chest"].delta, 0, "at-mrv → delta=0");
+    eq(deltas["chest"].reason, "at-mrv", "reason = at-mrv");
+    w.applyVolumeAdjustments(meso, 1, deltas, u);
+    eq(meso.perMuscleVolume["chest"][1].plannedSets, mrv, "week 2 stays at MRV (22)");
   });
 
   // ---- mesocycle week advance -----------------------------------
-  t("mesocycle week advance: adjustVolumeFromFeedback + generateRpWeek on successive weeks", () => {
+  t("mesocycle week advance: adjustVolumeFromFeedback + applyVolumeAdjustments on successive weeks", () => {
     const u = w.userData();
     const meso = w.getActiveMesocycle(u);
     // Seed clean week 1 plannedSets
     meso.perMuscleVolume["quads"][0].plannedSets = 8;
     meso.perMuscleVolume["quads"][1].plannedSets = null;
-    // Inject mild feedback (workload=2 → +1)
-    _injectMesoSession(meso.id, 1, { quads: { pump: 2, soreness: 1, workload: 2 } });
+    // Inject all-low feedback (pump:1, sor:1, wkld:1 → +1)
+    _injectMesoSession(meso.id, 1, { quads: { pump: 1, soreness: 1, workload: 1 } });
     const u2 = w.userData();
-    w.adjustVolumeFromFeedback(meso, 1, u2);
+    const deltas = w.adjustVolumeFromFeedback(u2, meso);
+    w.applyVolumeAdjustments(meso, 1, deltas, u2);
     eq(meso.perMuscleVolume["quads"][1].plannedSets, 9, "quads week 2 = 8 + 1 = 9");
   });
 

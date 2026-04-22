@@ -213,6 +213,15 @@ function finishWorkout() {
     }
     u.draft = null;
     u.lastDoneDayId = day.id;
+    // Increment RP completedSessionsByWeek for isMicrocycleBoundary detection
+    if (hasRpBlocks && activeMeso && session.mesoWeek) {
+      const meso = getMesocycle(u, activeMeso.id);
+      if (meso) {
+        if (!meso.completedSessionsByWeek) meso.completedSessionsByWeek = {};
+        meso.completedSessionsByWeek[session.mesoWeek] =
+          (meso.completedSessionsByWeek[session.mesoWeek] || 0) + 1;
+      }
+    }
   });
 
   // Offer RP feedback sheet for rp-hypertrophy sessions (§4.7). Non-blocking.
@@ -231,9 +240,11 @@ function finishWorkout() {
   hideHeaderRest();
   state.workoutStartedAt = null;
 
-  // Check if this completes the week (all days done)
+  // Check if this completes the week (all days done).
+  // RP programs advance after feedback capture via captureSessionFeedback →
+  // isMicrocycleBoundary → _rpAdvanceMesocycleWeek; skip regular advance here.
   const uAfter = userData();
-  if (uAfter && uAfter.totalWeeks && uAfter.currentWeek) {
+  if (uAfter && uAfter.totalWeeks && uAfter.currentWeek && uAfter.templateId !== "rp-hypertrophy") {
     const weekSessions = uAfter.sessions.filter(s => s.programWeek === uAfter.currentWeek);
     const uniqueDays = new Set(weekSessions.map(s => s.dayId));
     if (uniqueDays.size >= uAfter.program.length && uAfter.currentWeek <= uAfter.totalWeeks) {

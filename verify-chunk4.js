@@ -89,19 +89,21 @@ w.updateUser(function(u) {
   });
 });
 
-// Capture feedback with per-muscle structure; workload=2 → delta +1
-w.captureSessionFeedback("s-verify-001", { "chest": { workload: 2, soreness: 1 } });
+// Capture all-low feedback (pump:1, sor:1, wkld:1 → delta +1 under new rules)
+w.captureSessionFeedback("s-verify-001", { "chest": { pump: 1, soreness: 1, workload: 1 } });
 var uAfterFb = getU();
 var fbSaved = (uAfterFb.sessions || []).find(function(s) { return s.id === "s-verify-001"; });
 check("feedback saved to session",
-  fbSaved && fbSaved.feedback && fbSaved.feedback["chest"] && fbSaved.feedback["chest"].workload === 2);
+  fbSaved && fbSaved.feedback && fbSaved.feedback["chest"] && fbSaved.feedback["chest"].workload === 1);
 
+// adjustVolumeFromFeedback now returns {[muscle]:{delta,reason}} with signature (u, meso)
 var meso2 = w.getActiveMesocycle(uAfterFb);
-var deltas = w.adjustVolumeFromFeedback(meso2, 1, uAfterFb);
-var chestDelta = deltas["chest"];
-check("chest delta=+1 for workload=2", chestDelta === 1, "got " + chestDelta);
+var deltas = w.adjustVolumeFromFeedback(uAfterFb, meso2);
+var chestResult = deltas["chest"];
+check("chest delta=+1 for all-low feedback", chestResult && chestResult.delta === 1, "got " + JSON.stringify(chestResult));
 
-// adjustVolumeFromFeedback mutates meso2 in place (no persist) — read directly from meso2
+// Apply deltas to meso2 then check week 2 > week 1
+w.applyVolumeAdjustments(meso2, 1, deltas, uAfterFb);
 var chestW2Entry = (meso2.perMuscleVolume["chest"] || []).find(function(v) { return v.week === 2; });
 var chestW2 = chestW2Entry && chestW2Entry.plannedSets;
 check("chest week 2 plannedSets > week 1 (volume ramps)", chestW2 > chestW1, "w1=" + chestW1 + " w2=" + chestW2);
@@ -156,17 +158,20 @@ w.updateUser(function(u) {
   var w2 = (m.perMuscleVolume["chest"] || []).find(function(v) { return v.week === 2; });
   if (w2) w2.plannedSets = null;
 });
-// Update session feedback to workload=1 → +2, but chest is at MRV → clamped to 0 delta
-w.captureSessionFeedback("s-verify-001", { "chest": { workload: 1, soreness: 1 } });
+// All-low feedback would trigger +1, but we're at MRV → {delta:0, reason:'at-mrv'}
+w.captureSessionFeedback("s-verify-001", { "chest": { pump: 1, soreness: 1, workload: 1 } });
 var uMrv = getU();
 var mesoMrv = uMrv.rp.mesocycles.find(function(m) { return m.id === mesoId; });
-var mrvDeltas = w.adjustVolumeFromFeedback(mesoMrv, 1, uMrv);
-// adjustVolumeFromFeedback mutates mesoMrv in place — read clamped week 2 value directly
+var mrvDeltas = w.adjustVolumeFromFeedback(uMrv, mesoMrv);
+// Cap returned inside adjustVolumeFromFeedback: delta=0, reason='at-mrv'
+check("chest at MRV: delta=0 and reason='at-mrv'",
+  mrvDeltas["chest"] && mrvDeltas["chest"].delta === 0 && mrvDeltas["chest"].reason === "at-mrv",
+  "got " + JSON.stringify(mrvDeltas["chest"]));
+// Apply and confirm week 2 stays at MRV
+w.applyVolumeAdjustments(mesoMrv, 1, mrvDeltas, uMrv);
 var chestW2MrvEntry = (mesoMrv.perMuscleVolume["chest"] || []).find(function(v) { return v.week === 2; });
 var chestW2Mrv = chestW2MrvEntry && chestW2MrvEntry.plannedSets;
-// Returned delta is raw (+2 for workload=1); clamping is applied to plannedSets, not the delta
-check("chest week 2 = MRV (22) when +2 would exceed it", chestW2Mrv === 22, "got " + chestW2Mrv);
-check("raw delta=+2 (clamping applied to plannedSets)", mrvDeltas["chest"] === 2, "got " + mrvDeltas["chest"]);
+check("chest week 2 = MRV (22) after apply", chestW2Mrv === 22, "got " + chestW2Mrv);
 
 // ─── §7: Non-RP regression ────────────────────────────────────────────────────
 console.log("\n§7 — Non-RP regression");
