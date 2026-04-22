@@ -184,6 +184,12 @@ function finishWorkout() {
   const volume = sets.reduce((a, s) => a + s.weight * s.reps, 0);
   const prCount = sets.filter(s => s.isPR).length;
   const uForWeek = userData();
+
+  // Stamp mesocycle context if user is on an rp-hypertrophy program with an active meso
+  const activeMeso = (typeof getActiveMesocycle === "function" && uForWeek)
+    ? getActiveMesocycle(uForWeek) : null;
+  const hasRpBlocks = day.blocks.some(b => b.blockType === "rp-hypertrophy");
+
   const session = {
     id: "s-" + Date.now(),
     dayId: day.id,
@@ -192,7 +198,11 @@ function finishWorkout() {
     finishedAt: Date.now(),
     duration, sets, volume, prCount,
     blockNotes,
-    programWeek: uForWeek ? uForWeek.currentWeek || null : null
+    programWeek: uForWeek ? uForWeek.currentWeek || null : null,
+    feedback: {},
+    // Mesocycle context — null for non-RP sessions
+    mesocycleId: (activeMeso && hasRpBlocks) ? activeMeso.id : null,
+    mesoWeek:    (activeMeso && hasRpBlocks) ? activeMeso.currentWeek : null
   };
 
   updateUser(u => {
@@ -204,6 +214,11 @@ function finishWorkout() {
     u.draft = null;
     u.lastDoneDayId = day.id;
   });
+
+  // Offer RP feedback sheet for rp-hypertrophy sessions (§4.7). Non-blocking.
+  if (hasRpBlocks && typeof maybeShowRpFeedbackSheet === "function") {
+    setTimeout(() => maybeShowRpFeedbackSheet(day, session.id), 600);
+  }
 
   const hasSuperset = day.blocks.some(b => b.exercises.filter(e => !e.isWarmup).length > 1);
   const completeLabel = hasSuperset ? "Superset Complete" : "Sets Complete";

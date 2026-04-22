@@ -578,6 +578,58 @@ function renderCooldownPreviewForDay(dayId) {
   return wrap;
 }
 
+function _buildRpBlockMeta(block) {
+  if (block.blockType !== "rp-hypertrophy") return null;
+  // Pull meso context for the current user
+  const u = (typeof userData === "function") ? userData() : null;
+  if (!u || !u.rp) return null;
+  const meso = (typeof getActiveMesocycle === "function") ? getActiveMesocycle(u) : null;
+  if (!meso) return null;
+
+  const week = meso.currentWeek;
+  const total = meso.lengthWeeks;
+  const rir = meso.rirSchedule ? meso.rirSchedule[week - 1] : null;
+  const rirStr = rir === "deload" ? "Deload" : (rir != null ? "RIR " + rir : null);
+
+  const meta = document.createElement("div");
+  meta.className = "rp-block-meta";
+  meta.style.cssText = "display:flex;gap:6px;margin-bottom:4px;flex-wrap:wrap;";
+
+  if (rirStr) {
+    const rirBadge = document.createElement("span");
+    rirBadge.className = "rp-rir-badge";
+    rirBadge.style.cssText = "font-size:10px;padding:2px 7px;border-radius:8px;background:var(--accent);color:#fff;font-weight:700;";
+    rirBadge.textContent = rirStr;
+    meta.appendChild(rirBadge);
+  }
+
+  const weekBadge = document.createElement("span");
+  weekBadge.className = "rp-week-badge";
+  weekBadge.style.cssText = "font-size:10px;padding:2px 7px;border-radius:8px;border:1.5px solid var(--border);color:var(--text-dim);";
+  weekBadge.textContent = "Week " + week + " of " + total;
+  meta.appendChild(weekBadge);
+
+  // Volume indicator: this week's planned sets vs MEV/MRV for this block's primary muscle
+  const primaryMuscle = block.name ? block.name.toLowerCase() : null;
+  if (primaryMuscle && meso.perMuscleVolume[primaryMuscle]) {
+    const entry = meso.perMuscleVolume[primaryMuscle].find(v => v.week === week);
+    const lm = (typeof rpLandmarks === "function") ? rpLandmarks(u, primaryMuscle) : null;
+    if (entry && entry.plannedSets != null && lm) {
+      const bar = document.createElement("div");
+      bar.className = "rp-vol-bar";
+      bar.title = "Planned: " + entry.plannedSets + " sets | MEV:" + lm.mev + " MRV:" + lm.mrv;
+      bar.style.cssText = "flex:1;min-width:60px;height:4px;border-radius:4px;background:var(--border);overflow:hidden;align-self:center;";
+      const fill = document.createElement("div");
+      const pct = lm.mrv > 0 ? Math.min(100, (entry.plannedSets / lm.mrv) * 100) : 0;
+      fill.style.cssText = "height:100%;width:" + pct + "%;background:var(--accent);border-radius:4px;";
+      bar.appendChild(fill);
+      meta.appendChild(bar);
+    }
+  }
+
+  return meta;
+}
+
 function renderBlock(day, block, bi) {
   const wrap = document.createElement("div");
   const isSuperset = block.exercises.length > 1;
@@ -596,6 +648,10 @@ function renderBlock(day, block, bi) {
   menu.onclick = () => openBlockMenu(block, bi);
   hdr.appendChild(menu);
   wrap.appendChild(hdr);
+
+  // RP meta row (RIR badge + week indicator + volume bar) for rp-hypertrophy blocks
+  const rpMeta = _buildRpBlockMeta(block);
+  if (rpMeta) wrap.appendChild(rpMeta);
 
   // Block-level note input (per-session, stored in draft)
   const noteKey = `${block.id}|__note`;

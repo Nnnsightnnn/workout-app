@@ -33,6 +33,17 @@ const PROGRAM_TEMPLATES = [
   { id:"gvt4", name:"German Volume Training", description:"10×10 shock protocol — extreme volume for rapid hypertrophy. Not for the faint.", daysPerWeek:4, minWeeks:6, maxWeeks:10, totalWeeks:null, phases:null },
   { id:"phul4", name:"PHUL", description:"Power Hypertrophy Upper Lower — 2 heavy days + 2 volume days.", daysPerWeek:4, minWeeks:8, maxWeeks:12, totalWeeks:null, phases:null },
   { id:"custom", name:"Custom Program", description:"Built by you", daysPerWeek:0, minWeeks:4, maxWeeks:16, totalWeeks:null, phases:null },
+  {
+    id: "rp-hypertrophy",
+    name: "RP Hypertrophy",
+    description: "RP Science mesocycle: volume ramps from MEV to MRV over 4-6 weeks. Per-muscle landmarks, RIR targets, and exercise rotation.",
+    daysPerWeek: 4,
+    minWeeks: 4,
+    maxWeeks: 6,
+    totalWeeks: 5,
+    phases: null,
+    generative: true  // program[] is built on-the-fly by generateRpWeek(); no static template
+  },
 ];
 
 // Resolve phases dynamically for any template + totalWeeks

@@ -177,6 +177,65 @@ const MIGRATIONS = [
       });
       return store;
     }
+  },
+  {
+    version: 10,
+    description: "Add RP volume landmarks, mesocycle container, blockType on blocks (Workstream C §4.4)",
+    migrate(store) {
+      // Full MEV/MAV/MRV table from plan §4.3 (all 19 muscles in locked vocab)
+      const DEFAULT_LANDMARKS = {
+        "chest":        { mev: 8,  mav: 14, mrv: 22 },
+        "upper chest":  { mev: 4,  mav: 8,  mrv: 12 },
+        "lats":         { mev: 10, mav: 16, mrv: 25 },
+        "upper back":   { mev: 8,  mav: 14, mrv: 22 },
+        "lower back":   { mev: 0,  mav: 6,  mrv: 12 },
+        "traps":        { mev: 0,  mav: 8,  mrv: 16 },
+        "front delts":  { mev: 0,  mav: 6,  mrv: 12 },
+        "side delts":   { mev: 8,  mav: 16, mrv: 26 },
+        "rear delts":   { mev: 8,  mav: 14, mrv: 22 },
+        "biceps":       { mev: 8,  mav: 14, mrv: 22 },
+        "triceps":      { mev: 8,  mav: 14, mrv: 22 },
+        "forearms":     { mev: 0,  mav: 10, mrv: 20 },
+        "quads":        { mev: 8,  mav: 16, mrv: 22 },
+        "hamstrings":   { mev: 6,  mav: 12, mrv: 20 },
+        "glutes":       { mev: 0,  mav: 8,  mrv: 16 },
+        "adductors":    { mev: 0,  mav: 6,  mrv: 12 },
+        "calves":       { mev: 8,  mav: 14, mrv: 22 },
+        "core":         { mev: 0,  mav: 10, mrv: 25 },
+        "obliques":     { mev: 0,  mav: 8,  mrv: 16 }
+      };
+
+      store.users.forEach(u => {
+        if (!u.rp) u.rp = {};
+        // Seed volumeLandmarks from RP canonical table
+        if (!u.rp.volumeLandmarks) u.rp.volumeLandmarks = deepClone(DEFAULT_LANDMARKS);
+        // Mesocycle container
+        if (!Array.isArray(u.rp.mesocycles)) u.rp.mesocycles = [];
+        if (u.rp.currentMesocycleId === undefined) u.rp.currentMesocycleId = null;
+
+        // Stamp blockType on every existing block (strength = existing behavior)
+        (u.program || []).forEach(day => {
+          (day.blocks || []).forEach(block => {
+            if (!block.blockType) {
+              block.blockType = block.type === "warmup" ? "warmup" : "strength";
+            }
+          });
+        });
+      });
+      return store;
+    }
+  },
+  {
+    version: 11,
+    description: "Add session.feedback for RP 3-question check-in (Workstream C §4.4)",
+    migrate(store) {
+      store.users.forEach(u => {
+        (u.sessions || []).forEach(s => {
+          if (!s.feedback) s.feedback = {};
+        });
+      });
+      return store;
+    }
   }
 ];
 

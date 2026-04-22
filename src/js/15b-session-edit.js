@@ -84,10 +84,24 @@ function saveSessionEdits(editedSession) {
   });
 
   recomputeAllIsPR();
+  // Recompute mesocycle accounting if the edited session belongs to a meso (Workstream C integration)
+  const editedU = (typeof userData === "function") ? userData() : null;
+  const editedS = editedU && (editedU.sessions || []).find(s => s.id === editedSession.id);
+  if (editedS && editedS.mesocycleId && typeof recomputeMesocycleState === "function") {
+    recomputeMesocycleState(editedS.mesocycleId);
+  }
 }
 
 // Restore a session to its pre-edit values using the _original audit trail.
 function revertSession(sessionId) {
+  // Capture mesocycleId before mutating (it won't change, but read it first)
+  let mesoId = null;
+  try {
+    const u0 = (typeof userData === "function") ? userData() : null;
+    const s0 = u0 && (u0.sessions || []).find(s => s.id === sessionId);
+    mesoId = s0 ? s0.mesocycleId : null;
+  } catch (_) {}
+
   updateUser(u => {
     const s = u.sessions.find(x => x.id === sessionId);
     if (!s) return;
@@ -116,6 +130,10 @@ function revertSession(sessionId) {
   });
 
   recomputeAllIsPR();
+  // Recompute mesocycle accounting (Workstream C integration — §4.10 §5.2)
+  if (mesoId && typeof recomputeMesocycleState === "function") {
+    recomputeMesocycleState(mesoId);
+  }
 }
 
 // ---- Session editor UI ----------------------------------------

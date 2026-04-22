@@ -129,12 +129,27 @@ function loadStore() {
           dismissedDeloadForWeek: null
         };
       }
+      // Defensive defaults for v10: mesocycle container + volume landmarks
+      if (!u.rp.volumeLandmarks) u.rp.volumeLandmarks = null; // seeded by migration; null means not yet set
+      if (!Array.isArray(u.rp.mesocycles)) u.rp.mesocycles = [];
+      if (u.rp.currentMesocycleId === undefined) u.rp.currentMesocycleId = null;
+      // Stamp blockType on all program blocks (default "strength"; v10 migration handles existing data,
+      // this defensive default catches blocks created by resolveWeekProgram on new users)
+      (u.program || []).forEach(day => {
+        (day.blocks || []).forEach(block => {
+          if (!block.blockType) {
+            block.blockType = (block.type === "warmup") ? "warmup" : "strength";
+          }
+        });
+      });
       // Defensive defaults for session edit fields (Workstream D)
       // Also cleans up _original audit entries older than 7 days.
       const sevenDaysAgo = Date.now() - 7 * 86400000;
       (u.sessions || []).forEach(s => {
         if (s.editedAt === undefined) s.editedAt = null;
         if (s.originalFinishedAt === undefined) s.originalFinishedAt = null;
+        // Defensive default for v11: session feedback
+        if (!s.feedback) s.feedback = {};
         (s.sets || []).forEach(set => {
           if (set._original && set._original.editedAt < sevenDaysAgo) {
             delete set._original;
