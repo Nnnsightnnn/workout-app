@@ -283,6 +283,17 @@ function initInfoGuide() {
 function init() {
   runMigrations();
   const s = loadStore();
+
+  // One-shot v8 changelog toast: shoulders → front/side delts remap notice
+  if (s && s.v8ToastPending) {
+    s.v8ToastPending = false;
+    saveStore(s);
+    setTimeout(() => showToast("Some older entries tagged 'shoulders' were remapped to front/side delts. Rear-delt volume for those entries may read low — open Library → Audit to fix.", "", 8000), 1500);
+  }
+
+  // TODO [N-11]: Library Audit surface — list sessions with set._remappedAt:8 for manual reclassification
+  // Stub: Settings entry renders "No remapped entries" when count is zero. Full UI deferred.
+
   state.unit = s.unit || "lbs";
   document.querySelectorAll("#unitToggle button").forEach(b => b.classList.toggle("active", b.dataset.unit === state.unit));
 

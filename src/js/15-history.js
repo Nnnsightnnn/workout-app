@@ -158,37 +158,54 @@ function renderSessionList() {
   });
 }
 
+function setContributionFor(exId) {
+  const lib = (typeof LIB_BY_ID !== "undefined") ? LIB_BY_ID[exId] : null;
+  return (lib && lib.setContribution) ? lib.setContribution : null;
+}
+
+function effectiveSetsByMuscle(sessions, sinceMs) {
+  const counts = {};
+  sessions.filter(s => s.finishedAt > sinceMs).forEach(s => {
+    s.sets.forEach(set => {
+      const contrib = setContributionFor(set.exId);
+      if (contrib && Object.keys(contrib).length > 0) {
+        Object.entries(contrib).forEach(([muscle, weight]) => {
+          counts[muscle] = (counts[muscle] || 0) + weight;
+        });
+      } else {
+        (set.muscles || []).forEach(m => {
+          counts[m] = (counts[m] || 0) + 1;
+        });
+      }
+    });
+  });
+  return counts;
+}
+
 function renderBalanceTab() {
   const u = userData();
   const now = Date.now();
   const thirtyAgo = now - 30*24*3600*1000;
-  const recent = u.sessions.filter(s => s.finishedAt > thirtyAgo);
-
-  const counts = {};
-  recent.forEach(s => {
-    s.sets.forEach(set => {
-      (set.muscles || []).forEach(m => {
-        const g = groupMuscle(m);
-        if (!g) return;
-        counts[g] = (counts[g] || 0) + 1;
-      });
-    });
+  const muscleCounts = effectiveSetsByMuscle(u.sessions, thirtyAgo);
+  const groupCounts = {};
+  Object.entries(muscleCounts).forEach(([muscle, count]) => {
+    const g = groupMuscle(muscle);
+    if (!g) return;
+    groupCounts[g] = (groupCounts[g] || 0) + count;
   });
-  renderDonut(counts);
+  renderDonut(groupCounts);
 }
 
 function groupMuscle(m) {
   const map = {
     "chest":"Chest","upper chest":"Chest",
-    "shoulders":"Shoulders","rear delts":"Shoulders",
-    "triceps":"Arms","biceps":"Arms",
-    "lats":"Back","upper back":"Back","lower back":"Back","back":"Back","traps":"Back",
-    "quads":"Legs","hamstrings":"Legs","glutes":"Legs","posterior chain":"Legs",
-    "core":"Core","grip":"Core",
-    "full body":"Full Body",
-    "conditioning":null,"mobility":null
+    "front delts":"Shoulders","side delts":"Shoulders","rear delts":"Shoulders",
+    "lats":"Back","upper back":"Back","lower back":"Back","traps":"Back",
+    "biceps":"Arms","triceps":"Arms","forearms":"Arms",
+    "quads":"Legs","hamstrings":"Legs","glutes":"Legs","adductors":"Legs","calves":"Legs",
+    "core":"Core","obliques":"Core"
   };
-  return map.hasOwnProperty(m) ? map[m] : (m.charAt(0).toUpperCase() + m.slice(1));
+  return map[m] || null;
 }
 
 const GROUP_COLORS = {

@@ -112,6 +112,51 @@ const MIGRATIONS = [
       }
       return store;
     }
+  },
+  {
+    version: 8,
+    description: "Retag library taxonomy; remap session sets to locked 19-muscle vocabulary",
+    migrate(store) {
+      const MUSCLE_REMAP = {
+        "shoulders": ["front delts", "side delts"],
+        "back": ["lats", "upper back"],
+        "knees": null,
+        "conditioning": null,
+        "full body": null,
+        "hips": null,
+        "hip flexors": null,
+        "thoracic": null,
+        "posterior chain": null,
+        "grip": null,
+        "serratus": null,
+        "glute med": null,
+        "glute min": null,
+        "tibialis": null,
+      };
+      store.users.forEach(u => {
+        (u.sessions || []).forEach(s => {
+          (s.sets || []).forEach(set => {
+            const lib = (typeof LIB_BY_ID !== "undefined") ? LIB_BY_ID[set.exId] : null;
+            if (lib && Array.isArray(lib.muscles)) {
+              set.muscles = [...lib.muscles];
+              return;
+            }
+            // Fallback: name-map — stamp _remappedAt:8 for Library Audit surface
+            const next = [];
+            (set.muscles || []).forEach(m => {
+              const mapped = MUSCLE_REMAP[m];
+              if (mapped === null) return;
+              if (Array.isArray(mapped)) next.push(...mapped);
+              else next.push(m);
+            });
+            set.muscles = Array.from(new Set(next));
+            set._remappedAt = 8;
+          });
+        });
+      });
+      store.v8ToastPending = true;
+      return store;
+    }
   }
 ];
 
