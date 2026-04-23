@@ -17,7 +17,7 @@ Works on mobile or desktop. Add to your home screen for a native app feel.
 ## Features
 
 ### Programs
-- 27 program templates spanning every major methodology: Conjugate, Functional Conjugate (Jason Brown), Functional Bodybuilding (Marcus Filly), Hypertrophy PPL+UL, Athletic Performance, 5/3/1 Wendler, GZCL Method, Starting Strength, German Volume Training, PHUL, Powerlifting, Reverse Pyramid, Upper/Lower, Push/Pull/Legs, Classic Bodybuilding, Beginner Full Body, Over-40 Strength, Minimal Equipment, Hybrid Athlete, Calisthenics + Weights, Knees Over Toes / ATG, PRVN / CrossFit GPP, Strength + Conditioning, Runner's Strength, Functional Fitness, Glute Builder, and more
+- 27 program templates spanning every major methodology: Conjugate, Functional Conjugate, Functional Bodybuilding, Hypertrophy PPL+UL, Athletic Performance, 5/3/1 Wave Progression, Tiered Progression, Novice Linear Progression, German Volume Training, PHUL, Powerlifting, Reverse Pyramid, Upper/Lower, Push/Pull/Legs, Classic Bodybuilding, Beginner Full Body, Over-40 Strength, Minimal Equipment, Hybrid Athlete, Calisthenics + Weights, Full ROM Joint Health, Strength + MetCon GPP, Strength + Conditioning, Runner's Strength, Functional Fitness, Glute Builder, and more
 - Configurable duration (6–12 weeks) and days per week (2–6)
 - Automatic week-over-week phase progression (accumulation → intensification → peak)
 - Manual week control — skip forward, go back, or restart without losing history

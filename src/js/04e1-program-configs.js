@@ -55,7 +55,7 @@ var PROGRAM_CONFIGS = {
     ]
   },
 
-  // ---- 3-Day Functional Conjugate (Jason Brown) ----
+  // ---- 3-Day Functional Conjugate ----
   jbrown3: {
     phaseConfig: [
       { name:"Accumulation",    ratio:0.35, color:"#ff6b1f", description:"Build base — moderate loads, full body volume" },
@@ -707,7 +707,7 @@ var PROGRAM_CONFIGS = {
     ]
   },
 
-  // ---- 5-Day Hybrid Athlete (Viada Concurrent Training) ----
+  // ---- 5-Day Hybrid Athlete (Concurrent Training) ----
   hybrid5: {
     phaseConfig: [
       { name:"Base Build", loadingPhase:"Accumulation", ratio:0.35, color:"#2dd4a8", description:"Build aerobic base + strength foundation simultaneously" },
@@ -749,7 +749,7 @@ var PROGRAM_CONFIGS = {
     ]
   },
 
-  // ---- 4-Day PRVN / CrossFit GPP ----
+  // ---- 4-Day Strength + MetCon GPP ----
   prvn4: {
     phaseConfig: [
       { name:"GPP Build", loadingPhase:"Accumulation", ratio:0.35, color:"#2dd4a8", description:"Build work capacity — moderate strength + conditioning" },
@@ -789,7 +789,7 @@ var PROGRAM_CONFIGS = {
   // NAMED COMMUNITY PROGRAMS
   // ================================================================
 
-  // ---- Wendler's 5/3/1 (4-Day) ----
+  // ---- 5/3/1 Wave Progression (4-Day) ----
   wendler4: {
     phaseConfig: [
       { name:"5s Week", loadingPhase:"Accumulation", ratio:0.25, color:"#2dd4a8", description:"3×5 at 65/75/85% — build base" },
@@ -825,7 +825,7 @@ var PROGRAM_CONFIGS = {
     ]
   },
 
-  // ---- GZCL Method (4-Day) ----
+  // ---- Tiered Progression (4-Day) ----
   gzcl4: {
     phaseConfig: [
       { name:"Base", loadingPhase:"Accumulation", ratio:0.40, color:"#2dd4a8", description:"Build volume across all tiers" },
@@ -833,25 +833,25 @@ var PROGRAM_CONFIGS = {
       { name:"Deload",    ratio:0.25, color:"#5a6478", description:"Recovery" }
     ],
     days: [
-      { name:"GZCL — Squat", blocks:[
+      { name:"Tiered — Squat", blocks:[
         { letter:"WU", name:"Warm-Up", type:"warmup" },
         { letter:"T1", name:"Tier 1: Heavy Squat", slots:[{ pool:"squat_primary", loading:"gzcl_t1", rotateEvery:4 }] },
         { letter:"T2", name:"Tier 2: Moderate Compound", slots:[{ pool:"hinge_secondary", loading:"gzcl_t2" }, { pool:"squat_secondary", loading:"gzcl_t2" }] },
         { letter:"T3", name:"Tier 3: Pump Work", slots:[{ pool:"core", loading:"isolation" }, { pool:"squat_secondary", loading:"isolation" }] }
       ]},
-      { name:"GZCL — Bench", blocks:[
+      { name:"Tiered — Bench", blocks:[
         { letter:"WU", name:"Warm-Up", type:"warmup" },
         { letter:"T1", name:"Tier 1: Heavy Bench", slots:[{ pool:"push_primary", loading:"gzcl_t1", rotateEvery:4 }] },
         { letter:"T2", name:"Tier 2: Moderate Compound", slots:[{ pool:"pull_horizontal", loading:"gzcl_t2" }, { pool:"push_secondary", loading:"gzcl_t2" }] },
         { letter:"T3", name:"Tier 3: Pump Work", slots:[{ pool:"tricep", loading:"isolation" }, { pool:"delt", loading:"isolation" }] }
       ]},
-      { name:"GZCL — Deadlift", blocks:[
+      { name:"Tiered — Deadlift", blocks:[
         { letter:"WU", name:"Warm-Up", type:"warmup" },
         { letter:"T1", name:"Tier 1: Heavy Deadlift", slots:[{ pool:"hinge_primary", loading:"gzcl_t1", rotateEvery:4 }] },
         { letter:"T2", name:"Tier 2: Moderate Compound", slots:[{ pool:"squat_secondary", loading:"gzcl_t2" }, { pool:"pull_horizontal", loading:"gzcl_t2" }] },
         { letter:"T3", name:"Tier 3: Pump Work", slots:[{ pool:"hinge_secondary", loading:"isolation" }, { pool:"core", loading:"isolation" }] }
       ]},
-      { name:"GZCL — OHP", blocks:[
+      { name:"Tiered — OHP", blocks:[
         { letter:"WU", name:"Warm-Up", type:"warmup" },
         { letter:"T1", name:"Tier 1: Heavy OHP", slots:[{ pool:"press_primary", loading:"gzcl_t1", rotateEvery:4 }] },
         { letter:"T2", name:"Tier 2: Moderate Compound", slots:[{ pool:"pull_vertical", loading:"gzcl_t2" }, { pool:"press_secondary", loading:"gzcl_t2" }] },
@@ -860,7 +860,7 @@ var PROGRAM_CONFIGS = {
     ]
   },
 
-  // ---- Starting Strength / StrongLifts (3-Day) ----
+  // ---- Novice Linear Progression (3-Day) ----
   ss3: {
     phaseConfig: [
       { name:"Linear Gains", loadingPhase:"Accumulation", ratio:0.50, color:"#2dd4a8", description:"Add weight every session — ride the novice wave" },

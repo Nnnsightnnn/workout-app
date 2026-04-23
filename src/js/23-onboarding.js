@@ -232,7 +232,7 @@ function getRecommendedTemplate(a) {
   // Beginner gate
   if (a.experience === "beginner") {
     if (days <= 2) return "runner2";
-    if (days === 3) return "ss3"; // Starting Strength — classic novice LP
+    if (days === 3) return "ss3"; // Novice LP — classic linear progression
     if (days === 4) return "upperlower4";
     return "beginner3"; // fallback full body
   }

@@ -488,7 +488,7 @@ function injectRpHint(wrap, ex, u) {
 // RP MESOCYCLE ENGINE — Workstream C (rp-redesign-plan.md §4)
 // ============================================================
 
-// Canonical MEV/MAV/MRV landmarks from RP Science (all 19 locked-vocab muscles).
+// Canonical MEV/MAV/MRV volume landmarks (all 19 locked-vocab muscles).
 // Values sourced from plan §4.3. Plausibility: chest MEV 8-10, MAV 12-16, MRV 20+ ✓
 const RP_VOLUME_LANDMARKS = {
   "chest":       { mev: 8,  mav: 14, mrv: 22 },

@@ -8,13 +8,13 @@ var _gc = { orange:"#ff6b1f", red:"#e2443a", green:"#2dd4a8", blue:"#2f6bd3", pu
 var GLOSSARY = {
   // --- Program names ---
   "5/3/1": {
-    short:"Wendler's 5/3/1",
-    long:"3-week wave: sets of 5, then 3, then 1 at increasing percentages. Last set is AMRAP. One main lift per day + accessories. Created by Jim Wendler.",
+    short:"5/3/1 Waves",
+    long:"3-week wave: sets of 5, then 3, then 1 at increasing percentages. Last set is AMRAP. One main lift per day + accessories.",
     svg:'<svg viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg"><rect x="10" y="10" width="50" height="80" rx="6" fill="'+_gc.green+'" opacity="0.8"/><rect x="75" y="30" width="50" height="60" rx="6" fill="'+_gc.orange+'" opacity="0.8"/><rect x="140" y="55" width="50" height="35" rx="6" fill="'+_gc.red+'" opacity="0.8"/><text x="35" y="58" text-anchor="middle" fill="#fff" font-size="20" font-weight="800">5</text><text x="100" y="68" text-anchor="middle" fill="#fff" font-size="20" font-weight="800">3</text><text x="165" y="78" text-anchor="middle" fill="#fff" font-size="20" font-weight="800">1</text><text x="35" y="8" text-anchor="middle" fill="'+_gc.dim+'" font-size="9">65-85%</text><text x="100" y="28" text-anchor="middle" fill="'+_gc.dim+'" font-size="9">70-90%</text><text x="165" y="53" text-anchor="middle" fill="'+_gc.dim+'" font-size="9">75-95%</text><line x1="25" y1="92" x2="180" y2="50" stroke="'+_gc.red+'" stroke-width="2" stroke-dasharray="4" opacity="0.5"/></svg>'
   },
   "GZCL": {
     short:"Tiered Training",
-    long:"3 tiers per session: T1 heavy compound (3-5 reps), T2 moderate compound (8-10 reps), T3 pump isolation (15+ reps). Created by Cody Lefever.",
+    long:"3 tiers per session: T1 heavy compound (3-5 reps), T2 moderate compound (8-10 reps), T3 pump isolation (15+ reps).",
     svg:'<svg viewBox="0 0 200 110" xmlns="http://www.w3.org/2000/svg"><polygon points="100,5 170,40 155,40 155,40" fill="none"/><rect x="65" y="5" width="70" height="28" rx="6" fill="'+_gc.red+'" opacity="0.85"/><rect x="40" y="40" width="120" height="28" rx="6" fill="'+_gc.orange+'" opacity="0.85"/><rect x="15" y="75" width="170" height="28" rx="6" fill="'+_gc.green+'" opacity="0.85"/><text x="100" y="24" text-anchor="middle" fill="#fff" font-size="12" font-weight="800">T1 — Heavy 5×3</text><text x="100" y="59" text-anchor="middle" fill="#fff" font-size="12" font-weight="800">T2 — Moderate 3×10</text><text x="100" y="94" text-anchor="middle" fill="#fff" font-size="12" font-weight="800">T3 — Pump 3×15+</text></svg>'
   },
   "GVT": {
@@ -32,9 +32,9 @@ var GLOSSARY = {
     long:"Max Effort days (heavy 1-3 reps) + Dynamic Effort days (speed work at percentages). Exercises rotate every 3 weeks to prevent accommodation.",
     svg:'<svg viewBox="0 0 200 90" xmlns="http://www.w3.org/2000/svg"><rect x="10" y="10" width="80" height="35" rx="8" fill="'+_gc.red+'" opacity="0.85"/><rect x="110" y="10" width="80" height="35" rx="8" fill="'+_gc.orange+'" opacity="0.85"/><text x="50" y="32" text-anchor="middle" fill="#fff" font-size="12" font-weight="800">ME</text><text x="150" y="32" text-anchor="middle" fill="#fff" font-size="12" font-weight="800">DE</text><text x="50" y="43" text-anchor="middle" fill="#fff" font-size="8">Heavy 1-3 RM</text><text x="150" y="43" text-anchor="middle" fill="#fff" font-size="8">Speed 60-80%</text><path d="M65,52 C65,72 135,72 135,52" stroke="'+_gc.purple+'" stroke-width="2" fill="none" marker-end="url(#arr)"/><path d="M135,52 C135,78 65,78 65,52" stroke="'+_gc.purple+'" stroke-width="2" fill="none" stroke-dasharray="4"/><text x="100" y="72" text-anchor="middle" fill="'+_gc.purple+'" font-size="9" font-weight="700">Rotate every 3 wk</text><defs><marker id="arr" viewBox="0 0 6 6" refX="5" refY="3" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L6,3 L0,6Z" fill="'+_gc.purple+'"/></marker></defs></svg>'
   },
-  "KOT / ATG": {
-    short:"Knees Over Toes",
-    long:"Joint health program by Ben Patrick. Progressive full-range knee conditioning: tibialis raises, ATG split squats, backward sled drags, Nordic curls.",
+  "Full ROM": {
+    short:"Full Range of Motion Training",
+    long:"Joint health program focused on progressive full-range knee conditioning: tibialis raises, deep split squats, backward sled drags, Nordic curls.",
     svg:'<svg viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg"><line x1="100" y1="10" x2="100" y2="40" stroke="'+_gc.dim+'" stroke-width="3" stroke-linecap="round"/><line x1="100" y1="40" x2="80" y2="75" stroke="'+_gc.dim+'" stroke-width="3" stroke-linecap="round"/><line x1="80" y1="75" x2="75" y2="95" stroke="'+_gc.dim+'" stroke-width="3" stroke-linecap="round"/><circle cx="100" cy="8" r="6" fill="'+_gc.dim+'"/><circle cx="100" cy="40" r="4" fill="'+_gc.green+'"/><circle cx="80" cy="75" r="5" fill="'+_gc.green+'"/><path d="M68,60 A20,20 0 0,1 90,48" stroke="'+_gc.green+'" stroke-width="2" fill="none" marker-end="url(#karr)"/><text x="55" y="50" fill="'+_gc.green+'" font-size="9" font-weight="700">Full ROM</text><text x="130" y="35" fill="'+_gc.orange+'" font-size="10" font-weight="700">ATG depth</text><path d="M125,37 L105,40" stroke="'+_gc.orange+'" stroke-width="1"/><rect x="140" y="55" width="50" height="38" rx="6" fill="'+_gc.green+'" opacity="0.15" stroke="'+_gc.green+'" stroke-width="1"/><text x="165" y="70" text-anchor="middle" fill="'+_gc.green+'" font-size="8" font-weight="700">Week 1-2: BW</text><text x="165" y="82" text-anchor="middle" fill="'+_gc.green+'" font-size="8" font-weight="700">Week 5+: Load</text><defs><marker id="karr" viewBox="0 0 6 6" refX="5" refY="3" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L6,3 L0,6Z" fill="'+_gc.green+'"/></marker></defs></svg>'
   },
   "PPL": {
@@ -48,13 +48,13 @@ var GLOSSARY = {
     svg:'<svg viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="5" width="92" height="32" rx="6" fill="'+_gc.red+'" opacity="0.85"/><rect x="103" y="5" width="92" height="32" rx="6" fill="'+_gc.red+'" opacity="0.85"/><rect x="5" y="43" width="92" height="32" rx="6" fill="'+_gc.orange+'" opacity="0.85"/><rect x="103" y="43" width="92" height="32" rx="6" fill="'+_gc.orange+'" opacity="0.85"/><text x="51" y="25" text-anchor="middle" fill="#fff" font-size="10" font-weight="800">Power Upper</text><text x="149" y="25" text-anchor="middle" fill="#fff" font-size="10" font-weight="800">Power Lower</text><text x="51" y="63" text-anchor="middle" fill="#fff" font-size="10" font-weight="800">Hyper Upper</text><text x="149" y="63" text-anchor="middle" fill="#fff" font-size="10" font-weight="800">Hyper Lower</text></svg>'
   },
   "PRVN": {
-    short:"Periodized CrossFit",
+    short:"Periodized GPP",
     long:"Strength block + MetCon (metabolic conditioning) per session. Builds strength and cardiovascular fitness concurrently.",
     svg:'<svg viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg"><rect x="10" y="8" width="180" height="30" rx="6" fill="'+_gc.red+'" opacity="0.8"/><rect x="10" y="44" width="180" height="30" rx="6" fill="'+_gc.orange+'" opacity="0.8"/><text x="100" y="28" text-anchor="middle" fill="#fff" font-size="12" font-weight="800">Strength Block</text><text x="100" y="64" text-anchor="middle" fill="#fff" font-size="12" font-weight="800">MetCon / WOD</text><text x="195" y="28" text-anchor="end" fill="#fff" font-size="8" opacity="0.7">~20 min</text><text x="195" y="64" text-anchor="end" fill="#fff" font-size="8" opacity="0.7">8-25 min</text></svg>'
   },
   "BBB": { short:"Boring But Big", long:"5/3/1 accessory template: 5×10 of the main lift at 50-60% after the 5/3/1 sets. Simple, effective volume." },
-  "Starting Strength": { short:"Novice Linear Progression", long:"3 days per week. Squat every session. Alternate bench/OHP and deadlift/row. Add 5 lbs each session. By Mark Rippetoe." },
-  "StrongLifts": { short:"5×5 Linear Progression", long:"Similar to Starting Strength but 5 sets of 5 reps. Squat every session. Add 5 lbs each session until you stall." },
+  "Novice LP": { short:"Novice Linear Progression", long:"3 days per week. Squat every session. Alternate bench/OHP and deadlift/row. Add 5 lbs each session." },
+  "5x5 LP": { short:"5×5 Linear Progression", long:"Similar to novice LP but 5 sets of 5 reps. Squat every session. Add 5 lbs each session until you stall." },
 
   // --- Training concepts ---
   "Periodization": {
@@ -70,7 +70,7 @@ var GLOSSARY = {
     svg:'<svg viewBox="0 0 200 70" xmlns="http://www.w3.org/2000/svg"><rect x="10" y="10" width="35" height="50" rx="4" fill="'+_gc.red+'" opacity="0.7"/><rect x="50" y="15" width="35" height="45" rx="4" fill="'+_gc.orange+'" opacity="0.7"/><rect x="90" y="12" width="35" height="48" rx="4" fill="'+_gc.red+'" opacity="0.7"/><rect x="140" y="35" width="50" height="25" rx="6" fill="'+_gc.blue+'" opacity="0.8"/><text x="27" y="40" text-anchor="middle" fill="#fff" font-size="8" font-weight="700">Wk1</text><text x="67" y="42" text-anchor="middle" fill="#fff" font-size="8" font-weight="700">Wk2</text><text x="107" y="41" text-anchor="middle" fill="#fff" font-size="8" font-weight="700">Wk3</text><text x="165" y="51" text-anchor="middle" fill="#fff" font-size="10" font-weight="800">REST</text><text x="165" y="58" text-anchor="middle" fill="#fff" font-size="7">~60%</text></svg>'
   },
   "AMRAP": { short:"As Many Reps As Possible", long:"Push for maximum reps on the last set. Stop when form breaks down, not at a fixed number. Great for gauging progress." },
-  "MetCon": { short:"Metabolic Conditioning", long:"Timed circuits or AMRAPs combining strength and cardio movements. Common in CrossFit and functional fitness." },
+  "MetCon": { short:"Metabolic Conditioning", long:"Timed circuits or AMRAPs combining strength and cardio movements. Common in functional fitness and GPP." },
   "Superset": {
     short:"Back-to-Back Exercises",
     long:"Two exercises performed one after the other with no rest between. Saves time and increases training density.",
@@ -121,7 +121,7 @@ var GLOSSARY = {
   "Peak": { short:"Competition Prep Phase", long:"1-2 weeks of very heavy singles and doubles at 90-100% to express maximum strength. Follows an intensification block. Volume drops sharply." },
   "Linear Progression": {
     short:"Add Weight Every Session",
-    long:"The simplest progression model: add 5 lbs to the bar each workout. Works until you can no longer recover between sessions. The foundation of novice programs like Starting Strength and StrongLifts.",
+    long:"The simplest progression model: add 5 lbs to the bar each workout. Works until you can no longer recover between sessions. The foundation of novice LP programs.",
     svg:'<svg viewBox="0 0 200 70" xmlns="http://www.w3.org/2000/svg"><line x1="15" y1="60" x2="185" y2="10" stroke="'+_gc.green+'" stroke-width="3" stroke-linecap="round"/><circle cx="15" cy="60" r="4" fill="'+_gc.green+'"/><circle cx="57" cy="47" r="4" fill="'+_gc.green+'"/><circle cx="100" cy="34" r="4" fill="'+_gc.green+'"/><circle cx="142" cy="21" r="4" fill="'+_gc.orange+'"/><circle cx="185" cy="10" r="4" fill="'+_gc.red+'"/><text x="15" y="72" text-anchor="middle" fill="'+_gc.dim+'" font-size="7">135</text><text x="57" y="72" text-anchor="middle" fill="'+_gc.dim+'" font-size="7">145</text><text x="100" y="72" text-anchor="middle" fill="'+_gc.dim+'" font-size="7">155</text><text x="142" y="72" text-anchor="middle" fill="'+_gc.dim+'" font-size="7">165</text><text x="185" y="72" text-anchor="middle" fill="'+_gc.dim+'" font-size="7">175</text><text x="100" y="6" text-anchor="middle" fill="'+_gc.green+'" font-size="8" font-weight="700">+5 lbs each session</text></svg>'
   },
   "Wave Loading": {
@@ -142,8 +142,8 @@ var GLOSSARY = {
 // Get glossary term for a template ID (maps program IDs to glossary keys)
 var TEMPLATE_GLOSSARY = {
   conjugate5:"Conjugate", jbrown3:"Conjugate", filly4:"Tempo", hypertrophy5:"Hypertrophy",
-  athletic4:"Dynamic Effort", ppl3:"PPL", ppl6:"PPL", rpt3:"RPT", kot3:"KOT / ATG",
-  hybrid5:"Concurrent", prvn4:"PRVN", wendler4:"5/3/1", gzcl4:"GZCL", ss3:"Starting Strength",
+  athletic4:"Dynamic Effort", ppl3:"PPL", ppl6:"PPL", rpt3:"RPT", kot3:"Full ROM",
+  hybrid5:"Concurrent", prvn4:"PRVN", wendler4:"5/3/1", gzcl4:"GZCL", ss3:"Novice LP",
   gvt4:"GVT", phul4:"PHUL", powerlifting4:"Periodization", brosplit5:"Hypertrophy",
   beginner3:"Progressive Overload", masters3:"Deload", functional5:"MetCon",
   strength_cond4:"MetCon", calisthenics4:"Progressive Overload", upperlower4:"Volume",
