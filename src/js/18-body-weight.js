@@ -160,8 +160,8 @@ function drawSparkline(metricKey) {
   ctx.clearRect(0, 0, W, H);
 
   const grad = ctx.createLinearGradient(0, pad.top, 0, H - pad.bottom);
-  grad.addColorStop(0, "rgba(255,107,53,0.25)");
-  grad.addColorStop(1, "rgba(255,107,53,0)");
+  grad.addColorStop(0, "rgba(255,107,31,0.25)");
+  grad.addColorStop(1, "rgba(255,107,31,0)");
 
   const points = data.map((d, idx) => ({
     x: pad.left + (idx / (data.length - 1)) * (W - pad.left - pad.right),
@@ -178,7 +178,7 @@ function drawSparkline(metricKey) {
 
   ctx.beginPath();
   points.forEach((p, idx) => idx === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
-  ctx.strokeStyle = "#ff6b35";
+  ctx.strokeStyle = "#ff6b1f";
   ctx.lineWidth = 2;
   ctx.lineJoin = "round";
   ctx.stroke();
@@ -186,7 +186,7 @@ function drawSparkline(metricKey) {
   const last = points[points.length - 1];
   ctx.beginPath();
   ctx.arc(last.x, last.y, 3, 0, Math.PI * 2);
-  ctx.fillStyle = "#ff6b35";
+  ctx.fillStyle = "#ff6b1f";
   ctx.fill();
 
   ctx.fillStyle = "rgba(142,142,147,0.7)";

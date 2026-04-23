@@ -33,13 +33,6 @@ function _renderPRDashboard(container) {
     </div>
   `;
 
-  if (!u || !u.sessions.length) {
-    html += `<div class="empty">No workouts logged yet. Finish a workout to see your PRs here.</div>`;
-    container.innerHTML = html;
-    _bindPRDashboardEvents(container);
-    return;
-  }
-
   if (!pinned.length) {
     html += `<div class="empty">No tracked lifts yet. Tap ＋ to pin a lift to track.</div>`;
     container.innerHTML = html;
@@ -59,6 +52,7 @@ function _renderPRDashboard(container) {
         <div class="pr-lift-card pr-lift-card--empty" data-exid="${exId}" role="button">
           <div class="pr-lift-name">${_esc(name)}</div>
           <div class="pr-lift-no-data">No data yet</div>
+          <button class="pr-add-manual-btn" data-exid="${exId}" title="Add PR">+ Add PR</button>
           <button class="pr-unpin-btn" data-exid="${exId}" title="Unpin">✕</button>
         </div>`;
       return;
@@ -112,6 +106,13 @@ function _bindPRDashboardEvents(container) {
       renderPRScreen();
     });
   });
+  // Add manual PR from empty card
+  container.querySelectorAll(".pr-add-manual-btn").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      _openAddManualPRSheet(btn.dataset.exid);
+    });
+  });
   // Pin new lift
   const pinBtn = document.getElementById("prPinBtn");
   if (pinBtn) pinBtn.onclick = _openPinLiftPicker;
@@ -136,6 +137,7 @@ function _renderPRDetail(container, exId) {
     <div class="pr-detail-header">
       <button class="pr-back-btn icon-btn" id="prBackBtn" title="Back">←</button>
       <div class="pr-detail-title">${_esc(name)}</div>
+      <button class="pr-add-detail-btn icon-btn" id="prAddManualBtn" title="Add PR">＋</button>
       <button class="pr-unpin-detail-btn icon-btn ${getPinnedLifts().includes(exId) ? "active" : ""}"
               id="prPinToggleBtn" title="${getPinnedLifts().includes(exId) ? "Unpin" : "Pin"}">
         ${getPinnedLifts().includes(exId) ? "★" : "☆"}
@@ -144,9 +146,12 @@ function _renderPRDetail(container, exId) {
   `;
 
   if (!pr) {
-    html += `<div class="empty">No weighted sets logged yet for this exercise.</div>`;
+    html += `<div class="empty">No weighted sets logged yet.<br><button class="pr-add-manual-cta" id="prAddManualCTA">+ Add a PR manually</button></div>`;
     container.innerHTML = html;
     document.getElementById("prBackBtn").onclick = () => { _prDetailExId = null; renderPRScreen(); };
+    document.getElementById("prAddManualBtn").onclick = () => _openAddManualPRSheet(exId);
+    const cta = document.getElementById("prAddManualCTA");
+    if (cta) cta.onclick = () => _openAddManualPRSheet(exId);
     return;
   }
 
@@ -156,7 +161,7 @@ function _renderPRDetail(container, exId) {
       <div class="pr-alltime-label">All-Time PR</div>
       <div class="pr-alltime-e1rm">${Math.round(pr.e1rm)}<span class="pr-alltime-unit"> ${_esc(unit)} e1RM</span></div>
       <div class="pr-alltime-set">${pr.weight} ${_esc(unit)} × ${pr.reps} rep${pr.reps !== 1 ? "s" : ""}</div>
-      <div class="pr-alltime-date">${_fmtDate(pr.date)}</div>
+      <div class="pr-alltime-date">${_fmtDate(pr.date)}${pr.manual ? ' <span class="pr-manual-tag">manual</span>' : ''}</div>
     </div>
   `;
 
@@ -180,7 +185,25 @@ function _renderPRDetail(container, exId) {
         <div class="pr-pb-card">
           <div class="pr-pb-rep">${r}RM</div>
           <div class="pr-pb-weight">${pbs[r].weight}<span class="pr-pb-unit"> ${_esc(unit)}</span></div>
-          <div class="pr-pb-date">${_fmtDate(pbs[r].date)}</div>
+          <div class="pr-pb-date">${_fmtDate(pbs[r].date)}${pbs[r].manual ? ' <span class="pr-manual-tag">manual</span>' : ''}</div>
+        </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // Manual entries
+  const manuals = getManualPRsForExercise(exId);
+  if (manuals.length) {
+    html += `<div class="section-title">Manual Entries</div>`;
+    html += `<div class="pr-manual-list">`;
+    manuals.forEach(m => {
+      html += `
+        <div class="pr-manual-entry">
+          <div class="pr-manual-info">
+            <span class="pr-manual-set">${m.weight} ${_esc(m.unit || unit)} × ${m.reps}</span>
+            <span class="pr-manual-date">${_fmtDate(m.date)}</span>
+          </div>
+          <button class="pr-manual-delete" data-mprid="${m.id}" title="Delete">✕</button>
         </div>`;
     });
     html += `</div>`;
@@ -206,10 +229,18 @@ function _renderPRDetail(container, exId) {
   container.innerHTML = html;
 
   document.getElementById("prBackBtn").onclick = () => { _prDetailExId = null; renderPRScreen(); };
+  document.getElementById("prAddManualBtn").onclick = () => _openAddManualPRSheet(exId);
   document.getElementById("prPinToggleBtn").onclick = () => {
     togglePinnedLift(exId);
-    _renderPRDetail(container, exId); // re-render just the detail
+    _renderPRDetail(container, exId);
   };
+  container.querySelectorAll(".pr-manual-delete").forEach(btn => {
+    btn.onclick = () => {
+      deleteManualPR(btn.dataset.mprid);
+      _renderPRDetail(container, exId);
+      showToast("Manual PR deleted");
+    };
+  });
 }
 
 // ── SVG Chart ────────────────────────────────────────────────
@@ -262,7 +293,7 @@ function _buildSVGChart(history, unit) {
   const yTicksHTML = yTicks.map(v =>
     `<text x="${PAD.left - 6}" y="${(scaleY(v) + 4).toFixed(1)}"
       text-anchor="end" font-size="9" fill="var(--text-faint)"
-      font-family="-apple-system,BlinkMacSystemFont,sans-serif">${Math.round(v)}</text>
+      font-family="'JetBrains Mono',-apple-system,BlinkMacSystemFont,sans-serif">${Math.round(v)}</text>
     <line x1="${PAD.left}" y1="${scaleY(v).toFixed(1)}" x2="${PAD.left + innerW}" y2="${scaleY(v).toFixed(1)}"
       stroke="var(--border)" stroke-width="0.5"/>`
   ).join("");
@@ -272,7 +303,7 @@ function _buildSVGChart(history, unit) {
     const anchor = i === 0 ? "start" : i === history.length - 1 ? "end" : "middle";
     return `<text x="${x}" y="${(H - 6).toFixed(1)}"
       text-anchor="${anchor}" font-size="9" fill="var(--text-faint)"
-      font-family="-apple-system,BlinkMacSystemFont,sans-serif">${_esc(label)}</text>`;
+      font-family="'JetBrains Mono',-apple-system,BlinkMacSystemFont,sans-serif">${_esc(label)}</text>`;
   }).join("");
 
   return `
@@ -298,6 +329,67 @@ function _buildSVGChart(history, unit) {
         ${xLabelsHTML}
       </svg>
     </div>`;
+}
+
+// ── Add Manual PR Sheet ──────────────────────────────────────
+
+function _openAddManualPRSheet(exId) {
+  const ex = LIB_BY_ID[exId];
+  const name = ex ? ex.name : exId;
+  const unit = state.unit || "lbs";
+  const today = new Date().toISOString().slice(0, 10);
+
+  let html = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <h3 style="margin:0;">Add PR</h3>
+      <button class="icon-btn" onclick="closeSheet()" title="Close">✕</button>
+    </div>
+    <p style="color:var(--text-dim); font-size:13px; margin-bottom:12px;">${_esc(name)}</p>
+    <div style="display:flex;gap:10px;margin-bottom:10px;">
+      <div style="flex:1;">
+        <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Weight (${_esc(unit)})</label>
+        <input type="number" id="manualPRWeight" placeholder="225" min="0" step="0.5" inputmode="decimal"
+          style="width:100%;font-size:16px;padding:10px;border-radius:10px;border:2px solid var(--border);background:var(--bg-card);color:var(--text);font-family:var(--font-mono);">
+      </div>
+      <div style="flex:1;">
+        <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Reps</label>
+        <input type="number" id="manualPRReps" placeholder="3" min="1" step="1" inputmode="numeric"
+          style="width:100%;font-size:16px;padding:10px;border-radius:10px;border:2px solid var(--border);background:var(--bg-card);color:var(--text);font-family:var(--font-mono);">
+      </div>
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Date</label>
+      <input type="date" id="manualPRDate" value="${today}"
+        style="width:100%;font-size:14px;padding:10px;border-radius:10px;border:2px solid var(--border);background:var(--bg-card);color:var(--text);">
+    </div>
+    <button class="sheet-item" id="manualPRSaveBtn" style="justify-content:center;font-weight:700;">
+      Save PR
+    </button>
+  `;
+
+  openSheet(html);
+
+  document.getElementById("manualPRSaveBtn").onclick = () => {
+    const weight = parseFloat(document.getElementById("manualPRWeight").value);
+    const reps = parseInt(document.getElementById("manualPRReps").value);
+    const dateStr = document.getElementById("manualPRDate").value;
+
+    if (!weight || weight <= 0) { document.getElementById("manualPRWeight").focus(); return; }
+    if (!reps || reps <= 0) { document.getElementById("manualPRReps").focus(); return; }
+
+    let date = Date.now();
+    if (dateStr) {
+      const d = new Date(dateStr + "T12:00:00");
+      if (!isNaN(d.getTime())) date = d.getTime();
+    }
+
+    addManualPR(exId, weight, reps, date);
+    closeSheet();
+    renderPRScreen();
+    showToast(`PR saved: ${weight} ${unit} × ${reps}`);
+  };
+
+  setTimeout(() => document.getElementById("manualPRWeight").focus(), 50);
 }
 
 // ── Pin Lift Picker ───────────────────────────────────────────

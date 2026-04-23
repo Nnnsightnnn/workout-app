@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 // download-fonts.js — Download Google Fonts for offline mockup builds
 // Usage: node mockups/download-fonts.js [font-url]
-// Default: Oswald 500,600 + JetBrains Mono 400,500
+// Default: Plus Jakarta Sans 400-800 + JetBrains Mono 300-600 + Fraunces 300,500 italic
 
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
 
 const FONTS_DIR = path.join(__dirname, 'fonts');
-const DEFAULT_URL = 'https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap';
+const DEFAULT_URL = 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&family=Fraunces:opsz,wght@9..144,300;9..144,500&display=swap';
 
 function fetch(url) {
   return new Promise(function(resolve, reject) {

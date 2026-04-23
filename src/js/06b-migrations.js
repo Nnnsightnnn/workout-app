@@ -249,6 +249,16 @@ const MIGRATIONS = [
       });
       return store;
     }
+  },
+  {
+    version: 13,
+    description: "Add manualPRs array for user-entered personal records",
+    migrate(store) {
+      store.users.forEach(u => {
+        if (!Array.isArray(u.manualPRs)) u.manualPRs = [];
+      });
+      return store;
+    }
   }
 ];
 

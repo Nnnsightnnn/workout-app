@@ -219,6 +219,9 @@ function renderDayPicker() {
     const cdMin = Math.round(breakdown.cooldownSec / 60);
 
     let html = "";
+    if (isHero) {
+      html += `<div class="picker-today-tag">Today \u00b7 Day ${String(d.id).padStart(2, '0')}</div>`;
+    }
     html += `<div class="picker-label">${d.name}</div>`;
     html += `<div class="picker-sub">${d.sub || ""}</div>`;
     html += `<div class="picker-blocks">`;
@@ -226,6 +229,15 @@ function renderDayPicker() {
       html += `<span class="picker-block-tag">${b.letter} ${b.name}</span>`;
     });
     html += `</div>`;
+    if (isHero) {
+      const totalSets = d.blocks.reduce((n, b) => n + b.exercises.reduce((s, ex) => s + (ex.sets || 0), 0), 0);
+      const blockLetters = d.blocks.map(b => b.letter).join(' ');
+      html += `<div class="picker-metrics">`;
+      html += `<div class="picker-metric"><div class="picker-metric-label">Sets</div><div class="picker-metric-val">${String(totalSets).padStart(2, '0')}</div><div class="picker-metric-sub">${d.blocks.length} blocks</div></div>`;
+      html += `<div class="picker-metric"><div class="picker-metric-label">Blocks</div><div class="picker-metric-val">${String(d.blocks.length).padStart(2, '0')}</div><div class="picker-metric-sub">${blockLetters}</div></div>`;
+      html += `<div class="picker-metric"><div class="picker-metric-label">Est.</div><div class="picker-metric-val">${breakdown.totalMin}</div><div class="picker-metric-sub">min</div></div>`;
+      html += `</div>`;
+    }
     html += `<div class="picker-duration">\u23F1 ~${breakdown.totalMin} min</div>`;
     html += `<div class="picker-breakdown">WU ${wuMin}m \u00b7 Work ${wkMin}m \u00b7 CD ${cdMin}m</div>`;
     html += `<div class="dpc-expand-hint"><span class="dpc-chevron">\u25BE</span> Adjust time</div>`;
@@ -410,7 +422,7 @@ function renderDayPreview(container, day) {
 
   const start = document.createElement("button");
   start.className = "preview-start-btn";
-  start.textContent = "Start Workout →";
+  start.textContent = "Start Workout";
   start.addEventListener("click", () => {
     _beginWorkoutFocus();
   });
@@ -492,7 +504,7 @@ function renderCooldownPreview() {
   const hdr = document.createElement("div");
   hdr.className = "block-header";
   hdr.innerHTML = `
-    <div class="block-letter" style="background:var(--success);color:#fff">CD</div>
+    <div class="block-letter cooldown-letter">CD</div>
     <div class="block-title">Cool Down</div>
     <span class="block-time-badge">~5m</span>
   `;
@@ -539,7 +551,7 @@ function renderCooldownPreviewForDay(dayId) {
   const hdr = document.createElement("div");
   hdr.className = "block-header";
   hdr.innerHTML = `
-    <div class="block-letter" style="background:var(--success);color:#fff">CD</div>
+    <div class="block-letter cooldown-letter">CD</div>
     <div class="block-title">Cool Down</div>
     <span class="block-time-badge">~5m</span>
   `;
@@ -1006,12 +1018,13 @@ function renderSetsTable(block, ex, bi, ei) {
     chip.className = "set-chip";
 
     const weightPart = bw ? "" :
-      `<span class="set-chip-weight" data-field="w">${curW}</span><span class="set-chip-x">×</span>`;
+      `<span class="set-chip-weight" data-field="w" data-unit="${state.unit}">${curW}</span><span class="set-chip-x">×</span>`;
 
     const rpePart = lib.noRpe ? "" :
       `<span class="set-chip-rpe">RPE <span class="rpe-num">${curP}</span></span>`;
+    const chipNum = state.workoutView === "focus" ? String(i + 1).padStart(2, "0") : String(i + 1);
     chip.innerHTML = `
-      <div class="set-chip-num">${i+1}</div>
+      <div class="set-chip-num">${chipNum}</div>
       <div class="set-chip-body">
         ${weightPart}
         <span class="set-chip-reps" data-field="r">${curR} ${repsLabel}</span>
@@ -1045,6 +1058,20 @@ function wireChip(chip, block, ex, bi, ei, i, bw) {
   const curStatus = getInput(statusKey, null);
   if (curStatus === "done") chip.classList.add("set-done");
   if (curStatus === "skipped") chip.classList.add("set-skipped");
+
+  // Focus mode: mark active / pending sets for ledger styling
+  if (state.workoutView === "focus" && curStatus !== "done" && curStatus !== "skipped") {
+    const numSets = ex.sets || 3;
+    let firstPending = -1;
+    for (let s = 0; s < numSets; s++) {
+      if (getInput(inputKey(block.id, ei, s, "status"), null) !== "done" &&
+          getInput(inputKey(block.id, ei, s, "status"), null) !== "skipped") {
+        firstPending = s; break;
+      }
+    }
+    if (i === firstPending) chip.classList.add("set-active");
+    else chip.classList.add("set-pending");
+  }
 
   let swStartX = 0, swStartY = 0, isSwiping = false;
   chip.addEventListener("touchstart", (e) => {
@@ -1493,7 +1520,34 @@ function renderChaptersView(container, day) {
   const wrap = document.createElement("div");
   wrap.className = "chapters-view chapters-enter";
 
+  // Hero title
+  const heroTitle = document.createElement("div");
+  heroTitle.className = "chapters-hero-title";
+  heroTitle.textContent = "The Manifest";
+  wrap.appendChild(heroTitle);
+
+  // Subtitle with counts
+  const totalEx = day.blocks.reduce((s, b) => s + b.exercises.filter(e => !e.isWarmup).length, 0);
+  const totalBlocks = day.blocks.length;
+  const heroSub = document.createElement("div");
+  heroSub.className = "chapters-hero-sub";
+  heroSub.innerHTML = `<span class="mf-tag accent">${totalEx} movements</span><span class="mf-sep">·</span><span class="mf-tag">${totalBlocks} blocks</span>`;
+  wrap.appendChild(heroSub);
+
+  // Progress strip
+  const allStats = calcLiveStats(day);
+  const progWrap = document.createElement("div");
+  progWrap.className = "chapters-progress";
+  let segsHtml = '';
+  for (let i = 0; i < allStats.setsTotal; i++) {
+    const cls = i < allStats.setsDone ? (i === allStats.setsDone - 1 ? 'active' : 'done') : '';
+    segsHtml += `<div class="chapters-progress-seg ${cls}"></div>`;
+  }
+  progWrap.innerHTML = `<div class="chapters-progress-header"><span class="mf-tag">Progress</span><span class="mf-val">${String(allStats.setsDone).padStart(2,'0')} / ${String(allStats.setsTotal).padStart(2,'0')}</span></div><div class="chapters-progress-bar">${segsHtml}</div>`;
+  wrap.appendChild(progWrap);
+
   let tileIdx = 0;
+  let exNum = 0;
   day.blocks.forEach((block, bi) => {
     const bp = calcBlockProgress(block);
     const isDone = bp.total > 0 && bp.done === bp.total;
@@ -1530,17 +1584,37 @@ function renderChaptersView(container, day) {
       const exComplete = exDone === numSets;
       const exPct = numSets > 0 ? Math.round((exDone / numSets) * 100) : 0;
 
+      exNum++;
       const tile = document.createElement("div");
       tile.className = "bento-ex-tile" + (exComplete ? " complete" : "") + (exDone > 0 && !exComplete ? " partial" : "");
       tile.style.setProperty("--card-index", tileIdx++);
 
-      const mColor = primaryMuscleColor(ex.muscles);
-      if (mColor) tile.style.borderLeftColor = mColor;
+      // Number column
+      const numEl = document.createElement("div");
+      numEl.className = "bento-ex-num";
+      numEl.textContent = String(exNum).padStart(2, '0');
+      tile.appendChild(numEl);
 
       const name = document.createElement("div");
       name.className = "bento-ex-name";
       name.textContent = ex.name;
       tile.appendChild(name);
+
+      const setsInfo = document.createElement("div");
+      setsInfo.className = "bento-ex-sets";
+      if (ex.isTime) {
+        setsInfo.textContent = `${numSets} × ${ex.reps || 30}s`;
+      } else if (ex.isDistance) {
+        setsInfo.textContent = `${numSets} × ${ex.reps || 100}m`;
+      } else {
+        setsInfo.textContent = `${numSets} × ${ex.reps || 8}`;
+      }
+      tile.appendChild(setsInfo);
+
+      // Status dot
+      const statusDot = document.createElement("div");
+      statusDot.className = "bento-ex-status" + (exComplete ? " done" : exDone > 0 ? " active" : "");
+      tile.appendChild(statusDot);
 
       if (ex.muscles && ex.muscles.length) {
         const muscle = document.createElement("span");
@@ -1550,23 +1624,6 @@ function renderChaptersView(container, day) {
         if (mc) { muscle.style.background = mc + '22'; muscle.style.color = mc; }
         tile.appendChild(muscle);
       }
-
-      const setsInfo = document.createElement("div");
-      setsInfo.className = "bento-ex-sets";
-      if (ex.isTime) {
-        setsInfo.textContent = `${exDone}/${numSets} × ${ex.reps || 30}s`;
-      } else if (ex.isDistance) {
-        setsInfo.textContent = `${exDone}/${numSets} × ${ex.reps || 100}m`;
-      } else {
-        setsInfo.textContent = `${exDone}/${numSets} × ${ex.reps || 8}`;
-      }
-      tile.appendChild(setsInfo);
-
-      // Mini progress bar
-      const prog = document.createElement("div");
-      prog.className = "bento-ex-progress";
-      prog.innerHTML = `<div class="bento-ex-progress-fill${exComplete ? ' complete' : ''}" style="width:${exPct}%"></div>`;
-      tile.appendChild(prog);
 
       tile.addEventListener("click", () => {
         state.workoutView = "focus";
@@ -1737,6 +1794,40 @@ function renderFocusView(container, day) {
     const bi = state.focusBlockIdx;
     const ei = state.focusExIdx;
     const isSuperset = exercises.length > 1;
+
+    // Big serif exercise name (Midnight Forge style)
+    const focusTitle = document.createElement("div");
+    focusTitle.className = "focus-hero-title";
+    focusTitle.textContent = ex.name;
+    wrap.appendChild(focusTitle);
+
+    // Muscle tags
+    if (ex.muscles && ex.muscles.length) {
+      const muscleLine = document.createElement("div");
+      muscleLine.className = "focus-hero-muscles";
+      muscleLine.innerHTML = ex.muscles.map(m =>
+        `<span class="mf-tag">${m}</span>`
+      ).join('<span class="mf-sep">·</span>');
+      wrap.appendChild(muscleLine);
+    }
+
+    // Ledger header
+    const ledgerHdr = document.createElement("div");
+    ledgerHdr.className = "focus-ledger-header";
+    const numSets = ex.sets || 3;
+    let setsDone = 0, ledgerVol = 0;
+    for (let s = 0; s < numSets; s++) {
+      if (getInput(inputKey(block.id, ei, s, "status"), null) === "done") {
+        setsDone++;
+        const w = getInput(inputKey(block.id, ei, s, "w"), 0);
+        const r = getInput(inputKey(block.id, ei, s, "r"), 0);
+        ledgerVol += (Number(w) || 0) * (Number(r) || 0);
+      }
+    }
+    ledgerHdr.innerHTML = '<span class="section-title" style="margin:0;">Ledger</span>' +
+      '<span class="section-title" style="margin:0;color:var(--text-faint);">Vol ' + (ledgerVol > 0 ? ledgerVol.toLocaleString() : "0") + ' ' + state.unit + '</span>';
+    wrap.appendChild(ledgerHdr);
+
     const card = renderExercise(day, block, ex, bi, ei, isSuperset);
     card.style.setProperty("--card-index", 0);
 
@@ -1931,20 +2022,20 @@ function renderStatsBar(container, day) {
 
   bar.innerHTML = `
     <div class="stat-item">
+      <div class="stat-label">Vol</div>
       <div class="stat-value">${volStr}</div>
-      <div class="stat-label">Volume</div>
     </div>
     <div class="stat-item">
-      <div class="stat-value">${stats.setsDone}/${stats.setsTotal}</div>
       <div class="stat-label">Sets</div>
+      <div class="stat-value">${stats.setsDone} / ${stats.setsTotal}</div>
     </div>
     <div class="stat-item">
-      <div class="stat-value${stats.prs > 0 ? " stat-pr" : ""}">${stats.prs > 0 ? "🏆 " + stats.prs : "–"}</div>
       <div class="stat-label">PRs</div>
+      <div class="stat-value${stats.prs > 0 ? " stat-pr" : ""}">${stats.prs > 0 ? String(stats.prs).padStart(2,'0') : "–"}</div>
     </div>
     <div class="stat-item">
+      <div class="stat-label">Elapsed</div>
       <div class="stat-value">${formatDuration(elapsed)}</div>
-      <div class="stat-label">Time</div>
     </div>
   `;
 

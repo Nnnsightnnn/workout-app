@@ -142,6 +142,8 @@ function loadStore() {
           }
         });
       });
+      // Defensive default for v13: manual PRs
+      if (!Array.isArray(u.manualPRs)) u.manualPRs = [];
       // Defensive defaults for session edit fields (Workstream D)
       // Also cleans up _original audit entries older than 7 days.
       const sevenDaysAgo = Date.now() - 7 * 86400000;
@@ -194,6 +196,40 @@ function addUser(name, templateId) {
   if (s.onboarding && s.onboarding.physiquePriority) {
     u.physiquePriority = s.onboarding.physiquePriority;
   }
+
+  // Initialize u.rp (newUserRecord doesn't create it; loadStore defensive defaults only apply on read)
+  if (!u.rp) {
+    u.rp = {
+      enabled: false,
+      rpeCalibrationCompletedAt: null,
+      rpeCalibrationMethod: null,
+      coldStartAnchors: {},
+      lastDeloadRecommendedAt: null,
+      dismissedDeloadForWeek: null,
+      volumeLandmarks: null,
+      mesocycles: [],
+      currentMesocycleId: null
+    };
+  }
+
+  // Propagate body weight from onboarding
+  if (s.onboarding && s.onboarding.bodyWeight) {
+    u.measurements.push({
+      date: new Date().toISOString().slice(0, 10),
+      weight: s.onboarding.bodyWeight,
+      unit: s.unit || "lbs"
+    });
+  }
+
+  // Propagate smart suggestions preference from onboarding
+  if (s.onboarding && s.onboarding.smartSuggestions === "yes") {
+    u.rp.enabled = true;
+    if (s.onboarding.rpeCalibration && s.onboarding.rpeCalibration.completedAt) {
+      u.rp.rpeCalibrationCompletedAt = s.onboarding.rpeCalibration.completedAt;
+      u.rp.rpeCalibrationMethod = "onboarding";
+    }
+  }
+
   s.users.push(u);
   s.currentUserId = u.id;
   saveStore(s);

@@ -10,7 +10,7 @@ HTML5 • CSS3 (variables, flexbox, grid) • Vanilla JS (ES6+) • LocalStorage
 ## Project Structure
 ```
 src/
-  template.html            ← HTML skeleton with {{CSS}} and {{JS}} placeholders
+  template.html            ← HTML skeleton with {{FONTS}}, {{CSS}}, {{JS}} placeholders
   styles.css               ← All CSS
   js/
     01-exercise-library.js ← CATEGORIES, LIBRARY, LIB_BY_ID
@@ -52,6 +52,15 @@ README.md                  ← User-facing documentation
 Source code lives in `src/`. Run `node build.js` to produce the single-file `workout-app.html`.
 Numeric prefixes on JS files enforce concatenation order (alphabetical sort = dependency order).
 All JS shares global scope — no module system, same as a single `<script>` tag.
+
+## Fonts & Assets
+Custom fonts (Oswald, JetBrains Mono) are **inlined at build time** — base64-encoded into the HTML. No CDN, no external requests.
+- **Font files**: `mockups/fonts/*.woff2` (gitignored, downloaded via `node mockups/download-fonts.js`)
+- **Font CSS**: `mockups/fonts/fonts.css` — `build.js` extracts Latin-only `@font-face` blocks and inlines them
+- **CSS variables**: `--font-display` (Oswald) for headings/titles, `--font-mono` (JetBrains Mono) for numbers/timers
+- **Graceful fallback**: if fonts aren't present, build succeeds with system fonts only
+- **S3 asset infra** (for future images/textures): `mockups/infra/template.yaml` (SAM), `mockups/manage-assets.js` (CLI), `mockups/config.json` (bucket config). Assets download at build time and inline — never served to users directly.
+- To add/change fonts: edit `mockups/download-fonts.js` URL → run it → `node build.js`
 
 ## Data Flow
 `state` → render functions → user input → `updateUser()` → `saveStore()` → re-render

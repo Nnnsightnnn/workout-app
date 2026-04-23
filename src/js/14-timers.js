@@ -187,13 +187,52 @@ function addRestTime(sec) {
 // ============================================================
 let _restSheetSyncId = null;
 
+function _buildRingTicks() {
+  const R = 90, cx = 120, cy = 120;
+  let ticks = '';
+  for (let i = 0; i < 60; i++) {
+    const a = (i / 60) * 2 * Math.PI - Math.PI / 2;
+    const r1 = R + 8, r2 = i % 5 === 0 ? R + 18 : R + 13;
+    const x1 = cx + Math.cos(a) * r1, y1 = cy + Math.sin(a) * r1;
+    const x2 = cx + Math.cos(a) * r2, y2 = cy + Math.sin(a) * r2;
+    const sw = i % 5 === 0 ? 1.5 : 1;
+    ticks += `<line class="ring-tick" data-i="${i}" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="rgba(255,255,255,0.1)" stroke-width="${sw}"/>`;
+  }
+  return ticks;
+}
+
+const _ringR = 90;
+const _ringC = 2 * Math.PI * _ringR; // ~565.49
+
 function openRestSheet() {
   const rem = state.restEndsAt ? Math.max(0, Math.ceil((state.restEndsAt - Date.now()) / 1000)) : 0;
   const activeSec = state.restActiveSec || 90;
+  const frac = state.restTotal > 0 ? rem / state.restTotal : 0;
+  const offset = _ringC * (1 - frac);
 
   const html = `
     <div class="sa-timer">
-      <div class="sa-timer-time">${formatRest(rem)}</div>
+      <div class="ring-timer">
+        <svg viewBox="0 0 240 240">
+          <defs>
+            <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="var(--accent-ember)"/>
+              <stop offset="60%" stop-color="var(--accent)"/>
+              <stop offset="100%" stop-color="var(--accent-dim)"/>
+            </linearGradient>
+            <filter id="ringGlow"><feGaussianBlur stdDeviation="4"/></filter>
+          </defs>
+          <circle cx="120" cy="120" r="${_ringR}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="3"/>
+          ${_buildRingTicks()}
+          <circle class="ring-timer-glow" cx="120" cy="120" r="${_ringR}" fill="none" stroke="url(#ringGrad)" stroke-width="8" stroke-linecap="round" stroke-dasharray="${_ringC.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}" transform="rotate(-90 120 120)" filter="url(#ringGlow)"/>
+          <circle class="ring-timer-arc" cx="120" cy="120" r="${_ringR}" fill="none" stroke="url(#ringGrad)" stroke-width="4" stroke-linecap="round" stroke-dasharray="${_ringC.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}" transform="rotate(-90 120 120)"/>
+        </svg>
+        <div class="ring-timer-center">
+          <div class="ring-timer-label accent">Remaining</div>
+          <div class="ring-timer-time">${formatRest(rem)}</div>
+          <div class="ring-timer-label">of ${formatRest(state.restTotal || activeSec)}</div>
+        </div>
+      </div>
       <div class="sa-timer-pills">
         <button class="rest-pill${activeSec === 45 ? " active" : ""}" data-sec="45">45s</button>
         <button class="rest-pill${activeSec === 60 ? " active" : ""}" data-sec="60">1:00</button>
@@ -205,7 +244,6 @@ function openRestSheet() {
         <button class="rest-inline-btn" data-action="add30">+30</button>
         <button class="rest-inline-btn" data-action="skip">Skip</button>
       </div>
-      <div class="rest-inline-bar"><div class="rest-inline-fill" id="restSheetFill"></div></div>
     </div>
   `;
 
@@ -213,22 +251,34 @@ function openRestSheet() {
 
   const root = document.getElementById("sheetContent");
 
-  // Sync sheet display with running header timer
+  // Sync ring display with running header timer
   if (_restSheetSyncId) clearInterval(_restSheetSyncId);
   _restSheetSyncId = setInterval(() => {
-    const timeEl = root.querySelector(".sa-timer-time");
-    const fillEl = root.querySelector("#restSheetFill");
+    const timeEl = root.querySelector(".ring-timer-time");
+    const arcEl = root.querySelector(".ring-timer-arc");
+    const glowEl = root.querySelector(".ring-timer-glow");
+    const totalLabel = root.querySelectorAll(".ring-timer-label")[1];
     const wrap = root.querySelector(".sa-timer");
     if (!timeEl) { clearInterval(_restSheetSyncId); _restSheetSyncId = null; return; }
     if (!state.restEndsAt) {
       timeEl.textContent = formatRest(0);
-      fillEl.style.width = "0%";
+      if (arcEl) { arcEl.style.strokeDashoffset = _ringC; }
+      if (glowEl) { glowEl.style.strokeDashoffset = _ringC; }
       return;
     }
     const r = Math.max(0, Math.ceil((state.restEndsAt - Date.now()) / 1000));
     timeEl.textContent = formatRest(r);
-    const frac = state.restTotal > 0 ? r / state.restTotal : 0;
-    fillEl.style.width = (frac * 100) + "%";
+    if (totalLabel) totalLabel.textContent = "of " + formatRest(state.restTotal || 90);
+    const pct = state.restTotal > 0 ? r / state.restTotal : 0;
+    const off = (_ringC * (1 - pct)).toFixed(2);
+    if (arcEl) arcEl.style.strokeDashoffset = off;
+    if (glowEl) glowEl.style.strokeDashoffset = off;
+    // Color tick marks based on progress
+    const ticks = root.querySelectorAll(".ring-tick");
+    ticks.forEach(t => {
+      const i = parseInt(t.dataset.i);
+      t.setAttribute("stroke", i / 60 < (1 - pct) ? "var(--accent)" : "rgba(255,255,255,0.1)");
+    });
     if (r === 0 && wrap) wrap.classList.add("done");
   }, 250);
 

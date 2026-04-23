@@ -7,9 +7,9 @@ function setupPWA() {
   c.width = 180; c.height = 180;
   const x = c.getContext("2d");
   if (!x) return; // No canvas support (e.g. test environment)
-  x.fillStyle = "#0a0a0a";
+  x.fillStyle = "#0a0c12";
   x.fillRect(0, 0, 180, 180);
-  x.fillStyle = "#ff6b35";
+  x.fillStyle = "#ff6b1f";
   x.font = "900 52px system-ui";
   x.textAlign = "center";
   x.textBaseline = "middle";
@@ -29,7 +29,7 @@ function setupPWA() {
   const manifest = {
     name: "K&N Lifts", short_name: "K&N Lifts",
     display: "standalone", orientation: "portrait",
-    background_color: "#0a0a0a", theme_color: "#ff6b35",
+    background_color: "#0a0c12", theme_color: "#ff6b1f",
     icons: [{ src: iconUrl, sizes: "180x180", type: "image/png", purpose: "any" }]
   };
   const mLink = document.createElement("link");

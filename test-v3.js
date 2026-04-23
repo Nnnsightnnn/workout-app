@@ -458,7 +458,7 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     w.localStorage.setItem("kn-lifts-v3", JSON.stringify(fakeV8));
     w.runMigrations();
     const s = w.loadStore();
-    eq(s._schemaVersion, 12, "schema version is 12 (v9+v10+v11+v12 all applied)");
+    eq(s._schemaVersion, 13, "schema version is 13 (v9–v13 all applied)");
     const u = s.users[0];
     assert(u.rp, "u.rp exists");
     eq(u.rp.enabled, false, "rp.enabled defaults to false");
@@ -785,8 +785,8 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
   // ============================================================
 
   // ---- Migration v10/v11 shape ----------------------------------
-  t("migration v12: APP_VERSION bumped to 12", () => {
-    eq(w.APP_VERSION, 12, "APP_VERSION must be 12");
+  t("migration v13: APP_VERSION bumped to 13", () => {
+    eq(w.APP_VERSION, 13, "APP_VERSION must be 13");
   });
 
   t("migration v10: RP_VOLUME_LANDMARKS defined with all 19 muscles", () => {

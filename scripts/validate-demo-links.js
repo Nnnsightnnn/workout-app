@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 // Validates all demoUrl links in the LIBRARY by checking YouTube for valid video pages.
-// Usage: node validate-demo-links.js
+// Usage: node scripts/validate-demo-links.js
 
 const fs = require("fs");
 const https = require("https");
 const path = require("path");
 
-const html = fs.readFileSync(path.join(__dirname, "workout-app.html"), "utf-8");
+const html = fs.readFileSync(path.join(__dirname, "..", "workout-app.html"), "utf-8");
 
 // Extract LIBRARY array entries with demoUrl
 const entryRegex = /\{\s*id:"([^"]+)"[^}]*?name:"([^"]+)"[^}]*?demoUrl:"([^"]*)"/g;

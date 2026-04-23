@@ -3,13 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0a0a0a">
+<meta name="theme-color" content="#0a0c12">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="K&N Lifts">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏋️</text></svg>">
 <title>K&amp;N Lifts</title>
 <style>
+/* {{FONTS}} */
 /* {{CSS}} */
 </style>
 </head>
@@ -105,28 +106,14 @@
 
   <!-- History -->
   <section class="screen" id="screen-history">
-    <div class="settings-header">
-      <h2>History</h2>
-      <button class="icon-btn" id="historyCloseBtn" title="Back to workout">✕</button>
-    </div>
-    <div class="history-tabs" id="historyTabs">
-      <button class="history-tab active" data-tab="prs">PRs</button>
-      <button class="history-tab" data-tab="balance">Balance</button>
-    </div>
-    <div class="history-pane active" id="pane-prs">
-      <div id="prBoard"></div>
-      <div class="section-title">Recent Sessions</div>
-      <div id="sessionList"></div>
-    </div>
-    <div class="history-pane" id="pane-balance">
-      <p style="color: var(--text-dim); font-size: 12px; margin-bottom: 14px;">Last 30 days of training.</p>
-      <div class="history-stats">
-        <div class="donut-wrap">
-          <svg class="donut" id="muscleDonut" viewBox="0 0 100 100"></svg>
-          <div class="donut-legend" id="donutLegend"></div>
-        </div>
+    <div class="log-header">
+      <div class="log-header-top">
+        <span class="section-title" id="logSubtitle" style="margin:0;"></span>
+        <button class="icon-btn" id="historyCloseBtn" title="Back to workout" style="width:36px;height:36px;border-radius:10px;">✕</button>
       </div>
+      <h2 id="logTitle">The Log</h2>
     </div>
+    <div id="historyContent"></div>
   </section>
 
   <!-- Settings -->

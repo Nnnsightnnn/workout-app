@@ -30,8 +30,8 @@ const ONBOARDING_STEPS = [
   {
     id: "physiquePriority",
     title: "Any physique priorities?",
-    subtitle: "Matching exercises get placed first in your accessory work.",
-    type: "single",
+    subtitle: "Pick all that apply. Matching exercises get placed first in your accessory work.",
+    type: "multi",
     layout: "grid",
     skippable: true,
     options: [
@@ -136,6 +136,47 @@ const ONBOARDING_STEPS = [
       { value: "30to40",  label: "30–40",    icon: "🎯", sub: "Balanced training capacity" },
       { value: "40plus",  label: "40+",      icon: "♻",  sub: "Recovery may benefit from extra attention" }
     ]
+  },
+  {
+    id: "bodyWeight",
+    title: "What's your current body weight?",
+    subtitle: "Used for bodyweight exercises like pullups and dips. You can update this anytime.",
+    type: "number",
+    skippable: true,
+    inputConfig: {
+      min: 50,
+      max: 500,
+      step: 1,
+      placeholderLbs: "e.g. 185",
+      placeholderKg: "e.g. 84"
+    }
+  },
+  {
+    id: "smartSuggestions",
+    title: "Want smart weight suggestions?",
+    subtitle: "We can recommend weights based on your training history and effort level.",
+    type: "single",
+    options: [
+      { value: "yes", label: "Yes, suggest weights", icon: "🧠", sub: "Learns from your sessions to optimize load" },
+      { value: "no",  label: "No thanks",            icon: "→",  sub: "I'll choose my own weights", deemph: true }
+    ]
+  },
+  {
+    id: "rpeCalibration",
+    title: "Understanding effort levels",
+    type: "info",
+    showIf: function(answers) { return answers.smartSuggestions === "yes"; },
+    content: {
+      heading: "RIR = Reps In Reserve",
+      bullets: [
+        { label: "RIR 4", desc: "You could do 4 more reps" },
+        { label: "RIR 3", desc: "3 more reps in the tank" },
+        { label: "RIR 2", desc: "2 more — moderate effort" },
+        { label: "RIR 1", desc: "Almost at your limit" },
+        { label: "RIR 0", desc: "Nothing left — failure" }
+      ],
+      footer: "After each set, you'll rate your effort. This helps the app learn your strength levels."
+    }
   },
   {
     id: "injuries",
@@ -326,64 +367,136 @@ function dismissOnboarding() {
   closeOnboarding();
 }
 
+function _obIsStepVisible(step) {
+  return !step.showIf || step.showIf(_obAnswers);
+}
+
 function _renderObStep() {
   const inner = document.getElementById("onboardingInner");
   if (!inner) return;
-  const total = ONBOARDING_STEPS.length;
+
+  // Skip hidden steps (conditional showIf)
   const step = ONBOARDING_STEPS[_obStep];
-  const isLast = _obStep === total - 1;
+  if (!_obIsStepVisible(step)) {
+    _obStep++;
+    if (_obStep < ONBOARDING_STEPS.length) { _renderObStep(); }
+    return;
+  }
+
+  const visibleSteps = ONBOARDING_STEPS.filter(_obIsStepVisible);
+  const total = visibleSteps.length;
+  const visibleIndex = visibleSteps.indexOf(step);
+  const isLast = _obStep === ONBOARDING_STEPS.length - 1;
   const canSkip = !!step.skippable;
-  const pct = Math.round((_obStep / total) * 100);
-  const selectedVals = step.type === "multi" ? (_obAnswers[step.id] || []) : [];
+  const pct = Math.round((visibleIndex / total) * 100);
 
-  const optionsHtml = step.options.map(opt => {
-    const isSel = step.type === "multi"
-      ? selectedVals.includes(opt.value)
-      : _obAnswers[step.id] === opt.value;
-    const deemph = opt.deemph ? " ob-opt-deemph" : "";
-    return `<button class="ob-option${isSel ? " selected" : ""}${deemph}" data-value="${opt.value}">
-      <span class="ob-opt-icon">${opt.icon}</span>
-      <div class="ob-opt-text">
-        <div class="ob-opt-label">${opt.label}</div>
-        <div class="ob-opt-sub">${opt.sub}</div>
-      </div>
-      <span class="ob-opt-check">✓</span>
-    </button>`;
-  }).join("");
+  // Build content based on step type
+  let contentHtml = "";
 
-  const gridClass = step.layout === "grid"  ? " ob-grid"
-                  : step.layout === "chips" ? " ob-chips"
-                  : "";
-  const showContinue = step.type === "multi" || isLast || canSkip;
+  if (step.type === "number") {
+    const cfg = step.inputConfig;
+    const unit = (typeof loadStore === "function" ? loadStore().unit : null) || "lbs";
+    const placeholder = unit === "lbs" ? cfg.placeholderLbs : cfg.placeholderKg;
+    const curVal = _obAnswers[step.id] || "";
+    contentHtml = `
+      <div class="ob-number-input-row">
+        <input type="number" class="ob-number-input" id="obNumberInput"
+          min="${cfg.min}" max="${cfg.max}" step="${cfg.step}"
+          placeholder="${placeholder}" inputmode="decimal"
+          value="${curVal}">
+        <span class="ob-number-unit">${unit}</span>
+      </div>`;
+
+  } else if (step.type === "info") {
+    const c = step.content;
+    contentHtml = `
+      <div class="ob-info-card">
+        <h3 class="ob-info-heading">${c.heading}</h3>
+        <div class="ob-info-scale">
+          ${c.bullets.map(b => `<div class="ob-info-row"><span class="ob-info-label">${b.label}</span><span class="ob-info-desc">${b.desc}</span></div>`).join("")}
+        </div>
+        <p class="ob-info-footer">${c.footer}</p>
+      </div>`;
+
+  } else {
+    // Standard option cards (single / multi)
+    const selectedVals = step.type === "multi" ? (_obAnswers[step.id] || []) : [];
+    const gridClass = step.layout === "grid"  ? " ob-grid"
+                    : step.layout === "chips" ? " ob-chips"
+                    : "";
+    contentHtml = `<div class="ob-options${gridClass}" id="obOptions">${step.options.map(opt => {
+      const isSel = step.type === "multi"
+        ? selectedVals.includes(opt.value)
+        : _obAnswers[step.id] === opt.value;
+      const deemph = opt.deemph ? " ob-opt-deemph" : "";
+      return `<button class="ob-option${isSel ? " selected" : ""}${deemph}" data-value="${opt.value}">
+        <span class="ob-opt-icon">${opt.icon}</span>
+        <div class="ob-opt-text">
+          <div class="ob-opt-label">${opt.label}</div>
+          <div class="ob-opt-sub">${opt.sub}</div>
+        </div>
+        <span class="ob-opt-check">✓</span>
+      </button>`;
+    }).join("")}</div>`;
+  }
+
+  const showContinue = step.type === "multi" || step.type === "number" || step.type === "info" || isLast || canSkip;
+  const continueLabel = step.type === "info" ? "Got it — let's go" : (isLast ? "Finish Setup" : "Continue →");
 
   inner.innerHTML = `
     <div class="ob-progress"><div class="ob-progress-fill" style="width:${pct}%"></div></div>
     <div class="ob-body">
       ${_obStep > 0 ? `<div class="ob-nav-row"><button class="ob-back-btn" id="obBackBtn">← Back</button></div>` : ""}
-      <div class="ob-step-label">Step ${_obStep + 1} of ${total}</div>
+      <div class="ob-step-label">Step ${visibleIndex + 1} of ${total}</div>
       <h2 class="ob-title">${step.title}</h2>
       ${step.subtitle ? `<p class="ob-subtitle">${step.subtitle}</p>` : ""}
-      <div class="ob-options${gridClass}" id="obOptions">${optionsHtml}</div>
+      ${contentHtml}
       ${showContinue ? `<div class="ob-actions">
-        ${(isLast || step.type === "multi") ? `<button class="ob-continue-btn" id="obContinueBtn">${isLast ? "Finish Setup" : "Continue →"}</button>` : ""}
-        ${(isLast || canSkip) ? `<button class="ob-skip-btn" id="obSkipBtn">${isLast ? "Skip questionnaire →" : "Skip →"}</button>` : ""}
+        <button class="ob-continue-btn" id="obContinueBtn">${continueLabel}</button>
+        ${(canSkip && !isLast) ? `<button class="ob-skip-btn" id="obSkipBtn">Skip →</button>` : ""}
+        ${isLast ? `<button class="ob-skip-btn" id="obSkipBtn">Skip questionnaire →</button>` : ""}
       </div>` : ""}
       ${!_obIsRedo ? `<button class="ob-dismiss-btn" id="obDismissBtn">Don't show me this again</button>` : ""}
     </div>`;
 
+  // Bind option card clicks (single / multi steps)
   inner.querySelectorAll(".ob-option").forEach(btn => {
     btn.addEventListener("click", () => _obSelect(step, btn.dataset.value));
   });
+
+  // Back button — skip hidden steps backward
   const backEl = document.getElementById("obBackBtn");
-  if (backEl) backEl.addEventListener("click", () => { _obStep--; _renderObStep(); });
+  if (backEl) backEl.addEventListener("click", () => {
+    _obStep--;
+    while (_obStep >= 0 && !_obIsStepVisible(ONBOARDING_STEPS[_obStep])) {
+      _obStep--;
+    }
+    if (_obStep < 0) _obStep = 0;
+    _renderObStep();
+  });
+
+  // Continue button
   const continueEl = document.getElementById("obContinueBtn");
   if (continueEl) {
     continueEl.addEventListener("click", () => {
+      // Number input: validate and store
+      if (step.type === "number") {
+        const val = parseFloat(document.getElementById("obNumberInput").value);
+        if (!val || val <= 0) { document.getElementById("obNumberInput").focus(); return; }
+        _obAnswers[step.id] = val;
+      }
+      // Info step: mark calibration complete
+      if (step.type === "info" && step.id === "rpeCalibration") {
+        _obAnswers.rpeCalibration = { completedAt: Date.now() };
+      }
       if (isLast) { _obFinish(); } else { _obStep++; _renderObStep(); }
     });
   }
-  if (isLast || canSkip) {
-    document.getElementById("obSkipBtn").addEventListener("click", () => {
+
+  // Skip button
+  const skipEl = document.getElementById("obSkipBtn");
+  if (skipEl) {
+    skipEl.addEventListener("click", () => {
       if (isLast) {
         dismissOnboarding();
       } else {
@@ -392,8 +505,15 @@ function _renderObStep() {
       }
     });
   }
+
   const dismissBtn = document.getElementById("obDismissBtn");
   if (dismissBtn) dismissBtn.addEventListener("click", dismissOnboarding);
+
+  // Auto-focus number input
+  if (step.type === "number") {
+    const numInput = document.getElementById("obNumberInput");
+    if (numInput) setTimeout(() => numInput.focus(), 100);
+  }
 }
 
 function _obSelect(step, rawValue) {
@@ -431,10 +551,32 @@ function _obFinish() {
   const timerEl = document.getElementById("customTimerSec");
   if (timerEl) timerEl.value = onb.defaultRestSeconds;
 
-  // Propagate physique priority to current user record (redo path — first-run handled in addUser)
+  // Propagate onboarding data to current user record (redo path — first-run handled in addUser)
   if (_obIsRedo && state.userId) {
     updateUser(u => {
-      u.physiquePriority = _obAnswers.physiquePriority || null;
+      u.physiquePriority = _obAnswers.physiquePriority || [];
+
+      // Body weight
+      if (_obAnswers.bodyWeight) {
+        if (!u.measurements) u.measurements = [];
+        const today = new Date().toISOString().slice(0, 10);
+        const alreadyLogged = u.measurements.some(m => m.date === today);
+        if (!alreadyLogged) {
+          const unit = loadStore().unit || "lbs";
+          u.measurements.push({ date: today, weight: _obAnswers.bodyWeight, unit: unit });
+        }
+      }
+
+      // Smart suggestions → rp.enabled
+      if (_obAnswers.smartSuggestions === "yes") {
+        u.rp.enabled = true;
+        if (_obAnswers.rpeCalibration && _obAnswers.rpeCalibration.completedAt) {
+          u.rp.rpeCalibrationCompletedAt = _obAnswers.rpeCalibration.completedAt;
+          u.rp.rpeCalibrationMethod = "onboarding";
+        }
+      } else if (_obAnswers.smartSuggestions === "no") {
+        u.rp.enabled = false;
+      }
     });
   }
 
@@ -605,7 +747,10 @@ function renderProfileCard() {
     const injText = injList.length
       ? injList.map(i => ({ lowerback: "Lower back", knees: "Knees", shoulders: "Shoulders" }[i] || i)).join(", ")
       : "None";
-    const ppText = ob.physiquePriority ? (ppLabels[ob.physiquePriority] || ob.physiquePriority) : "—";
+    const ppArr = Array.isArray(ob.physiquePriority) ? ob.physiquePriority : (ob.physiquePriority ? [ob.physiquePriority] : []);
+    const ppText = ppArr.length ? ppArr.filter(v => v !== "none").map(v => ppLabels[v] || v).join(", ") || "Balanced" : "—";
+    const bwText = ob.bodyWeight ? (ob.bodyWeight + " " + (s.unit || "lbs")) : "—";
+    const ssText = ob.smartSuggestions === "yes" ? "On" : (ob.smartSuggestions === "no" ? "Off" : "—");
 
     el.innerHTML = `
       <div class="profile-summary">
@@ -614,6 +759,8 @@ function renderProfileCard() {
         <div class="profile-row"><span class="profile-label">Experience</span><span class="profile-value">${expLabels[ob.experience] || ob.experience || "—"}</span></div>
         <div class="profile-row"><span class="profile-label">Days / week</span><span class="profile-value">${ob.days || "—"}</span></div>
         <div class="profile-row"><span class="profile-label">Equipment</span><span class="profile-value">${eqLabels[ob.equipment] || ob.equipment || "—"}</span></div>
+        <div class="profile-row"><span class="profile-label">Body Weight</span><span class="profile-value">${bwText}</span></div>
+        <div class="profile-row"><span class="profile-label">Smart Suggestions</span><span class="profile-value">${ssText}</span></div>
         <div class="profile-row"><span class="profile-label">Flags</span><span class="profile-value">${injText}</span></div>
       </div>
       <button class="program-change-btn" onclick="showOnboardingFlow(true)">Update Training Profile</button>

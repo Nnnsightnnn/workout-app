@@ -10,6 +10,11 @@ function recomputeAllIsPR() {
   updateUser(u => {
     const sessions = [...(u.sessions || [])].sort((a, b) => a.finishedAt - b.finishedAt);
     const priorBest = {}; // exId → best e1RM seen chronologically
+    // Seed with manual PRs as baseline floor
+    (u.manualPRs || []).forEach(mpr => {
+      const score = calcE1RM(mpr.weight || 0, mpr.reps || 0);
+      if (score > 0 && (!priorBest[mpr.exId] || score > priorBest[mpr.exId])) priorBest[mpr.exId] = score;
+    });
     sessions.forEach(s => {
       s.prCount = 0;
       (s.sets || []).forEach(set => {

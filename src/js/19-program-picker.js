@@ -257,6 +257,10 @@ function applyProgramSwitch(tpl, totalWeeks, daysPerWeek) {
     u.currentWeek = 1;
     u.totalWeeks = tw;
     u.daysPerWeek = dpw;
+    // Auto-enable RP engine when switching to rp-hypertrophy
+    if (tpl.id === "rp-hypertrophy") {
+      u.rp.enabled = true;
+    }
   });
   stopSessionTimer();
   state.workoutStartedAt = null;

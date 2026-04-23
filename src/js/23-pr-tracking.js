@@ -62,6 +62,15 @@ function getE1RMHistory(exId) {
       });
     }
   });
+  // Merge manual PRs
+  (u.manualPRs || []).forEach(mpr => {
+    if (mpr.exId !== exId) return;
+    if (!mpr.weight || mpr.weight <= 0) return;
+    const e = calcE1RM(mpr.weight, mpr.reps);
+    if (e > 0) {
+      points.push({ date: mpr.date, e1rm: e, weight: mpr.weight, reps: mpr.reps, manual: true, manualPRId: mpr.id });
+    }
+  });
   points.sort((a, b) => a.date - b.date);
   return points;
 }
@@ -93,6 +102,16 @@ function getPBsByRepCount(exId) {
           bests[target] = { weight: set.weight, reps: set.reps, date: s.finishedAt };
         }
       });
+    });
+  });
+  // Include manual PRs
+  (u.manualPRs || []).forEach(mpr => {
+    if (mpr.exId !== exId || !mpr.weight || mpr.weight <= 0) return;
+    repTargets.forEach(target => {
+      if (mpr.reps !== target) return;
+      if (!bests[target] || mpr.weight > bests[target].weight) {
+        bests[target] = { weight: mpr.weight, reps: mpr.reps, date: mpr.date, manual: true };
+      }
     });
   });
   return bests;
@@ -154,6 +173,30 @@ function getRecentSessions(exId, limit) {
   return results.reverse(); // oldest first for the table display
 }
 
+// ── Manual PR CRUD ───────────────────────────────────────────
+
+function getManualPRsForExercise(exId) {
+  const u = userData();
+  if (!u) return [];
+  return (u.manualPRs || []).filter(m => m.exId === exId);
+}
+
+function addManualPR(exId, weight, reps, date) {
+  const id = "mpr_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7);
+  const entry = { id, exId, weight: parseFloat(weight), reps: parseInt(reps), unit: state.unit || "lbs", date: date || Date.now(), createdAt: Date.now() };
+  updateUser(u => {
+    if (!u.manualPRs) u.manualPRs = [];
+    u.manualPRs.push(entry);
+  });
+  return entry;
+}
+
+function deleteManualPR(id) {
+  updateUser(u => {
+    u.manualPRs = (u.manualPRs || []).filter(m => m.id !== id);
+  });
+}
+
 // Called from finishWorkout — detect if any new session PRs were achieved and
 // return the names of exercises that hit PRs (for the PR toast).
 // priorSessions = u.sessions (before the new session is pushed)
@@ -166,6 +209,14 @@ function detectNewPRsInSession(newSets, priorSessions) {
       if (!priorBest[key] || score > priorBest[key]) priorBest[key] = score;
     });
   });
+  // Include manual PRs as baseline
+  const u = userData();
+  if (u) {
+    (u.manualPRs || []).forEach(mpr => {
+      const score = calcE1RM(mpr.weight, mpr.reps);
+      if (score > 0 && (!priorBest[mpr.exId] || score > priorBest[mpr.exId])) priorBest[mpr.exId] = score;
+    });
+  }
   const prExIds = new Set();
   newSets.forEach(s => {
     if (!s.isPR) return;

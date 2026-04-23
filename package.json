@@ -4,7 +4,7 @@
   "scripts": {
     "build": "node build.js",
     "test": "node test-v3.js",
-    "validate-demo-links": "node validate-demo-links.js"
+    "validate-demo-links": "node scripts/validate-demo-links.js"
   },
   "dependencies": {
     "jsdom": "^29.0.2"

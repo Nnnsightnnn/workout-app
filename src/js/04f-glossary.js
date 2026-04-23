@@ -3,7 +3,7 @@
 // ============================================================
 
 // Color palette matching app theme
-var _gc = { orange:"#ff6b35", red:"#ff2d55", green:"#30d158", blue:"#64d2ff", purple:"#bf5af2", dim:"#888", bg:"#1a1a2e" };
+var _gc = { orange:"#ff6b1f", red:"#e2443a", green:"#2dd4a8", blue:"#2f6bd3", purple:"#bf5af2", dim:"#8892a6", bg:"#111520" };
 
 var GLOSSARY = {
   // --- Program names ---

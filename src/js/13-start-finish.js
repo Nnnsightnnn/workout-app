@@ -2,6 +2,10 @@
 // START / FINISH WORKOUT
 // ============================================================
 function startWorkout() {
+  if (state.workoutView === "preview") {
+    _beginWorkoutFocus();
+    return;
+  }
   // Show the full-day preview first; tapping the workout card calls _beginWorkoutFocus().
   state.previewBlockIdx = null;
   state.workoutView = "preview";
