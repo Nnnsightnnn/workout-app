@@ -168,6 +168,23 @@ function renderWorkoutScreen() {
     return;
   }
 
+  // Rest-day shortcut: if today is set as rest in the recurring weekly schedule
+  // and the user isn't actively engaged in a session/preview, route to the rest
+  // card. This wins over draft auto-resume so a paused session from another
+  // day doesn't hijack the rest screen on hard refresh. Drafts are preserved
+  // and reachable via Switch Day or "Train anyway".
+  {
+    const _todayDow = new Date().getDay();
+    const _isRestToday = Array.isArray(u.weeklySchedule)
+      && u.weeklySchedule.length === 7 && u.weeklySchedule[_todayDow] == null;
+    if (_isRestToday && !state.dayChosen && !state.workoutStartedAt
+        && !state.restOverride && !state.previewDateMs) {
+      renderTimelineStrip();
+      renderDayPicker();
+      return;
+    }
+  }
+
   // Show day picker if user hasn't chosen a workout yet (and no draft in progress)
   if (!state.dayChosen && !getDraft()) {
     renderTimelineStrip();
@@ -196,6 +213,66 @@ function renderWorkoutScreen() {
   renderTimelineStrip();
 
   container.innerHTML = "";
+
+  // Rest-day override banner: user clicked "Train anyway" on a rest day and is
+  // now browsing/choosing a workout. Once they actually start (workoutStartedAt
+  // set) the banner disappears.
+  if (state.restOverride && !state.workoutStartedAt) {
+    const todayDow = new Date().getDay();
+    const dowName = (typeof _DOW_LABELS_LONG !== "undefined") ? _DOW_LABELS_LONG[todayDow] : "Today";
+    const banner = document.createElement("div");
+    banner.className = "preview-banner";
+    banner.innerHTML = `
+      <div class="preview-banner-meta">
+        <span class="preview-banner-tag">Rest day override</span>
+        <span class="preview-banner-date">Training anyway \u00b7 ${dowName} is set as rest</span>
+      </div>
+      <button class="preview-banner-back">\u2190 Back to rest</button>
+    `;
+    banner.querySelector(".preview-banner-back").onclick = () => {
+      state.restOverride = false;
+      state.dayChosen = false;
+      // Clear any unstarted draft created by switching days so the rest card returns
+      const draft = getDraft();
+      if (draft && !state.workoutStartedAt) {
+        updateUser(usr => { usr.draft = null; });
+      }
+      renderWorkoutScreen();
+    };
+    container.appendChild(banner);
+  }
+
+  // Future-date preview banner: when user is browsing a program day from a
+  // future calendar tap, override the header and show a back-to-today affordance.
+  if (state.previewDateMs) {
+    const previewDate = new Date(state.previewDateMs);
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    const isStillFuture = previewDate.getTime() > todayStart.getTime();
+    if (isStillFuture) {
+      const dateStr = previewDate.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
+      document.getElementById("dayName").textContent = day.name;
+      document.getElementById("daySub").textContent = "Preview \u00b7 " + dateStr;
+      const banner = document.createElement("div");
+      banner.className = "preview-banner";
+      banner.innerHTML = `
+        <div class="preview-banner-meta">
+          <span class="preview-banner-tag">Previewing</span>
+          <span class="preview-banner-date">${dateStr}</span>
+        </div>
+        <button class="preview-banner-back">\u2190 Back to today</button>
+      `;
+      banner.querySelector(".preview-banner-back").onclick = () => {
+        state.previewDateMs = null;
+        state.dayChosen = false;
+        state.currentDayId = determineDefaultDay();
+        renderWorkoutScreen();
+      };
+      container.appendChild(banner);
+    } else {
+      // Date has passed (or is today) — silently clear stale preview state
+      state.previewDateMs = null;
+    }
+  }
 
   // Phase 6: full-day preview (shown between Start tap and actual session start)
   if (state.workoutView === "preview") {
@@ -260,10 +337,8 @@ function renderDayPicker() {
     trainBtn.className = "action-btn primary";
     trainBtn.textContent = "Train anyway";
     trainBtn.onclick = () => {
-      const next = determineDefaultDay();
-      state.currentDayId = next || 1;
-      state.dayChosen = true;
-      openWorkout();
+      state.restOverride = true;
+      if (typeof openTrainAnywayPicker === "function") openTrainAnywayPicker();
     };
     actions.appendChild(trainBtn);
 

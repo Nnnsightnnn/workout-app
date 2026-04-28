@@ -16,15 +16,33 @@ function closeSheet() {
 
 function openDayPicker() {
   const u = userData();
+  if (!u) return;
   const wrap = document.createElement("div");
-  wrap.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><h3 style="margin:0;">Switch Day</h3><button class="icon-btn" onclick="closeSheet()" title="Close">✕</button></div><p style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">Your next in rotation is highlighted.</p>`;
+  wrap.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><h3 style="margin:0;">Switch Day</h3><button class="icon-btn" onclick="closeSheet()" title="Close">✕</button></div>`;
+
+  const todayDow = new Date().getDay();
+  const dowName = (typeof _DOW_LABELS_LONG !== "undefined") ? _DOW_LABELS_LONG[todayDow] : "today";
+  const sched = (Array.isArray(u.weeklySchedule) && u.weeklySchedule.length === 7) ? u.weeklySchedule : null;
+  const scheduledDayId = sched ? sched[todayDow] : null;
+  const isRestToday = sched && scheduledDayId == null;
+
+  const subline = document.createElement("p");
+  subline.style.cssText = "color:var(--text-dim);font-size:12px;margin-bottom:10px;";
+  subline.textContent = isRestToday
+    ? `${dowName} is set as rest. Your next in rotation is highlighted.`
+    : "Your next in rotation is highlighted.";
+  wrap.appendChild(subline);
+
   const next = (u.lastDoneDayId == null) ? 1 : (u.lastDoneDayId % u.program.length) + 1;
   u.program.forEach(d => {
     const btn = document.createElement("button");
     btn.className = "sheet-item" + (d.id === state.currentDayId ? " current" : "");
-    const nextTag = d.id === next ? '<span class="meta" style="color:var(--accent);">next</span>' : "";
-    const customTag = d.isCustom ? '<span class="meta" style="color:var(--text-dim);">custom</span>' : "";
-    btn.innerHTML = `<span class="icon">${d.id}</span><span>${d.name}<div style="color:var(--text-dim);font-size:12px;font-weight:500;">${d.sub || ''}</div></span>${nextTag}${customTag}`;
+    const isScheduled = scheduledDayId === d.id;
+    const tags = [];
+    if (isScheduled) tags.push('<span class="meta" style="color:var(--accent);">today</span>');
+    if (d.id === next && !isScheduled) tags.push('<span class="meta" style="color:var(--accent);">next</span>');
+    if (d.isCustom) tags.push('<span class="meta" style="color:var(--text-dim);">custom</span>');
+    btn.innerHTML = `<span class="icon">${d.id}</span><span>${d.name}<div style="color:var(--text-dim);font-size:12px;font-weight:500;">${d.sub || ''}</div></span>${tags.join("")}`;
     btn.onclick = () => { switchDay(d.id); closeSheet(); };
     wrap.appendChild(btn);
   });
@@ -43,6 +61,90 @@ function openDayPicker() {
   progBtn.innerHTML = '<span class="icon" style="font-size:14px;">\u25A6</span> View Full Program';
   progBtn.onclick = function() { closeSheet(); setTimeout(openLookAhead, 80); };
   wrap.appendChild(progBtn);
+
+  // --- Schedule mods (parity with calendar-pill sheet) ---
+  const divider = document.createElement("div");
+  divider.style.cssText = "border-top:1px solid var(--border);margin:14px 0 10px;";
+  wrap.appendChild(divider);
+
+  // Set today as rest day (or, if already rest, surface that)
+  const restBtn = document.createElement("button");
+  restBtn.className = "sheet-item" + (isRestToday ? " current" : "");
+  restBtn.innerHTML = `<span class="icon">\u2014</span><span>Set ${dowName} as rest day<div style="color:var(--text-dim);font-size:11px;font-weight:500;">Recurring \u2014 every ${dowName} becomes rest</div></span>`;
+  restBtn.onclick = () => {
+    updateUser(usr => {
+      const s = ensureWeeklySchedule(usr);
+      s[todayDow] = null;
+    });
+    state.currentDayId = determineDefaultDay();
+    state.dayChosen = false;
+    state.restOverride = false;
+    closeSheet();
+    if (typeof renderTimelineStrip === "function") renderTimelineStrip();
+    if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
+    if (typeof showToast === "function") showToast(dowName + "s set as rest", "success");
+  };
+  wrap.appendChild(restBtn);
+
+  // Custom Workout (live ad-hoc training)
+  const adhocBtn = document.createElement("button");
+  adhocBtn.className = "sheet-item";
+  adhocBtn.style.marginTop = "8px";
+  adhocBtn.innerHTML = '<span class="icon" style="font-size:16px;">+</span><span>Custom Workout<div style="color:var(--text-dim);font-size:11px;font-weight:500;">Ad-hoc — pick exercises and start now</div></span>';
+  adhocBtn.onclick = () => {
+    closeSheet();
+    if (typeof openAdhocWorkout === "function") setTimeout(openAdhocWorkout, 80);
+  };
+  wrap.appendChild(adhocBtn);
+
+  // Edit weekly schedule
+  const schedBtn = document.createElement("button");
+  schedBtn.className = "sheet-item";
+  schedBtn.style.marginTop = "8px";
+  schedBtn.innerHTML = '<span class="icon">\u2630</span><span>Edit weekly schedule<div style="color:var(--text-dim);font-size:11px;font-weight:500;">Change which weekdays your workouts fall on</div></span>';
+  schedBtn.onclick = () => {
+    if (typeof openWeeklyScheduleEditor === "function") openWeeklyScheduleEditor();
+  };
+  wrap.appendChild(schedBtn);
+
+  openSheet(wrap);
+}
+
+function openTrainAnywayPicker() {
+  const u = userData();
+  if (!u) return;
+  const wrap = document.createElement("div");
+  wrap.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><h3 style="margin:0;">Train anyway</h3><button class="icon-btn" onclick="closeSheet()" title="Close">\u2715</button></div>`;
+
+  const subline = document.createElement("p");
+  subline.style.cssText = "color:var(--text-dim);font-size:12px;margin-bottom:10px;";
+  subline.textContent = "Today is a rest day \u2014 pick a session to run.";
+  wrap.appendChild(subline);
+
+  const next = (u.lastDoneDayId == null) ? 1 : (u.lastDoneDayId % u.program.length) + 1;
+  u.program.forEach(d => {
+    const btn = document.createElement("button");
+    btn.className = "sheet-item" + (d.id === state.currentDayId ? " current" : "");
+    const tags = [];
+    if (d.id === next) tags.push('<span class="meta" style="color:var(--accent);">next</span>');
+    if (d.isCustom) tags.push('<span class="meta" style="color:var(--text-dim);">custom</span>');
+    btn.innerHTML = `<span class="icon">${d.id}</span><span>${d.name}<div style="color:var(--text-dim);font-size:12px;font-weight:500;">${d.sub || ''}</div></span>${tags.join("")}`;
+    btn.onclick = () => { switchDay(d.id); closeSheet(); };
+    wrap.appendChild(btn);
+  });
+
+  const divider = document.createElement("div");
+  divider.style.cssText = "border-top:1px solid var(--border);margin:14px 0 10px;";
+  wrap.appendChild(divider);
+
+  const adhocBtn = document.createElement("button");
+  adhocBtn.className = "sheet-item";
+  adhocBtn.innerHTML = '<span class="icon" style="font-size:16px;">+</span><span>Custom Workout<div style="color:var(--text-dim);font-size:11px;font-weight:500;">Ad-hoc \u2014 pick exercises and start now</div></span>';
+  adhocBtn.onclick = () => {
+    closeSheet();
+    if (typeof openAdhocWorkout === "function") setTimeout(openAdhocWorkout, 80);
+  };
+  wrap.appendChild(adhocBtn);
 
   openSheet(wrap);
 }
