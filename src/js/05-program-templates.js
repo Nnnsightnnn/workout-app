@@ -32,6 +32,7 @@ const PROGRAM_TEMPLATES = [
   { id:"ss3", name:"Novice Linear Progression", description:"Squat every session, simple compounds, add weight each time.", daysPerWeek:3, minWeeks:8, maxWeeks:12, totalWeeks:null, phases:null },
   { id:"gvt4", name:"German Volume Training", description:"10×10 shock protocol — extreme volume for rapid hypertrophy. Not for the faint.", daysPerWeek:4, minWeeks:6, maxWeeks:10, totalWeeks:null, phases:null },
   { id:"phul4", name:"PHUL", description:"Power Hypertrophy Upper Lower — 2 heavy days + 2 volume days.", daysPerWeek:4, minWeeks:8, maxWeeks:12, totalWeeks:null, phases:null },
+  { id:"arms_superset3", name:"Arms Superset", description:"Curl + press supersets — 3 days of bicep/tricep pairings with rotation.", daysPerWeek:3, minWeeks:8, maxWeeks:12, totalWeeks:null, phases:null },
   { id:"custom", name:"Custom Program", description:"Built by you", daysPerWeek:0, minWeeks:4, maxWeeks:16, totalWeeks:null, phases:null },
   {
     id: "rp-hypertrophy",

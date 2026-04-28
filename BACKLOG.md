@@ -1,23 +1,34 @@
 # Backlog — K&N Lifts
 
 Known issues, bugs, and planned work. Check here before starting new work.
+Delegation prompts with full context live in **TASKS.md** (say "do #N" to execute).
 
 ---
 
-## Bugs
+## Active Tasks (see TASKS.md)
 
-_None currently tracked._
+| # | Type | Name | Conflicts with |
+|---|------|------|----------------|
+| 1 | Bug | PR entry not saving | — |
+| 2 | Feature | Measurements tracking expansion | — |
+| 3 | Feature | Workout overview (zoom out) | #8 |
+| 4 | Feature | Onboarding visual polish | #6 |
+| 5 | Feature | Equipment filter in overview | — |
+| 6 | Feature | Equipment onboarding (optional detail) | #4 |
+| 7 | Feature | Add days to program | — |
+| 8 | Feature | Remove start workout gate | #3 |
+| 9 | Feature | Arms superset program | — |
 
 ---
 
-## Up Next
+## Closed
 
-1. **Day-of-week selector** — after "how many days/week" step, let user pick which specific days (Mon/Tue/Wed etc.)
-2. **Measurements tracking** — in user profile, add body measurements (weight, body fat %, arms, chest, waist, etc.) so users can track progress over time
-3. **Workout preview** — before starting a workout, show a preview screen listing all blocks/exercises so user knows what's coming; tap to start
+- ~~Day-of-week selector~~ — already implemented (onboarding step 6, `selectedDays`)
+- ~~Auto-fill previous weights~~ — already implemented (`getLastSetsFor()` pre-fills inputs)
 
 ---
 
-## Planned Work
+## Tabled
 
-_None currently tracked._
+- **AI workout suggestions** — needs product definition
+- **AI tracker** — unclear intent, parked

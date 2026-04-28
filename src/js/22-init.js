@@ -244,15 +244,18 @@ function initTools() {
 }
 function initWorkoutScreen() {
   document.getElementById("homeDayBtn").onclick = () => {
+    if (state.adhocActive) {
+      if (confirm("Cancel quick workout? Progress will be lost.")) {
+        cancelAdhocWorkout();
+      }
+      return;
+    }
     state.dayChosen = false;
     renderWorkoutScreen();
   };
   document.getElementById("pickDayBtn").onclick = openDayPicker;
-  document.getElementById("libraryBtn").onclick = () => {
-    state.sidebarOpen ? closeSidebar() : openSidebar();
-  };
   document.getElementById("customizeDayBtn").onclick = openCustomizeDay;
-  document.getElementById("finishBtn").onclick = handleFinishButton;
+  document.getElementById("adhocBtn").onclick = openAdhocWorkout;
   document.getElementById("headerStartBtn").onclick = startWorkout;
   document.getElementById("headerFinishBtn").onclick = handleFinishButton;
   document.getElementById("restPill").onclick = openRestSheet;

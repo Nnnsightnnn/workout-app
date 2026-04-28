@@ -69,11 +69,84 @@ const CD_COMBOS = [
   [8, 20, 28],  // figure-4, downward dog, neck stretch
 ];
 function getCooldownExercises(dayId) {
+  var u = (typeof userData === "function") ? userData() : null;
+  var day = (u && u.program) ? u.program.find(function(d) { return d.id === dayId; }) : null;
+  var overrides = (day && day.cooldownOverrides) || {};
   var idx = ((dayId || 1) - 1) % CD_COMBOS.length;
-  return CD_COMBOS[idx].map(function(i) { return CD_STRETCHES[i]; });
+  return CD_COMBOS[idx].map(function(i, ci) {
+    return overrides[ci] || CD_STRETCHES[i];
+  });
 }
 // Backward-compat alias for time estimation
 const COOLDOWN_EXERCISES = CD_STRETCHES;
+
+function openCooldownSwapSheet(ci) {
+  const current = getCooldownExercises(state.currentDayId)[ci];
+  const wrap = document.createElement("div");
+
+  const hdr = document.createElement("div");
+  hdr.style.cssText = "display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;";
+  hdr.innerHTML = '<h3 style="margin:0;">Swap Stretch</h3>';
+  const closeBtn = document.createElement("button");
+  closeBtn.className = "icon-btn";
+  closeBtn.textContent = "\u2715";
+  closeBtn.onclick = () => closeSheet();
+  hdr.appendChild(closeBtn);
+  wrap.appendChild(hdr);
+
+  if (current) {
+    const infoEl = document.createElement("div");
+    infoEl.className = "eq-swap-current";
+    infoEl.innerHTML = '<div class="eq-swap-name">' + current.name + '</div>'
+      + '<div class="eq-swap-missing">Pick a replacement stretch</div>';
+    wrap.appendChild(infoEl);
+  }
+
+  const list = document.createElement("div");
+  list.className = "eq-swap-list";
+  CD_STRETCHES.forEach(s => {
+    if (current && s.exId === current.exId) return;
+    const row = document.createElement("button");
+    row.className = "eq-swap-row";
+
+    const left = document.createElement("div");
+    left.className = "eq-swap-row-info";
+    const nm = document.createElement("div");
+    nm.className = "eq-swap-row-name";
+    nm.textContent = s.name;
+    left.appendChild(nm);
+
+    const meta = document.createElement("div");
+    meta.className = "eq-swap-row-meta";
+    const muscles = (s.muscles || []).slice(0, 2).join(", ");
+    const dur = s.isTime
+      ? (s.reps || 30) + "s" + (s.perSide ? "/side" : "")
+      : (s.reps || 8) + " reps" + (s.perSide ? "/side" : "");
+    meta.textContent = muscles + " \u00b7 " + dur;
+    left.appendChild(meta);
+    row.appendChild(left);
+
+    const swapTag = document.createElement("span");
+    swapTag.className = "eq-swap-row-action";
+    swapTag.textContent = "Swap";
+    row.appendChild(swapTag);
+
+    row.onclick = () => {
+      mutateDay(d => {
+        if (!d.cooldownOverrides) d.cooldownOverrides = {};
+        d.cooldownOverrides[ci] = deepClone(s);
+      });
+      saveInput(inputKey("__cooldown", ci, 0, "status"), null);
+      closeSheet();
+      showToast("Swapped to " + s.name, "success");
+      renderWorkoutScreen();
+    };
+    list.appendChild(row);
+  });
+  wrap.appendChild(list);
+
+  openSheet(wrap);
+}
 
 function renderWorkoutScreen() {
   state._rpPromptShownThisRender = false; // reset per-render prompt gate (§6)
@@ -86,6 +159,12 @@ function renderWorkoutScreen() {
     document.getElementById("daySub").textContent = "Tap the user chip to create one";
     container.innerHTML = "";
     updateFinishButton();
+    return;
+  }
+
+  // Ad-hoc mode: delegate to its own renderer
+  if (state.adhocActive) {
+    renderAdhocScreen();
     return;
   }
 
@@ -142,6 +221,9 @@ function renderWorkoutScreen() {
     }
     const selectedIdx = state.previewBlockIdx != null ? state.previewBlockIdx : firstIncompleteIdx;
 
+    // Equipment filter bar (pre-start view)
+    container.appendChild(renderEqFilterBar(day));
+
     // Block strip — compact horizontal list of all blocks
     const strip = document.createElement("div");
     strip.className = "block-strip";
@@ -197,7 +279,6 @@ function renderDayPicker() {
   document.getElementById("daySub").textContent = tpl.name + (u.totalWeeks ? " · Week " + (u.currentWeek || 1) + " of " + u.totalWeeks : "");
 
   // Hide start/finish buttons
-  document.getElementById("finishBtn").style.display = "none";
   document.getElementById("headerStartBtn").classList.remove("active");
   document.getElementById("headerFinishBtn").classList.remove("active");
 
@@ -386,20 +467,26 @@ function renderDayPreview(container, day) {
   const screen = document.createElement("div");
   screen.className = "preview-screen";
 
-  // Header: day name + block count + total estimate
+  // Header: day name + summary stats
   const totalSec = estimateSessionSeconds(day);
   const totalMin = Math.max(1, Math.round(totalSec / 60));
+  const totalEx = day.blocks.reduce((s, b) => s + b.exercises.filter(e => !e.isWarmup).length, 0);
+  const totalSets = day.blocks.reduce((n, b) => n + b.exercises.reduce((s, ex) => s + (ex.isWarmup ? 0 : (ex.sets || 0)), 0), 0);
   const header = document.createElement("div");
   header.className = "preview-header";
   header.innerHTML = `
     <div class="preview-title">${day.name}</div>
-    <div class="preview-meta">${day.blocks.length} block${day.blocks.length === 1 ? '' : 's'} · ~${totalMin}m</div>
+    <div class="preview-meta">${day.blocks.length} block${day.blocks.length === 1 ? '' : 's'} · ${totalEx} exercises · ${totalSets} sets</div>
+    <div class="preview-duration-chip">${totalMin} min</div>
   `;
   screen.appendChild(header);
 
-  // All blocks (warmups already dimmed inside renderBlockPreview via .warmup class)
+  // Equipment filter bar
+  screen.appendChild(renderEqFilterBar(day));
+
+  // All blocks — full overview, always expanded
   day.blocks.forEach((block, bi) => {
-    screen.appendChild(renderBlockPreview(day, block, bi));
+    screen.appendChild(renderBlockOverviewCard(day, block, bi));
   });
 
   // Cooldown summary
@@ -492,10 +579,127 @@ function renderBlockPreview(day, block, bi, readOnly) {
     }
     tile.appendChild(sets);
 
+    // Equipment warning badge + one-tap swap
+    if (!ex.isWarmup && isExAffectedByEqFilter(ex)) {
+      tile.classList.add("eq-affected");
+      const eqBadge = document.createElement("div");
+      eqBadge.className = "tile-eq-warn";
+      const missing = getExMissingEquipment(ex);
+      eqBadge.textContent = "\u26A0 " + missing[0].replace(/_/g, " ");
+      tile.appendChild(eqBadge);
+
+      // One-tap swap: override tile click to open swap sheet
+      if (!readOnly) {
+        tile.onclick = (e) => {
+          e.stopPropagation();
+          openEqSwapSheet(ex, bi, exIdx);
+        };
+      }
+    }
+
     grid.appendChild(tile);
   });
   wrap.appendChild(grid);
   return wrap;
+}
+
+// ============================================================
+// BLOCK OVERVIEW CARD — compact single-column list for day preview
+// ============================================================
+function renderBlockOverviewCard(day, block, bi) {
+  const card = document.createElement("div");
+  card.className = "overview-block-card";
+  const isSuperset = block.exercises.filter(e => !e.isWarmup).length > 1;
+
+  // Muscle color stripe for the block
+  const blockColors = [];
+  block.exercises.forEach(e => {
+    if (e.isWarmup) return;
+    const c = primaryMuscleColor(e.muscles);
+    if (c && !blockColors.includes(c)) blockColors.push(c);
+  });
+  if (blockColors.length >= 1) {
+    card.style.borderLeftColor = blockColors[0];
+  }
+
+  // Block header
+  const hdr = document.createElement("div");
+  hdr.className = "overview-block-hdr";
+  const blockMin = Math.round(estimateBlockSec(block) / 60);
+  const badgeStyle = blockColors.length >= 2
+    ? `background:linear-gradient(135deg,${blockColors.slice(0,3).join(",")});color:#fff`
+    : blockColors.length === 1 ? `background:${blockColors[0]};color:#fff` : "";
+  hdr.innerHTML = `<div class="overview-block-letter" style="${badgeStyle}">${block.letter}</div>`
+    + `<div class="overview-block-info"><span class="overview-block-name">${block.name}${isSuperset ? ' <span style="color:var(--superset);">· Superset</span>' : ''}</span></div>`
+    + `<span class="overview-block-time">~${blockMin}m</span>`;
+  card.appendChild(hdr);
+
+  // Exercise rows — compact list
+  const list = document.createElement("div");
+  list.className = "overview-ex-list";
+  block.exercises.forEach((ex, exIdx) => {
+    const row = document.createElement("div");
+    row.className = "overview-ex-row" + (ex.isWarmup ? " warmup" : "");
+    row.addEventListener("click", () => openExercisePreviewSheet(block.exercises, exIdx, false, block, bi));
+
+    const dot = document.createElement("div");
+    dot.className = "overview-ex-dot";
+    const mColor = primaryMuscleColor(ex.muscles);
+    if (mColor) dot.style.background = mColor;
+    row.appendChild(dot);
+
+    const name = document.createElement("div");
+    name.className = "overview-ex-name";
+    name.textContent = ex.name;
+    row.appendChild(name);
+
+    const meta = document.createElement("div");
+    meta.className = "overview-ex-meta";
+    const numSets = ex.sets || 3;
+    if (ex.isWarmup) {
+      meta.textContent = "warmup";
+    } else {
+      let setsLabel;
+      if (ex.isTime) {
+        setsLabel = numSets + " \u00d7 " + (ex.reps || 30) + "s";
+      } else if (ex.isDistance) {
+        setsLabel = numSets + " \u00d7 " + (ex.reps || 100) + "m";
+      } else {
+        setsLabel = numSets + " \u00d7 " + (ex.reps || 8);
+      }
+
+      const exId = ex.exId || ex.name;
+      const last = getLastSetsFor(exId);
+      const lastW = last.length ? last[0].weight : null;
+      const targetW = lastW != null ? lastW : (ex.defaultWeight || 0);
+
+      if (targetW > 0 && !ex.bodyweight) {
+        meta.innerHTML = `<span class="overview-sets-label">${setsLabel}</span><span class="overview-weight-label">${targetW} ${state.unit}</span>`;
+      } else if (ex.bodyweight) {
+        meta.innerHTML = `<span class="overview-sets-label">${setsLabel}</span><span class="overview-weight-label">BW</span>`;
+      } else {
+        meta.textContent = setsLabel;
+      }
+    }
+    row.appendChild(meta);
+
+    const swap = document.createElement("button");
+    swap.className = "overview-swap-btn";
+    swap.textContent = "\u21c4";
+    swap.title = "Swap exercise";
+    swap.onclick = (e) => {
+      e.stopPropagation();
+      const libEx = LIB_BY_ID[ex.exId];
+      const cat = libEx ? libEx.cat : (block.type === "warmup" ? "Warmup" : null);
+      openSidebar(cat, bi, exIdx);
+    };
+    row.appendChild(swap);
+
+    list.appendChild(row);
+  });
+  card.appendChild(list);
+
+  return card;
 }
 
 function renderCooldownPreview() {
@@ -865,6 +1069,20 @@ function renderExercise(day, block, ex, bi, ei, isSuperset) {
     t.textContent = "⚠ modify";
     meta.appendChild(t);
   }
+  // Equipment warning: flag if exercise needs unavailable equipment
+  if (!ex.isWarmup && isExAffectedByEqFilter(ex)) {
+    const eqMissing = getExMissingEquipment(ex);
+    const eqTag = document.createElement("span");
+    eqTag.className = "tag eq-warn";
+    eqTag.title = "Needs: " + eqMissing.join(", ");
+    eqTag.textContent = "\u26A0 " + eqMissing[0].replace(/_/g, " ");
+    eqTag.onclick = (e) => {
+      e.stopPropagation();
+      openEqSwapSheet(ex, bi, ei);
+    };
+    meta.appendChild(eqTag);
+    card.classList.add("eq-affected-card");
+  }
   // Demo video tag in meta row
   const _libRef = LIB_BY_ID[ex.exId];
   const _demoUrl = _libRef && _libRef.demoUrl;
@@ -1058,6 +1276,31 @@ function wireChip(chip, block, ex, bi, ei, i, bw) {
   const curStatus = getInput(statusKey, null);
   if (curStatus === "done") chip.classList.add("set-done");
   if (curStatus === "skipped") chip.classList.add("set-skipped");
+
+  // Badge tap-to-complete
+  const numBadge = chip.querySelector(".set-chip-num");
+  let badgeTapped = false;
+  function toggleDone() {
+    const wasDone = chip.classList.contains("set-done");
+    chip.classList.remove("set-done", "set-skipped", "set-active", "set-pending");
+    if (!wasDone) {
+      chip.classList.add("set-done");
+      if (state.workoutStartedAt) showHeaderRest(90);
+    }
+    saveInput(statusKey, wasDone ? null : "done");
+    if (navigator.vibrate) navigator.vibrate(10);
+    renderWorkoutScreen();
+  }
+  numBadge.addEventListener("touchend", (e) => {
+    e.stopPropagation();
+    badgeTapped = true;
+    toggleDone();
+  }, { passive: true });
+  numBadge.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (badgeTapped) { badgeTapped = false; return; }
+    toggleDone();
+  });
 
   // Focus mode: mark active / pending sets for ledger styling
   if (state.workoutView === "focus" && curStatus !== "done" && curStatus !== "skipped") {
@@ -1534,6 +1777,9 @@ function renderChaptersView(container, day) {
   heroSub.innerHTML = `<span class="mf-tag accent">${totalEx} movements</span><span class="mf-sep">·</span><span class="mf-tag">${totalBlocks} blocks</span>`;
   wrap.appendChild(heroSub);
 
+  // Equipment filter bar
+  wrap.appendChild(renderEqFilterBar(day));
+
   // Progress strip
   const allStats = calcLiveStats(day);
   const progWrap = document.createElement("div");
@@ -1568,6 +1814,16 @@ function renderChaptersView(container, day) {
     hdr.innerHTML = `<div class="chapter-letter" style="${badgeStyle}">${block.letter}</div>`
       + `<span class="bento-block-name">${block.name}${isSuperset ? ' <span style="color:var(--superset);">· Superset</span>' : ''}</span>`
       + `<span class="bento-block-progress">${bp.done}/${bp.total}</span>`;
+    const blockBtn = document.createElement("button");
+    blockBtn.className = "bento-block-complete-btn" + (isDone ? " done" : "");
+    blockBtn.textContent = "\u2713";
+    blockBtn.title = isDone ? "Block complete (click to clear)" : "Mark block complete";
+    blockBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (navigator.vibrate) navigator.vibrate(10);
+      toggleBlockComplete(block);
+    });
+    hdr.appendChild(blockBtn);
     wrap.appendChild(hdr);
 
     // Bento grid of exercise tiles
@@ -1611,10 +1867,38 @@ function renderChaptersView(container, day) {
       }
       tile.appendChild(setsInfo);
 
-      // Status dot
-      const statusDot = document.createElement("div");
-      statusDot.className = "bento-ex-status" + (exComplete ? " done" : exDone > 0 ? " active" : "");
-      tile.appendChild(statusDot);
+      // Set badges — tappable completion toggles
+      const badgeRow = document.createElement("div");
+      badgeRow.className = "bento-set-badges";
+      for (let si = 0; si < numSets; si++) {
+        const statusKey = inputKey(block.id, ei, si, "status");
+        const isDone = getInput(statusKey, null) === "done";
+        const badge = document.createElement("div");
+        badge.className = "bento-set-badge" + (isDone ? " done" : "");
+        badge.textContent = isDone ? "✓" : String(si + 1);
+        badge.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const wasDone = getInput(statusKey, null) === "done";
+          saveInput(statusKey, wasDone ? null : "done");
+          if (!wasDone && state.workoutStartedAt) showHeaderRest(90);
+          if (navigator.vibrate) navigator.vibrate(10);
+          renderWorkoutScreen();
+        });
+        badgeRow.appendChild(badge);
+      }
+      tile.appendChild(badgeRow);
+
+      const swap = document.createElement("button");
+      swap.className = "bento-swap-btn";
+      swap.textContent = "\u21c4";
+      swap.title = "Swap exercise";
+      swap.onclick = (e) => {
+        e.stopPropagation();
+        const libEx = LIB_BY_ID[ex.exId];
+        const cat = libEx ? libEx.cat : (block.type === "warmup" ? "Warmup" : null);
+        openSidebar(cat, bi, ei);
+      };
+      tile.appendChild(swap);
 
       if (ex.muscles && ex.muscles.length) {
         const muscle = document.createElement("span");
@@ -1625,7 +1909,22 @@ function renderChaptersView(container, day) {
         tile.appendChild(muscle);
       }
 
+      // Equipment warning badge in chapters view
+      if (isExAffectedByEqFilter(ex)) {
+        tile.classList.add("eq-affected");
+        const eqBadge = document.createElement("div");
+        eqBadge.className = "bento-eq-warn";
+        const missing = getExMissingEquipment(ex);
+        eqBadge.textContent = "\u26A0 " + missing[0].replace(/_/g, " ");
+        tile.appendChild(eqBadge);
+      }
+
       tile.addEventListener("click", () => {
+        // If affected by equipment filter, open swap sheet instead
+        if (isExAffectedByEqFilter(ex)) {
+          openEqSwapSheet(ex, bi, ei);
+          return;
+        }
         state.workoutView = "focus";
         state.focusBlockIdx = bi;
         state.focusExIdx = ei;
@@ -1640,18 +1939,47 @@ function renderChaptersView(container, day) {
 
   // Cooldown tile
   const cdSkipped = getInput("__cooldown|skipped", false);
+  const cdExercises = getCooldownExercises(state.currentDayId);
+  let cdDone = 0;
+  cdExercises.forEach((_, ci) => {
+    if (getInput(inputKey("__cooldown", ci, 0, "status"), null) === "done") cdDone++;
+  });
+  const cdAllDone = cdExercises.length > 0 && cdDone === cdExercises.length;
   const cdHdr = document.createElement("div");
-  cdHdr.className = "bento-block-header" + (cdSkipped ? " done" : "");
+  cdHdr.className = "bento-block-header" + ((cdSkipped || cdAllDone) ? " done" : "");
   cdHdr.innerHTML = `<div class="chapter-letter" style="background:var(--success);color:#fff">CD</div>`
-    + `<span class="bento-block-name">Cool Down</span>`;
+    + `<span class="bento-block-name">Cool Down</span>`
+    + `<span class="bento-block-progress">${cdDone}/${cdExercises.length}</span>`;
+  const cdBtn = document.createElement("button");
+  cdBtn.className = "bento-block-complete-btn" + (cdAllDone ? " done" : "");
+  cdBtn.textContent = "\u2713";
+  cdBtn.title = cdAllDone ? "Cooldown complete (click to clear)" : "Mark cooldown complete";
+  cdBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (navigator.vibrate) navigator.vibrate(10);
+    cdExercises.forEach((_, ci) => {
+      const k = inputKey("__cooldown", ci, 0, "status");
+      saveInput(k, cdAllDone ? null : "done");
+    });
+    renderWorkoutScreen();
+  });
+  cdHdr.appendChild(cdBtn);
   wrap.appendChild(cdHdr);
 
   const cdGrid = document.createElement("div");
   cdGrid.className = "bento-exercise-grid";
-  getCooldownExercises(state.currentDayId).forEach((ex, ci) => {
+  cdExercises.forEach((ex, ci) => {
+    const statusKey = inputKey("__cooldown", ci, 0, "status");
+    const isDone = getInput(statusKey, null) === "done";
+    exNum++;
     const tile = document.createElement("div");
-    tile.className = "bento-ex-tile cd-tile";
+    tile.className = "bento-ex-tile cd-tile" + (isDone ? " complete" : "");
     tile.style.setProperty("--card-index", tileIdx++);
+
+    const numEl = document.createElement("div");
+    numEl.className = "bento-ex-num";
+    numEl.textContent = String(exNum).padStart(2, '0');
+    tile.appendChild(numEl);
 
     const name = document.createElement("div");
     name.className = "bento-ex-name";
@@ -1673,6 +2001,30 @@ function renderChaptersView(container, day) {
       ? (ex.reps || 30) + "s" + (ex.perSide ? "/side" : "")
       : (ex.reps || 8) + " reps" + (ex.perSide ? "/side" : "");
     tile.appendChild(info);
+
+    const badgeRow = document.createElement("div");
+    badgeRow.className = "bento-set-badges";
+    const badge = document.createElement("div");
+    badge.className = "bento-set-badge" + (isDone ? " done" : "");
+    badge.textContent = isDone ? "✓" : "1";
+    badge.addEventListener("click", (e) => {
+      e.stopPropagation();
+      saveInput(statusKey, isDone ? null : "done");
+      if (navigator.vibrate) navigator.vibrate(10);
+      renderWorkoutScreen();
+    });
+    badgeRow.appendChild(badge);
+    tile.appendChild(badgeRow);
+
+    const swap = document.createElement("button");
+    swap.className = "bento-swap-btn";
+    swap.textContent = "\u21c4";
+    swap.title = "Swap stretch";
+    swap.onclick = (e) => {
+      e.stopPropagation();
+      openCooldownSwapSheet(ci);
+    };
+    tile.appendChild(swap);
 
     tile.addEventListener("click", () => {
       state.workoutView = "focus";
@@ -1760,6 +2112,18 @@ function renderFocusView(container, day) {
     const hdr = document.createElement("div");
     hdr.className = "focus-block-header";
     hdr.innerHTML = `<div class="chapter-letter" style="${badgeStyle}">${block.letter}</div><div class="chapter-name">${block.name}</div>`;
+    const blockBp = calcBlockProgress(block);
+    const blockDone = blockBp.total > 0 && blockBp.done === blockBp.total;
+    const blockBtn = document.createElement("button");
+    blockBtn.className = "focus-block-complete-btn" + (blockDone ? " done" : "");
+    blockBtn.textContent = "\u2713";
+    blockBtn.title = blockDone ? "Block complete — go to next" : "Complete block";
+    blockBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (navigator.vibrate) navigator.vibrate(10);
+      handleFinishButton();
+    });
+    hdr.appendChild(blockBtn);
     wrap.appendChild(hdr);
 
     // Block-level note input

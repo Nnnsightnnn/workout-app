@@ -259,6 +259,16 @@ const MIGRATIONS = [
       });
       return store;
     }
+  },
+  {
+    version: 14,
+    description: "Add equipmentDetail array to onboarding for granular equipment selection",
+    migrate(store) {
+      if (store.onboarding && store.onboarding.equipmentDetail === undefined) {
+        store.onboarding.equipmentDetail = null;
+      }
+      return store;
+    }
   }
 ];
 

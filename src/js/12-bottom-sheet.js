@@ -23,10 +23,18 @@ function openDayPicker() {
     const btn = document.createElement("button");
     btn.className = "sheet-item" + (d.id === state.currentDayId ? " current" : "");
     const nextTag = d.id === next ? '<span class="meta" style="color:var(--accent);">next</span>' : "";
-    btn.innerHTML = `<span class="icon">${d.id}</span><span>${d.name}<div style="color:var(--text-dim);font-size:12px;font-weight:500;">${d.sub || ''}</div></span>${nextTag}`;
+    const customTag = d.isCustom ? '<span class="meta" style="color:var(--text-dim);">custom</span>' : "";
+    btn.innerHTML = `<span class="icon">${d.id}</span><span>${d.name}<div style="color:var(--text-dim);font-size:12px;font-weight:500;">${d.sub || ''}</div></span>${nextTag}${customTag}`;
     btn.onclick = () => { switchDay(d.id); closeSheet(); };
     wrap.appendChild(btn);
   });
+
+  // Add Day tile
+  var addDayBtn = document.createElement("button");
+  addDayBtn.className = "sheet-item sheet-item-add";
+  addDayBtn.innerHTML = '<span class="icon">+</span><span>Add Day</span>';
+  addDayBtn.onclick = function() { closeSheet(); setTimeout(addTrainingDay, 80); };
+  wrap.appendChild(addDayBtn);
 
   // View Full Program link
   var progBtn = document.createElement("button");
@@ -389,7 +397,11 @@ function openCustomizeDay() {
   addExBtn.className = "sheet-item";
   addExBtn.innerHTML = `<span class="icon">+</span> Add exercise`;
   addExBtn.onclick = () => {
-    if (day.blocks.length === 1) {
+    if (day.blocks.length === 0) {
+      // No blocks yet — create one first, then open library
+      closeSheet();
+      addBlock();
+    } else if (day.blocks.length === 1) {
       closeSheet();
       openLibrary(day.blocks[0].id);
     } else {
@@ -406,12 +418,42 @@ function openCustomizeDay() {
   };
   wrap.appendChild(addExBtn);
 
-  // Reset to Default
-  const resetBtn = document.createElement("button");
-  resetBtn.className = "sheet-item";
-  resetBtn.innerHTML = `<span class="icon">↺</span> Reset to default`;
-  resetBtn.onclick = () => { closeSheet(); resetCurrentDay(); };
-  wrap.appendChild(resetBtn);
+  // Reset to Default (only for template-generated days)
+  if (!day.isCustom) {
+    const resetBtn = document.createElement("button");
+    resetBtn.className = "sheet-item";
+    resetBtn.innerHTML = `<span class="icon">↺</span> Reset to default`;
+    resetBtn.onclick = () => { closeSheet(); resetCurrentDay(); };
+    wrap.appendChild(resetBtn);
+  }
+
+  // Rename day
+  const renameRow = document.createElement("div");
+  renameRow.className = "field";
+  renameRow.style.marginBottom = "10px";
+  renameRow.innerHTML = `<label>Day name</label>`;
+  const renameInput = document.createElement("input");
+  renameInput.type = "text";
+  renameInput.value = day.name;
+  renameInput.placeholder = "Day name";
+  renameRow.appendChild(renameInput);
+  renameInput.addEventListener("change", () => {
+    const newName = renameInput.value.trim();
+    if (newName && newName !== day.name) {
+      mutateDay(d => { d.name = newName; });
+      showToast("Renamed to " + newName, "success");
+    }
+  });
+  wrap.appendChild(renameRow);
+
+  // Remove custom day
+  if (day.isCustom) {
+    const removeBtn = document.createElement("button");
+    removeBtn.className = "sheet-item danger";
+    removeBtn.innerHTML = `<span class="icon">\uD83D\uDDD1</span> Remove this day`;
+    removeBtn.onclick = () => { closeSheet(); removeTrainingDay(day.id); };
+    wrap.appendChild(removeBtn);
+  }
 
   // Block list
   if (day.blocks.length > 0) {

@@ -957,5 +957,34 @@ var PROGRAM_CONFIGS = {
         { letter:"C",  name:"Calves + Core", slots:[{ pool:"squat_secondary", loading:"isolation" }, { pool:"core", loading:"accessory" }] }
       ]}
     ]
+  },
+
+  // ---- 3-Day Arms Superset ----
+  arms_superset3: {
+    phaseConfig: [
+      { name:"Accumulation",    ratio:0.40, color:"#ff6b1f", description:"High-rep supersets — build volume and pump" },
+      { name:"Intensification", ratio:0.35, color:"#e2443a", description:"Heavier supersets — push loads up" },
+      { name:"Deload",          ratio:0.25, color:"#5a6478", description:"Light pump work — recover" }
+    ],
+    days: [
+      { name:"Arms A — Heavy Supersets", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"Curl + Press", slots:[{ pool:"bicep", loading:"compound", rotateEvery:2 }, { pool:"press_secondary", loading:"compound", rotateEvery:2 }] },
+        { letter:"B",  name:"Curl + Extension", slots:[{ pool:"bicep", loading:"accessory", rotateEvery:2 }, { pool:"tricep", loading:"accessory", rotateEvery:2 }] },
+        { letter:"C",  name:"Compound Finisher", slots:[{ pool:"pull_vertical", loading:"accessory" }, { pool:"push_secondary", loading:"accessory" }] }
+      ]},
+      { name:"Arms B — Volume Supersets", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"Curl + Press", slots:[{ pool:"bicep", loading:"accessory", rotateEvery:2 }, { pool:"press_secondary", loading:"accessory", rotateEvery:2 }] },
+        { letter:"B",  name:"Curl + Extension", slots:[{ pool:"bicep", loading:"accessory", rotateEvery:2 }, { pool:"tricep", loading:"accessory", rotateEvery:2 }] },
+        { letter:"C",  name:"Isolation Pump", slots:[{ pool:"bicep", loading:"isolation" }, { pool:"tricep", loading:"isolation" }] }
+      ]},
+      { name:"Arms C — Pump & Isolation", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A",  name:"Curl + Press", slots:[{ pool:"bicep", loading:"isolation", rotateEvery:2 }, { pool:"press_secondary", loading:"isolation", rotateEvery:2 }] },
+        { letter:"B",  name:"Hammer + Pushdown", slots:[{ pool:"bicep", loading:"isolation", rotateEvery:2 }, { pool:"tricep", loading:"isolation", rotateEvery:2 }] },
+        { letter:"C",  name:"Shoulders + Core", slots:[{ pool:"delt", loading:"isolation" }, { pool:"core", loading:"accessory" }] }
+      ]}
+    ]
   }
 };

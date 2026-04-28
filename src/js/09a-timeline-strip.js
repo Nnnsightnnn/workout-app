@@ -9,10 +9,11 @@ function getTrainingStreak(sessions, daysPerWeek) {
   const todayStart = new Date(); todayStart.setHours(0,0,0,0);
   const todayMs = todayStart.getTime();
 
-  // Unique session dates sorted descending
+  // Unique session dates sorted descending (exclude future pre-logged sessions)
   const seen = new Set();
   const sessionDays = [];
-  [...sessions].sort((a, b) => b.finishedAt - a.finishedAt).forEach(s => {
+  const todayEnd = todayMs + dayMs;
+  [...sessions].filter(s => s.finishedAt < todayEnd).sort((a, b) => b.finishedAt - a.finishedAt).forEach(s => {
     const ds = new Date(s.finishedAt); ds.setHours(0,0,0,0);
     const key = ds.getTime();
     if (!seen.has(key)) { seen.add(key); sessionDays.push(key); }
@@ -139,7 +140,7 @@ function renderTimelineStrip() {
     const d = new Date(dateMs);
     const isToday = dateMs === todayMs;
     const isPast = dateMs < todayMs;
-    const session = isPast || isToday ? getSessionForDate(sessions, dateMs) : null;
+    const session = getSessionForDate(sessions, dateMs);
     const scheduled = !isPast && !isToday && isScheduledDay(u.weeklySchedule, dateMs);
     const color = session ? getDayPrimaryColor(session) : null;
 
@@ -168,23 +169,19 @@ function renderTimelineStrip() {
         state.workoutStartedAt = null;
         renderWorkoutScreen();
       };
-    } else if (typeof _laTrainingPattern === "function" && u.daysPerWeek && u.totalWeeks) {
-      // Future pill — check if it's a projected training day
-      const pattern = _laTrainingPattern(u.daysPerWeek);
-      const dow = d.getDay();
-      const dayIdx = pattern.indexOf(dow);
-      if (dayIdx !== -1 && dayIdx < u.daysPerWeek && dayIdx < u.program.length) {
-        const targetDayId = u.program[dayIdx].id;
-        const isActive = state.dayChosen && state.currentDayId === targetDayId && !isToday;
-        pill.classList.add("tappable");
-        if (isActive) {
-          pill.classList.add("active-day");
-        } else {
+    } else {
+      // Future pill — all future dates are tappable for planning
+      pill.classList.add("tappable");
+      pill.classList.remove("future");
+      if (typeof _laTrainingPattern === "function" && u.daysPerWeek && u.totalWeeks) {
+        const pattern = _laTrainingPattern(u.daysPerWeek);
+        const dow = d.getDay();
+        const dayIdx = pattern.indexOf(dow);
+        if (dayIdx !== -1 && dayIdx < u.daysPerWeek && dayIdx < u.program.length) {
           pill.classList.add("scheduled");
         }
-        pill.classList.remove("future");
-        pill.onclick = () => switchDay(targetDayId);
       }
+      pill.onclick = () => openPlanWorkout(dateMs);
     }
 
     strip.appendChild(pill);
@@ -348,6 +345,222 @@ function openAddWorkout(dateMs) {
   openSheet(wrap);
 }
 
+function openPlanWorkout(dateMs) {
+  const u = userData();
+  if (!u) return;
+  const d = new Date(dateMs);
+  const dateStr = d.toLocaleDateString(undefined, { weekday:"long", month:"short", day:"numeric" });
+
+  const wrap = document.createElement("div");
+  wrap.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <h3 style="margin:0;">Plan Workout</h3>
+      <button class="icon-btn" onclick="closeSheet()" title="Close">✕</button>
+    </div>
+    <div style="color:var(--text-dim);font-size:12px;margin-bottom:12px;">${dateStr}</div>
+    <p style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">Pick a program day or create a custom workout for this date.</p>
+  `;
+
+  const next = determineDefaultDay();
+  u.program.forEach(day => {
+    const btn = document.createElement("button");
+    btn.className = "sheet-item";
+    const nextTag = day.id === next ? ' <span style="color:var(--accent);font-size:10px;font-weight:800;">NEXT</span>' : "";
+    btn.innerHTML = `<span class="icon">${day.id}</span><span>${day.name}${nextTag}<div style="color:var(--text-dim);font-size:11px;font-weight:500;">${day.sub || ""}</div></span>`;
+    btn.onclick = () => openLogSets(dateMs, day);
+    wrap.appendChild(btn);
+  });
+
+  const divider = document.createElement("div");
+  divider.style.cssText = "border-top:1px solid var(--border);margin:14px 0 10px;";
+  wrap.appendChild(divider);
+
+  const adhocBtn = document.createElement("button");
+  adhocBtn.className = "sheet-item";
+  adhocBtn.innerHTML = `<span class="icon" style="font-size:16px;">+</span><span>Custom Workout<div style="color:var(--text-dim);font-size:11px;font-weight:500;">Pick exercises or log an activity</div></span>`;
+  adhocBtn.onclick = () => openPlanAdhoc(dateMs);
+  wrap.appendChild(adhocBtn);
+
+  openSheet(wrap);
+}
+
+function openPlanAdhoc(dateMs) {
+  const d = new Date(dateMs);
+  const dateStr = d.toLocaleDateString(undefined, { weekday:"short", month:"short", day:"numeric" });
+
+  const wrap = document.createElement("div");
+  wrap.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <h3 style="margin:0;">Custom Workout</h3>
+      <button class="icon-btn" onclick="closeSheet()" title="Close">✕</button>
+    </div>
+    <div style="color:var(--text-dim);font-size:12px;margin-bottom:14px;">${dateStr}</div>
+  `;
+
+  // Custom activity input
+  const customRow = document.createElement("div");
+  customRow.innerHTML = `
+    <div class="section-title" style="margin-top:0;">Custom Activity</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input type="text" id="planCustomName" class="name-input" placeholder="e.g. Bike, Basketball, Yoga…" autocomplete="off" style="flex:1;">
+      <button class="action-btn primary" id="planCustomSave" style="white-space:nowrap;">Save</button>
+    </div>
+  `;
+  wrap.appendChild(customRow);
+
+  // Exercise library picker
+  const libSection = document.createElement("div");
+  libSection.innerHTML = `<div class="section-title">Or pick exercises</div>`;
+
+  const search = document.createElement("input");
+  search.className = "lib-search";
+  search.placeholder = "Search exercises\u2026";
+  libSection.appendChild(search);
+
+  const catRow = document.createElement("div");
+  catRow.className = "lib-cat";
+  let activeCat = "All";
+  ["All", ...CATEGORIES].forEach(cat => {
+    const b = document.createElement("button");
+    b.className = "lib-cat-btn" + (cat === "All" ? " active" : "");
+    b.textContent = cat;
+    b.onclick = () => {
+      activeCat = cat;
+      catRow.querySelectorAll(".lib-cat-btn").forEach(x => x.classList.remove("active"));
+      b.classList.add("active");
+      renderList();
+    };
+    catRow.appendChild(b);
+  });
+  libSection.appendChild(catRow);
+
+  const list = document.createElement("div");
+  list.className = "lib-items-grid";
+  libSection.appendChild(list);
+
+  // Selected exercises
+  const selectedExercises = [];
+  const selectedWrap = document.createElement("div");
+  selectedWrap.id = "planSelectedList";
+  selectedWrap.style.display = "none";
+  selectedWrap.innerHTML = `<div class="section-title">Selected exercises</div>`;
+  const selectedList = document.createElement("div");
+  selectedList.className = "adhoc-selected-exercises";
+  selectedWrap.appendChild(selectedList);
+
+  const saveSelectedBtn = document.createElement("button");
+  saveSelectedBtn.className = "action-btn primary";
+  saveSelectedBtn.style.cssText = "width:100%;margin-top:10px;padding:14px;font-weight:700;";
+  saveSelectedBtn.textContent = "Log Sets";
+  saveSelectedBtn.onclick = () => {
+    const syntheticDay = {
+      id: "adhoc",
+      name: "Custom Workout",
+      sub: dateStr,
+      blocks: [{
+        id: "plan-block-1",
+        letter: "A",
+        name: "Custom Workout",
+        exercises: selectedExercises.map(e => mkSets(e))
+      }]
+    };
+    openLogSets(dateMs, syntheticDay);
+  };
+  selectedWrap.appendChild(saveSelectedBtn);
+
+  function updateSelectedUI() {
+    selectedWrap.style.display = selectedExercises.length ? "" : "none";
+    selectedList.innerHTML = "";
+    selectedExercises.forEach((ex, i) => {
+      const row = document.createElement("div");
+      row.className = "adhoc-selected-item";
+      row.innerHTML = `
+        <span class="adhoc-sel-name">${ex.name}</span>
+        <button class="adhoc-sel-remove" title="Remove">\u00d7</button>
+      `;
+      row.querySelector(".adhoc-sel-remove").onclick = () => {
+        selectedExercises.splice(i, 1);
+        updateSelectedUI();
+        renderList();
+      };
+      selectedList.appendChild(row);
+    });
+    saveSelectedBtn.textContent = "Log Sets (" + selectedExercises.length + " exercise" + (selectedExercises.length === 1 ? "" : "s") + ")";
+  }
+
+  function renderList() {
+    const q = search.value.toLowerCase().trim();
+    list.innerHTML = "";
+    LIBRARY
+      .filter(e => activeCat === "All" || e.cat === activeCat)
+      .filter(e => !q || e.name.toLowerCase().includes(q) || (e.muscles || []).some(m => m.includes(q)))
+      .forEach(e => {
+        const b = document.createElement("button");
+        b.className = "lib-item";
+        const alreadyAdded = selectedExercises.some(s => s.id === e.id);
+        b.innerHTML = `<div><div>${e.name}</div><div class="muscles">${(e.muscles || []).join(" \u00b7 ")}</div></div><span style="color:var(--accent);">${alreadyAdded ? "\u2713" : "+"}</span>`;
+        b.onclick = () => {
+          if (!alreadyAdded) {
+            selectedExercises.push(e);
+            updateSelectedUI();
+            renderList();
+          }
+        };
+        list.appendChild(b);
+      });
+  }
+
+  search.oninput = renderList;
+  renderList();
+
+  wrap.appendChild(selectedWrap);
+  wrap.appendChild(libSection);
+
+  // Wire custom activity save
+  setTimeout(() => {
+    const customInput = document.getElementById("planCustomName");
+    const customBtn = document.getElementById("planCustomSave");
+    if (customInput && customBtn) {
+      customBtn.onclick = () => {
+        const name = customInput.value.trim();
+        if (!name) { customInput.focus(); return; }
+        // Save a custom activity session directly
+        const noon = new Date(dateMs);
+        noon.setHours(12, 0, 0, 0);
+        const finishedAt = noon.getTime();
+        const session = {
+          id: "s-" + Date.now(),
+          dayId: "adhoc",
+          dayName: name,
+          startedAt: finishedAt - 3600000,
+          finishedAt,
+          duration: 3600,
+          sets: [],
+          volume: 0,
+          prCount: 0,
+          manual: true,
+          isAdhoc: true,
+          adhocMeta: { activityName: name, duration: 3600, distance: "", notes: "" }
+        };
+        updateUser(u => {
+          u.sessions.push(session);
+          u.sessions.sort((a, b) => a.finishedAt - b.finishedAt);
+          if (u.sessions.length > 365) u.sessions = u.sessions.slice(-365);
+        });
+        closeSheet();
+        renderTimelineStrip();
+        renderHistory();
+        showToast("Planned: " + name, "success");
+      };
+      customInput.addEventListener("keydown", e => {
+        if (e.key === "Enter") customBtn.click();
+      });
+    }
+  }, 10);
+
+  openSheet(wrap);
+}
+
 function openLogSets(dateMs, day) {
   const u = userData();
   const d = new Date(dateMs);
@@ -470,6 +683,7 @@ function openLogSets(dateMs, day) {
     noon.setHours(12, 0, 0, 0);
     const finishedAt = noon.getTime();
 
+    const isAdhoc = day.id === "adhoc";
     const session = {
       id: "s-" + Date.now(),
       dayId: day.id,
@@ -479,7 +693,8 @@ function openLogSets(dateMs, day) {
       duration: 3600,
       sets, volume,
       prCount: 0,
-      manual: true
+      manual: true,
+      isAdhoc: isAdhoc || undefined
     };
 
     updateUser(u => {

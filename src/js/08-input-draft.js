@@ -50,7 +50,6 @@ function hasAnyInput() {
 
 function updateFinishButton() {
   const started = state.workoutStartedAt != null || hasAnyInput();
-  document.getElementById("finishBtn").style.display = started ? "" : "none";
   document.getElementById("headerStartBtn").classList.toggle("active", !started);
   document.getElementById("headerFinishBtn").classList.toggle("active", started);
 
@@ -68,16 +67,11 @@ function updateFinishButton() {
       }
 
       if (hasMoreBlocks) {
-        const block = day.blocks[state.focusBlockIdx];
-        const lbl = block ? "✓ Block " + block.letter + " →" : "Next →";
-        document.getElementById("finishBtn").textContent = lbl;
         document.getElementById("headerFinishBtn").textContent = "Next →";
       } else {
-        document.getElementById("finishBtn").textContent = "✓ Finish Workout";
         document.getElementById("headerFinishBtn").textContent = "✓ Finish";
       }
     } else {
-      document.getElementById("finishBtn").textContent = "✓ Finish Workout";
       document.getElementById("headerFinishBtn").textContent = "✓ Finish";
     }
   }
@@ -134,7 +128,7 @@ function calcLiveStats(day) {
       }
     });
   });
-  // PR detection against history
+  // PR detection against history (sessions + manual PRs)
   const u = userData();
   const priorBest = {};
   if (u) {
@@ -144,6 +138,10 @@ function calcLiveStats(day) {
         const score = set.weight * (1 + set.reps / 30);
         if (!priorBest[key] || score > priorBest[key]) priorBest[key] = score;
       });
+    });
+    (u.manualPRs || []).forEach(mpr => {
+      const score = calcE1RM(mpr.weight || 0, mpr.reps || 0);
+      if (score > 0 && (!priorBest[mpr.exId] || score > priorBest[mpr.exId])) priorBest[mpr.exId] = score;
     });
   }
   let prs = 0;

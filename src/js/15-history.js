@@ -148,7 +148,9 @@ function _buildRecentEntries(recent) {
     html += '<div class="log-entry">';
     html += '<div class="log-entry-date">' + dateStr + '</div>';
     html += '<div class="log-entry-bar" style="background:' + (color || "var(--text-faint)") + ';"></div>';
-    html += '<div class="log-entry-info"><div class="name">' + (s.dayName || "Day " + s.dayId) + '</div>';
+    const adhocTag = s.isAdhoc ? '<span class="log-entry-adhoc-tag">ad-hoc</span>' : '';
+    const plannedTag = s.finishedAt > Date.now() ? '<span class="log-entry-adhoc-tag" style="background:var(--accent-dim,#2a2a3a);color:var(--accent);">planned</span>' : '';
+    html += '<div class="log-entry-info"><div class="name">' + (s.dayName || "Day " + s.dayId) + ' ' + adhocTag + plannedTag + '</div>';
     html += '<div class="note' + (isPr ? " pr" : "") + '">' + prNote + '</div></div>';
     html += '<div class="log-entry-vol">' + (s.volume > 0 ? s.volume.toLocaleString() : "\u2014") + '</div>';
     html += '</div>';

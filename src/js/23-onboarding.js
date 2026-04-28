@@ -127,6 +127,14 @@ const ONBOARDING_STEPS = [
     ]
   },
   {
+    id: "equipmentDetail",
+    title: "Fine-tune your equipment",
+    subtitle: "We pre-selected based on your answer. Toggle anything that doesn't match.",
+    type: "equipmentDetail",
+    skippable: true,
+    showIf: function(answers) { return !!answers.equipment; }
+  },
+  {
     id: "age",
     title: "Age range (optional)",
     type: "single",
@@ -192,6 +200,26 @@ const ONBOARDING_STEPS = [
   }
 ];
 
+// ---- Equipment detail presets ----
+const EQUIPMENT_PRESETS = {
+  full:       ["barbell","dumbbell","kettlebell","cable","machine","bodyweight","bands","bench","rack","pullup_bar","box"],
+  barbell:    ["barbell","dumbbell","bodyweight","bench","rack","pullup_bar"],
+  bodyweight: ["bodyweight","bands","pullup_bar","box"]
+};
+const EQUIPMENT_GROUPS = [
+  { label: "Free Weights",  items: ["barbell","dumbbell","kettlebell"] },
+  { label: "Machines",      items: ["cable","machine"] },
+  { label: "Bodyweight",    items: ["bodyweight","pullup_bar"] },
+  { label: "Accessories",   items: ["bands","bench","rack","box"] },
+  { label: "Specialty",     items: ["sandbag","medball","sled"] }
+];
+const EQUIPMENT_LABELS = {
+  barbell: "Barbell", dumbbell: "Dumbbell", kettlebell: "Kettlebell",
+  cable: "Cable", machine: "Machine", bodyweight: "Bodyweight",
+  bands: "Bands", bench: "Bench", rack: "Rack", pullup_bar: "Pull-up Bar",
+  box: "Box", sandbag: "Sandbag", medball: "Med Ball", sled: "Sled"
+};
+
 // ---- Template recommendation ----
 function getRecommendedTemplate(a) {
   var days = a.days || 4;
@@ -207,8 +235,16 @@ function getRecommendedTemplate(a) {
   var hasHypertrophy = goals.includes("hypertrophy");
   var hasAthletic = goals.includes("athletic");
 
-  // Equipment gate — bodyweight users
-  if (a.equipment === "bodyweight") {
+  // Resolve effective equipment from detail selection (if available)
+  var eqDetail = a.equipmentDetail || [];
+  var hasBarbell = eqDetail.length ? eqDetail.includes("barbell") : a.equipment !== "bodyweight";
+  var hasMachines = eqDetail.length ? (eqDetail.includes("cable") || eqDetail.includes("machine")) : a.equipment === "full";
+  var hasKettlebell = eqDetail.length ? eqDetail.includes("kettlebell") : a.equipment === "full";
+  var hasDumbbell = eqDetail.length ? eqDetail.includes("dumbbell") : a.equipment !== "bodyweight";
+
+  // Equipment gate — bodyweight users (or fine-tuned to no barbell + no dumbbell)
+  var effectiveBodyweight = a.equipment === "bodyweight" || (eqDetail.length && !hasBarbell && !hasDumbbell);
+  if (effectiveBodyweight) {
     if (days >= 4) return "calisthenics4";
     return "minimal3";
   }
@@ -243,6 +279,12 @@ function getRecommendedTemplate(a) {
     if (days === 3) return "ppl3"; // PPL with glute pool weighting
     if (days === 4) return "filly4"; // Filly has good glute work
     return "hypertrophy5";
+  }
+
+  // Arms emphasis — dedicated superset program for 3 days
+  var pp = a.physiquePriority || [];
+  if (pp.includes("bigger_arms") && days === 3 && hasHypertrophy) {
+    return "arms_superset3";
   }
 
   // Multi-goal combos: strength + hypertrophy → powerbuilding
@@ -329,6 +371,20 @@ function saveOnboarding(answers) {
 let _obStep = 0;
 let _obAnswers = {};
 let _obIsRedo = false;
+let _obTransitioning = false;
+
+// Animate the ob-body out, then call the callback to render next step
+function _obTransition(callback) {
+  if (_obTransitioning) return;
+  var body = document.querySelector(".ob-body");
+  if (!body) { callback(); return; }
+  _obTransitioning = true;
+  body.classList.add("ob-exiting");
+  setTimeout(function() {
+    _obTransitioning = false;
+    callback();
+  }, 180);
+}
 
 function showOnboardingFlow(redo) {
   _obStep = 0;
@@ -369,6 +425,15 @@ function dismissOnboarding() {
 
 function _obIsStepVisible(step) {
   return !step.showIf || step.showIf(_obAnswers);
+}
+
+function _obBuildDots(visibleSteps, visibleIndex) {
+  return visibleSteps.map(function(_, i) {
+    var cls = "ob-dot";
+    if (i < visibleIndex) cls += " done";
+    else if (i === visibleIndex) cls += " active";
+    return '<span class="' + cls + '"></span>';
+  }).join("");
 }
 
 function _renderObStep() {
@@ -413,10 +478,26 @@ function _renderObStep() {
       <div class="ob-info-card">
         <h3 class="ob-info-heading">${c.heading}</h3>
         <div class="ob-info-scale">
-          ${c.bullets.map(b => `<div class="ob-info-row"><span class="ob-info-label">${b.label}</span><span class="ob-info-desc">${b.desc}</span></div>`).join("")}
+          ${c.bullets.map(function(b, i) { return '<div class="ob-info-row" style="--ob-card-i:' + i + '"><span class="ob-info-label">' + b.label + '</span><span class="ob-info-desc">' + b.desc + '</span></div>'; }).join("")}
         </div>
         <p class="ob-info-footer">${c.footer}</p>
       </div>`;
+
+  } else if (step.type === "equipmentDetail") {
+    // Pre-populate from broad answer if not yet set
+    if (!_obAnswers.equipmentDetail) {
+      const preset = EQUIPMENT_PRESETS[_obAnswers.equipment] || EQUIPMENT_PRESETS.full;
+      _obAnswers.equipmentDetail = [...preset];
+    }
+    const sel = _obAnswers.equipmentDetail;
+    let groupsHtml = EQUIPMENT_GROUPS.map(g => {
+      const chips = g.items.map(tag => {
+        const on = sel.includes(tag);
+        return `<button class="ob-eq-chip${on ? " selected" : ""}" data-eq="${tag}">${EQUIPMENT_LABELS[tag] || tag}</button>`;
+      }).join("");
+      return `<div class="ob-eq-group"><div class="ob-eq-group-label">${g.label}</div><div class="ob-eq-chips">${chips}</div></div>`;
+    }).join("");
+    contentHtml = `<div class="ob-eq-detail" id="obEqDetail">${groupsHtml}</div>`;
 
   } else {
     // Standard option cards (single / multi)
@@ -424,27 +505,30 @@ function _renderObStep() {
     const gridClass = step.layout === "grid"  ? " ob-grid"
                     : step.layout === "chips" ? " ob-chips"
                     : "";
-    contentHtml = `<div class="ob-options${gridClass}" id="obOptions">${step.options.map(opt => {
+    contentHtml = `<div class="ob-options${gridClass}" id="obOptions">${step.options.map(function(opt, i) {
       const isSel = step.type === "multi"
         ? selectedVals.includes(opt.value)
         : _obAnswers[step.id] === opt.value;
       const deemph = opt.deemph ? " ob-opt-deemph" : "";
-      return `<button class="ob-option${isSel ? " selected" : ""}${deemph}" data-value="${opt.value}">
-        <span class="ob-opt-icon">${opt.icon}</span>
-        <div class="ob-opt-text">
-          <div class="ob-opt-label">${opt.label}</div>
-          <div class="ob-opt-sub">${opt.sub}</div>
-        </div>
-        <span class="ob-opt-check">✓</span>
-      </button>`;
+      return '<button class="ob-option' + (isSel ? " selected" : "") + deemph + '" data-value="' + opt.value + '" style="--ob-card-i:' + i + '">' +
+        '<span class="ob-opt-icon">' + opt.icon + '</span>' +
+        '<div class="ob-opt-text">' +
+          '<div class="ob-opt-label">' + opt.label + '</div>' +
+          '<div class="ob-opt-sub">' + opt.sub + '</div>' +
+        '</div>' +
+        '<span class="ob-opt-check">' + '✓' + '</span>' +
+      '</button>';
     }).join("")}</div>`;
   }
 
-  const showContinue = step.type === "multi" || step.type === "number" || step.type === "info" || isLast || canSkip;
-  const continueLabel = step.type === "info" ? "Got it — let's go" : (isLast ? "Finish Setup" : "Continue →");
+  const showContinue = step.type === "multi" || step.type === "number" || step.type === "info" || step.type === "equipmentDetail" || isLast || canSkip;
+  const continueLabel = step.type === "info" ? "Got it — let's go"
+    : step.type === "equipmentDetail" ? "Looks good →"
+    : (isLast ? "Finish Setup" : "Continue →");
 
   inner.innerHTML = `
     <div class="ob-progress"><div class="ob-progress-fill" style="width:${pct}%"></div></div>
+    <div class="ob-dots">${_obBuildDots(visibleSteps, visibleIndex)}</div>
     <div class="ob-body">
       ${_obStep > 0 ? `<div class="ob-nav-row"><button class="ob-back-btn" id="obBackBtn">← Back</button></div>` : ""}
       <div class="ob-step-label">Step ${visibleIndex + 1} of ${total}</div>
@@ -464,15 +548,29 @@ function _renderObStep() {
     btn.addEventListener("click", () => _obSelect(step, btn.dataset.value));
   });
 
+  // Bind equipment detail chip toggles
+  inner.querySelectorAll(".ob-eq-chip").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const tag = btn.dataset.eq;
+      let arr = _obAnswers.equipmentDetail || [];
+      const idx = arr.indexOf(tag);
+      if (idx >= 0) arr.splice(idx, 1); else arr.push(tag);
+      _obAnswers.equipmentDetail = arr;
+      btn.classList.toggle("selected");
+    });
+  });
+
   // Back button — skip hidden steps backward
   const backEl = document.getElementById("obBackBtn");
   if (backEl) backEl.addEventListener("click", () => {
-    _obStep--;
-    while (_obStep >= 0 && !_obIsStepVisible(ONBOARDING_STEPS[_obStep])) {
+    _obTransition(() => {
       _obStep--;
-    }
-    if (_obStep < 0) _obStep = 0;
-    _renderObStep();
+      while (_obStep >= 0 && !_obIsStepVisible(ONBOARDING_STEPS[_obStep])) {
+        _obStep--;
+      }
+      if (_obStep < 0) _obStep = 0;
+      _renderObStep();
+    });
   });
 
   // Continue button
@@ -489,7 +587,9 @@ function _renderObStep() {
       if (step.type === "info" && step.id === "rpeCalibration") {
         _obAnswers.rpeCalibration = { completedAt: Date.now() };
       }
-      if (isLast) { _obFinish(); } else { _obStep++; _renderObStep(); }
+      if (isLast) { _obTransition(_obFinish); } else {
+        _obTransition(() => { _obStep++; _renderObStep(); });
+      }
     });
   }
 
@@ -500,8 +600,7 @@ function _renderObStep() {
       if (isLast) {
         dismissOnboarding();
       } else {
-        _obStep++;
-        _renderObStep();
+        _obTransition(() => { _obStep++; _renderObStep(); });
       }
     });
   }
@@ -522,7 +621,7 @@ function _obSelect(step, rawValue) {
 
   if (step.type === "single") {
     _obAnswers[step.id] = value;
-    setTimeout(() => { _obStep++; _renderObStep(); }, 120);
+    setTimeout(() => { _obTransition(() => { _obStep++; _renderObStep(); }); }, 120);
   } else {
     // Multi-select: "none" is mutually exclusive with all other values
     let arr = _obAnswers[step.id] || [];
@@ -601,8 +700,16 @@ function _buildHandoffReasons(a, tplId) {
   }
   if (a.experience === "beginner")     reasons.push("Beginner-friendly: longer rest periods between sets");
   if (a.experience === "advanced")     reasons.push("Advanced track: high-intensity conjugate periodisation");
-  if (a.equipment === "bodyweight")    reasons.push("No barbell needed — bands & bodyweight throughout");
-  if (a.equipment === "barbell")       reasons.push("Built for home barbell setups");
+  if (a.equipmentDetail && a.equipmentDetail.length) {
+    const eqCount = a.equipmentDetail.length;
+    const eqList = a.equipmentDetail.slice(0, 4).map(t => EQUIPMENT_LABELS[t] || t).join(", ");
+    const suffix = eqCount > 4 ? ` +${eqCount - 4} more` : "";
+    reasons.push(`Equipment: <strong>${eqList}${suffix}</strong>`);
+  } else if (a.equipment === "bodyweight") {
+    reasons.push("No barbell needed — bands & bodyweight throughout");
+  } else if (a.equipment === "barbell") {
+    reasons.push("Built for home barbell setups");
+  }
   if (a.age === "40plus")              reasons.push("You mentioned 40+ — this template includes recovery-friendly programming");
   const flaggedInjuries = (a.injuries || []).filter(i => i !== "none");
   if (flaggedInjuries.length) {
@@ -622,7 +729,7 @@ function _renderObHandoff(onb) {
     ? PROGRAM_TEMPLATES.find(t => t.id === onb.recommendedTemplate) : null;
   const tplName = tpl ? tpl.name : onb.recommendedTemplate;
   const reasons = _buildHandoffReasons(_obAnswers, onb.recommendedTemplate);
-  const reasonsHtml = reasons.map(r => `<li>${r}</li>`).join("");
+  const reasonsHtml = reasons.map(function(r, i) { return '<li style="--ob-card-i:' + i + '">' + r + '</li>'; }).join("");
 
   inner.innerHTML = `
     <div class="ob-progress"><div class="ob-progress-fill" style="width:100%"></div></div>
@@ -665,7 +772,7 @@ function _renderObHandoffRedo(onb) {
     ? PROGRAM_TEMPLATES.find(t => t.id === onb.recommendedTemplate) : null;
   const tplName = tpl ? tpl.name : onb.recommendedTemplate;
   const reasons = _buildHandoffReasons(_obAnswers, onb.recommendedTemplate);
-  const reasonsHtml = reasons.map(r => `<li>${r}</li>`).join("");
+  const reasonsHtml = reasons.map(function(r, i) { return '<li style="--ob-card-i:' + i + '">' + r + '</li>'; }).join("");
 
   const u = userData();
   const currentTplId = u ? u.templateId : null;
@@ -758,7 +865,7 @@ function renderProfileCard() {
         <div class="profile-row"><span class="profile-label">Physique</span><span class="profile-value">${ppText}</span></div>
         <div class="profile-row"><span class="profile-label">Experience</span><span class="profile-value">${expLabels[ob.experience] || ob.experience || "—"}</span></div>
         <div class="profile-row"><span class="profile-label">Days / week</span><span class="profile-value">${ob.days || "—"}</span></div>
-        <div class="profile-row"><span class="profile-label">Equipment</span><span class="profile-value">${eqLabels[ob.equipment] || ob.equipment || "—"}</span></div>
+        <div class="profile-row"><span class="profile-label">Equipment</span><span class="profile-value">${ob.equipmentDetail && ob.equipmentDetail.length ? ob.equipmentDetail.map(t => EQUIPMENT_LABELS[t] || t).join(", ") : (eqLabels[ob.equipment] || ob.equipment || "—")}</span></div>
         <div class="profile-row"><span class="profile-label">Body Weight</span><span class="profile-value">${bwText}</span></div>
         <div class="profile-row"><span class="profile-label">Smart Suggestions</span><span class="profile-value">${ssText}</span></div>
         <div class="profile-row"><span class="profile-label">Flags</span><span class="profile-value">${injText}</span></div>

@@ -44,7 +44,7 @@ function advanceWeek() {
     usr.lastDoneDayId = null;
     usr.draft = null;
     var generated = resolveWeekProgram(usr.templateId, nextWeek, usr.totalWeeks, usr.daysPerWeek);
-    if (generated) usr.program = generated;
+    if (generated) usr.program = preserveCustomDays(usr.program, generated);
   });
   state.currentDayId = 1;
   state.dayChosen = false;
@@ -59,7 +59,7 @@ function goBackWeek() {
     usr.lastDoneDayId = null;
     usr.draft = null;
     var generated = resolveWeekProgram(usr.templateId, prevWeek, usr.totalWeeks, usr.daysPerWeek);
-    if (generated) usr.program = generated;
+    if (generated) usr.program = preserveCustomDays(usr.program, generated);
   });
   state.currentDayId = 1;
   state.dayChosen = false;

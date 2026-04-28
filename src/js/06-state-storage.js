@@ -22,6 +22,15 @@ let state = {
   focusBlockIdx: null,        // index into day.blocks (-1 = cooldown)
   focusExIdx: 0,              // exercise index within focused block
   previewBlockIdx: null,       // pre-start block preview (null = auto, "cd" = cooldown)
+  unavailableEquipment: new Set(), // equipment filter: tags user marked unavailable this session
+  eqFilterOpen: false,             // whether the equipment filter bar is expanded
+  // Ad-hoc quick workout state
+  adhocActive: false,
+  adhocDay: null,
+  adhocCustomName: null,
+  adhocExercises: null,
+  adhocStartedAt: null,
+  adhocInputs: null,
 };
 
 function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
@@ -47,7 +56,9 @@ function newUserRecord(name, templateId, totalWeeks, daysPerWeek) {
     weeklySchedule: null,
     currentWeek: 1,
     totalWeeks: tw,
-    daysPerWeek: dpw
+    daysPerWeek: dpw,
+    pinnedLifts: [],
+    manualPRs: []
   };
 }
 
@@ -102,6 +113,7 @@ function loadStore() {
     if (s.onboarding === undefined) s.onboarding = null;
     if (s.onboardingDismissedAt === undefined) s.onboardingDismissedAt = null;
     if (s.onboarding && s.onboarding.selectedDays === undefined) s.onboarding.selectedDays = null;
+    if (s.onboarding && s.onboarding.equipmentDetail === undefined) s.onboarding.equipmentDetail = null;
     // Fill missing per-user fields
     s.users.forEach(u => {
       if (!u.id) u.id = genId();
@@ -142,8 +154,9 @@ function loadStore() {
           }
         });
       });
-      // Defensive default for v13: manual PRs
+      // Defensive default for v13: manual PRs and pinned lifts
       if (!Array.isArray(u.manualPRs)) u.manualPRs = [];
+      if (!Array.isArray(u.pinnedLifts)) u.pinnedLifts = [];
       // Defensive defaults for session edit fields (Workstream D)
       // Also cleans up _original audit entries older than 7 days.
       const sevenDaysAgo = Date.now() - 7 * 86400000;

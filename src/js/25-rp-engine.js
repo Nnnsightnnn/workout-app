@@ -627,8 +627,9 @@ function startMesocycle(opts) {
     u.rp.mesocycles.push(newMeso);
     u.rp.currentMesocycleId = id;
 
-    // Generate week 1 program
-    u.program = generateRpWeek(newMeso, 1, u);
+    // Generate week 1 program (preserve user-added custom days)
+    var rpWeek1 = generateRpWeek(newMeso, 1, u);
+    u.program = (typeof preserveCustomDays === "function") ? preserveCustomDays(u.program, rpWeek1) : rpWeek1;
     u.currentWeek = 1;
     u.templateId = "rp-hypertrophy";
   });
@@ -968,7 +969,8 @@ function _rpAdvanceMesocycleWeek(mesoId) {
       uMut.rp.currentMesocycleId = null;
     } else {
       m.currentWeek = nextWeek;
-      uMut.program = generateRpWeek(m, nextWeek, uMut);
+      var rpGenerated = generateRpWeek(m, nextWeek, uMut);
+      uMut.program = (typeof preserveCustomDays === "function") ? preserveCustomDays(uMut.program, rpGenerated) : rpGenerated;
     }
   });
 

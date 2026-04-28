@@ -2,13 +2,15 @@
 // START / FINISH WORKOUT
 // ============================================================
 function startWorkout() {
-  if (state.workoutView === "preview") {
-    _beginWorkoutFocus();
-    return;
-  }
-  // Show the full-day preview first; tapping the workout card calls _beginWorkoutFocus().
+  if (state.adhocActive) return; // Ad-hoc has its own flow
+  // Skip preview — go directly to chapters view with draft auto-created
+  state.trimmedBlocks = null;
   state.previewBlockIdx = null;
-  state.workoutView = "preview";
+  ensureDraft();
+  state.workoutView = "chapters";
+
+  updateFinishButton();
+  showToast(getRandomQuote(), "quote", 3500);
   renderWorkoutScreen();
 }
 
@@ -67,6 +69,45 @@ function completeCurrentBlock() {
   return true;
 }
 
+function toggleBlockComplete(block) {
+  if (!block) return;
+  let total = 0, done = 0;
+  block.exercises.forEach((ex, ei) => {
+    if (ex.isWarmup) return;
+    const numSets = ex.sets || 3;
+    for (let i = 0; i < numSets; i++) {
+      total++;
+      if (getInput(inputKey(block.id, ei, i, "status"), null) === "done") done++;
+    }
+  });
+  const isFullyDone = total > 0 && done === total;
+
+  block.exercises.forEach((ex, ei) => {
+    if (ex.isWarmup) return;
+    const numSets = ex.sets || 3;
+    const last = getLastSetsFor(ex.exId || ex.name);
+    for (let i = 0; i < numSets; i++) {
+      const sKey = inputKey(block.id, ei, i, "status");
+      if (isFullyDone) {
+        saveInput(sKey, null);
+      } else {
+        if (getInput(sKey, null) === "done" || getInput(sKey, null) === "skipped") continue;
+        saveInput(sKey, "done");
+        const lastSet = last[i] || last[last.length - 1];
+        const rkey = inputKey(block.id, ei, i, "r");
+        if (getInput(rkey, null) == null) saveInput(rkey, lastSet?.reps ?? ex.reps);
+        const wkey = inputKey(block.id, ei, i, "w");
+        if (getInput(wkey, null) == null) saveInput(wkey, lastSet?.weight ?? ex.defaultWeight ?? 0);
+        const pkey = inputKey(block.id, ei, i, "p");
+        if (getInput(pkey, null) == null) saveInput(pkey, 7);
+      }
+    }
+  });
+
+  if (!isFullyDone && state.workoutStartedAt) showHeaderRest(90);
+  renderWorkoutScreen();
+}
+
 function handleFinishButton() {
   // In focus view: complete current block and advance to next
   if (state.workoutStartedAt && state.workoutView === "focus" && state.focusBlockIdx != null && state.focusBlockIdx >= 0) {
@@ -95,6 +136,8 @@ function handleFinishButton() {
 }
 
 function finishWorkout() {
+  // Ad-hoc sessions have their own finish flow
+  if (state.adhocActive) { finishAdhocWorkout(); return; }
   const draft = getDraft();
   if (!draft) {
     showToast("Nothing to save");
@@ -164,6 +207,13 @@ function finishWorkout() {
         priorBest[key] = { score: set.weight * (1 + set.reps / 30), w: set.weight, r: set.reps };
       }
     });
+  });
+  // Include manual PRs as baseline so session sets aren't incorrectly flagged
+  (u.manualPRs || []).forEach(mpr => {
+    const score = calcE1RM(mpr.weight || 0, mpr.reps || 0);
+    if (score > 0 && (!priorBest[mpr.exId] || score > priorBest[mpr.exId].score)) {
+      priorBest[mpr.exId] = { score, w: mpr.weight, r: mpr.reps };
+    }
   });
   sets.forEach(s => {
     const best = priorBest[s.exId];

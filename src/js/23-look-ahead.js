@@ -447,6 +447,7 @@ function _renderLaCalDateDetail(container) {
 
       container.appendChild(card);
     });
+    _appendCalAddWorkoutBtn(container, dateObj);
     return;
   }
 
@@ -506,6 +507,7 @@ function _renderLaCalDateDetail(container) {
       if (spark) card.appendChild(spark);
 
       container.appendChild(card);
+      _appendCalAddWorkoutBtn(container, dateObj);
       return;
     }
   }
@@ -515,6 +517,9 @@ function _renderLaCalDateDetail(container) {
   empty.className = "la-cal-detail-empty";
   empty.innerHTML = '<span class="la-cal-detail-date">' + dateLabel + '</span><br>Rest day';
   container.appendChild(empty);
+
+  // Add workout button for any selected date
+  _appendCalAddWorkoutBtn(container, dateObj);
 }
 
 // ============================================================
@@ -666,6 +671,29 @@ function _buildLaSessionSparkBar(session) {
     bar.appendChild(seg);
   });
   return bar;
+}
+
+// Add workout button for calendar date detail
+function _appendCalAddWorkoutBtn(container, dateObj) {
+  var todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  var dateMs = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()).getTime();
+  var isFuture = dateMs > todayStart.getTime();
+
+  var btn = document.createElement("button");
+  btn.className = "action-btn";
+  btn.style.cssText = "width:100%;margin-top:10px;padding:12px;font-weight:600;";
+  btn.textContent = "+ Add Workout";
+  btn.onclick = function() {
+    closeSheet();
+    setTimeout(function() {
+      if (isFuture) {
+        openPlanWorkout(dateMs);
+      } else {
+        openAddWorkout(dateMs);
+      }
+    }, 200);
+  };
+  container.appendChild(btn);
 }
 
 // Calendar helpers

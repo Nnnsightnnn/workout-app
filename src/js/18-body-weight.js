@@ -1,123 +1,276 @@
 // ============================================================
-// BODY WEIGHT TRACKING (multi-metric)
+// BODY MEASUREMENTS SCREEN (dedicated tracking screen)
 // ============================================================
 // Length unit derives from the active weight unit (lbs => in, kg => cm).
 const _lenUnit = () => state.unit === "lbs" ? "in" : "cm";
 
 const BODY_METRICS = [
-  { key: "weight",  label: "Weight",   unitFn: () => state.unit, step: "0.1" },
-  { key: "bodyFat", label: "Body Fat", unitFn: () => "%",        step: "0.1" },
-  { key: "arms",    label: "Arms",     unitFn: _lenUnit,         step: "0.1" },
-  { key: "chest",   label: "Chest",    unitFn: _lenUnit,         step: "0.1" },
-  { key: "waist",   label: "Waist",    unitFn: _lenUnit,         step: "0.1" },
-  { key: "neck",    label: "Neck",     unitFn: _lenUnit,         step: "0.1" },
-  { key: "thighs",  label: "Thighs",   unitFn: _lenUnit,         step: "0.1" },
-  { key: "hips",    label: "Hips",     unitFn: _lenUnit,         step: "0.1" }
+  { key: "weight",  label: "Weight",   unitFn: () => state.unit, step: "0.1", icon: "scale" },
+  { key: "bodyFat", label: "Body Fat", unitFn: () => "%",        step: "0.1", icon: "percent" },
+  { key: "arms",    label: "Arms",     unitFn: _lenUnit,         step: "0.1", icon: "tape" },
+  { key: "chest",   label: "Chest",    unitFn: _lenUnit,         step: "0.1", icon: "tape" },
+  { key: "waist",   label: "Waist",    unitFn: _lenUnit,         step: "0.1", icon: "tape" },
+  { key: "neck",    label: "Neck",     unitFn: _lenUnit,         step: "0.1", icon: "tape" },
+  { key: "thighs",  label: "Thighs",   unitFn: _lenUnit,         step: "0.1", icon: "tape" },
+  { key: "hips",    label: "Hips",     unitFn: _lenUnit,         step: "0.1", icon: "tape" }
 ];
 
-let _bodyShowMore = false;
-function toggleBodyMore() { _bodyShowMore = !_bodyShowMore; renderBodySection(); }
+// State for expanded chart metric
+let _bodyExpandedMetric = null;
+let _bodyShowLogForm = false;
 
 function _escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c]));
 }
 
-function renderBodySection() {
-  const el = document.getElementById("bodyContent");
+// ── Delta calculations ──────────────────────────────────────
+
+function _calcDelta(measurements, metricKey) {
+  const entries = measurements.filter(e => e[metricKey] != null);
+  if (entries.length < 2) return null;
+  const latest = entries[entries.length - 1];
+  const prev = entries[entries.length - 2];
+  const diff = latest[metricKey] - prev[metricKey];
+  return { diff, from: prev, to: latest };
+}
+
+function _calcMonthDelta(measurements, metricKey) {
+  const entries = measurements.filter(e => e[metricKey] != null);
+  if (entries.length < 2) return null;
+  const latest = entries[entries.length - 1];
+  const thirtyDaysAgo = Date.now() - 30 * 86400000;
+  // Find earliest entry within last 30 days or the most recent one before that
+  let monthEntry = null;
+  for (let i = entries.length - 2; i >= 0; i--) {
+    const ts = typeof entries[i].date === "number" ? entries[i].date : new Date(entries[i].date).getTime();
+    if (ts <= thirtyDaysAgo) { monthEntry = entries[i]; break; }
+  }
+  if (!monthEntry) {
+    // Use the earliest entry if all are within 30 days
+    monthEntry = entries[0];
+    if (monthEntry === latest) return null;
+  }
+  const diff = latest[metricKey] - monthEntry[metricKey];
+  return { diff, from: monthEntry, to: latest };
+}
+
+function _daysSince(dateVal) {
+  const ts = typeof dateVal === "number" ? dateVal : new Date(dateVal).getTime();
+  return Math.floor((Date.now() - ts) / 86400000);
+}
+
+function _formatDelta(diff, unit, metricKey) {
+  const sign = diff > 0 ? "+" : "";
+  const precision = Math.abs(diff) < 10 ? 1 : 0;
+  const val = diff.toFixed(precision);
+  if (metricKey === "bodyFat") return `${sign}${val}%`;
+  return `${sign}${val} ${_escapeHtml(unit)}`;
+}
+
+// ── Render Body Screen ──────────────────────────────────────
+
+function renderBodyScreen() {
+  const el = document.getElementById("bodyScreenContent");
   if (!el) return;
   const u = userData();
-  if (!u) { el.innerHTML = '<div style="color:var(--text-dim);font-size:13px;text-align:center;padding:14px 0;">Set up a user first.</div>'; return; }
+  if (!u) {
+    el.innerHTML = '<div style="color:var(--text-dim);font-size:13px;text-align:center;padding:40px 0;">Set up a user first.</div>';
+    return;
+  }
   const m = u.measurements;
-  const latest = m.length ? m[m.length - 1] : null;
   const unit = state.unit;
+  const latest = m.length ? m[m.length - 1] : null;
 
   let html = '';
-  if (latest) {
-    html += `<div><span class="body-current">${latest.weight}</span><span class="body-current-unit">${unit}</span></div>`;
-    html += `<div style="color:var(--text-dim);font-size:11px;margin-top:2px;">${new Date(latest.date).toLocaleDateString()}</div>`;
-  }
-  if (m.length >= 2) {
-    html += `<canvas class="body-sparkline" id="bodySparkline-weight"></canvas>`;
-  }
-  html += `<div class="body-input-row">
-    <input type="number" id="bodyInput-weight" placeholder="Weight" min="0" step="0.1" inputmode="decimal">
-    <button class="body-log-btn" onclick="logMeasurement()">Log</button>
-  </div>`;
 
-  const moreOpen = _bodyShowMore;
-  html += `<button class="body-more-toggle${moreOpen ? ' is-open' : ''}" onclick="toggleBodyMore()">${moreOpen ? '− Hide measurements' : '+ More measurements'}</button>`;
-  if (moreOpen) {
-    html += `<div class="body-more-grid">`;
+  // ── Header ──
+  html += `
+    <div class="body-screen-header">
+      <div style="flex:1;">
+        <h2>Body</h2>
+        <p class="body-screen-subtitle">Track your measurements over time.</p>
+      </div>
+      <button class="icon-btn" id="bodyCloseBtn" title="Back to workout" style="width:36px;height:36px;border-radius:10px;">&#10005;</button>
+    </div>`;
+
+  // ── Quick Log Button ──
+  html += `
+    <button class="body-quick-log-btn${_bodyShowLogForm ? ' is-open' : ''}" onclick="_toggleLogForm()">
+      <span class="body-quick-log-icon">+</span>
+      <span>Log Measurements</span>
+    </button>`;
+
+  // ── Log Form (expandable) ──
+  if (_bodyShowLogForm) {
+    html += `<div class="body-log-form">`;
+    // Weight is always shown
+    html += `
+      <div class="body-log-field body-log-field--primary">
+        <label for="bodyInput-weight">Weight <span class="unit-suffix">(${_escapeHtml(unit)})</span></label>
+        <input type="number" id="bodyInput-weight" placeholder="0" min="0" step="0.1" inputmode="decimal">
+      </div>`;
+    // Other metrics in a grid
+    html += `<div class="body-log-grid">`;
     BODY_METRICS.forEach(metric => {
       if (metric.key === "weight") return;
       const u = metric.unitFn();
-      html += `<div class="body-more-field">
-        <label for="bodyInput-${metric.key}">${_escapeHtml(metric.label)} <span class="unit-suffix">(${_escapeHtml(u)})</span></label>
-        <input type="number" id="bodyInput-${metric.key}" placeholder="0" min="0" step="${metric.step}" inputmode="decimal">
-      </div>`;
+      html += `
+        <div class="body-log-field">
+          <label for="bodyInput-${metric.key}">${_escapeHtml(metric.label)} <span class="unit-suffix">(${_escapeHtml(u)})</span></label>
+          <input type="number" id="bodyInput-${metric.key}" placeholder="0" min="0" step="${metric.step}" inputmode="decimal">
+        </div>`;
     });
     html += `</div>`;
+    html += `
+      <button class="body-save-btn" onclick="logMeasurement()">Save Entry</button>
+      <p class="body-log-hint">Weight is required. Other fields are optional.</p>
+    </div>`;
   }
 
+  // ── Nudges / Last Measured ──
+  if (latest) {
+    const daysAgo = _daysSince(latest.date);
+    if (daysAgo >= 7) {
+      const nudgeText = daysAgo === 1 ? "1 day" : `${daysAgo} days`;
+      html += `
+        <div class="body-nudge" onclick="_toggleLogForm()">
+          <span class="body-nudge-icon">&#128276;</span>
+          <span>Last measured <strong>${nudgeText} ago</strong> &mdash; tap to log</span>
+        </div>`;
+    }
+  } else {
+    html += `
+      <div class="body-nudge" onclick="_toggleLogForm()">
+        <span class="body-nudge-icon">&#128203;</span>
+        <span>No measurements yet &mdash; <strong>tap to log your first</strong></span>
+      </div>`;
+  }
+
+  // ── Metric Cards Grid ──
+  html += `<div class="body-cards-grid">`;
+  BODY_METRICS.forEach(metric => {
+    const entries = m.filter(e => e[metric.key] != null);
+    const lastEntry = entries.length ? entries[entries.length - 1] : null;
+    const unitLabel = metric.unitFn();
+    const isExpanded = _bodyExpandedMetric === metric.key;
+
+    // Value display
+    let valueText = "--";
+    if (lastEntry) {
+      valueText = metric.key === "bodyFat"
+        ? `${lastEntry[metric.key]}%`
+        : `${lastEntry[metric.key]} ${_escapeHtml(unitLabel)}`;
+    }
+
+    // Delta since last
+    const delta = _calcDelta(m, metric.key);
+    let deltaHtml = '';
+    if (delta) {
+      const cls = delta.diff > 0 ? "delta-up" : delta.diff < 0 ? "delta-down" : "delta-flat";
+      const arrow = delta.diff > 0 ? "&#9650;" : delta.diff < 0 ? "&#9660;" : "&#9654;";
+      deltaHtml = `<span class="body-delta ${cls}">${arrow} ${_formatDelta(delta.diff, unitLabel, metric.key)}</span>`;
+    }
+
+    // Month delta
+    const monthDelta = _calcMonthDelta(m, metric.key);
+    let monthHtml = '';
+    if (monthDelta && Math.abs(monthDelta.diff) > 0.01) {
+      monthHtml = `<span class="body-month-delta">${_formatDelta(monthDelta.diff, unitLabel, metric.key)} this month</span>`;
+    }
+
+    // Last measured nudge per metric
+    let metricNudge = '';
+    if (lastEntry) {
+      const days = _daysSince(lastEntry.date);
+      if (days > 0) {
+        metricNudge = `<span class="body-metric-ago">${days}d ago</span>`;
+      } else {
+        metricNudge = `<span class="body-metric-ago">today</span>`;
+      }
+    }
+
+    html += `
+      <div class="body-mcard${isExpanded ? ' is-expanded' : ''}${entries.length >= 2 ? ' has-chart' : ''}" onclick="_toggleMetricExpand('${metric.key}')">
+        <div class="body-mcard-top">
+          <div class="body-mcard-label">${_escapeHtml(metric.label)}</div>
+          ${metricNudge}
+        </div>
+        <div class="body-mcard-value">${valueText}</div>
+        ${deltaHtml}
+        ${monthHtml}
+        ${entries.length >= 2 ? `<canvas class="body-chart" id="bodyChart-${metric.key}"></canvas>` : ''}
+        ${!lastEntry ? `<div class="body-mcard-empty">No data</div>` : ''}
+      </div>`;
+  });
+  html += `</div>`;
+
+  // ── Full History ──
   if (m.length > 0) {
-    html += `<div class="body-history">`;
-    const recent = m.slice(-5).reverse();
+    html += `<div class="section-title" style="margin-top:24px;">History</div>`;
+    html += `<div class="body-full-history">`;
+    const recent = m.slice().reverse().slice(0, 20);
     recent.forEach(entry => {
-      const d = new Date(entry.date).toLocaleDateString(undefined, { month:'short', day:'numeric' });
+      const d = new Date(typeof entry.date === "number" ? entry.date : entry.date).toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' });
       const parts = [];
       BODY_METRICS.forEach(metric => {
         const v = entry[metric.key];
         if (v == null) return;
         const u = metric.unitFn();
-        parts.push(metric.key === "bodyFat" ? `${v}%` : `${v} ${u}`);
+        parts.push(`<span class="body-hist-tag">${_escapeHtml(metric.label)}: ${metric.key === "bodyFat" ? `${v}%` : `${v} ${_escapeHtml(u)}`}</span>`);
       });
-      html += `<div class="body-history-row"><span>${d}</span><span>${parts.join(' · ')}</span></div>`;
+      html += `
+        <div class="body-hist-row">
+          <div class="body-hist-date">${d}</div>
+          <div class="body-hist-values">${parts.join('')}</div>
+        </div>`;
     });
     html += `</div>`;
-  }
-  if (!latest) {
-    html += `<div style="color:var(--text-dim);font-size:13px;text-align:center;padding:14px 0;">Log your first weigh-in above.</div>`;
   }
 
-  // Per-metric mini-sparklines (skip weight — it has its own big sparkline above).
-  const extraMetrics = BODY_METRICS.filter(metric => {
-    if (metric.key === "weight") return false;
-    return m.filter(e => e[metric.key] != null).length >= 2;
-  });
-  if (extraMetrics.length) {
-    html += `<div class="body-metrics-grid">`;
-    extraMetrics.forEach(metric => {
-      const entriesWith = m.filter(e => e[metric.key] != null);
-      const last = entriesWith[entriesWith.length - 1];
-      const unitLabel = metric.unitFn();
-      const valueText = metric.key === "bodyFat" ? `${last[metric.key]}%` : `${last[metric.key]} ${_escapeHtml(unitLabel)}`;
-      html += `<div class="body-metric-card">
-        <div class="metric-head">
-          <span class="metric-label">${_escapeHtml(metric.label)}</span>
-          <span class="metric-value">${valueText}</span>
-        </div>
-        <canvas id="bodySparkline-${metric.key}"></canvas>
-      </div>`;
-    });
-    html += `</div>`;
-  }
+  // ── Bottom padding for nav ──
+  html += `<div style="height:80px;"></div>`;
 
   el.innerHTML = html;
 
-  if (m.length >= 2) drawSparkline("weight");
-  extraMetrics.forEach(metric => drawSparkline(metric.key));
+  // Bind close button
+  const closeBtn = document.getElementById("bodyCloseBtn");
+  if (closeBtn) closeBtn.onclick = () => showScreen('workout');
+
+  // Draw charts
+  BODY_METRICS.forEach(metric => {
+    const entries = m.filter(e => e[metric.key] != null);
+    if (entries.length >= 2) {
+      _drawBodyChart(metric.key, _bodyExpandedMetric === metric.key);
+    }
+  });
+}
+
+function _toggleLogForm() {
+  _bodyShowLogForm = !_bodyShowLogForm;
+  renderBodyScreen();
+  if (_bodyShowLogForm) {
+    setTimeout(() => {
+      const inp = document.getElementById("bodyInput-weight");
+      if (inp) inp.focus();
+    }, 50);
+  }
+}
+
+function _toggleMetricExpand(key) {
+  _bodyExpandedMetric = (_bodyExpandedMetric === key) ? null : key;
+  renderBodyScreen();
 }
 
 function logMeasurement() {
   const weightInput = document.getElementById("bodyInput-weight");
-  const w = parseFloat(weightInput.value);
-  if (!w || w <= 0) { weightInput.focus(); return; }
+  const w = parseFloat(weightInput ? weightInput.value : "");
+  if (!w || w <= 0) { if (weightInput) weightInput.focus(); return; }
 
   const entry = { date: Date.now(), weight: w };
   BODY_METRICS.forEach(m => {
     if (m.key === "weight") return;
     const inp = document.getElementById("bodyInput-" + m.key);
-    if (!inp) return; // panel collapsed — input not in DOM
+    if (!inp) return;
     const v = parseFloat(inp.value);
     if (Number.isFinite(v) && v > 0) entry[m.key] = v;
   });
@@ -127,16 +280,18 @@ function logMeasurement() {
     if (u.measurements.length > 365) u.measurements = u.measurements.slice(-365);
   });
 
-  _bodyShowMore = false;
-  renderBodySection();
+  _bodyShowLogForm = false;
+  renderBodyScreen();
   showToast(`Logged ${w} ${state.unit}`, "success");
 }
 
-function drawSparkline(metricKey) {
-  if (metricKey == null) metricKey = "weight";
-  const canvas = document.getElementById("bodySparkline-" + metricKey);
+// ── Chart Drawing ───────────────────────────────────────────
+
+function _drawBodyChart(metricKey, isExpanded) {
+  const canvas = document.getElementById("bodyChart-" + metricKey);
   if (!canvas) return;
   const u = userData();
+  if (!u) return;
   const data = u.measurements
     .filter(e => e[metricKey] != null)
     .slice(-30);
@@ -150,7 +305,9 @@ function drawSparkline(metricKey) {
   const ctx = canvas.getContext("2d");
   ctx.scale(dpr, dpr);
   const W = rect.width, H = rect.height;
-  const pad = { top: 8, bottom: 16, left: 4, right: 4 };
+  const pad = isExpanded
+    ? { top: 16, bottom: 24, left: 8, right: 8 }
+    : { top: 8, bottom: 16, left: 4, right: 4 };
 
   const values = data.map(d => d[metricKey]);
   const min = Math.min(...values) - 1;
@@ -165,9 +322,12 @@ function drawSparkline(metricKey) {
 
   const points = data.map((d, idx) => ({
     x: pad.left + (idx / (data.length - 1)) * (W - pad.left - pad.right),
-    y: pad.top + (1 - (d[metricKey] - min) / range) * (H - pad.top - pad.bottom)
+    y: pad.top + (1 - (d[metricKey] - min) / range) * (H - pad.top - pad.bottom),
+    val: d[metricKey],
+    date: d.date
   }));
 
+  // Area fill
   ctx.beginPath();
   ctx.moveTo(points[0].x, H - pad.bottom);
   points.forEach(p => ctx.lineTo(p.x, p.y));
@@ -176,22 +336,54 @@ function drawSparkline(metricKey) {
   ctx.fillStyle = grad;
   ctx.fill();
 
+  // Line
   ctx.beginPath();
   points.forEach((p, idx) => idx === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
   ctx.strokeStyle = "#ff6b1f";
-  ctx.lineWidth = 2;
+  ctx.lineWidth = isExpanded ? 2.5 : 2;
   ctx.lineJoin = "round";
   ctx.stroke();
 
-  const last = points[points.length - 1];
-  ctx.beginPath();
-  ctx.arc(last.x, last.y, 3, 0, Math.PI * 2);
-  ctx.fillStyle = "#ff6b1f";
-  ctx.fill();
+  // Data points (show more when expanded)
+  if (isExpanded) {
+    points.forEach((p, idx) => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = idx === points.length - 1 ? "#ff6b1f" : "rgba(255,107,31,0.5)";
+      ctx.fill();
+      ctx.strokeStyle = "#171c28";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+  } else {
+    // Just the last point
+    const last = points[points.length - 1];
+    ctx.beginPath();
+    ctx.arc(last.x, last.y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = "#ff6b1f";
+    ctx.fill();
+  }
 
+  // Range labels
   ctx.fillStyle = "rgba(142,142,147,0.7)";
-  ctx.font = "600 9px system-ui";
+  ctx.font = isExpanded ? "600 10px system-ui" : "600 9px system-ui";
   ctx.textAlign = "right";
   ctx.fillText(max.toFixed(1), W - pad.right, pad.top - 1);
-  ctx.fillText(min.toFixed(1), W - pad.right, H - pad.bottom + 10);
+  ctx.fillText(min.toFixed(1), W - pad.right, H - pad.bottom + (isExpanded ? 14 : 10));
+
+  // Date labels when expanded
+  if (isExpanded && data.length >= 2) {
+    ctx.fillStyle = "rgba(142,142,147,0.5)";
+    ctx.font = "500 9px system-ui";
+    ctx.textAlign = "left";
+    const firstDate = new Date(typeof data[0].date === "number" ? data[0].date : data[0].date);
+    ctx.fillText(firstDate.toLocaleDateString(undefined, { month:'short', day:'numeric' }), pad.left, H - 2);
+    ctx.textAlign = "right";
+    const lastDate = new Date(typeof data[data.length - 1].date === "number" ? data[data.length - 1].date : data[data.length - 1].date);
+    ctx.fillText(lastDate.toLocaleDateString(undefined, { month:'short', day:'numeric' }), W - pad.right, H - 2);
+  }
 }
+
+// Keep old renderBodySection as a no-op for backwards compat (settings screen used to call it)
+function renderBodySection() {}
+function drawSparkline() {}
