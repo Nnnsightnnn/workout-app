@@ -47,6 +47,138 @@ function openDayPicker() {
   openSheet(wrap);
 }
 
+// ============================================================
+// WEEKLY SCHEDULE EDITOR — assign program days to days of week
+// ============================================================
+const _DOW_LABELS_LONG = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const _DOW_LABELS_SHORT = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+// Ensures u.weeklySchedule is a 7-element array, seeding from default pattern if missing.
+function ensureWeeklySchedule(u) {
+  if (!Array.isArray(u.weeklySchedule) || u.weeklySchedule.length !== 7) {
+    u.weeklySchedule = (typeof buildDefaultWeeklySchedule === "function")
+      ? buildDefaultWeeklySchedule(u)
+      : [null, null, null, null, null, null, null];
+  }
+  return u.weeklySchedule;
+}
+
+// Find which dow currently holds a given dayId, or -1 if none.
+function _dowOfDayId(schedule, dayId) {
+  if (!Array.isArray(schedule)) return -1;
+  for (let i = 0; i < 7; i++) if (schedule[i] === dayId) return i;
+  return -1;
+}
+
+// Set program-day at given dow. If that dayId is already on a different dow,
+// swap (so each program day appears at most once per week).
+function _assignDayToDow(schedule, dow, dayId) {
+  const existingDow = _dowOfDayId(schedule, dayId);
+  const displaced = schedule[dow];
+  schedule[dow] = dayId;
+  if (existingDow !== -1 && existingDow !== dow) {
+    schedule[existingDow] = displaced;
+  }
+}
+
+function openWeeklyScheduleEditor() {
+  const u = userData();
+  if (!u) return;
+
+  const wrap = document.createElement("div");
+  wrap.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <h3 style="margin:0;">Weekly Schedule</h3>
+      <button class="icon-btn" onclick="closeSheet()" title="Close">✕</button>
+    </div>
+    <p style="color:var(--text-dim);font-size:12px;margin-bottom:12px;">Assign each weekday to a program day or rest. Days repeat weekly.</p>
+  `;
+
+  function rerender() {
+    const u2 = userData();
+    const sched = ensureWeeklySchedule(u2);
+    list.innerHTML = "";
+
+    for (let dow = 0; dow < 7; dow++) {
+      const row = document.createElement("button");
+      row.className = "sheet-item";
+      const assignedId = sched[dow];
+      const day = assignedId != null ? u2.program.find(d => d.id === assignedId) : null;
+      const isToday = dow === new Date().getDay();
+      const todayBadge = isToday ? '<span class="meta" style="color:var(--accent);">today</span>' : '';
+      const label = day
+        ? `<span style="font-weight:700;">Day ${day.id} — ${day.name}</span><div style="color:var(--text-dim);font-size:11px;font-weight:500;">${day.sub || ""}</div>`
+        : `<span style="color:var(--text-dim);">Rest</span>`;
+      row.innerHTML = `<span class="icon">${_DOW_LABELS_SHORT[dow][0]}</span><span style="flex:1;text-align:left;">${_DOW_LABELS_LONG[dow]}<div>${label}</div></span>${todayBadge}`;
+      row.onclick = () => openAssignDayPicker(dow, () => rerender());
+      list.appendChild(row);
+    }
+  }
+
+  const list = document.createElement("div");
+  wrap.appendChild(list);
+  rerender();
+
+  openSheet(wrap);
+}
+
+function openAssignDayPicker(dow, onDone) {
+  const u = userData();
+  if (!u) return;
+
+  const wrap = document.createElement("div");
+  wrap.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <h3 style="margin:0;">${_DOW_LABELS_LONG[dow]}</h3>
+      <button class="icon-btn" id="assignBackBtn" title="Back">←</button>
+    </div>
+    <p style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">Pick which workout to do on ${_DOW_LABELS_LONG[dow]}, or set as rest day.</p>
+  `;
+
+  // Rest option
+  const restBtn = document.createElement("button");
+  restBtn.className = "sheet-item";
+  const sched = ensureWeeklySchedule(u);
+  if (sched[dow] == null) restBtn.classList.add("current");
+  restBtn.innerHTML = `<span class="icon">—</span><span>Rest day</span>`;
+  restBtn.onclick = () => {
+    updateUser(usr => {
+      const s = ensureWeeklySchedule(usr);
+      s[dow] = null;
+    });
+    state.currentDayId = determineDefaultDay();
+    if (typeof renderTimelineStrip === "function") renderTimelineStrip();
+    if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
+    openWeeklyScheduleEditor();
+  };
+  wrap.appendChild(restBtn);
+
+  u.program.forEach(d => {
+    const btn = document.createElement("button");
+    btn.className = "sheet-item" + (sched[dow] === d.id ? " current" : "");
+    const otherDow = _dowOfDayId(sched, d.id);
+    const swapNote = (otherDow !== -1 && otherDow !== dow)
+      ? `<span class="meta" style="color:var(--text-dim);">on ${_DOW_LABELS_SHORT[otherDow]} — swaps</span>`
+      : "";
+    btn.innerHTML = `<span class="icon">${d.id}</span><span>${d.name}<div style="color:var(--text-dim);font-size:11px;font-weight:500;">${d.sub || ""}</div></span>${swapNote}`;
+    btn.onclick = () => {
+      updateUser(usr => {
+        const s = ensureWeeklySchedule(usr);
+        _assignDayToDow(s, dow, d.id);
+      });
+      state.currentDayId = determineDefaultDay();
+      if (typeof renderTimelineStrip === "function") renderTimelineStrip();
+      if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
+      openWeeklyScheduleEditor();
+    };
+    wrap.appendChild(btn);
+  });
+
+  openSheet(wrap);
+  const back = document.getElementById("assignBackBtn");
+  if (back) back.onclick = () => openWeeklyScheduleEditor();
+}
+
 function switchDay(dayId) {
   state.currentDayId = dayId;
   state.dayChosen = true;

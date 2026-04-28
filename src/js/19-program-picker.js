@@ -253,10 +253,12 @@ function applyProgramSwitch(tpl, totalWeeks, daysPerWeek) {
     u.draft = null;
     u.lastDoneDayId = null;
     u.programStartDate = Date.now();
-    u.weeklySchedule = null;
+    u.daysPerWeek = dpw;
+    u.weeklySchedule = (typeof buildDefaultWeeklySchedule === "function")
+      ? buildDefaultWeeklySchedule(u)
+      : null;
     u.currentWeek = 1;
     u.totalWeeks = tw;
-    u.daysPerWeek = dpw;
     // Auto-enable RP engine when switching to rp-hypertrophy
     if (tpl.id === "rp-hypertrophy") {
       u.rp.enabled = true;

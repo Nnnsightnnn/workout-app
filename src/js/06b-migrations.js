@@ -303,8 +303,34 @@ const MIGRATIONS = [
       }
       return store;
     }
+  },
+  {
+    version: 17,
+    description: "Seed weeklySchedule from default training pattern so days can be reassigned",
+    migrate(store) {
+      (store.users || []).forEach(u => {
+        if (Array.isArray(u.weeklySchedule) && u.weeklySchedule.length === 7) return;
+        u.weeklySchedule = buildDefaultWeeklySchedule(u);
+      });
+      return store;
+    }
   }
 ];
+
+// Map program-day order onto a 7-slot week using the static training pattern.
+// Returns [dow0..dow6] where each slot is a dayId or null (rest).
+function buildDefaultWeeklySchedule(u) {
+  const sched = [null, null, null, null, null, null, null];
+  if (!u || !Array.isArray(u.program) || !u.program.length) return sched;
+  const dpw = u.daysPerWeek || u.program.length;
+  const pattern = (typeof _laTrainingPattern === "function")
+    ? _laTrainingPattern(dpw)
+    : ([1,3,5].slice(0, dpw));
+  for (let i = 0; i < pattern.length && i < u.program.length; i++) {
+    sched[pattern[i]] = u.program[i].id;
+  }
+  return sched;
+}
 
 function runMigrations() {
   const raw = localStorage.getItem(STORAGE_KEY);

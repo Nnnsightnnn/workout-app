@@ -236,6 +236,48 @@ function renderDayPicker() {
 
   container.innerHTML = "";
 
+  // Rest-day check: if today's weeklySchedule slot is explicitly null, show a rest card
+  const todayDow = new Date().getDay();
+  const sched = (Array.isArray(u.weeklySchedule) && u.weeklySchedule.length === 7) ? u.weeklySchedule : null;
+  const isRestToday = sched && sched[todayDow] == null;
+
+  if (isRestToday) {
+    document.getElementById("dayName").textContent = "Rest Day";
+    document.getElementById("daySub").textContent = "Recovery scheduled — every " + _DOW_LABELS_LONG[todayDow];
+    const restCard = document.createElement("div");
+    restCard.className = "day-picker rest-day-card";
+    restCard.innerHTML = `
+      <div class="rest-hero">
+        <div class="rest-hero-tag">Today \u00b7 Rest Day</div>
+        <div class="rest-hero-title">Recover</div>
+        <div class="rest-hero-sub">Every ${_DOW_LABELS_LONG[todayDow]} is set as rest. Mobility, sleep, food.</div>
+      </div>
+    `;
+    const actions = document.createElement("div");
+    actions.className = "rest-actions";
+
+    const trainBtn = document.createElement("button");
+    trainBtn.className = "action-btn primary";
+    trainBtn.textContent = "Train anyway";
+    trainBtn.onclick = () => {
+      const next = determineDefaultDay();
+      state.currentDayId = next || 1;
+      state.dayChosen = true;
+      openWorkout();
+    };
+    actions.appendChild(trainBtn);
+
+    const editBtn = document.createElement("button");
+    editBtn.className = "action-btn";
+    editBtn.textContent = "Edit schedule";
+    editBtn.onclick = () => { if (typeof openWeeklyScheduleEditor === "function") openWeeklyScheduleEditor(); };
+    actions.appendChild(editBtn);
+
+    restCard.appendChild(actions);
+    container.appendChild(restCard);
+    return;
+  }
+
   const next = determineDefaultDay();
   const nextDay = u.program.find(d => d.id === next) || u.program[0];
   const picker = document.createElement("div");

@@ -44,6 +44,9 @@ function newUserRecord(name, templateId, totalWeeks, daysPerWeek) {
   const tw = totalWeeks || 10;
   const dpw = daysPerWeek || tpl.daysPerWeek;
   const generated = (typeof resolveWeekProgram === "function") ? resolveWeekProgram(tpl.id, 1, tw, dpw) : null;
+  const seedSchedule = (typeof buildDefaultWeeklySchedule === "function")
+    ? buildDefaultWeeklySchedule({ program: generated || [], daysPerWeek: dpw })
+    : null;
   return {
     id: genId(),
     name: String(name || "User").trim().slice(0, 40) || "User",
@@ -54,7 +57,7 @@ function newUserRecord(name, templateId, totalWeeks, daysPerWeek) {
     draft: null,
     lastDoneDayId: null,
     programStartDate: Date.now(),
-    weeklySchedule: null,
+    weeklySchedule: seedSchedule,
     currentWeek: 1,
     totalWeeks: tw,
     daysPerWeek: dpw,

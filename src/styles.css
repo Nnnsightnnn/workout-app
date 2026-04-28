@@ -1766,6 +1766,32 @@
   }
   .program-list-item.active .pli-name { color: var(--text); }
   .day-picker { display: flex; flex-direction: column; gap: 10px; }
+  .rest-day-card {
+    background: linear-gradient(180deg, rgba(23,28,40,0.9), rgba(17,21,32,0.85));
+    border: 1px solid var(--border);
+    border-radius: 18px; padding: 28px 22px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 20px 40px rgba(0,0,0,0.3);
+    position: relative; overflow: hidden;
+  }
+  .rest-day-card .rest-hero { margin-bottom: 16px; }
+  .rest-day-card .rest-hero-tag {
+    font-family: var(--font-mono); font-size: 10px; color: var(--text-dim);
+    font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .rest-day-card .rest-hero-title {
+    font-family: var(--font-serif); font-style: italic; font-weight: 300;
+    font-size: 56px; letter-spacing: -0.03em; line-height: 0.9;
+    margin-bottom: 10px; color: var(--text);
+  }
+  .rest-day-card .rest-hero-sub {
+    color: var(--text-dim); font-size: 13px; line-height: 1.45;
+  }
+  .rest-day-card .rest-actions {
+    display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px;
+  }
+  .rest-day-card .rest-actions .action-btn { flex: 1; min-width: 120px; }
+
   .day-picker-card {
     background: linear-gradient(180deg, rgba(23,28,40,0.9), rgba(17,21,32,0.85));
     border: 1px solid var(--border);
@@ -2186,6 +2212,20 @@
     0%, 100% { opacity: 0.4; transform: scale(0.9); }
     50% { opacity: 0.8; transform: scale(1.1); }
   }
+
+  /* === Edit Schedule button — inline below timeline strip === */
+  .tl-sched-row {
+    display: flex; justify-content: flex-end; padding: 0 14px; margin-top: 4px;
+  }
+  .tl-sched-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: transparent; border: none; padding: 4px 6px;
+    color: var(--text-dim); font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    cursor: pointer; transition: color 120ms ease;
+  }
+  .tl-sched-btn:hover, .tl-sched-btn:focus { color: var(--accent); }
+  .tl-sched-ico { font-size: 13px; line-height: 1; }
 
   /* === Fuel Cell — Weekly Progress Tank === */
   #stampCard { padding: 0 14px; }

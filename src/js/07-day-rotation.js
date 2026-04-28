@@ -6,6 +6,13 @@ function determineDefaultDay() {
   if (!u) return 1;
   // If draft exists, show that day
   if (u.draft) return u.draft.dayId;
+  // If today is mapped to a program day in the weekly schedule, prefer that
+  if (Array.isArray(u.weeklySchedule) && u.weeklySchedule.length === 7) {
+    const todaysId = u.weeklySchedule[new Date().getDay()];
+    if (todaysId != null && u.program.find(d => d.id === todaysId)) {
+      return todaysId;
+    }
+  }
   // Else next in rotation
   const last = u.lastDoneDayId;
   if (last == null) return 1;
