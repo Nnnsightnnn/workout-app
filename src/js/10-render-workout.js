@@ -205,62 +205,14 @@ function renderWorkoutScreen() {
     return;
   }
 
-  // View dispatcher: chapters/focus when workout active, flat list otherwise
-  if (state.workoutStartedAt && state.workoutView === "focus" && state.focusBlockIdx != null) {
+  // View dispatcher: focus view or chapters (scrollable overview)
+  if (state.workoutView === "focus" && state.focusBlockIdx != null) {
     renderFocusView(container, day);
-    renderStatsBar(container, day);
-  } else if (state.workoutStartedAt) {
-    renderChaptersView(container, day);
-    renderStatsBar(container, day);
+    if (state.workoutStartedAt) renderStatsBar(container, day);
   } else {
-    // Pre-start: show only one block at a time, switchable via pill tabs
-    let firstIncompleteIdx = 0;
-    for (let i = 0; i < day.blocks.length; i++) {
-      const bp = calcBlockProgress(day.blocks[i]);
-      if (bp.done < bp.total) { firstIncompleteIdx = i; break; }
-    }
-    const selectedIdx = state.previewBlockIdx != null ? state.previewBlockIdx : firstIncompleteIdx;
-
-    // Equipment filter bar (pre-start view)
-    container.appendChild(renderEqFilterBar(day));
-
-    // Block strip — compact horizontal list of all blocks
-    const strip = document.createElement("div");
-    strip.className = "block-strip";
-    day.blocks.forEach((block, bi) => {
-      const bp = calcBlockProgress(block);
-      const isDone = bp.total > 0 && bp.done === bp.total;
-      const isActive = bi === selectedIdx;
-      const chip = document.createElement("div");
-      chip.className = "block-strip-chip" + (isActive ? " active" : "") + (isDone ? " done" : "");
-      chip.innerHTML = `<span class="block-strip-letter">${block.letter}</span><span class="block-strip-name">${block.name}</span>`;
-      chip.addEventListener("click", () => {
-        state.previewBlockIdx = bi;
-        renderWorkoutScreen();
-      });
-      strip.appendChild(chip);
-    });
-    // Cooldown chip
-    const cdChip = document.createElement("div");
-    cdChip.className = "block-strip-chip" + (selectedIdx === "cd" ? " active" : "");
-    cdChip.innerHTML = '<span class="block-strip-letter">CD</span><span class="block-strip-name">Cool Down</span>';
-    cdChip.addEventListener("click", () => {
-      state.previewBlockIdx = "cd";
-      renderWorkoutScreen();
-    });
-    strip.appendChild(cdChip);
-    container.appendChild(strip);
-
-    // Render the selected block or cooldown as compact bento preview
-    if (selectedIdx === "cd") {
-      container.appendChild(renderCooldownPreview());
-    } else {
-      container.appendChild(renderBlockPreview(day, day.blocks[selectedIdx], selectedIdx));
-    }
-
-    container.querySelectorAll(".exercise-card").forEach((card, i) => {
-      card.style.setProperty("--card-index", i);
-    });
+    // Chapters view — all blocks scrollable (works both pre-start and active)
+    renderChaptersView(container, day);
+    if (state.workoutStartedAt) renderStatsBar(container, day);
   }
 
   updateFinishButton();
@@ -340,12 +292,12 @@ function renderDayPicker() {
 
     card.innerHTML = html;
 
-    // Tapping the card starts the workout
+    // Tapping the card opens the workout
     card.addEventListener("click", (e) => {
       if (e.target.closest(".dpc-controls-inner") || e.target.closest(".dpc-expand-hint")) return;
       state.currentDayId = d.id;
       state.dayChosen = true;
-      startWorkout();
+      openWorkout();
     });
 
     // "Adjust time" link toggles the config panel
@@ -443,7 +395,7 @@ function _wireTimeBudgetCard(card, day, breakdown) {
         }
         state.currentDayId = day.id;
         state.dayChosen = true;
-        startWorkout();
+        openWorkout();
       });
     });
   }
@@ -1766,7 +1718,7 @@ function renderChaptersView(container, day) {
   // Hero title
   const heroTitle = document.createElement("div");
   heroTitle.className = "chapters-hero-title";
-  heroTitle.textContent = "The Manifest";
+  heroTitle.textContent = "Overview";
   wrap.appendChild(heroTitle);
 
   // Subtitle with counts

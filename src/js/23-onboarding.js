@@ -191,6 +191,7 @@ const ONBOARDING_STEPS = [
     title: "Any areas to watch out for?",
     subtitle: "We'll flag exercises that may need modification — nothing gets removed.",
     type: "multi",
+    showIf: function() { return _obIsRedo; },
     options: [
       { value: "lowerback", label: "Lower Back", icon: "⚠", sub: "Disc issues, chronic pain" },
       { value: "knees",     label: "Knees",      icon: "⚠", sub: "Tendon or joint pain" },
@@ -238,23 +239,20 @@ function getRecommendedTemplate(a) {
   // Resolve effective equipment from detail selection (if available)
   var eqDetail = a.equipmentDetail || [];
   var hasBarbell = eqDetail.length ? eqDetail.includes("barbell") : a.equipment !== "bodyweight";
-  var hasMachines = eqDetail.length ? (eqDetail.includes("cable") || eqDetail.includes("machine")) : a.equipment === "full";
-  var hasKettlebell = eqDetail.length ? eqDetail.includes("kettlebell") : a.equipment === "full";
   var hasDumbbell = eqDetail.length ? eqDetail.includes("dumbbell") : a.equipment !== "bodyweight";
 
   // Equipment gate — bodyweight users (or fine-tuned to no barbell + no dumbbell)
   var effectiveBodyweight = a.equipment === "bodyweight" || (eqDetail.length && !hasBarbell && !hasDumbbell);
   if (effectiveBodyweight) {
     if (days >= 4) return "calisthenics4";
+    if (days <= 2) return "runner2";
     return "minimal3";
   }
 
-  // Short sessions → time-efficient programs
-  if (dur <= 30) return days <= 3 ? "rpt3" : "rpt3"; // RPT is built for 30-45 min
-  if (dur <= 45 && !hasAthletic) {
-    if (days <= 3) return "rpt3";
-    // 4+ days at 45min works for most programs
-  }
+  // Short sessions → time-efficient programs (RPT is built for 30–45 min)
+  if (dur <= 30) return "rpt3";
+  if (dur <= 45 && !hasAthletic && days <= 3) return "rpt3";
+  // 4+ days at 45min: fall through to the goal/days matrix below.
 
   // Age gate — 40+
   if (a.age === "40plus") {
@@ -289,7 +287,8 @@ function getRecommendedTemplate(a) {
 
   // Multi-goal combos: strength + hypertrophy → powerbuilding
   if (hasStrength && hasHypertrophy) {
-    if (days <= 3) return "jbrown3";
+    if (days <= 2) return "runner2"; // no 2-day powerbuilding template; minimal-time fallback
+    if (days === 3) return "jbrown3";
     if (days === 4) return "phul4"; // PHUL blends strength + hypertrophy
     return "conjugate5";
   }
@@ -326,10 +325,7 @@ function getRecommendedTemplate(a) {
 
   // General fitness
   if (days <= 2) return "runner2";
-  if (days === 3) {
-    if (a.bodyGoal === "fat_loss") return "strength_cond4"; // wait, 3 day... use ppl3
-    return "ppl3";
-  }
+  if (days === 3) return "ppl3";
   if (days === 4) return "strength_cond4";
   if (days === 5) return "functional5";
   return "ppl6"; // 6-day general
@@ -361,7 +357,8 @@ function saveOnboarding(answers) {
     ...answers,
     recommendedTemplate,
     defaultRestSeconds,
-    completedAt: Date.now()
+    completedAt: Date.now(),
+    injuriesDeferred: !_obIsRedo
   };
   saveStore(s);
   return s.onboarding;
@@ -421,6 +418,10 @@ function dismissOnboarding() {
   s.onboardingDismissedAt = Date.now();
   saveStore(s);
   closeOnboarding();
+  // If no users exist, fall back to the Add User dialog
+  if (!s.users.length) {
+    openAddUserDialog(true);
+  }
 }
 
 function _obIsStepVisible(step) {
@@ -445,6 +446,7 @@ function _renderObStep() {
   if (!_obIsStepVisible(step)) {
     _obStep++;
     if (_obStep < ONBOARDING_STEPS.length) { _renderObStep(); }
+    else { _obTransition(_obFinish); }
     return;
   }
 
@@ -682,8 +684,6 @@ function _obFinish() {
   if (_obIsRedo) {
     _renderObHandoffRedo(onb);
   } else {
-    // Pre-select the recommended template in the add-user dialog (sheet is open behind overlay)
-    _obPreselectTemplate(onb.recommendedTemplate);
     _renderObHandoff(onb);
   }
 }
@@ -731,26 +731,48 @@ function _renderObHandoff(onb) {
   const reasons = _buildHandoffReasons(_obAnswers, onb.recommendedTemplate);
   const reasonsHtml = reasons.map(function(r, i) { return '<li style="--ob-card-i:' + i + '">' + r + '</li>'; }).join("");
 
+  const days = _obAnswers.days || 4;
+  const goalMessages = {
+    muscle: "Building the strongest version of yourself",
+    fat_loss: "Training your way to a leaner you",
+    recomp: "Reshaping your body, one session at a time",
+    maintain: "Staying sharp and consistent"
+  };
+  const identityMsg = goalMessages[_obAnswers.bodyGoal] || "Building a training habit that lasts";
+
   inner.innerHTML = `
     <div class="ob-progress"><div class="ob-progress-fill" style="width:100%"></div></div>
     <div class="ob-body ob-handoff">
       <div class="ob-step-label">You're all set</div>
-      <h2 class="ob-title">Your program is ready —</h2>
+      <h2 class="ob-title">You're becoming someone who trains ${days} days a week.</h2>
+      <p class="ob-handoff-identity">${identityMsg}</p>
       <div class="ob-program-name">${tplName}</div>
       <ul class="ob-reasons">${reasonsHtml}</ul>
-      <p class="ob-handoff-hint">Enter your name below to start training.</p>
+      <input type="text" class="name-input ob-name-input" id="obNameInput" placeholder="Your name" maxlength="40" autocomplete="off">
       <div class="ob-actions">
         <button class="ob-continue-btn" id="obStartBtn">Let's Go →</button>
       </div>
     </div>`;
 
-  document.getElementById("obStartBtn").addEventListener("click", () => {
+  const nameInput = document.getElementById("obNameInput");
+  setTimeout(() => nameInput.focus(), 150);
+
+  const doStart = () => {
+    const name = nameInput.value.trim();
+    if (!name) { nameInput.focus(); return; }
+    const u = addUser(name, onb.recommendedTemplate);
+    state.currentDayId = determineDefaultDay();
     closeOnboarding();
+    closeSheet();
+    renderUserChip();
+    startFirstWorkout();
     setTimeout(() => {
-      const nameInput = document.getElementById("newUserName");
-      if (nameInput) nameInput.focus();
-    }, 150);
-  });
+      if (typeof startTutorial === "function") startTutorial();
+    }, 600);
+  };
+
+  nameInput.addEventListener("keydown", e => { if (e.key === "Enter") doStart(); });
+  document.getElementById("obStartBtn").addEventListener("click", doStart);
 }
 
 function _obPreselectTemplate(tplId) {
@@ -881,3 +903,10 @@ function renderProfileCard() {
     `;
   }
 }
+
+// Expose onboarding internals on window for test harnesses (no-op for production behavior).
+try {
+  window.ONBOARDING_STEPS = ONBOARDING_STEPS;
+  window.EQUIPMENT_PRESETS = EQUIPMENT_PRESETS;
+  window.EQUIPMENT_LABELS = EQUIPMENT_LABELS;
+} catch (e) {}

@@ -118,8 +118,10 @@ function importData() {
         const draft = getDraft();
         if (draft) {
           state.dayChosen = true;
-          state.workoutStartedAt = draft.startedAt;
-          startSessionTimer();
+          if (state.autoTimer) {
+            state.workoutStartedAt = draft.startedAt;
+            startSessionTimer();
+          }
         }
 
         document.querySelectorAll("#unitToggle button").forEach(b =>

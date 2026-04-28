@@ -1193,6 +1193,54 @@
   .sheet-item-add .icon { font-size: 20px; font-weight: 700; }
   .sheet-item-add:active { background: rgba(255,107,31,0.08); }
 
+  /* === Changelog ("What's new") sheet === */
+  .changelog-sheet .changelog-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .changelog-sheet h3 {
+    margin: 0;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .changelog-subtitle {
+    color: var(--accent);
+    font-size: 13px; font-weight: 700;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .changelog-list {
+    list-style: none; padding: 0; margin: 0 0 14px 0;
+  }
+  .changelog-list li {
+    position: relative;
+    padding: 10px 12px 10px 30px;
+    margin-bottom: 6px;
+    background: var(--bg-card-2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--pillow-sm);
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  .changelog-list li::before {
+    content: "\2022";
+    position: absolute;
+    left: 12px; top: 10px;
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 16px;
+  }
+  .changelog-got-it {
+    justify-content: center;
+    border-color: var(--accent);
+    color: var(--accent);
+    margin-top: 4px;
+  }
+  .changelog-got-it .icon { color: var(--accent); }
+
   .lib-search {
     width: 100%; background: var(--bg-card-2); padding: 10px 12px;
     border-radius: 14px; font-size: 14px; margin-bottom: 10px;
@@ -2947,6 +2995,13 @@
   .ob-handoff-hint {
     font-size: 13px; color: var(--text-faint);
     text-align: center; margin-bottom: 0; line-height: 1.5;
+  }
+  .ob-handoff-identity {
+    font-size: 14px; color: var(--text-dim); line-height: 1.5;
+    margin: 0 0 16px; font-style: italic;
+  }
+  .ob-name-input {
+    margin: 0 0 16px; width: 100%; box-sizing: border-box;
   }
 
   /* ============================================================
@@ -5423,6 +5478,519 @@
   font-size: 12px; color: var(--text-faint);
 }
 
+/* ============================================================ */
+/* BODY MEASUREMENTS SCREEN — Dashboard-Pillow                  */
+/* ============================================================ */
+
+.body-screen-header {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 8px 0 4px;
+}
+.body-screen-header h2 {
+  font-family: var(--font-display);
+  font-size: 32px; font-weight: 700; line-height: 1.05;
+  letter-spacing: -0.02em; margin: 0;
+  color: var(--text);
+}
+.body-screen-subtitle {
+  margin: 4px 0 0; color: var(--text-dim);
+  font-size: 13px; line-height: 1.4;
+}
+
+/* Quick log CTA */
+.body-quick-log-btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; margin: 16px 0 0;
+  padding: 16px 18px; min-height: 56px;
+  background: var(--bg-card);
+  border: 2px solid var(--accent-border);
+  border-radius: 16px;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 15px; font-weight: 600; letter-spacing: 0.01em;
+  box-shadow: var(--pillow-accent);
+  cursor: pointer;
+  transition: transform 0.08s, box-shadow 0.08s, border-color 0.15s;
+  touch-action: manipulation;
+}
+.body-quick-log-btn:active {
+  transform: var(--squish-sm);
+  box-shadow: var(--pillow-pressed);
+}
+.body-quick-log-btn.is-open {
+  border-color: var(--accent);
+  background: rgba(255,107,31,0.08);
+}
+.body-quick-log-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px;
+  background: var(--accent); color: #fff;
+  border-radius: 8px;
+  font-size: 18px; font-weight: 700; line-height: 1;
+  box-shadow: 0 2px 6px rgba(255,107,31,0.35);
+}
+.body-quick-log-btn.is-open .body-quick-log-icon {
+  background: var(--bg-elev); color: var(--accent);
+  box-shadow: none;
+}
+
+/* Log form expansion */
+.body-log-form {
+  margin-top: 12px; padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-visible);
+  border-radius: 16px;
+  box-shadow: var(--pillow-sm);
+  animation: bodyLogFormIn 0.18s ease-out;
+}
+@keyframes bodyLogFormIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.body-log-field { display: flex; flex-direction: column; gap: 6px; }
+.body-log-field label {
+  font-family: var(--font-mono);
+  font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--text-dim);
+}
+.body-log-field .unit-suffix {
+  color: var(--text-faint); font-weight: 500; letter-spacing: 0.08em;
+}
+.body-log-field input {
+  width: 100%; padding: 12px 14px; min-height: 48px;
+  background: var(--bg-void);
+  border: 1.5px solid var(--border-visible);
+  border-radius: 12px;
+  color: var(--text); font-family: var(--font-mono);
+  font-size: 18px; font-weight: 600;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.body-log-field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow-soft);
+}
+.body-log-field--primary { margin-bottom: 12px; }
+.body-log-field--primary input { font-size: 22px; min-height: 54px; }
+.body-log-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px;
+}
+.body-save-btn {
+  display: block; width: 100%; margin-top: 14px;
+  padding: 14px 18px; min-height: 50px;
+  background: var(--accent); color: #fff;
+  border: 2px solid var(--accent); border-radius: 14px;
+  font-family: var(--font-display);
+  font-size: 15px; font-weight: 700; letter-spacing: 0.02em;
+  box-shadow: var(--pillow-primary);
+  cursor: pointer;
+  transition: transform 0.08s, box-shadow 0.08s;
+  touch-action: manipulation;
+}
+.body-save-btn:active {
+  transform: var(--squish-sm);
+  box-shadow: var(--pillow-primary-pressed);
+}
+.body-log-hint {
+  margin: 10px 0 0; color: var(--text-faint);
+  font-size: 12px; text-align: center;
+}
+
+/* Nudge banner */
+.body-nudge {
+  display: flex; align-items: center; gap: 10px;
+  margin: 14px 0 0; padding: 12px 14px;
+  background: rgba(255,107,31,0.06);
+  border: 1px solid var(--accent-border);
+  border-radius: 12px;
+  color: var(--text); font-size: 13px; line-height: 1.35;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.body-nudge:active { background: rgba(255,107,31,0.12); }
+.body-nudge strong { color: var(--accent); font-weight: 700; }
+.body-nudge-icon { font-size: 16px; flex-shrink: 0; }
+
+/* Cards grid — 2 col, weight hero spans both */
+.body-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 18px;
+}
+.body-cards-grid > .body-mcard:first-child {
+  grid-column: 1 / -1;
+}
+
+/* Metric card */
+.body-mcard {
+  position: relative;
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 14px 14px 12px;
+  background: var(--bg-card);
+  border: 2px solid var(--border-visible);
+  border-radius: 16px;
+  box-shadow: var(--pillow-sm);
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s, border-color 0.15s;
+  touch-action: manipulation;
+  overflow: hidden;
+  min-height: 110px;
+}
+.body-mcard:active {
+  transform: var(--squish-sm);
+  box-shadow: var(--pillow-pressed);
+}
+.body-mcard.is-expanded {
+  border-color: var(--accent-border-hover);
+  box-shadow: var(--pillow-accent);
+}
+.body-mcard.has-chart { padding-bottom: 8px; }
+.body-cards-grid > .body-mcard:first-child {
+  min-height: 180px;
+  padding: 18px 18px 14px;
+}
+
+.body-mcard-top {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px;
+}
+.body-mcard-label {
+  font-family: var(--font-mono);
+  font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.16em;
+  color: var(--text-dim);
+}
+.body-cards-grid > .body-mcard:first-child .body-mcard-label {
+  font-size: 11px; color: var(--accent);
+}
+.body-metric-ago {
+  font-family: var(--font-mono);
+  font-size: 10px; font-weight: 500;
+  color: var(--text-faint);
+  padding: 2px 6px; background: var(--bg-void);
+  border-radius: 6px;
+}
+.body-mcard-value {
+  font-family: var(--font-display);
+  font-size: 26px; font-weight: 700; line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin-top: 2px;
+}
+.body-cards-grid > .body-mcard:first-child .body-mcard-value {
+  font-size: 42px; font-weight: 700;
+}
+.body-mcard-empty {
+  margin-top: 4px;
+  font-size: 12px; color: var(--text-faint);
+  font-style: italic;
+}
+.body-delta {
+  display: inline-flex; align-items: center; gap: 4px;
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 3px 8px;
+  font-family: var(--font-mono);
+  font-size: 11px; font-weight: 600;
+  border-radius: 6px;
+}
+.body-delta.delta-up   { color: var(--accent);  background: rgba(255,107,31,0.10); }
+.body-delta.delta-down { color: var(--success); background: rgba(45,212,168,0.10); }
+.body-delta.delta-flat { color: var(--text-faint); background: var(--bg-void); }
+.body-month-delta {
+  display: inline-block;
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 10px; font-weight: 500;
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+}
+
+.body-chart {
+  display: block; width: 100%;
+  height: 56px;
+  margin-top: 6px;
+}
+.body-cards-grid > .body-mcard:first-child .body-chart { height: 110px; }
+.body-mcard.is-expanded .body-chart { height: 140px; }
+
+/* Full history list */
+.body-full-history {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.body-hist-row {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 12px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--pillow-sm);
+}
+.body-hist-date {
+  font-family: var(--font-mono);
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--text-dim);
+}
+.body-hist-values {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.body-hist-tag {
+  display: inline-block;
+  padding: 4px 8px;
+  background: var(--bg-void);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px; font-weight: 500;
+  color: var(--text);
+}
+
+/* === TUTORIAL (coach-mark overlay) === */
+.header-action-btn.help-btn {
+  display: flex;
+  width: 32px; min-width: 32px; padding: 0;
+  border-radius: 50%;
+  font-size: 14px; font-weight: 800;
+  color: var(--text-dim);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  box-shadow: var(--pillow-sm);
+}
+.header-action-btn.help-btn:active {
+  color: var(--text);
+  transform: var(--squish-sm);
+  box-shadow: var(--pillow-pressed);
+}
+
+.tutorial-overlay {
+  position: fixed; inset: 0;
+  z-index: 4000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 220ms var(--spring-gentle);
+}
+.tutorial-overlay.active {
+  pointer-events: auto;
+  opacity: 1;
+}
+.tutorial-mask {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+}
+.tutorial-bubble {
+  position: absolute;
+  max-width: 320px;
+  width: calc(100vw - 32px);
+  background: var(--bg-card);
+  color: var(--text);
+  border: 2px solid var(--accent-border);
+  border-radius: 14px;
+  box-shadow: 0 3px 0 var(--accent-dim), 0 12px 32px rgba(0,0,0,0.4);
+  padding: 16px 18px 14px;
+  pointer-events: auto;
+  transform: translateY(4px);
+  opacity: 0;
+  transition: transform 240ms var(--spring), opacity 200ms ease;
+}
+.tutorial-overlay.active .tutorial-bubble {
+  opacity: 1;
+  transform: translateY(0);
+}
+.tutorial-arrow {
+  position: absolute;
+  width: 14px; height: 14px;
+  background: var(--bg-card);
+  border-top: 2px solid var(--accent-border);
+  border-left: 2px solid var(--accent-border);
+  pointer-events: none;
+}
+.tutorial-bubble[data-placement="bottom"] .tutorial-arrow {
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+}
+.tutorial-bubble[data-placement="top"] .tutorial-arrow {
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%) rotate(225deg);
+}
+.tutorial-bubble[data-placement="left"] .tutorial-arrow {
+  top: 50%;
+  right: -8px;
+  transform: translateY(-50%) rotate(135deg);
+}
+.tutorial-bubble[data-placement="right"] .tutorial-arrow {
+  top: 50%;
+  left: -8px;
+  transform: translateY(-50%) rotate(-45deg);
+}
+.tutorial-bubble[data-placement="center"] .tutorial-arrow {
+  display: none;
+}
+.tutorial-step-label {
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  margin-bottom: 6px;
+}
+.tutorial-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin-bottom: 6px;
+  line-height: 1.25;
+}
+.tutorial-body {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-mist);
+  margin-bottom: 14px;
+}
+.tutorial-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.tutorial-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tutorial-skip,
+.tutorial-back,
+.tutorial-next {
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-display);
+  border: 2px solid var(--border-visible);
+  background: var(--bg-card-2);
+  color: var(--text-dim);
+  box-shadow: 0 3px 0 rgba(0,0,0,0.3);
+  transition: transform 0.15s var(--spring), box-shadow 0.15s ease;
+}
+.tutorial-skip {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  padding-left: 4px;
+}
+.tutorial-back {
+  color: var(--text);
+}
+.tutorial-next {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent-dim);
+  box-shadow: 0 3px 0 var(--accent-dim);
+}
+.tutorial-skip:active,
+.tutorial-back:active,
+.tutorial-next:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--accent-dim);
+}
+.tutorial-back[hidden],
+.tutorial-next[hidden] {
+  display: none;
+}
+
+@media (max-width: 380px) {
+  .tutorial-bubble { padding: 14px 14px 12px; max-width: calc(100vw - 24px); }
+  .tutorial-title { font-size: 16px; }
+  .tutorial-body { font-size: 12.5px; }
+}
+
+/* Inline edit state for metric cards */
+.body-mcard.is-editing {
+  border-color: var(--accent);
+  box-shadow: var(--pillow-accent), 0 0 0 3px var(--accent-glow-soft);
+  cursor: default;
+}
+.body-mcard.is-editing:active { transform: none; }
+
+.body-mcard-edit {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 4px;
+}
+.body-step-btn {
+  flex: 0 0 auto;
+  width: 36px; height: 36px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--bg-void);
+  border: 1.5px solid var(--accent-border);
+  border-radius: 10px;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 18px; font-weight: 700; line-height: 1;
+  box-shadow: var(--pillow-sm);
+  cursor: pointer;
+  transition: transform 0.08s, box-shadow 0.08s, background 0.12s;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.body-step-btn:active {
+  transform: var(--squish-sm);
+  box-shadow: var(--pillow-pressed);
+  background: rgba(255,107,31,0.10);
+}
+.body-cards-grid > .body-mcard:first-child .body-step-btn {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  font-size: 22px;
+}
+
+.body-edit-input {
+  flex: 1; min-width: 0;
+  width: 100%;
+  padding: 6px 8px; min-height: 36px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid var(--accent);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 22px; font-weight: 700;
+  text-align: center;
+  outline: none;
+  -webkit-appearance: none; appearance: none;
+}
+.body-edit-input::-webkit-outer-spin-button,
+.body-edit-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.body-edit-input[type=number] { -moz-appearance: textfield; }
+.body-cards-grid > .body-mcard:first-child .body-edit-input {
+  font-size: 36px; min-height: 50px;
+}
+.body-edit-unit {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--text-dim);
+}
+.body-cards-grid > .body-mcard:first-child .body-edit-unit {
+  font-size: 13px;
+}
+.body-edit-hint {
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 9px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--text-faint);
+  text-align: center;
+}
+
 </style>
 </head>
 <body>
@@ -5442,6 +6010,7 @@
     </div>
     <button class="header-action-btn primary" id="headerStartBtn">▶ Start</button>
     <button class="header-action-btn success" id="headerFinishBtn">✓ Sets</button>
+    <button class="header-action-btn help-btn" id="headerHelpBtn" aria-label="Show tutorial" title="Show tutorial" onclick="startTutorial({force:true})">?</button>
   </div>
   <button class="user-chip" id="userChip" title="Switch user">
     <span class="user-chip-avatar" id="userChipAvatar">?</span>
@@ -5558,6 +6127,13 @@
       <button data-unit="kg">Kilograms</button>
     </div>
 
+    <div class="section-title">Workout Timer</div>
+    <p style="color: var(--text-dim); font-size: 12px; margin-bottom: 8px;">Auto-start the session timer when you begin a workout.</p>
+    <div class="unit-toggle" id="autoTimerToggle">
+      <button data-val="off" class="active">Off</button>
+      <button data-val="on">On</button>
+    </div>
+
     <div class="section-title">Plate Calculator</div>
     <div class="plate-card">
       <div class="field-row">
@@ -5669,6 +6245,32 @@
   <div class="onboarding-inner" id="onboardingInner"></div>
 </div>
 
+<!-- Tutorial Coach-marks Overlay -->
+<div class="tutorial-overlay" id="tutorialOverlay" aria-hidden="true">
+  <svg class="tutorial-mask" id="tutorialMask" preserveAspectRatio="none">
+    <defs>
+      <mask id="tutorialSpotlightMask">
+        <rect width="100%" height="100%" fill="white"/>
+        <rect id="tutorialSpotlight" x="-100" y="-100" width="0" height="0" rx="14" ry="14" fill="black"/>
+      </mask>
+    </defs>
+    <rect width="100%" height="100%" fill="rgba(0,0,0,0.62)" mask="url(#tutorialSpotlightMask)"/>
+  </svg>
+  <div class="tutorial-bubble" id="tutorialBubble" role="dialog" aria-live="polite">
+    <div class="tutorial-arrow" id="tutorialArrow"></div>
+    <div class="tutorial-step-label" id="tutorialStepLabel">1 of 9</div>
+    <h3 class="tutorial-title" id="tutorialTitle"></h3>
+    <p class="tutorial-body" id="tutorialBody"></p>
+    <div class="tutorial-actions">
+      <button class="tutorial-skip" id="tutorialSkipBtn">Skip tour</button>
+      <div class="tutorial-actions-right">
+        <button class="tutorial-back" id="tutorialBackBtn">← Back</button>
+        <button class="tutorial-next" id="tutorialNextBtn">Next →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Bottom Sheet -->
 <div class="sheet-bg" id="sheetBg">
   <div class="sheet" id="sheet">
@@ -5710,6 +6312,20 @@
 
 <script>
 "use strict";
+
+// === Inlined from src/changelog.json ===
+const CHANGELOG = [
+  {
+    "version": "0.16",
+    "date": "2026-04-28",
+    "title": "Equipment filter & ad-hoc workouts",
+    "items": [
+      "Filter the exercise library by available equipment",
+      "Start an ad-hoc workout outside your program",
+      "Onboarding flow polish"
+    ]
+  }
+];
 
 // ============================================================
 // EXERCISE LIBRARY
@@ -7709,6 +8325,7 @@ let state = {
   adhocExercises: null,
   adhocStartedAt: null,
   adhocInputs: null,
+  autoTimer: false,
 };
 
 function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
@@ -7736,12 +8353,21 @@ function newUserRecord(name, templateId, totalWeeks, daysPerWeek) {
     totalWeeks: tw,
     daysPerWeek: dpw,
     pinnedLifts: [],
-    manualPRs: []
+    manualPRs: [],
+    firstWorkoutCompleted: false
   };
 }
 
 function getDefaultStore() {
-  return { _schemaVersion: APP_VERSION, unit: "lbs", users: [], currentUserId: null, onboarding: null, onboardingDismissedAt: null };
+  return { _schemaVersion: APP_VERSION, unit: "lbs", users: [], currentUserId: null, onboarding: null, onboardingDismissedAt: null, autoTimer: false, _lastSeenChangelogVersion: latestChangelogVersion(), tutorialState: { completedAt: null, dismissedAt: null, lastStepId: null } };
+}
+
+// Latest changelog version available in this build, or null if no entries.
+// Used for both fresh-install initialization and existing-user backfill so
+// that the first-ever deploy of the changelog feature doesn't spam users
+// with notes for releases they already have.
+function latestChangelogVersion() {
+  return (typeof CHANGELOG !== "undefined" && Array.isArray(CHANGELOG) && CHANGELOG[0]) ? CHANGELOG[0].version : null;
 }
 
 // Stable prefix for corrupt-data backups. See preserveCorruptData().
@@ -7787,11 +8413,23 @@ function loadStore() {
     if (s.currentUserId && !s.users.find(u => u.id === s.currentUserId)) {
       s.currentUserId = s.users[0]?.id || null;
     }
+    // Defensive default for autoTimer preference
+    if (s.autoTimer === undefined) s.autoTimer = false;
     // Defensive defaults for onboarding
     if (s.onboarding === undefined) s.onboarding = null;
     if (s.onboardingDismissedAt === undefined) s.onboardingDismissedAt = null;
     if (s.onboarding && s.onboarding.selectedDays === undefined) s.onboarding.selectedDays = null;
     if (s.onboarding && s.onboarding.equipmentDetail === undefined) s.onboarding.equipmentDetail = null;
+    if (s.onboarding && s.onboarding.injuriesDeferred === undefined) s.onboarding.injuriesDeferred = false;
+    // Defensive default for tutorialState (added in v16)
+    if (!s.tutorialState) s.tutorialState = { completedAt: null, dismissedAt: null, lastStepId: null };
+    // Defensive default for changelog last-seen marker. Backfilling to "latest"
+    // here is intentional: it silences the changelog sheet on the first deploy
+    // of this feature for everyone who already has a store. Future releases
+    // (new entries with newer version strings) will trigger the sheet normally.
+    if (s._lastSeenChangelogVersion === undefined || s._lastSeenChangelogVersion === null) {
+      s._lastSeenChangelogVersion = latestChangelogVersion();
+    }
     // Fill missing per-user fields
     s.users.forEach(u => {
       if (!u.id) u.id = genId();
@@ -7835,6 +8473,7 @@ function loadStore() {
       // Defensive default for v13: manual PRs and pinned lifts
       if (!Array.isArray(u.manualPRs)) u.manualPRs = [];
       if (!Array.isArray(u.pinnedLifts)) u.pinnedLifts = [];
+      if (u.firstWorkoutCompleted === undefined) u.firstWorkoutCompleted = false;
       // Defensive defaults for session edit fields (Workstream D)
       // Also cleans up _original audit entries older than 7 days.
       const sevenDaysAgo = Date.now() - 7 * 86400000;
@@ -7984,7 +8623,7 @@ function switchUser(id) {
   state.workoutStartedAt = null;
   state.currentDayId = determineDefaultDay();
   const d = getDraft();
-  if (d) { state.workoutStartedAt = d.startedAt; startSessionTimer(); }
+  if (d && state.autoTimer) { state.workoutStartedAt = d.startedAt; startSessionTimer(); }
   renderWorkoutScreen();
   renderUserChip();
 }
@@ -7992,8 +8631,8 @@ function switchUser(id) {
 // ============================================================
 // VERSION
 // ============================================================
-const APP_VERSION = 14;
-const APP_BUILD = "06ff589e";
+const APP_VERSION = 16;
+const APP_BUILD = "00fcca3e";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -8268,6 +8907,40 @@ const MIGRATIONS = [
       }
       return store;
     }
+  },
+  {
+    version: 15,
+    description: "Add firstWorkoutCompleted flag and injuriesDeferred for streamlined onboarding",
+    migrate(store) {
+      store.users.forEach(u => {
+        if (u.firstWorkoutCompleted === undefined) {
+          u.firstWorkoutCompleted = (u.sessions || []).length > 0;
+        }
+      });
+      if (store.onboarding) {
+        if (store.onboarding.injuriesDeferred === undefined) {
+          store.onboarding.injuriesDeferred = false;
+        }
+      }
+      return store;
+    }
+  },
+  {
+    version: 16,
+    description: "Add tutorialState for coach-mark tour persistence",
+    migrate(store) {
+      if (!store.tutorialState) {
+        store.tutorialState = {
+          // Existing users have already learned the app — mark complete so the
+          // tour doesn't auto-fire on their next load. They can still re-open it
+          // from the ? button.
+          completedAt: store.users.some(u => (u.sessions || []).length > 0) ? Date.now() : null,
+          dismissedAt: null,
+          lastStepId: null
+        };
+      }
+      return store;
+    }
   }
 ];
 
@@ -8487,8 +9160,10 @@ function importData() {
         const draft = getDraft();
         if (draft) {
           state.dayChosen = true;
-          state.workoutStartedAt = draft.startedAt;
-          startSessionTimer();
+          if (state.autoTimer) {
+            state.workoutStartedAt = draft.startedAt;
+            startSessionTimer();
+          }
         }
 
         document.querySelectorAll("#unitToggle button").forEach(b =>
@@ -8604,8 +9279,6 @@ function ensureDraft() {
       u.draft = { dayId: state.currentDayId, startedAt: Date.now(), inputs: {}, pausedAt: null };
     }
   });
-  state.workoutStartedAt = getDraft().startedAt;
-  startSessionTimer();
 }
 
 function saveInput(key, value) {
@@ -8614,8 +9287,10 @@ function saveInput(key, value) {
   if (!user) return;
   if (!user.draft || user.draft.dayId !== state.currentDayId) {
     user.draft = { dayId: state.currentDayId, startedAt: Date.now(), inputs: {}, pausedAt: null };
-    state.workoutStartedAt = user.draft.startedAt;
-    startSessionTimer();
+    if (state.autoTimer) {
+      state.workoutStartedAt = user.draft.startedAt;
+      startSessionTimer();
+    }
   }
   user.draft.inputs[key] = value;
   saveStore(s);
@@ -9891,62 +10566,14 @@ function renderWorkoutScreen() {
     return;
   }
 
-  // View dispatcher: chapters/focus when workout active, flat list otherwise
-  if (state.workoutStartedAt && state.workoutView === "focus" && state.focusBlockIdx != null) {
+  // View dispatcher: focus view or chapters (scrollable overview)
+  if (state.workoutView === "focus" && state.focusBlockIdx != null) {
     renderFocusView(container, day);
-    renderStatsBar(container, day);
-  } else if (state.workoutStartedAt) {
-    renderChaptersView(container, day);
-    renderStatsBar(container, day);
+    if (state.workoutStartedAt) renderStatsBar(container, day);
   } else {
-    // Pre-start: show only one block at a time, switchable via pill tabs
-    let firstIncompleteIdx = 0;
-    for (let i = 0; i < day.blocks.length; i++) {
-      const bp = calcBlockProgress(day.blocks[i]);
-      if (bp.done < bp.total) { firstIncompleteIdx = i; break; }
-    }
-    const selectedIdx = state.previewBlockIdx != null ? state.previewBlockIdx : firstIncompleteIdx;
-
-    // Equipment filter bar (pre-start view)
-    container.appendChild(renderEqFilterBar(day));
-
-    // Block strip — compact horizontal list of all blocks
-    const strip = document.createElement("div");
-    strip.className = "block-strip";
-    day.blocks.forEach((block, bi) => {
-      const bp = calcBlockProgress(block);
-      const isDone = bp.total > 0 && bp.done === bp.total;
-      const isActive = bi === selectedIdx;
-      const chip = document.createElement("div");
-      chip.className = "block-strip-chip" + (isActive ? " active" : "") + (isDone ? " done" : "");
-      chip.innerHTML = `<span class="block-strip-letter">${block.letter}</span><span class="block-strip-name">${block.name}</span>`;
-      chip.addEventListener("click", () => {
-        state.previewBlockIdx = bi;
-        renderWorkoutScreen();
-      });
-      strip.appendChild(chip);
-    });
-    // Cooldown chip
-    const cdChip = document.createElement("div");
-    cdChip.className = "block-strip-chip" + (selectedIdx === "cd" ? " active" : "");
-    cdChip.innerHTML = '<span class="block-strip-letter">CD</span><span class="block-strip-name">Cool Down</span>';
-    cdChip.addEventListener("click", () => {
-      state.previewBlockIdx = "cd";
-      renderWorkoutScreen();
-    });
-    strip.appendChild(cdChip);
-    container.appendChild(strip);
-
-    // Render the selected block or cooldown as compact bento preview
-    if (selectedIdx === "cd") {
-      container.appendChild(renderCooldownPreview());
-    } else {
-      container.appendChild(renderBlockPreview(day, day.blocks[selectedIdx], selectedIdx));
-    }
-
-    container.querySelectorAll(".exercise-card").forEach((card, i) => {
-      card.style.setProperty("--card-index", i);
-    });
+    // Chapters view — all blocks scrollable (works both pre-start and active)
+    renderChaptersView(container, day);
+    if (state.workoutStartedAt) renderStatsBar(container, day);
   }
 
   updateFinishButton();
@@ -10026,12 +10653,12 @@ function renderDayPicker() {
 
     card.innerHTML = html;
 
-    // Tapping the card starts the workout
+    // Tapping the card opens the workout
     card.addEventListener("click", (e) => {
       if (e.target.closest(".dpc-controls-inner") || e.target.closest(".dpc-expand-hint")) return;
       state.currentDayId = d.id;
       state.dayChosen = true;
-      startWorkout();
+      openWorkout();
     });
 
     // "Adjust time" link toggles the config panel
@@ -10129,7 +10756,7 @@ function _wireTimeBudgetCard(card, day, breakdown) {
         }
         state.currentDayId = day.id;
         state.dayChosen = true;
-        startWorkout();
+        openWorkout();
       });
     });
   }
@@ -11452,7 +12079,7 @@ function renderChaptersView(container, day) {
   // Hero title
   const heroTitle = document.createElement("div");
   heroTitle.className = "chapters-hero-title";
-  heroTitle.textContent = "The Manifest";
+  heroTitle.textContent = "Overview";
   wrap.appendChild(heroTitle);
 
   // Subtitle with counts
@@ -12622,9 +13249,9 @@ function switchDay(dayId) {
   stopSessionTimer();
   state.workoutStartedAt = null;
   renderWorkoutScreen();
-  // If there's a draft for this day, re-start timer
+  // If there's a draft for this day and autoTimer is on, re-start timer
   const draft = getDraft();
-  if (draft) {
+  if (draft && state.autoTimer) {
     state.workoutStartedAt = draft.startedAt;
     startSessionTimer();
   }
@@ -13268,12 +13895,28 @@ function getRandomQuote() {
 // ============================================================
 // START / FINISH WORKOUT
 // ============================================================
-function startWorkout() {
-  if (state.adhocActive) return; // Ad-hoc has its own flow
-  // Skip preview — go directly to chapters view with draft auto-created
+function openWorkout() {
+  if (state.adhocActive) return;
   state.trimmedBlocks = null;
   state.previewBlockIdx = null;
   ensureDraft();
+  if (state.autoTimer) {
+    state.workoutStartedAt = getDraft().startedAt;
+    startSessionTimer();
+  }
+  state.workoutView = "chapters";
+  updateFinishButton();
+  showToast(getRandomQuote(), "quote", 3500);
+  renderWorkoutScreen();
+}
+
+function startWorkout() {
+  if (state.adhocActive) return;
+  state.trimmedBlocks = null;
+  state.previewBlockIdx = null;
+  ensureDraft();
+  state.workoutStartedAt = getDraft().startedAt;
+  startSessionTimer();
   state.workoutView = "chapters";
 
   updateFinishButton();
@@ -13281,10 +13924,33 @@ function startWorkout() {
   renderWorkoutScreen();
 }
 
+function startFirstWorkout() {
+  const day = getCurrentDay();
+  if (!day) { renderWorkoutScreen(); return; }
+
+  // Deliberately undersized first workout (~20 min) per UX research.
+  // The full program regenerates next week via advanceWeek().
+  const estMin = estimateSessionMinutes(day);
+  if (estMin > 20) {
+    const budget = computeTimeBudget(day, 20);
+    if (budget.adjustments.length > 0 && budget.adjustedDay) {
+      updateUser(u => {
+        const dayIdx = u.program.findIndex(d => d.id === day.id);
+        if (dayIdx >= 0) u.program[dayIdx] = budget.adjustedDay;
+      });
+    }
+  }
+
+  state.dayChosen = true;
+  startWorkout();
+}
+
 function _beginWorkoutFocus() {
   state.trimmedBlocks = null;
   state.previewBlockIdx = null;
   ensureDraft();
+  state.workoutStartedAt = getDraft().startedAt;
+  startSessionTimer();
 
   // Jump straight to focus view on first incomplete block
   const day = getCurrentDay();
@@ -13534,6 +14200,7 @@ function finishWorkout() {
     }
     u.draft = null;
     u.lastDoneDayId = day.id;
+    if (!u.firstWorkoutCompleted) u.firstWorkoutCompleted = true;
     // Increment RP completedSessionsByWeek for isMicrocycleBoundary detection
     if (hasRpBlocks && activeMeso && session.mesoWeek) {
       const meso = getMesocycle(u, activeMeso.id);
@@ -14660,8 +15327,8 @@ const BODY_METRICS = [
   { key: "hips",    label: "Hips",     unitFn: _lenUnit,         step: "0.1", icon: "tape" }
 ];
 
-// State for expanded chart metric
-let _bodyExpandedMetric = null;
+// State for inline-edit metric
+let _bodyEditingMetric = null;
 let _bodyShowLogForm = false;
 
 function _escapeHtml(s) {
@@ -14797,7 +15464,7 @@ function renderBodyScreen() {
     const entries = m.filter(e => e[metric.key] != null);
     const lastEntry = entries.length ? entries[entries.length - 1] : null;
     const unitLabel = metric.unitFn();
-    const isExpanded = _bodyExpandedMetric === metric.key;
+    const isEditing = _bodyEditingMetric === metric.key;
 
     // Value display
     let valueText = "--";
@@ -14834,17 +15501,51 @@ function renderBodyScreen() {
       }
     }
 
+    // Body fat shows % suffix; everything else shows unit
+    const editUnit = metric.key === "bodyFat" ? "%" : unitLabel;
+    const editStep = metric.step;
+    const prefillVal = lastEntry ? lastEntry[metric.key] : "";
+
+    // Build the value/edit area — when editing, replace value+deltas with stepper input
+    let valueArea;
+    if (isEditing) {
+      valueArea = `
+        <div class="body-mcard-edit" onclick="event.stopPropagation()">
+          <button class="body-step-btn" type="button"
+                  onmousedown="event.preventDefault()"
+                  ontouchstart="event.preventDefault()"
+                  onclick="_stepEditMetric('${metric.key}', -1); event.stopPropagation();">&minus;</button>
+          <input type="number" id="bodyEditInput-${metric.key}"
+                 class="body-edit-input"
+                 inputmode="decimal" step="${editStep}" min="0"
+                 value="${prefillVal}"
+                 placeholder="0"
+                 onkeydown="_handleEditKey(event, '${metric.key}')"
+                 onblur="_commitEditOnBlur('${metric.key}')"
+                 onclick="event.stopPropagation()">
+          <span class="body-edit-unit">${_escapeHtml(editUnit)}</span>
+          <button class="body-step-btn" type="button"
+                  onmousedown="event.preventDefault()"
+                  ontouchstart="event.preventDefault()"
+                  onclick="_stepEditMetric('${metric.key}', 1); event.stopPropagation();">+</button>
+        </div>
+        <div class="body-edit-hint">Enter to save · Esc to cancel</div>`;
+    } else {
+      valueArea = `
+        <div class="body-mcard-value">${valueText}</div>
+        ${deltaHtml}
+        ${monthHtml}`;
+    }
+
     html += `
-      <div class="body-mcard${isExpanded ? ' is-expanded' : ''}${entries.length >= 2 ? ' has-chart' : ''}" onclick="_toggleMetricExpand('${metric.key}')">
+      <div class="body-mcard${isEditing ? ' is-editing' : ''}${entries.length >= 2 ? ' has-chart' : ''}" onclick="_startEditMetric('${metric.key}')">
         <div class="body-mcard-top">
           <div class="body-mcard-label">${_escapeHtml(metric.label)}</div>
           ${metricNudge}
         </div>
-        <div class="body-mcard-value">${valueText}</div>
-        ${deltaHtml}
-        ${monthHtml}
+        ${valueArea}
         ${entries.length >= 2 ? `<canvas class="body-chart" id="bodyChart-${metric.key}"></canvas>` : ''}
-        ${!lastEntry ? `<div class="body-mcard-empty">No data</div>` : ''}
+        ${!lastEntry && !isEditing ? `<div class="body-mcard-empty">No data &mdash; tap to log</div>` : ''}
       </div>`;
   });
   html += `</div>`;
@@ -14885,9 +15586,21 @@ function renderBodyScreen() {
   BODY_METRICS.forEach(metric => {
     const entries = m.filter(e => e[metric.key] != null);
     if (entries.length >= 2) {
-      _drawBodyChart(metric.key, _bodyExpandedMetric === metric.key);
+      // Hero card (Weight) gets denser labels via taller canvas height set in CSS
+      _drawBodyChart(metric.key, metric.key === "weight");
     }
   });
+
+  // Autofocus editing input if any
+  if (_bodyEditingMetric) {
+    const inp = document.getElementById("bodyEditInput-" + _bodyEditingMetric);
+    if (inp) {
+      inp.focus();
+      // Position cursor at end so + steppers feel natural
+      const len = inp.value.length;
+      try { inp.setSelectionRange(len, len); } catch (e) {}
+    }
+  }
 }
 
 function _toggleLogForm() {
@@ -14901,9 +15614,87 @@ function _toggleLogForm() {
   }
 }
 
-function _toggleMetricExpand(key) {
-  _bodyExpandedMetric = (_bodyExpandedMetric === key) ? null : key;
+// ── Inline-edit helpers ────────────────────────────────────
+
+function _startEditMetric(key) {
+  if (_bodyEditingMetric === key) return;
+  _bodyEditingMetric = key;
+  _bodyShowLogForm = false;
   renderBodyScreen();
+}
+
+function _cancelEditMetric() {
+  _bodyEditingMetric = null;
+  renderBodyScreen();
+}
+
+function _commitEditOnBlur(key) {
+  // Only commit if state still says we're editing this key (clicking a sibling card
+  // re-renders before blur fires in some browsers — guard against double-save)
+  if (_bodyEditingMetric !== key) return;
+  const inp = document.getElementById("bodyEditInput-" + key);
+  if (!inp) return;
+  const raw = inp.value.trim();
+  if (raw === "") { _cancelEditMetric(); return; }
+  const v = parseFloat(raw);
+  if (!Number.isFinite(v) || v <= 0) { _cancelEditMetric(); return; }
+  _saveSingleMetric(key, v);
+  _bodyEditingMetric = null;
+  renderBodyScreen();
+  const meta = BODY_METRICS.find(m => m.key === key);
+  if (meta) {
+    const u = meta.unitFn();
+    const display = key === "bodyFat" ? `${v}%` : `${v} ${u}`;
+    showToast(`${meta.label}: ${display}`, "success");
+  }
+}
+
+function _handleEditKey(ev, key) {
+  if (ev.key === "Enter") {
+    ev.preventDefault();
+    const inp = document.getElementById("bodyEditInput-" + key);
+    if (inp) inp.blur(); // triggers _commitEditOnBlur
+  } else if (ev.key === "Escape") {
+    ev.preventDefault();
+    _cancelEditMetric();
+  }
+}
+
+function _stepEditMetric(key, dir) {
+  const inp = document.getElementById("bodyEditInput-" + key);
+  if (!inp) return;
+  const meta = BODY_METRICS.find(m => m.key === key);
+  // Stepper increment: 0.5 for body measurements (weight/circumference), 0.1 for body fat %
+  const stepSize = (meta && meta.key === "bodyFat") ? 0.1 : 0.5;
+  const cur = parseFloat(inp.value) || 0;
+  let next = cur + dir * stepSize;
+  if (next < 0) next = 0;
+  // Round to 1 decimal to avoid float noise
+  next = Math.round(next * 10) / 10;
+  inp.value = next.toString();
+  inp.focus();
+}
+
+function _saveSingleMetric(key, value) {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayMs = todayStart.getTime();
+  updateUser(u => {
+    // Find any entry from today (most recent first)
+    let todayEntry = null;
+    for (let i = u.measurements.length - 1; i >= 0; i--) {
+      const e = u.measurements[i];
+      const ts = typeof e.date === "number" ? e.date : new Date(e.date).getTime();
+      if (ts >= todayMs) { todayEntry = e; break; }
+      if (ts < todayMs) break;
+    }
+    if (todayEntry) {
+      todayEntry[key] = value;
+    } else {
+      u.measurements.push({ date: Date.now(), [key]: value });
+      if (u.measurements.length > 365) u.measurements = u.measurements.slice(-365);
+    }
+  });
 }
 
 function logMeasurement() {
@@ -15790,6 +16581,18 @@ function initUnitToggle() {
     };
   });
 }
+function initAutoTimerToggle() {
+  const btns = document.querySelectorAll("#autoTimerToggle button");
+  btns.forEach(b => b.classList.toggle("active", (b.dataset.val === "on") === state.autoTimer));
+  btns.forEach(btn => {
+    btn.onclick = () => {
+      btns.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      state.autoTimer = btn.dataset.val === "on";
+      const s = loadStore(); s.autoTimer = state.autoTimer; saveStore(s);
+    };
+  });
+}
 function initNav() {
   document.getElementById("logoBtn").onclick = () => showScreen("workout");
   document.querySelectorAll("nav.bottom button[data-screen]").forEach(btn => {
@@ -15812,7 +16615,8 @@ function initWorkoutScreen() {
       return;
     }
     state.dayChosen = false;
-    renderWorkoutScreen();
+    renderTimelineStrip();
+    renderDayPicker();
   };
   document.getElementById("pickDayBtn").onclick = openDayPicker;
   document.getElementById("customizeDayBtn").onclick = openCustomizeDay;
@@ -15859,11 +16663,13 @@ function init() {
   // Stub: Settings entry renders "No remapped entries" when count is zero. Full UI deferred.
 
   state.unit = s.unit || "lbs";
+  state.autoTimer = !!s.autoTimer;
   document.querySelectorAll("#unitToggle button").forEach(b => b.classList.toggle("active", b.dataset.unit === state.unit));
 
   setupPWA();
-  initUserPicker(); initUnitToggle(); initNav(); initTools();
+  initUserPicker(); initUnitToggle(); initAutoTimerToggle(); initNav(); initTools();
   initWorkoutScreen(); initSheet(); initSidebar(); initInfoGuide();
+  if (typeof initTutorial === "function") initTutorial();
 
   const versionEl = document.getElementById("appVersionLabel");
   if (versionEl) versionEl.textContent = "v" + APP_DISPLAY_VERSION;
@@ -15873,12 +16679,12 @@ function init() {
   // First-run or empty user list → prompt to create first user
   if (!s.users.length || !s.currentUserId) {
     renderUserChip();
-    // Render empty workout screen scaffolding, then prompt
     renderWorkoutScreen();
-    openAddUserDialog(true);
-    // Show onboarding questionnaire above the add-user dialog if not yet completed/dismissed
     if (!s.onboarding?.completedAt && !s.onboardingDismissedAt) {
+      // Onboarding handles user creation inline on the handoff screen
       showOnboardingFlow();
+    } else {
+      openAddUserDialog(true);
     }
     return;
   }
@@ -15886,12 +16692,14 @@ function init() {
   state.userId = s.currentUserId;
   state.currentDayId = determineDefaultDay();
 
-  // Restore draft timer — if draft exists, skip picker and go straight to workout
+  // Restore draft — if draft exists, skip picker and go straight to workout
   const draft = getDraft();
   if (draft) {
     state.dayChosen = true;
-    state.workoutStartedAt = draft.startedAt;
-    startSessionTimer();
+    if (state.autoTimer) {
+      state.workoutStartedAt = draft.startedAt;
+      startSessionTimer();
+    }
     // Resume into focus view on first incomplete block
     const day = getCurrentDay();
     if (day) {
@@ -15910,9 +16718,18 @@ function init() {
   renderUserChip();
   renderWorkoutScreen();
 
-  // Show onboarding if not completed and not dismissed
+  // Show onboarding if not completed and not dismissed.
+  // If onboarding isn't due, surface any pending changelog ("What's new") sheet —
+  // showChangelogSheet only fires when CHANGELOG[0].version differs from the
+  // user's _lastSeenChangelogVersion. Brand-new stores are backfilled to
+  // "latest" in loadStore() so first-installs never see this.
   if (!s.onboarding?.completedAt && !s.onboardingDismissedAt) {
     showOnboardingFlow();
+  } else {
+    const pendingChangelog = getPendingChangelog();
+    if (pendingChangelog) {
+      setTimeout(() => showChangelogSheet(pendingChangelog), 800);
+    }
   }
 }
 
@@ -17619,6 +18436,7 @@ const ONBOARDING_STEPS = [
     title: "Any areas to watch out for?",
     subtitle: "We'll flag exercises that may need modification — nothing gets removed.",
     type: "multi",
+    showIf: function() { return _obIsRedo; },
     options: [
       { value: "lowerback", label: "Lower Back", icon: "⚠", sub: "Disc issues, chronic pain" },
       { value: "knees",     label: "Knees",      icon: "⚠", sub: "Tendon or joint pain" },
@@ -17666,23 +18484,20 @@ function getRecommendedTemplate(a) {
   // Resolve effective equipment from detail selection (if available)
   var eqDetail = a.equipmentDetail || [];
   var hasBarbell = eqDetail.length ? eqDetail.includes("barbell") : a.equipment !== "bodyweight";
-  var hasMachines = eqDetail.length ? (eqDetail.includes("cable") || eqDetail.includes("machine")) : a.equipment === "full";
-  var hasKettlebell = eqDetail.length ? eqDetail.includes("kettlebell") : a.equipment === "full";
   var hasDumbbell = eqDetail.length ? eqDetail.includes("dumbbell") : a.equipment !== "bodyweight";
 
   // Equipment gate — bodyweight users (or fine-tuned to no barbell + no dumbbell)
   var effectiveBodyweight = a.equipment === "bodyweight" || (eqDetail.length && !hasBarbell && !hasDumbbell);
   if (effectiveBodyweight) {
     if (days >= 4) return "calisthenics4";
+    if (days <= 2) return "runner2";
     return "minimal3";
   }
 
-  // Short sessions → time-efficient programs
-  if (dur <= 30) return days <= 3 ? "rpt3" : "rpt3"; // RPT is built for 30-45 min
-  if (dur <= 45 && !hasAthletic) {
-    if (days <= 3) return "rpt3";
-    // 4+ days at 45min works for most programs
-  }
+  // Short sessions → time-efficient programs (RPT is built for 30–45 min)
+  if (dur <= 30) return "rpt3";
+  if (dur <= 45 && !hasAthletic && days <= 3) return "rpt3";
+  // 4+ days at 45min: fall through to the goal/days matrix below.
 
   // Age gate — 40+
   if (a.age === "40plus") {
@@ -17717,7 +18532,8 @@ function getRecommendedTemplate(a) {
 
   // Multi-goal combos: strength + hypertrophy → powerbuilding
   if (hasStrength && hasHypertrophy) {
-    if (days <= 3) return "jbrown3";
+    if (days <= 2) return "runner2"; // no 2-day powerbuilding template; minimal-time fallback
+    if (days === 3) return "jbrown3";
     if (days === 4) return "phul4"; // PHUL blends strength + hypertrophy
     return "conjugate5";
   }
@@ -17754,10 +18570,7 @@ function getRecommendedTemplate(a) {
 
   // General fitness
   if (days <= 2) return "runner2";
-  if (days === 3) {
-    if (a.bodyGoal === "fat_loss") return "strength_cond4"; // wait, 3 day... use ppl3
-    return "ppl3";
-  }
+  if (days === 3) return "ppl3";
   if (days === 4) return "strength_cond4";
   if (days === 5) return "functional5";
   return "ppl6"; // 6-day general
@@ -17789,7 +18602,8 @@ function saveOnboarding(answers) {
     ...answers,
     recommendedTemplate,
     defaultRestSeconds,
-    completedAt: Date.now()
+    completedAt: Date.now(),
+    injuriesDeferred: !_obIsRedo
   };
   saveStore(s);
   return s.onboarding;
@@ -17849,6 +18663,10 @@ function dismissOnboarding() {
   s.onboardingDismissedAt = Date.now();
   saveStore(s);
   closeOnboarding();
+  // If no users exist, fall back to the Add User dialog
+  if (!s.users.length) {
+    openAddUserDialog(true);
+  }
 }
 
 function _obIsStepVisible(step) {
@@ -17873,6 +18691,7 @@ function _renderObStep() {
   if (!_obIsStepVisible(step)) {
     _obStep++;
     if (_obStep < ONBOARDING_STEPS.length) { _renderObStep(); }
+    else { _obTransition(_obFinish); }
     return;
   }
 
@@ -18110,8 +18929,6 @@ function _obFinish() {
   if (_obIsRedo) {
     _renderObHandoffRedo(onb);
   } else {
-    // Pre-select the recommended template in the add-user dialog (sheet is open behind overlay)
-    _obPreselectTemplate(onb.recommendedTemplate);
     _renderObHandoff(onb);
   }
 }
@@ -18159,26 +18976,48 @@ function _renderObHandoff(onb) {
   const reasons = _buildHandoffReasons(_obAnswers, onb.recommendedTemplate);
   const reasonsHtml = reasons.map(function(r, i) { return '<li style="--ob-card-i:' + i + '">' + r + '</li>'; }).join("");
 
+  const days = _obAnswers.days || 4;
+  const goalMessages = {
+    muscle: "Building the strongest version of yourself",
+    fat_loss: "Training your way to a leaner you",
+    recomp: "Reshaping your body, one session at a time",
+    maintain: "Staying sharp and consistent"
+  };
+  const identityMsg = goalMessages[_obAnswers.bodyGoal] || "Building a training habit that lasts";
+
   inner.innerHTML = `
     <div class="ob-progress"><div class="ob-progress-fill" style="width:100%"></div></div>
     <div class="ob-body ob-handoff">
       <div class="ob-step-label">You're all set</div>
-      <h2 class="ob-title">Your program is ready —</h2>
+      <h2 class="ob-title">You're becoming someone who trains ${days} days a week.</h2>
+      <p class="ob-handoff-identity">${identityMsg}</p>
       <div class="ob-program-name">${tplName}</div>
       <ul class="ob-reasons">${reasonsHtml}</ul>
-      <p class="ob-handoff-hint">Enter your name below to start training.</p>
+      <input type="text" class="name-input ob-name-input" id="obNameInput" placeholder="Your name" maxlength="40" autocomplete="off">
       <div class="ob-actions">
         <button class="ob-continue-btn" id="obStartBtn">Let's Go →</button>
       </div>
     </div>`;
 
-  document.getElementById("obStartBtn").addEventListener("click", () => {
+  const nameInput = document.getElementById("obNameInput");
+  setTimeout(() => nameInput.focus(), 150);
+
+  const doStart = () => {
+    const name = nameInput.value.trim();
+    if (!name) { nameInput.focus(); return; }
+    const u = addUser(name, onb.recommendedTemplate);
+    state.currentDayId = determineDefaultDay();
     closeOnboarding();
+    closeSheet();
+    renderUserChip();
+    startFirstWorkout();
     setTimeout(() => {
-      const nameInput = document.getElementById("newUserName");
-      if (nameInput) nameInput.focus();
-    }, 150);
-  });
+      if (typeof startTutorial === "function") startTutorial();
+    }, 600);
+  };
+
+  nameInput.addEventListener("keydown", e => { if (e.key === "Enter") doStart(); });
+  document.getElementById("obStartBtn").addEventListener("click", doStart);
 }
 
 function _obPreselectTemplate(tplId) {
@@ -18309,6 +19148,13 @@ function renderProfileCard() {
     `;
   }
 }
+
+// Expose onboarding internals on window for test harnesses (no-op for production behavior).
+try {
+  window.ONBOARDING_STEPS = ONBOARDING_STEPS;
+  window.EQUIPMENT_PRESETS = EQUIPMENT_PRESETS;
+  window.EQUIPMENT_LABELS = EQUIPMENT_LABELS;
+} catch (e) {}
 
 
 // ============================================================
@@ -21369,6 +22215,401 @@ try {
     window._getRirForWeek = _getRirForWeek;
   }
 } catch (_) {}
+
+
+// ============================================================
+// CHANGELOG — "What's new" sheet shown once per release
+// ============================================================
+// Inputs: global `CHANGELOG` array (inlined by build.js from src/changelog.json),
+// and root-store field `_lastSeenChangelogVersion` (managed in 06-state-storage.js).
+
+function getPendingChangelog() {
+  if (typeof CHANGELOG === "undefined" || !Array.isArray(CHANGELOG) || !CHANGELOG.length) return null;
+  const entry = CHANGELOG[0];
+  if (!entry || !entry.version) return null;
+  const s = loadStore();
+  if (s._lastSeenChangelogVersion === entry.version) return null;
+  return entry;
+}
+
+function showChangelogSheet(entry) {
+  const wrap = document.createElement("div");
+  wrap.className = "changelog-sheet";
+
+  const head = document.createElement("div");
+  head.className = "changelog-head";
+  const title = document.createElement("h3");
+  title.textContent = "What's new in " + entry.version;
+  const close = document.createElement("button");
+  close.className = "icon-btn";
+  close.title = "Close";
+  close.textContent = "\u2715";
+  close.onclick = dismiss;
+  head.appendChild(title);
+  head.appendChild(close);
+  wrap.appendChild(head);
+
+  if (entry.title) {
+    const subtitle = document.createElement("div");
+    subtitle.className = "changelog-subtitle";
+    subtitle.textContent = entry.title;
+    wrap.appendChild(subtitle);
+  }
+
+  if (Array.isArray(entry.items) && entry.items.length) {
+    const list = document.createElement("ul");
+    list.className = "changelog-list";
+    entry.items.forEach(item => {
+      const li = document.createElement("li");
+      li.textContent = item;
+      list.appendChild(li);
+    });
+    wrap.appendChild(list);
+  }
+
+  const got = document.createElement("button");
+  got.className = "sheet-item changelog-got-it";
+  got.innerHTML = '<span class="icon">\u2713</span> Got it';
+  got.onclick = dismiss;
+  wrap.appendChild(got);
+
+  function dismiss() {
+    const s = loadStore();
+    s._lastSeenChangelogVersion = entry.version;
+    saveStore(s);
+    closeSheet();
+  }
+
+  openSheet(wrap);
+}
+
+
+// ============================================================
+// TUTORIAL (coach-mark overlay)
+// ============================================================
+//
+// Contextual tour shown after the onboarding handoff (and re-runnable
+// via the `?` button in the header). Each step spotlights a UI element
+// with a chunky bubble card; steps without a target render centered.
+//
+// State persists in s.tutorialState = { completedAt, dismissedAt, lastStepId }.
+
+const TUTORIAL_STEPS = [
+  {
+    id: "welcome",
+    target: null,
+    placement: "center",
+    title: "Quick tour",
+    body: "60-second walkthrough so you know where everything lives. You can re-open it anytime from the ? in the header."
+  },
+  {
+    id: "start-btn",
+    target: "#headerStartBtn",
+    placement: "bottom",
+    title: "Start your workout",
+    body: "Tap Start to begin a session. The session timer kicks off automatically."
+  },
+  {
+    id: "exercise-card",
+    target: '.exercise-card[data-bi="0"][data-ei="0"]',
+    fallback: ".exercise-card",
+    placement: "bottom",
+    title: "Tap an exercise to log sets",
+    body: "Each card opens an editor where you enter weight, reps, and effort. Last session auto-fills so you can just tap to confirm."
+  },
+  {
+    id: "set-inputs",
+    target: "#f-sets",
+    placement: "top",
+    title: "Sets · reps · rest",
+    body: "Inside the editor you'll find quick steppers for sets, reps, and rest. Tap once and the rest timer fires between sets."
+  },
+  {
+    id: "session-pill",
+    target: "#sessionPill",
+    placement: "bottom",
+    title: "Workout & rest timers",
+    body: "Your session time lives here. A rest-timer ring appears next to it during sets — with audio + vibration cues."
+  },
+  {
+    id: "finish-btn",
+    target: "#headerFinishBtn",
+    placement: "bottom",
+    title: "Finish & track PRs",
+    body: "When you're done, tap ✓ Sets to wrap the session. Personal records and e1RM updates are tracked automatically."
+  },
+  {
+    id: "bottom-nav",
+    target: "nav.bottom",
+    placement: "top",
+    title: "History, body & PRs",
+    body: "The bottom bar gets you to your training history, body-weight log, PRs, and the standalone rest timer."
+  },
+  {
+    id: "customize",
+    target: "#customizeDayBtn",
+    placement: "bottom",
+    title: "Customize anything",
+    body: "Tap the menu icon on any exercise to swap, reorder, or rename. The day-bar tools above let you reshape entire days."
+  },
+  {
+    id: "done",
+    target: null,
+    placement: "center",
+    title: "You're ready",
+    body: "Need a refresher? Tap the ? in the header anytime. Have a great session."
+  }
+];
+
+let _tIdx = 0;
+let _tActive = false;
+let _tForcing = false;
+let _tRepositionRaf = 0;
+
+function _tState() {
+  const s = loadStore();
+  if (!s.tutorialState) {
+    s.tutorialState = { completedAt: null, dismissedAt: null, lastStepId: null };
+  }
+  return s;
+}
+
+function _tSaveState(patch) {
+  const s = _tState();
+  s.tutorialState = { ...s.tutorialState, ...patch };
+  saveStore(s);
+}
+
+function startTutorial(opts) {
+  opts = opts || {};
+  const overlay = document.getElementById("tutorialOverlay");
+  if (!overlay) return;
+  const s = _tState();
+  if (!opts.force && s.tutorialState.completedAt) return;
+  _tIdx = 0;
+  _tActive = true;
+  _tForcing = !!opts.force;
+  overlay.classList.add("active");
+  overlay.setAttribute("aria-hidden", "false");
+  _tBindGlobalListeners();
+  _tRender();
+}
+
+function closeTutorial(reason) {
+  const overlay = document.getElementById("tutorialOverlay");
+  if (overlay) {
+    overlay.classList.remove("active");
+    overlay.setAttribute("aria-hidden", "true");
+  }
+  _tActive = false;
+  _tUnbindGlobalListeners();
+  const step = TUTORIAL_STEPS[_tIdx];
+  const lastStepId = step ? step.id : null;
+  if (reason === "completed") {
+    _tSaveState({ completedAt: Date.now(), lastStepId: "done" });
+  } else if (reason === "skipped" || reason === "dismissed") {
+    _tSaveState({ dismissedAt: Date.now(), lastStepId });
+  }
+}
+
+function _tNext() {
+  if (_tIdx >= TUTORIAL_STEPS.length - 1) {
+    closeTutorial("completed");
+    return;
+  }
+  _tIdx++;
+  _tRender();
+}
+
+function _tBack() {
+  if (_tIdx <= 0) return;
+  _tIdx--;
+  _tRender();
+}
+
+function _tRender() {
+  const step = TUTORIAL_STEPS[_tIdx];
+  if (!step) { closeTutorial("completed"); return; }
+
+  const labelEl = document.getElementById("tutorialStepLabel");
+  const titleEl = document.getElementById("tutorialTitle");
+  const bodyEl = document.getElementById("tutorialBody");
+  const backBtn = document.getElementById("tutorialBackBtn");
+  const nextBtn = document.getElementById("tutorialNextBtn");
+  const skipBtn = document.getElementById("tutorialSkipBtn");
+  if (!labelEl || !titleEl || !bodyEl || !backBtn || !nextBtn || !skipBtn) return;
+
+  labelEl.textContent = (_tIdx + 1) + " of " + TUTORIAL_STEPS.length;
+  titleEl.textContent = step.title;
+  bodyEl.textContent = step.body;
+  backBtn.hidden = _tIdx === 0;
+  nextBtn.textContent = (_tIdx === TUTORIAL_STEPS.length - 1) ? "Got it ✓" : "Next →";
+  skipBtn.hidden = _tIdx === TUTORIAL_STEPS.length - 1;
+
+  _tPosition(step);
+}
+
+function _tPosition(step) {
+  const bubble = document.getElementById("tutorialBubble");
+  const spotlight = document.getElementById("tutorialSpotlight");
+  if (!bubble || !spotlight) return;
+
+  let target = null;
+  if (step.target) {
+    target = document.querySelector(step.target);
+    if (!target && step.fallback) target = document.querySelector(step.fallback);
+  }
+
+  if (!target) {
+    bubble.dataset.placement = "center";
+    spotlight.setAttribute("x", "-100");
+    spotlight.setAttribute("y", "-100");
+    spotlight.setAttribute("width", "0");
+    spotlight.setAttribute("height", "0");
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    bubble.style.left = "50%";
+    bubble.style.top = "50%";
+    bubble.style.transform = "translate(-50%, -50%)";
+    void bubble.offsetWidth;
+    return;
+  }
+
+  const rect = target.getBoundingClientRect();
+  const pad = 8;
+  const sx = rect.left - pad;
+  const sy = rect.top - pad;
+  const sw = rect.width + pad * 2;
+  const sh = rect.height + pad * 2;
+  spotlight.setAttribute("x", String(sx));
+  spotlight.setAttribute("y", String(sy));
+  spotlight.setAttribute("width", String(sw));
+  spotlight.setAttribute("height", String(sh));
+
+  const placement = step.placement || "bottom";
+  bubble.dataset.placement = placement;
+  bubble.style.transform = "";
+
+  const bw = bubble.offsetWidth || 300;
+  const bh = bubble.offsetHeight || 160;
+  const margin = 14;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  let left, top;
+
+  if (placement === "bottom") {
+    top = sy + sh + margin;
+    left = rect.left + rect.width / 2 - bw / 2;
+  } else if (placement === "top") {
+    top = sy - bh - margin;
+    left = rect.left + rect.width / 2 - bw / 2;
+  } else if (placement === "right") {
+    top = rect.top + rect.height / 2 - bh / 2;
+    left = sx + sw + margin;
+  } else if (placement === "left") {
+    top = rect.top + rect.height / 2 - bh / 2;
+    left = sx - bw - margin;
+  } else {
+    top = (vh - bh) / 2;
+    left = (vw - bw) / 2;
+  }
+
+  // Clamp to viewport
+  left = Math.max(8, Math.min(left, vw - bw - 8));
+  top = Math.max(8, Math.min(top, vh - bh - 8));
+
+  bubble.style.left = left + "px";
+  bubble.style.top = top + "px";
+}
+
+function _tReposition() {
+  if (!_tActive) return;
+  if (_tRepositionRaf) cancelAnimationFrame(_tRepositionRaf);
+  _tRepositionRaf = requestAnimationFrame(() => {
+    _tRepositionRaf = 0;
+    const step = TUTORIAL_STEPS[_tIdx];
+    if (step) _tPosition(step);
+  });
+}
+
+function _tHandleKey(e) {
+  if (!_tActive) return;
+  if (e.key === "Escape") {
+    e.preventDefault();
+    closeTutorial("dismissed");
+  } else if (e.key === "ArrowRight" || e.key === "Enter") {
+    e.preventDefault();
+    _tNext();
+  } else if (e.key === "ArrowLeft") {
+    e.preventDefault();
+    _tBack();
+  }
+}
+
+let _tTouchStartX = 0;
+function _tTouchStart(e) { _tTouchStartX = e.touches[0].clientX; }
+function _tTouchEnd(e) {
+  const dx = e.changedTouches[0].clientX - _tTouchStartX;
+  if (Math.abs(dx) > 60) {
+    if (dx < 0) _tNext();
+    else _tBack();
+  }
+}
+
+function _tBindGlobalListeners() {
+  window.addEventListener("resize", _tReposition);
+  window.addEventListener("scroll", _tReposition, true);
+  window.addEventListener("keydown", _tHandleKey);
+  const bubble = document.getElementById("tutorialBubble");
+  if (bubble) {
+    bubble.addEventListener("touchstart", _tTouchStart, { passive: true });
+    bubble.addEventListener("touchend", _tTouchEnd, { passive: true });
+  }
+}
+
+function _tUnbindGlobalListeners() {
+  window.removeEventListener("resize", _tReposition);
+  window.removeEventListener("scroll", _tReposition, true);
+  window.removeEventListener("keydown", _tHandleKey);
+  const bubble = document.getElementById("tutorialBubble");
+  if (bubble) {
+    bubble.removeEventListener("touchstart", _tTouchStart);
+    bubble.removeEventListener("touchend", _tTouchEnd);
+  }
+}
+
+function initTutorial() {
+  const overlay = document.getElementById("tutorialOverlay");
+  const skipBtn = document.getElementById("tutorialSkipBtn");
+  const backBtn = document.getElementById("tutorialBackBtn");
+  const nextBtn = document.getElementById("tutorialNextBtn");
+  const helpBtn = document.getElementById("headerHelpBtn");
+
+  if (skipBtn) skipBtn.addEventListener("click", () => closeTutorial("skipped"));
+  if (backBtn) backBtn.addEventListener("click", _tBack);
+  if (nextBtn) nextBtn.addEventListener("click", _tNext);
+
+  // Click on dim area (outside bubble) advances; tapping bubble does not
+  if (overlay) {
+    overlay.addEventListener("click", e => {
+      if (e.target === overlay || e.target.id === "tutorialMask" ||
+          (e.target.tagName === "rect" && e.target.parentNode &&
+           e.target.parentNode.tagName === "svg")) {
+        _tNext();
+      }
+    });
+  }
+
+  if (helpBtn) helpBtn.addEventListener("click", () => startTutorial({ force: true }));
+}
+
+// Expose for tests
+try {
+  window.TUTORIAL_STEPS = TUTORIAL_STEPS;
+  window.startTutorial = startTutorial;
+  window.closeTutorial = closeTutorial;
+  window.initTutorial = initTutorial;
+} catch (e) {}
 
 </script>
 </body>

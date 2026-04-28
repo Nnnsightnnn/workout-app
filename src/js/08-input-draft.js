@@ -13,8 +13,6 @@ function ensureDraft() {
       u.draft = { dayId: state.currentDayId, startedAt: Date.now(), inputs: {}, pausedAt: null };
     }
   });
-  state.workoutStartedAt = getDraft().startedAt;
-  startSessionTimer();
 }
 
 function saveInput(key, value) {
@@ -23,8 +21,10 @@ function saveInput(key, value) {
   if (!user) return;
   if (!user.draft || user.draft.dayId !== state.currentDayId) {
     user.draft = { dayId: state.currentDayId, startedAt: Date.now(), inputs: {}, pausedAt: null };
-    state.workoutStartedAt = user.draft.startedAt;
-    startSessionTimer();
+    if (state.autoTimer) {
+      state.workoutStartedAt = user.draft.startedAt;
+      startSessionTimer();
+    }
   }
   user.draft.inputs[key] = value;
   saveStore(s);

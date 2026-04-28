@@ -229,6 +229,18 @@ function initUnitToggle() {
     };
   });
 }
+function initAutoTimerToggle() {
+  const btns = document.querySelectorAll("#autoTimerToggle button");
+  btns.forEach(b => b.classList.toggle("active", (b.dataset.val === "on") === state.autoTimer));
+  btns.forEach(btn => {
+    btn.onclick = () => {
+      btns.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      state.autoTimer = btn.dataset.val === "on";
+      const s = loadStore(); s.autoTimer = state.autoTimer; saveStore(s);
+    };
+  });
+}
 function initNav() {
   document.getElementById("logoBtn").onclick = () => showScreen("workout");
   document.querySelectorAll("nav.bottom button[data-screen]").forEach(btn => {
@@ -251,7 +263,8 @@ function initWorkoutScreen() {
       return;
     }
     state.dayChosen = false;
-    renderWorkoutScreen();
+    renderTimelineStrip();
+    renderDayPicker();
   };
   document.getElementById("pickDayBtn").onclick = openDayPicker;
   document.getElementById("customizeDayBtn").onclick = openCustomizeDay;
@@ -298,11 +311,13 @@ function init() {
   // Stub: Settings entry renders "No remapped entries" when count is zero. Full UI deferred.
 
   state.unit = s.unit || "lbs";
+  state.autoTimer = !!s.autoTimer;
   document.querySelectorAll("#unitToggle button").forEach(b => b.classList.toggle("active", b.dataset.unit === state.unit));
 
   setupPWA();
-  initUserPicker(); initUnitToggle(); initNav(); initTools();
+  initUserPicker(); initUnitToggle(); initAutoTimerToggle(); initNav(); initTools();
   initWorkoutScreen(); initSheet(); initSidebar(); initInfoGuide();
+  if (typeof initTutorial === "function") initTutorial();
 
   const versionEl = document.getElementById("appVersionLabel");
   if (versionEl) versionEl.textContent = "v" + APP_DISPLAY_VERSION;
@@ -312,12 +327,12 @@ function init() {
   // First-run or empty user list → prompt to create first user
   if (!s.users.length || !s.currentUserId) {
     renderUserChip();
-    // Render empty workout screen scaffolding, then prompt
     renderWorkoutScreen();
-    openAddUserDialog(true);
-    // Show onboarding questionnaire above the add-user dialog if not yet completed/dismissed
     if (!s.onboarding?.completedAt && !s.onboardingDismissedAt) {
+      // Onboarding handles user creation inline on the handoff screen
       showOnboardingFlow();
+    } else {
+      openAddUserDialog(true);
     }
     return;
   }
@@ -325,12 +340,14 @@ function init() {
   state.userId = s.currentUserId;
   state.currentDayId = determineDefaultDay();
 
-  // Restore draft timer — if draft exists, skip picker and go straight to workout
+  // Restore draft — if draft exists, skip picker and go straight to workout
   const draft = getDraft();
   if (draft) {
     state.dayChosen = true;
-    state.workoutStartedAt = draft.startedAt;
-    startSessionTimer();
+    if (state.autoTimer) {
+      state.workoutStartedAt = draft.startedAt;
+      startSessionTimer();
+    }
     // Resume into focus view on first incomplete block
     const day = getCurrentDay();
     if (day) {
@@ -349,9 +366,18 @@ function init() {
   renderUserChip();
   renderWorkoutScreen();
 
-  // Show onboarding if not completed and not dismissed
+  // Show onboarding if not completed and not dismissed.
+  // If onboarding isn't due, surface any pending changelog ("What's new") sheet —
+  // showChangelogSheet only fires when CHANGELOG[0].version differs from the
+  // user's _lastSeenChangelogVersion. Brand-new stores are backfilled to
+  // "latest" in loadStore() so first-installs never see this.
   if (!s.onboarding?.completedAt && !s.onboardingDismissedAt) {
     showOnboardingFlow();
+  } else {
+    const pendingChangelog = getPendingChangelog();
+    if (pendingChangelog) {
+      setTimeout(() => showChangelogSheet(pendingChangelog), 800);
+    }
   }
 }
 

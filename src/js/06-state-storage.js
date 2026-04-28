@@ -31,6 +31,7 @@ let state = {
   adhocExercises: null,
   adhocStartedAt: null,
   adhocInputs: null,
+  autoTimer: false,
 };
 
 function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
@@ -58,12 +59,21 @@ function newUserRecord(name, templateId, totalWeeks, daysPerWeek) {
     totalWeeks: tw,
     daysPerWeek: dpw,
     pinnedLifts: [],
-    manualPRs: []
+    manualPRs: [],
+    firstWorkoutCompleted: false
   };
 }
 
 function getDefaultStore() {
-  return { _schemaVersion: APP_VERSION, unit: "lbs", users: [], currentUserId: null, onboarding: null, onboardingDismissedAt: null };
+  return { _schemaVersion: APP_VERSION, unit: "lbs", users: [], currentUserId: null, onboarding: null, onboardingDismissedAt: null, autoTimer: false, _lastSeenChangelogVersion: latestChangelogVersion(), tutorialState: { completedAt: null, dismissedAt: null, lastStepId: null } };
+}
+
+// Latest changelog version available in this build, or null if no entries.
+// Used for both fresh-install initialization and existing-user backfill so
+// that the first-ever deploy of the changelog feature doesn't spam users
+// with notes for releases they already have.
+function latestChangelogVersion() {
+  return (typeof CHANGELOG !== "undefined" && Array.isArray(CHANGELOG) && CHANGELOG[0]) ? CHANGELOG[0].version : null;
 }
 
 // Stable prefix for corrupt-data backups. See preserveCorruptData().
@@ -109,11 +119,23 @@ function loadStore() {
     if (s.currentUserId && !s.users.find(u => u.id === s.currentUserId)) {
       s.currentUserId = s.users[0]?.id || null;
     }
+    // Defensive default for autoTimer preference
+    if (s.autoTimer === undefined) s.autoTimer = false;
     // Defensive defaults for onboarding
     if (s.onboarding === undefined) s.onboarding = null;
     if (s.onboardingDismissedAt === undefined) s.onboardingDismissedAt = null;
     if (s.onboarding && s.onboarding.selectedDays === undefined) s.onboarding.selectedDays = null;
     if (s.onboarding && s.onboarding.equipmentDetail === undefined) s.onboarding.equipmentDetail = null;
+    if (s.onboarding && s.onboarding.injuriesDeferred === undefined) s.onboarding.injuriesDeferred = false;
+    // Defensive default for tutorialState (added in v16)
+    if (!s.tutorialState) s.tutorialState = { completedAt: null, dismissedAt: null, lastStepId: null };
+    // Defensive default for changelog last-seen marker. Backfilling to "latest"
+    // here is intentional: it silences the changelog sheet on the first deploy
+    // of this feature for everyone who already has a store. Future releases
+    // (new entries with newer version strings) will trigger the sheet normally.
+    if (s._lastSeenChangelogVersion === undefined || s._lastSeenChangelogVersion === null) {
+      s._lastSeenChangelogVersion = latestChangelogVersion();
+    }
     // Fill missing per-user fields
     s.users.forEach(u => {
       if (!u.id) u.id = genId();
@@ -157,6 +179,7 @@ function loadStore() {
       // Defensive default for v13: manual PRs and pinned lifts
       if (!Array.isArray(u.manualPRs)) u.manualPRs = [];
       if (!Array.isArray(u.pinnedLifts)) u.pinnedLifts = [];
+      if (u.firstWorkoutCompleted === undefined) u.firstWorkoutCompleted = false;
       // Defensive defaults for session edit fields (Workstream D)
       // Also cleans up _original audit entries older than 7 days.
       const sevenDaysAgo = Date.now() - 7 * 86400000;
@@ -306,7 +329,7 @@ function switchUser(id) {
   state.workoutStartedAt = null;
   state.currentDayId = determineDefaultDay();
   const d = getDraft();
-  if (d) { state.workoutStartedAt = d.startedAt; startSessionTimer(); }
+  if (d && state.autoTimer) { state.workoutStartedAt = d.startedAt; startSessionTimer(); }
   renderWorkoutScreen();
   renderUserChip();
 }

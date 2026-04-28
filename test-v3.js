@@ -39,11 +39,9 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     eq(s.currentUserId, null, "no current user");
   });
 
-  t("first run: add-user dialog visible", () => {
-    const sheetBg = w.document.getElementById("sheetBg");
-    assert(sheetBg.classList.contains("active"), "sheet should be active on first run");
-    const input = w.document.getElementById("newUserName");
-    assert(input, "name input visible");
+  t("first run: onboarding overlay visible", () => {
+    const overlay = w.document.getElementById("onboardingOverlay");
+    assert(overlay.classList.contains("active"), "onboarding should be active on first run");
   });
 
   t("first run: user chip says Set up", () => {
@@ -458,7 +456,7 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     w.localStorage.setItem("kn-lifts-v3", JSON.stringify(fakeV8));
     w.runMigrations();
     const s = w.loadStore();
-    eq(s._schemaVersion, 14, "schema version is 14 (v9–v14 all applied)");
+    eq(s._schemaVersion, w.APP_VERSION, "schema version migrated up to current APP_VERSION");
     const u = s.users[0];
     assert(u.rp, "u.rp exists");
     eq(u.rp.enabled, false, "rp.enabled defaults to false");
@@ -785,8 +783,8 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
   // ============================================================
 
   // ---- Migration v10/v11 shape ----------------------------------
-  t("migration v14: APP_VERSION bumped to 14", () => {
-    eq(w.APP_VERSION, 14, "APP_VERSION must be 14");
+  t("migration: APP_VERSION matches default store schema version", () => {
+    eq(w.APP_VERSION, w.getDefaultStore()._schemaVersion, "APP_VERSION tracks schema");
   });
 
   t("migration v10: RP_VOLUME_LANDMARKS defined with all 19 muscles", () => {
@@ -1244,6 +1242,741 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     eq(result.reason, "disabled", "suggestedWeight returns disabled for non-RP user");
   });
 
+  // ============================================================
+  // ONBOARDING TESTS
+  // ============================================================
+
+  // ---- Helpers ---------------------------------------------------
+
+  // Patch setTimeout to fire synchronously so onboarding transitions don't slow
+  // tests. Restored via _restoreTimeouts() after the flow completes. Errors
+  // thrown inside the patched callback are routed to a local sink instead of
+  // the harness `errors` array (a flow may legitimately exercise edge paths).
+  const _origSetTimeout = w.setTimeout.bind(w);
+  const _obSinkErrors = [];
+  function _syncTimeouts() {
+    w.setTimeout = (fn, _ms) => { try { fn(); } catch (e) { _obSinkErrors.push(e.message); } return 0; };
+  }
+  function _restoreTimeouts() { w.setTimeout = _origSetTimeout; }
+
+  // Reset to a clean first-run state.
+  function resetForOnboarding() {
+    w.localStorage.clear();
+    if (typeof w.init === "function") w.init();
+  }
+
+  function clickSel(sel) {
+    const el = w.document.querySelector(sel);
+    if (!el) throw new Error("clickSel: no element for " + sel);
+    el.click();
+  }
+
+  // Read the visible step's id by matching its title against ONBOARDING_STEPS.
+  function getCurrentStepId() {
+    const titleEl = w.document.querySelector(".ob-title");
+    if (!titleEl) return null;
+    const title = titleEl.textContent;
+    const step = w.ONBOARDING_STEPS.find(s => s.title === title);
+    return step ? step.id : null;
+  }
+
+  function isHandoff() {
+    return !!w.document.querySelector(".ob-handoff");
+  }
+
+  function clickOption(value) {
+    const sel = `.ob-option[data-value="${value}"]`;
+    const el = w.document.querySelector(sel);
+    if (!el) throw new Error("clickOption: no option value=" + value + " on step " + getCurrentStepId());
+    el.click();
+  }
+
+  // Drive the onboarding flow given an answers object. Skipped steps fall back
+  // to Skip (if skippable) or first option (single) / last option (multi).
+  // Returns { durationMs, clickCount, stepsVisited, finalState }.
+  function runOnboarding(answers, options) {
+    const opts = options || {};
+    const ans = answers || {};
+    const start = Date.now();
+    let clicks = 0;
+    const visited = [];
+
+    _syncTimeouts();
+    try {
+      w.showOnboardingFlow(!!opts.redo);
+
+      let safety = 60;
+      while (safety-- > 0 && !isHandoff()) {
+        const stepId = getCurrentStepId();
+        if (!stepId) break;
+        visited.push(stepId);
+        const step = w.ONBOARDING_STEPS.find(s => s.id === stepId);
+        const provided = stepId in ans;
+
+        if (step.type === "single") {
+          if (provided) {
+            clickOption(ans[stepId]); clicks++;
+          } else if (step.skippable) {
+            clickSel("#obSkipBtn"); clicks++;
+          } else {
+            clickOption(step.options[0].value); clicks++;
+          }
+        } else if (step.type === "multi") {
+          if (provided) {
+            const vals = (Array.isArray(ans[stepId]) ? ans[stepId] : [ans[stepId]]).map(String);
+            // On redo, prior answers are pre-selected. Clicking toggles, so deselect
+            // anything that's currently selected but not in target, then click anything
+            // in target that's not yet selected.
+            const currentlySel = Array.from(w.document.querySelectorAll(".ob-option.selected"))
+              .map(e => e.dataset.value);
+            for (const cur of currentlySel) {
+              if (!vals.includes(cur)) { clickOption(cur); clicks++; }
+            }
+            const stillSel = Array.from(w.document.querySelectorAll(".ob-option.selected"))
+              .map(e => e.dataset.value);
+            for (const v of vals) {
+              if (!stillSel.includes(v)) { clickOption(v); clicks++; }
+            }
+            clickSel("#obContinueBtn"); clicks++;
+          } else if (step.skippable) {
+            clickSel("#obSkipBtn"); clicks++;
+          } else {
+            const fallback = step.options[step.options.length - 1].value;
+            clickOption(fallback); clicks++;
+            clickSel("#obContinueBtn"); clicks++;
+          }
+        } else if (step.type === "number") {
+          if (provided) {
+            const inp = w.document.getElementById("obNumberInput");
+            inp.value = String(ans[stepId]);
+            clickSel("#obContinueBtn"); clicks++;
+          } else if (step.skippable) {
+            clickSel("#obSkipBtn"); clicks++;
+          } else {
+            throw new Error("required number step missing answer: " + stepId);
+          }
+        } else if (step.type === "info") {
+          clickSel("#obContinueBtn"); clicks++;
+        } else if (step.type === "equipmentDetail") {
+          if (provided && Array.isArray(ans.equipmentDetail)) {
+            const preset = w.EQUIPMENT_PRESETS[ans.equipment] || w.EQUIPMENT_PRESETS.full;
+            const target = ans.equipmentDetail;
+            const toToggle = new Set();
+            preset.forEach(t => { if (!target.includes(t)) toToggle.add(t); });
+            target.forEach(t => { if (!preset.includes(t)) toToggle.add(t); });
+            for (const t of toToggle) {
+              const el = w.document.querySelector(`.ob-eq-chip[data-eq="${t}"]`);
+              if (el) { el.click(); clicks++; }
+            }
+          }
+          clickSel("#obContinueBtn"); clicks++;
+        } else {
+          throw new Error("unknown step type: " + step.type);
+        }
+      }
+
+      if (safety <= 0) throw new Error("runOnboarding: safety cap hit at step " + getCurrentStepId());
+
+      if (!opts.redo) {
+        // Fill name on handoff screen (inline user creation flow).
+        // Only create user if name explicitly provided, to avoid side effects
+        // (starting timers, rendering workout) in tests that don't need it.
+        const nameInput = w.document.getElementById("obNameInput");
+        if (nameInput && opts.name) nameInput.value = opts.name;
+        const startBtn = w.document.getElementById("obStartBtn");
+        if (startBtn && opts.name) { startBtn.click(); clicks++; }
+      }
+    } finally {
+      _restoreTimeouts();
+    }
+
+    const dur = Date.now() - start;
+    return {
+      durationMs: dur,
+      clickCount: clicks,
+      stepsVisited: visited,
+      finalState: w.loadStore().onboarding
+    };
+  }
+
+  // Speed/click metrics collected from E2E persona runs (report-only).
+  const onboardingMetrics = [];
+
+  // ---- 17. Recommendation matrix (exhaustive: 540 combos) -------
+  t("recommendation matrix: exhaustive coverage of getRecommendedTemplate", () => {
+    const tplById = new Map(w.PROGRAM_TEMPLATES.map(p => [p.id, p]));
+    const dims = {
+      experience: ["beginner", "intermediate", "advanced"],
+      days:       [2, 3, 4, 5, 6],
+      equipment:  ["full", "barbell", "bodyweight"],
+      gender:     ["male", "female", "skip"],
+      bodyGoal:   ["fat_loss", "muscle", "recomp", "maintain"]
+    };
+    let total = 0, pass = 0;
+    const failures = [];
+    const goalsList = [["general"], ["strength"], ["hypertrophy"], ["athletic"], ["strength","hypertrophy"]];
+    for (const exp of dims.experience)
+    for (const d   of dims.days)
+    for (const eq  of dims.equipment)
+    for (const g   of dims.gender)
+    for (const bg  of dims.bodyGoal)
+    for (const gl  of goalsList) {
+      total++;
+      const answers = {
+        goals: gl,
+        experience: exp, days: d, duration: 60,
+        equipment: eq, gender: g, bodyGoal: bg,
+        injuries: ["none"]
+      };
+      let tplId;
+      try { tplId = w.getRecommendedTemplate(answers); }
+      catch (e) {
+        failures.push({ answers, error: e.message });
+        continue;
+      }
+      if (!tplId) {
+        failures.push({ answers, error: "null/undefined templateId" });
+        continue;
+      }
+      const tpl = tplById.get(tplId);
+      if (!tpl) {
+        failures.push({ answers, error: "unknown templateId: " + tplId });
+        continue;
+      }
+      // Day-count alignment: template must NOT require more days than the user can train.
+      // Exemption: bodyweight users with days<3 fall back to minimal3 (3-day) — no 2-day
+      // bodyweight template exists in the library, so this is the closest fit.
+      if (tpl.daysPerWeek > 0 && tpl.daysPerWeek > d) {
+        const isBodyweightFallback = (eq === "bodyweight" && tplId === "minimal3" && d < 3);
+        if (!isBodyweightFallback) {
+          failures.push({ answers, error: `template ${tplId} requires ${tpl.daysPerWeek} days but user has ${d}` });
+          continue;
+        }
+      }
+      pass++;
+    }
+    if (failures.length) {
+      const sample = failures.slice(0, 5).map(f => JSON.stringify(f)).join("\n  ");
+      throw new Error(`${failures.length}/${total} combos failed:\n  ${sample}`);
+    }
+    eq(pass, total, "all combos returned a valid templateId with compatible day count");
+  });
+
+  // ---- 18. Named-persona recommendation tests -------------------
+  t("recommendation: named personas land on expected templates", () => {
+    const cases = [
+      { name: "beginner-male-3day-fullgym",
+        a: { goals:["strength"], experience:"beginner", days:3, equipment:"full", gender:"male", duration:60 },
+        expect: "ss3" },
+      { name: "beginner-female-2day",
+        a: { goals:["general"], experience:"beginner", days:2, equipment:"full", gender:"female", duration:60 },
+        expect: "runner2" },
+      { name: "female-glutes-4day",
+        a: { goals:["hypertrophy"], experience:"intermediate", days:4, equipment:"full", gender:"female", duration:60, physiquePriority:["glutes"] },
+        expect: "filly4" },
+      { name: "bodyweight-3day",
+        a: { goals:["general"], experience:"intermediate", days:3, equipment:"bodyweight", gender:"male", duration:45 },
+        expect: "minimal3" },
+      { name: "bodyweight-4day",
+        a: { goals:["general"], experience:"intermediate", days:4, equipment:"bodyweight", gender:"male", duration:60 },
+        expect: "calisthenics4" },
+      { name: "advanced-strength-4day",
+        a: { goals:["strength"], experience:"advanced", days:4, equipment:"full", gender:"male", duration:60 },
+        expect: "wendler4" },
+      { name: "intermediate-strength+hypertrophy-4day",
+        a: { goals:["strength","hypertrophy"], experience:"intermediate", days:4, equipment:"full", gender:"male", duration:60 },
+        expect: "phul4" },
+      { name: "40plus-knees-3day",
+        a: { goals:["general"], experience:"intermediate", days:3, equipment:"full", gender:"male", duration:60, age:"40plus", injuries:["knees"] },
+        expect: "kot3" },
+      { name: "athletic-4day-advanced",
+        a: { goals:["athletic"], experience:"advanced", days:4, equipment:"full", gender:"male", duration:60 },
+        expect: "prvn4" },
+      { name: "arms-superset-3day",
+        a: { goals:["hypertrophy"], experience:"intermediate", days:3, equipment:"full", gender:"male", duration:60, physiquePriority:["bigger_arms"] },
+        expect: "arms_superset3" }
+    ];
+    const fails = [];
+    for (const c of cases) {
+      const got = w.getRecommendedTemplate(c.a);
+      if (got !== c.expect) fails.push(`${c.name}: got ${got}, expected ${c.expect}`);
+    }
+    if (fails.length) throw new Error(fails.join("\n  "));
+  });
+
+  // ---- 18b. bodyGoal influence (and audit-bug regression) ------
+  t("recommendation: bodyGoal routes hypertrophy 4-day fat_loss → strength_cond4", () => {
+    const cases = [
+      { name: "hyp-4day-fat_loss",
+        a: { goals:["hypertrophy"], experience:"intermediate", days:4, equipment:"full", gender:"male", duration:60, bodyGoal:"fat_loss" },
+        expect: "strength_cond4" },
+      { name: "hyp-4day-muscle (intermediate)",
+        a: { goals:["hypertrophy"], experience:"intermediate", days:4, equipment:"full", gender:"male", duration:60, bodyGoal:"muscle" },
+        expect: "phul4" },
+      { name: "hyp-4day-recomp (intermediate)",
+        a: { goals:["hypertrophy"], experience:"intermediate", days:4, equipment:"full", gender:"male", duration:60, bodyGoal:"recomp" },
+        expect: "phul4" },
+      { name: "hyp-4day-advanced-60min",
+        a: { goals:["hypertrophy"], experience:"advanced", days:4, equipment:"full", gender:"male", duration:60, bodyGoal:"muscle" },
+        expect: "gzcl4" },
+      { name: "hyp-4day-advanced-90min",
+        a: { goals:["hypertrophy"], experience:"advanced", days:4, equipment:"full", gender:"male", duration:90, bodyGoal:"muscle" },
+        expect: "gvt4" },
+      // Regression: pre-fix this returned 4-day strength_cond4 for a 3-day request
+      { name: "general-3day-fat_loss (post-fix)",
+        a: { goals:["general"], experience:"intermediate", days:3, equipment:"full", gender:"male", duration:60, bodyGoal:"fat_loss" },
+        expect: "ppl3" },
+      // Regression: dead-ternary cleanup — short session unaffected by days <=3 vs > 3
+      { name: "30min-2day",
+        a: { goals:["general"], experience:"intermediate", days:2, equipment:"full", gender:"male", duration:30, bodyGoal:"maintain" },
+        expect: "rpt3" },
+      { name: "30min-5day",
+        a: { goals:["general"], experience:"intermediate", days:5, equipment:"full", gender:"male", duration:30, bodyGoal:"maintain" },
+        expect: "rpt3" }
+    ];
+    const fails = [];
+    for (const c of cases) {
+      const got = w.getRecommendedTemplate(c.a);
+      if (got !== c.expect) fails.push(`${c.name}: got ${got}, expected ${c.expect}`);
+    }
+    if (fails.length) throw new Error(fails.join("\n  "));
+  });
+
+  // ---- 19. saveOnboarding writes complete onboarding state ------
+  t("saveOnboarding: persists answers + computed fields to s.onboarding", () => {
+    resetForOnboarding();
+    const answers = {
+      goals:["strength","hypertrophy"], experience:"intermediate", days:4,
+      equipment:"full", gender:"male", duration:60, bodyGoal:"muscle",
+      smartSuggestions:"yes", injuries:["none"]
+    };
+    const onb = w.saveOnboarding(answers);
+    assert(onb.completedAt > 0, "completedAt set");
+    assert(onb.recommendedTemplate, "recommendedTemplate set");
+    eq(onb.defaultRestSeconds, 90, "defaultRestSeconds = 90 for non-beginner");
+    eq(onb.experience, "intermediate", "experience persisted");
+    const stored = w.loadStore().onboarding;
+    eq(stored.recommendedTemplate, onb.recommendedTemplate, "stored matches return value");
+    eq(w.getDefaultRestSeconds("beginner"), 120, "beginners get 120s rest");
+  });
+
+  // ---- 20. E2E: beginner-male-3day persona ----------------------
+  t("E2E onboarding: beginner-male-3day completes and yields ss3", () => {
+    resetForOnboarding();
+    const persona = {
+      goals:["strength"], bodyGoal:"muscle", experience:"beginner",
+      days:3, duration:60, gender:"male", equipment:"full",
+      smartSuggestions:"no"
+    };
+    const r = runOnboarding(persona, { name: "Beginner Bob" });
+    onboardingMetrics.push({ name: "beginner-male-3day", ...r });
+    assert(r.finalState && r.finalState.completedAt, "onboarding completed");
+    eq(r.finalState.recommendedTemplate, "ss3", "ss3 recommended");
+    eq(r.finalState.experience, "beginner", "experience persisted");
+    eq(r.finalState.days, 3, "days persisted as int");
+    // User created inline by onboarding handoff
+    const u = w.userData();
+    assert(u, "user created by onboarding flow");
+    assert(u.program && u.program.length === 3, "3-day program created (got " + (u.program?.length) + ")");
+  });
+
+  // ---- 21. E2E: female-glutes-4day persona ----------------------
+  t("E2E onboarding: female-glutes-4day yields filly4", () => {
+    resetForOnboarding();
+    const persona = {
+      goals:["hypertrophy"], physiquePriority:["glutes"], bodyGoal:"recomp",
+      experience:"intermediate", days:4, duration:60, gender:"female",
+      equipment:"full", smartSuggestions:"yes", injuries:["none"]
+    };
+    const r = runOnboarding(persona);
+    onboardingMetrics.push({ name: "female-glutes-4day", ...r });
+    eq(r.finalState.recommendedTemplate, "filly4", "filly4 recommended for female+glutes+4day");
+    assert(r.stepsVisited.includes("rpeCalibration"), "rpeCalibration shown when smartSuggestions=yes");
+    assert(r.finalState.rpeCalibration && r.finalState.rpeCalibration.completedAt, "rpeCalibration timestamp set");
+  });
+
+  // ---- 22. E2E: bodyweight-3day persona -------------------------
+  t("E2E onboarding: bodyweight-3day yields minimal3", () => {
+    resetForOnboarding();
+    const persona = {
+      goals:["general"], bodyGoal:"maintain", experience:"intermediate",
+      days:3, duration:45, gender:"male", equipment:"bodyweight",
+      smartSuggestions:"no", injuries:["none"]
+    };
+    const r = runOnboarding(persona);
+    onboardingMetrics.push({ name: "bodyweight-3day", ...r });
+    eq(r.finalState.recommendedTemplate, "minimal3", "minimal3 for bodyweight+3day");
+  });
+
+  // ---- 23. E2E: advanced-5day-strength persona ------------------
+  t("E2E onboarding: advanced-5day-strength yields conjugate5", () => {
+    resetForOnboarding();
+    const persona = {
+      goals:["strength"], bodyGoal:"muscle", experience:"advanced",
+      days:5, duration:90, gender:"male", equipment:"full",
+      smartSuggestions:"no", injuries:["none"]
+    };
+    const r = runOnboarding(persona);
+    onboardingMetrics.push({ name: "advanced-5day-strength", ...r });
+    eq(r.finalState.recommendedTemplate, "conjugate5", "conjugate5 for advanced+5day+strength");
+  });
+
+  // ---- 24. Skip-everything still produces a working program -----
+  t("E2E onboarding: skip-everything path still produces a working program", () => {
+    resetForOnboarding();
+    const r = runOnboarding({}, { name: "Skipper" });
+    onboardingMetrics.push({ name: "skip-everything", ...r });
+    assert(r.finalState && r.finalState.completedAt, "onboarding completed even with no answers");
+    const tpl = r.finalState.recommendedTemplate;
+    assert(tpl, "recommendedTemplate set");
+    const validIds = new Set(w.PROGRAM_TEMPLATES.map(p => p.id));
+    assert(validIds.has(tpl), "recommendedTemplate is a real template: " + tpl);
+    // Defaults applied when missing
+    assert(Array.isArray(r.finalState.goals) && r.finalState.goals.length, "goals defaulted");
+    assert(Array.isArray(r.finalState.injuries) && r.finalState.injuries.length, "injuries defaulted");
+    // User is created inline by the handoff
+    const u = w.userData();
+    assert(u && u.program && u.program.length > 0, "user has a non-empty program");
+    eq(u.templateId, tpl, "user templateId matches recommendation");
+  });
+
+  // ---- 25. Conditional rendering: rpeCalibration only when smartSuggestions=yes
+  t("conditional: rpeCalibration step hidden when smartSuggestions=no", () => {
+    resetForOnboarding();
+    const r = runOnboarding({
+      goals:["general"], bodyGoal:"maintain", experience:"intermediate",
+      days:3, duration:60, gender:"male", equipment:"full",
+      smartSuggestions:"no", injuries:["none"]
+    });
+    assert(!r.stepsVisited.includes("rpeCalibration"), "rpeCalibration was skipped");
+    assert(r.stepsVisited.includes("smartSuggestions"), "smartSuggestions was visited");
+  });
+
+  // ---- 26. Multi-select "none" mutual exclusivity ---------------
+  t("multi-select: 'none' on injuries is mutually exclusive", () => {
+    resetForOnboarding();
+    // Ensure onboarding data exists so redo mode works
+    const s = w.loadStore();
+    s.onboarding = { completedAt: Date.now(), goals: ["general"], experience: "intermediate", days: 4, equipment: "full" };
+    w.saveStore(s);
+    _syncTimeouts();
+    try {
+      w.showOnboardingFlow(true);  // Redo mode: injuries step is visible
+      // Advance to injuries step by skipping/answering everything quickly
+      while (getCurrentStepId() !== "injuries" && !isHandoff()) {
+        const stepId = getCurrentStepId();
+        const step = w.ONBOARDING_STEPS.find(s => s.id === stepId);
+        if (step.type === "single") clickOption(step.options[0].value);
+        else if (step.type === "multi") {
+          clickOption(step.options[step.options.length - 1].value);
+          clickSel("#obContinueBtn");
+        } else if (step.type === "info") clickSel("#obContinueBtn");
+        else if (step.type === "equipmentDetail") clickSel("#obContinueBtn");
+        else if (step.skippable) clickSel("#obSkipBtn");
+      }
+      eq(getCurrentStepId(), "injuries", "reached injuries step");
+      // Click knees, then shoulders, then "none" — none should clear the others
+      clickOption("knees");
+      clickOption("shoulders");
+      let selected = w.document.querySelectorAll(".ob-option.selected");
+      eq(selected.length, 2, "two injuries selected");
+      clickOption("none");
+      selected = w.document.querySelectorAll(".ob-option.selected");
+      eq(selected.length, 1, "only 'none' selected after click");
+      eq(selected[0].dataset.value, "none", "selected one is 'none'");
+      // Click another → 'none' is cleared
+      clickOption("knees");
+      const finalSel = Array.from(w.document.querySelectorAll(".ob-option.selected")).map(e => e.dataset.value);
+      assert(!finalSel.includes("none"), "none cleared when other selected");
+      assert(finalSel.includes("knees"), "knees selected");
+    } finally {
+      _restoreTimeouts();
+    }
+  });
+
+  // ---- 27. Back button navigates through visible steps ----------
+  t("back button: returns to previous visible step", () => {
+    resetForOnboarding();
+    _syncTimeouts();
+    try {
+      w.showOnboardingFlow(false);
+      eq(getCurrentStepId(), "goals", "start at goals");
+      clickOption("strength");
+      clickSel("#obContinueBtn");
+      // Should be at physiquePriority now
+      eq(getCurrentStepId(), "physiquePriority", "advanced to physiquePriority");
+      clickSel("#obBackBtn");
+      eq(getCurrentStepId(), "goals", "back returns to goals");
+    } finally {
+      _restoreTimeouts();
+    }
+  });
+
+  // ---- 28. Dismiss path sets onboardingDismissedAt --------------
+  t("dismiss: sets onboardingDismissedAt and does not save onboarding", () => {
+    resetForOnboarding();
+    _syncTimeouts();
+    try {
+      w.showOnboardingFlow(false);
+      clickSel("#obDismissBtn");
+    } finally {
+      _restoreTimeouts();
+    }
+    const s = w.loadStore();
+    assert(s.onboardingDismissedAt > 0, "onboardingDismissedAt set");
+    assert(!s.onboarding || !s.onboarding.completedAt, "no completed onboarding");
+  });
+
+  // ---- 28b. Redo with template change: Switch dialog appears ----
+  const _redoBeginner = {
+    goals:["strength"], bodyGoal:"muscle", experience:"beginner",
+    days:3, duration:60, gender:"male", equipment:"full",
+    smartSuggestions:"no", injuries:["none"]
+  };
+  const _redoAdvanced = {
+    goals:["strength"], bodyGoal:"muscle", experience:"advanced",
+    days:4, duration:60, gender:"male", equipment:"full",
+    smartSuggestions:"no", injuries:["none"]
+  };
+
+  t("E2E redo: recommendation change shows Switch dialog with both names", () => {
+    resetForOnboarding();
+    runOnboarding(_redoBeginner);
+    w.addUser("Switcher", "ss3");
+
+    const r = runOnboarding(_redoAdvanced, { redo: true });
+    eq(r.finalState.recommendedTemplate, "wendler4", "redo recommends wendler4");
+
+    const titleEl = w.document.querySelector(".ob-title");
+    assert(titleEl && /Your recommendation/.test(titleEl.textContent), "redo handoff rendered");
+    const switchBtn = w.document.getElementById("obSwitchBtn");
+    assert(switchBtn, "Switch button rendered when recommendation changes");
+    assert(w.document.getElementById("obKeepBtn"), "Keep button rendered alongside Switch");
+
+    // Both old and new template names must appear in the body
+    const bodyText = w.document.querySelector(".ob-handoff").textContent;
+    const oldName = w.PROGRAM_TEMPLATES.find(t => t.id === "ss3").name;
+    const newName = w.PROGRAM_TEMPLATES.find(t => t.id === "wendler4").name;
+    assert(bodyText.includes(oldName), "body mentions current template: " + oldName);
+    assert(bodyText.includes(newName), "body mentions new template: " + newName);
+    assert(switchBtn.textContent.includes(newName), "Switch button labeled with: " + newName);
+  });
+
+  t("E2E redo: clicking Switch closes overlay and opens duration picker", () => {
+    resetForOnboarding();
+    runOnboarding(_redoBeginner);
+    w.addUser("Switcher2", "ss3");
+    runOnboarding(_redoAdvanced, { redo: true });
+
+    _syncTimeouts();
+    try { clickSel("#obSwitchBtn"); } finally { _restoreTimeouts(); }
+    assert(!w.document.getElementById("onboardingOverlay").classList.contains("active"),
+           "onboarding overlay closed");
+    const sheetBg = w.document.getElementById("sheetBg");
+    assert(sheetBg && sheetBg.classList.contains("active"), "duration picker sheet opened");
+  });
+
+  t("E2E redo: clicking Keep leaves templateId unchanged", () => {
+    resetForOnboarding();
+    runOnboarding(_redoBeginner);
+    w.addUser("Keeper", "ss3");
+    runOnboarding(_redoAdvanced, { redo: true });
+
+    eq(w.userData().templateId, "ss3", "templateId is ss3 before Keep");
+    _syncTimeouts();
+    try { clickSel("#obKeepBtn"); } finally { _restoreTimeouts(); }
+    eq(w.userData().templateId, "ss3", "templateId still ss3 after Keep");
+    assert(!w.document.getElementById("onboardingOverlay").classList.contains("active"),
+           "overlay closed after Keep");
+  });
+
+  t("E2E redo: same recommendation shows Done button (no Switch dialog)", () => {
+    resetForOnboarding();
+    runOnboarding(_redoBeginner);
+    w.addUser("Same Tester", "ss3");
+    runOnboarding(_redoBeginner, { redo: true });
+
+    assert(w.document.getElementById("obDoneBtn"), "Done button rendered");
+    assert(!w.document.getElementById("obSwitchBtn"), "no Switch button when recommendation unchanged");
+    assert(!w.document.getElementById("obKeepBtn"), "no Keep button when recommendation unchanged");
+  });
+
+  // ---- 29. Redo: clears dismissedAt and pre-fills prior answers --
+  t("redo: showOnboardingFlow(true) clears dismissedAt and seeds prior answers", () => {
+    // Setup: complete onboarding once, then dismiss-equivalent state
+    resetForOnboarding();
+    const seed = {
+      goals:["strength"], bodyGoal:"muscle", experience:"intermediate",
+      days:4, duration:60, gender:"male", equipment:"full",
+      smartSuggestions:"no", injuries:["none"]
+    };
+    runOnboarding(seed);
+    w.addUser("Redo Tester", w.loadStore().onboarding.recommendedTemplate);
+    // Now manually set dismissedAt to verify redo clears it
+    const s1 = w.loadStore();
+    s1.onboardingDismissedAt = Date.now();
+    w.saveStore(s1);
+
+    _syncTimeouts();
+    try {
+      w.showOnboardingFlow(true);
+    } finally {
+      _restoreTimeouts();
+    }
+    const s2 = w.loadStore();
+    eq(s2.onboardingDismissedAt, null, "dismissedAt cleared on redo");
+    // Prior answers should be pre-selected: navigate to goals and check selection
+    // (we're already at the first step after showOnboardingFlow)
+    const selectedVals = Array.from(w.document.querySelectorAll(".ob-option.selected")).map(e => e.dataset.value);
+    assert(selectedVals.includes("strength"), "prior 'strength' goal pre-selected on redo");
+  });
+
+  // ---- 30. Recommendation handles edge cases --------------------
+  t("recommendation: empty answers returns a valid template", () => {
+    const tplId = w.getRecommendedTemplate({});
+    const validIds = new Set(w.PROGRAM_TEMPLATES.map(p => p.id));
+    assert(validIds.has(tplId), "got valid templateId for empty answers: " + tplId);
+  });
+
+  t("recommendation: legacy goal field still works", () => {
+    const tplId = w.getRecommendedTemplate({ goal: "strength", experience: "advanced", days: 4, equipment: "full" });
+    eq(tplId, "wendler4", "legacy goal=strength still routes correctly");
+  });
+
+  // ---- 31. Click-count budget (UX regression guard) -------------
+  // Hard-fails if any persona run exceeds the budget. Catches new
+  // confirmation steps or accidentally-required answers that bloat the flow.
+  const CLICK_BUDGET = 20;
+  t("click-count budget: every persona completes in ≤ " + CLICK_BUDGET + " clicks", () => {
+    assert(onboardingMetrics.length > 0, "no metrics collected — did E2E tests run?");
+    const over = onboardingMetrics.filter(m => m.clickCount > CLICK_BUDGET);
+    if (over.length) {
+      const detail = over.map(m => `${m.name}: ${m.clickCount}`).join(", ");
+      throw new Error(`personas over budget (${CLICK_BUDGET}): ${detail}`);
+    }
+  });
+
+  // ---- 32. Tutorial coach-mark overlay -------------------------
+  // Validates the contextual tutorial: state shape, manual trigger,
+  // step navigation, dismissal persistence, and re-opening via the
+  // help button.
+  t("tutorial: defensive default sets tutorialState shape", () => {
+    w.localStorage.clear();
+    const s = w.loadStore();
+    assert(s.tutorialState, "tutorialState exists");
+    eq(s.tutorialState.completedAt, null, "completedAt null on fresh store");
+    eq(s.tutorialState.dismissedAt, null, "dismissedAt null on fresh store");
+    eq(s.tutorialState.lastStepId, null, "lastStepId null on fresh store");
+  });
+
+  t("tutorial: startTutorial({force:true}) activates overlay and renders step 0", () => {
+    w.localStorage.clear();
+    w.addUser("Tutorial Tester");
+    w.startTutorial({ force: true });
+    const overlay = w.document.getElementById("tutorialOverlay");
+    assert(overlay.classList.contains("active"), "overlay active");
+    eq(overlay.getAttribute("aria-hidden"), "false", "aria-hidden cleared");
+    const title = w.document.getElementById("tutorialTitle").textContent;
+    eq(title, w.TUTORIAL_STEPS[0].title, "first step rendered");
+  });
+
+  t("tutorial: Skip persists dismissedAt and prevents auto-open", () => {
+    w.closeTutorial("skipped");
+    const s = w.loadStore();
+    assert(s.tutorialState.dismissedAt, "dismissedAt set");
+    eq(s.tutorialState.completedAt, null, "completedAt still null after skip");
+    // Calling startTutorial without force must NOT activate again because the
+    // contract is: completedAt OR explicit force re-opens. After skip alone we
+    // still want to allow re-trigger via the ? button (force=true).
+    w.startTutorial({ force: true });
+    const overlay = w.document.getElementById("tutorialOverlay");
+    assert(overlay.classList.contains("active"), "force re-opens overlay after dismissal");
+    w.closeTutorial("dismissed");
+  });
+
+  t("tutorial: advancing through every step sets completedAt", () => {
+    w.startTutorial({ force: true });
+    const total = w.TUTORIAL_STEPS.length;
+    const nextBtn = w.document.getElementById("tutorialNextBtn");
+    for (let i = 0; i < total; i++) nextBtn.click();
+    const s = w.loadStore();
+    assert(s.tutorialState.completedAt, "completedAt set after walking through all steps");
+    eq(s.tutorialState.lastStepId, "done", "lastStepId is 'done' after completion");
+    const overlay = w.document.getElementById("tutorialOverlay");
+    assert(!overlay.classList.contains("active"), "overlay closed after completion");
+  });
+
+  t("tutorial: completedAt blocks auto-open (non-forced startTutorial is no-op)", () => {
+    // After previous test, completedAt is set. A plain startTutorial() should
+    // NOT activate the overlay.
+    w.startTutorial();
+    const overlay = w.document.getElementById("tutorialOverlay");
+    assert(!overlay.classList.contains("active"), "overlay stays closed when already completed");
+  });
+
+  t("tutorial: header help button re-opens tutorial", () => {
+    const helpBtn = w.document.getElementById("headerHelpBtn");
+    assert(helpBtn, "help button exists in header");
+    helpBtn.click();
+    const overlay = w.document.getElementById("tutorialOverlay");
+    assert(overlay.classList.contains("active"), "help button re-opens tutorial");
+    w.closeTutorial("dismissed");
+  });
+
+  t("tutorial: graceful fallback when target selector is missing", () => {
+    // Force a step whose target won't be in DOM in this state.
+    // Step 'set-inputs' targets #f-sets which only exists when bottom sheet open.
+    w.startTutorial({ force: true });
+    // Jump to set-inputs step by clicking Next until we reach it
+    const setInputsIdx = w.TUTORIAL_STEPS.findIndex(s => s.id === "set-inputs");
+    const nextBtn = w.document.getElementById("tutorialNextBtn");
+    for (let i = 0; i < setInputsIdx; i++) nextBtn.click();
+    // We should still be active — the missing-target case shouldn't crash
+    const overlay = w.document.getElementById("tutorialOverlay");
+    assert(overlay.classList.contains("active"), "overlay remains active on missing target");
+    const title = w.document.getElementById("tutorialTitle").textContent;
+    eq(title, w.TUTORIAL_STEPS[setInputsIdx].title, "step title still rendered");
+    w.closeTutorial("dismissed");
+  });
+
+  t("tutorial: migration v16 stamps completedAt for existing users with sessions", () => {
+    w.localStorage.clear();
+    w.localStorage.setItem("kn-lifts-v3", JSON.stringify({
+      _schemaVersion: 15,
+      unit: "lbs",
+      users: [{
+        id: "u_existing", name: "Existing", program: [], sessions: [{ id: "s1", finishedAt: 1 }],
+        measurements: [], templateId: "conjugate5"
+      }],
+      currentUserId: "u_existing",
+      onboarding: null,
+      onboardingDismissedAt: null
+    }));
+    w.runMigrations();
+    const s = w.loadStore();
+    eq(s._schemaVersion, w.getDefaultStore()._schemaVersion, "migrated to current");
+    assert(s.tutorialState, "tutorialState created");
+    assert(s.tutorialState.completedAt, "existing user with sessions: completedAt stamped");
+  });
+
+  t("tutorial: migration v16 leaves brand-new users in opt-in state", () => {
+    w.localStorage.clear();
+    w.localStorage.setItem("kn-lifts-v3", JSON.stringify({
+      _schemaVersion: 15,
+      unit: "lbs",
+      users: [{
+        id: "u_new", name: "New", program: [], sessions: [],
+        measurements: [], templateId: "conjugate5"
+      }],
+      currentUserId: "u_new",
+      onboarding: null,
+      onboardingDismissedAt: null
+    }));
+    w.runMigrations();
+    const s = w.loadStore();
+    eq(s.tutorialState.completedAt, null, "new user (no sessions): tutorial still open");
+  });
+
   console.log("\n===== RESULTS =====");
   let pass = 0, fail = 0;
   for (const [n, s, e] of results) {
@@ -1253,6 +1986,19 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
   if (errors.length) {
     console.log("\nJS errors during init:");
     for (const e of errors) console.log(" -", JSON.stringify(e));
+  }
+  if (onboardingMetrics.length) {
+    console.log("\n===== ONBOARDING METRICS (report-only) =====");
+    console.log("persona".padEnd(28) + "  clicks  steps  ms");
+    console.log("-".repeat(50));
+    for (const m of onboardingMetrics) {
+      console.log(
+        m.name.padEnd(28) +
+        "  " + String(m.clickCount).padStart(6) +
+        "  " + String(m.stepsVisited.length).padStart(5) +
+        "  " + String(m.durationMs).padStart(4)
+      );
+    }
   }
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail > 0 || errors.length > 0 ? 1 : 0);

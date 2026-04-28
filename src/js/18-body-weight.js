@@ -15,8 +15,8 @@ const BODY_METRICS = [
   { key: "hips",    label: "Hips",     unitFn: _lenUnit,         step: "0.1", icon: "tape" }
 ];
 
-// State for expanded chart metric
-let _bodyExpandedMetric = null;
+// State for inline-edit metric
+let _bodyEditingMetric = null;
 let _bodyShowLogForm = false;
 
 function _escapeHtml(s) {
@@ -152,7 +152,7 @@ function renderBodyScreen() {
     const entries = m.filter(e => e[metric.key] != null);
     const lastEntry = entries.length ? entries[entries.length - 1] : null;
     const unitLabel = metric.unitFn();
-    const isExpanded = _bodyExpandedMetric === metric.key;
+    const isEditing = _bodyEditingMetric === metric.key;
 
     // Value display
     let valueText = "--";
@@ -189,17 +189,51 @@ function renderBodyScreen() {
       }
     }
 
+    // Body fat shows % suffix; everything else shows unit
+    const editUnit = metric.key === "bodyFat" ? "%" : unitLabel;
+    const editStep = metric.step;
+    const prefillVal = lastEntry ? lastEntry[metric.key] : "";
+
+    // Build the value/edit area — when editing, replace value+deltas with stepper input
+    let valueArea;
+    if (isEditing) {
+      valueArea = `
+        <div class="body-mcard-edit" onclick="event.stopPropagation()">
+          <button class="body-step-btn" type="button"
+                  onmousedown="event.preventDefault()"
+                  ontouchstart="event.preventDefault()"
+                  onclick="_stepEditMetric('${metric.key}', -1); event.stopPropagation();">&minus;</button>
+          <input type="number" id="bodyEditInput-${metric.key}"
+                 class="body-edit-input"
+                 inputmode="decimal" step="${editStep}" min="0"
+                 value="${prefillVal}"
+                 placeholder="0"
+                 onkeydown="_handleEditKey(event, '${metric.key}')"
+                 onblur="_commitEditOnBlur('${metric.key}')"
+                 onclick="event.stopPropagation()">
+          <span class="body-edit-unit">${_escapeHtml(editUnit)}</span>
+          <button class="body-step-btn" type="button"
+                  onmousedown="event.preventDefault()"
+                  ontouchstart="event.preventDefault()"
+                  onclick="_stepEditMetric('${metric.key}', 1); event.stopPropagation();">+</button>
+        </div>
+        <div class="body-edit-hint">Enter to save · Esc to cancel</div>`;
+    } else {
+      valueArea = `
+        <div class="body-mcard-value">${valueText}</div>
+        ${deltaHtml}
+        ${monthHtml}`;
+    }
+
     html += `
-      <div class="body-mcard${isExpanded ? ' is-expanded' : ''}${entries.length >= 2 ? ' has-chart' : ''}" onclick="_toggleMetricExpand('${metric.key}')">
+      <div class="body-mcard${isEditing ? ' is-editing' : ''}${entries.length >= 2 ? ' has-chart' : ''}" onclick="_startEditMetric('${metric.key}')">
         <div class="body-mcard-top">
           <div class="body-mcard-label">${_escapeHtml(metric.label)}</div>
           ${metricNudge}
         </div>
-        <div class="body-mcard-value">${valueText}</div>
-        ${deltaHtml}
-        ${monthHtml}
+        ${valueArea}
         ${entries.length >= 2 ? `<canvas class="body-chart" id="bodyChart-${metric.key}"></canvas>` : ''}
-        ${!lastEntry ? `<div class="body-mcard-empty">No data</div>` : ''}
+        ${!lastEntry && !isEditing ? `<div class="body-mcard-empty">No data &mdash; tap to log</div>` : ''}
       </div>`;
   });
   html += `</div>`;
@@ -240,9 +274,21 @@ function renderBodyScreen() {
   BODY_METRICS.forEach(metric => {
     const entries = m.filter(e => e[metric.key] != null);
     if (entries.length >= 2) {
-      _drawBodyChart(metric.key, _bodyExpandedMetric === metric.key);
+      // Hero card (Weight) gets denser labels via taller canvas height set in CSS
+      _drawBodyChart(metric.key, metric.key === "weight");
     }
   });
+
+  // Autofocus editing input if any
+  if (_bodyEditingMetric) {
+    const inp = document.getElementById("bodyEditInput-" + _bodyEditingMetric);
+    if (inp) {
+      inp.focus();
+      // Position cursor at end so + steppers feel natural
+      const len = inp.value.length;
+      try { inp.setSelectionRange(len, len); } catch (e) {}
+    }
+  }
 }
 
 function _toggleLogForm() {
@@ -256,9 +302,87 @@ function _toggleLogForm() {
   }
 }
 
-function _toggleMetricExpand(key) {
-  _bodyExpandedMetric = (_bodyExpandedMetric === key) ? null : key;
+// ── Inline-edit helpers ────────────────────────────────────
+
+function _startEditMetric(key) {
+  if (_bodyEditingMetric === key) return;
+  _bodyEditingMetric = key;
+  _bodyShowLogForm = false;
   renderBodyScreen();
+}
+
+function _cancelEditMetric() {
+  _bodyEditingMetric = null;
+  renderBodyScreen();
+}
+
+function _commitEditOnBlur(key) {
+  // Only commit if state still says we're editing this key (clicking a sibling card
+  // re-renders before blur fires in some browsers — guard against double-save)
+  if (_bodyEditingMetric !== key) return;
+  const inp = document.getElementById("bodyEditInput-" + key);
+  if (!inp) return;
+  const raw = inp.value.trim();
+  if (raw === "") { _cancelEditMetric(); return; }
+  const v = parseFloat(raw);
+  if (!Number.isFinite(v) || v <= 0) { _cancelEditMetric(); return; }
+  _saveSingleMetric(key, v);
+  _bodyEditingMetric = null;
+  renderBodyScreen();
+  const meta = BODY_METRICS.find(m => m.key === key);
+  if (meta) {
+    const u = meta.unitFn();
+    const display = key === "bodyFat" ? `${v}%` : `${v} ${u}`;
+    showToast(`${meta.label}: ${display}`, "success");
+  }
+}
+
+function _handleEditKey(ev, key) {
+  if (ev.key === "Enter") {
+    ev.preventDefault();
+    const inp = document.getElementById("bodyEditInput-" + key);
+    if (inp) inp.blur(); // triggers _commitEditOnBlur
+  } else if (ev.key === "Escape") {
+    ev.preventDefault();
+    _cancelEditMetric();
+  }
+}
+
+function _stepEditMetric(key, dir) {
+  const inp = document.getElementById("bodyEditInput-" + key);
+  if (!inp) return;
+  const meta = BODY_METRICS.find(m => m.key === key);
+  // Stepper increment: 0.5 for body measurements (weight/circumference), 0.1 for body fat %
+  const stepSize = (meta && meta.key === "bodyFat") ? 0.1 : 0.5;
+  const cur = parseFloat(inp.value) || 0;
+  let next = cur + dir * stepSize;
+  if (next < 0) next = 0;
+  // Round to 1 decimal to avoid float noise
+  next = Math.round(next * 10) / 10;
+  inp.value = next.toString();
+  inp.focus();
+}
+
+function _saveSingleMetric(key, value) {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayMs = todayStart.getTime();
+  updateUser(u => {
+    // Find any entry from today (most recent first)
+    let todayEntry = null;
+    for (let i = u.measurements.length - 1; i >= 0; i--) {
+      const e = u.measurements[i];
+      const ts = typeof e.date === "number" ? e.date : new Date(e.date).getTime();
+      if (ts >= todayMs) { todayEntry = e; break; }
+      if (ts < todayMs) break;
+    }
+    if (todayEntry) {
+      todayEntry[key] = value;
+    } else {
+      u.measurements.push({ date: Date.now(), [key]: value });
+      if (u.measurements.length > 365) u.measurements = u.measurements.slice(-365);
+    }
+  });
 }
 
 function logMeasurement() {

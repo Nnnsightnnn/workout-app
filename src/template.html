@@ -31,6 +31,7 @@
     </div>
     <button class="header-action-btn primary" id="headerStartBtn">▶ Start</button>
     <button class="header-action-btn success" id="headerFinishBtn">✓ Sets</button>
+    <button class="header-action-btn help-btn" id="headerHelpBtn" aria-label="Show tutorial" title="Show tutorial" onclick="startTutorial({force:true})">?</button>
   </div>
   <button class="user-chip" id="userChip" title="Switch user">
     <span class="user-chip-avatar" id="userChipAvatar">?</span>
@@ -147,6 +148,13 @@
       <button data-unit="kg">Kilograms</button>
     </div>
 
+    <div class="section-title">Workout Timer</div>
+    <p style="color: var(--text-dim); font-size: 12px; margin-bottom: 8px;">Auto-start the session timer when you begin a workout.</p>
+    <div class="unit-toggle" id="autoTimerToggle">
+      <button data-val="off" class="active">Off</button>
+      <button data-val="on">On</button>
+    </div>
+
     <div class="section-title">Plate Calculator</div>
     <div class="plate-card">
       <div class="field-row">
@@ -256,6 +264,32 @@
 <!-- Onboarding Flow (first-run questionnaire, shown above sheet) -->
 <div class="onboarding-overlay" id="onboardingOverlay">
   <div class="onboarding-inner" id="onboardingInner"></div>
+</div>
+
+<!-- Tutorial Coach-marks Overlay -->
+<div class="tutorial-overlay" id="tutorialOverlay" aria-hidden="true">
+  <svg class="tutorial-mask" id="tutorialMask" preserveAspectRatio="none">
+    <defs>
+      <mask id="tutorialSpotlightMask">
+        <rect width="100%" height="100%" fill="white"/>
+        <rect id="tutorialSpotlight" x="-100" y="-100" width="0" height="0" rx="14" ry="14" fill="black"/>
+      </mask>
+    </defs>
+    <rect width="100%" height="100%" fill="rgba(0,0,0,0.62)" mask="url(#tutorialSpotlightMask)"/>
+  </svg>
+  <div class="tutorial-bubble" id="tutorialBubble" role="dialog" aria-live="polite">
+    <div class="tutorial-arrow" id="tutorialArrow"></div>
+    <div class="tutorial-step-label" id="tutorialStepLabel">1 of 9</div>
+    <h3 class="tutorial-title" id="tutorialTitle"></h3>
+    <p class="tutorial-body" id="tutorialBody"></p>
+    <div class="tutorial-actions">
+      <button class="tutorial-skip" id="tutorialSkipBtn">Skip tour</button>
+      <div class="tutorial-actions-right">
+        <button class="tutorial-back" id="tutorialBackBtn">← Back</button>
+        <button class="tutorial-next" id="tutorialNextBtn">Next →</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Bottom Sheet -->

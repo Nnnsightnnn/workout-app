@@ -54,9 +54,9 @@ function switchDay(dayId) {
   stopSessionTimer();
   state.workoutStartedAt = null;
   renderWorkoutScreen();
-  // If there's a draft for this day, re-start timer
+  // If there's a draft for this day and autoTimer is on, re-start timer
   const draft = getDraft();
-  if (draft) {
+  if (draft && state.autoTimer) {
     state.workoutStartedAt = draft.startedAt;
     startSessionTimer();
   }

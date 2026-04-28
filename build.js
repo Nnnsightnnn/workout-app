@@ -43,7 +43,25 @@ const jsFiles = fs.readdirSync(jsDir)
   .filter(f => f.endsWith('.js'))
   .sort();
 
-const js = jsFiles
+// 3b. Inline changelog (graceful fallback if file is missing or invalid)
+let changelogLiteral = '[]';
+const changelogPath = path.join(SRC, 'changelog.json');
+if (fs.existsSync(changelogPath)) {
+  const raw = fs.readFileSync(changelogPath, 'utf-8');
+  try {
+    JSON.parse(raw);
+    changelogLiteral = raw.trim();
+    console.log(`  Changelog inlined (${changelogLiteral.length} bytes)`);
+  } catch (e) {
+    console.warn('  Warning: changelog.json is invalid JSON, skipping inline');
+  }
+} else {
+  console.log('  No changelog.json — skipping inline');
+}
+
+const changelogPrelude = '// === Inlined from src/changelog.json ===\nconst CHANGELOG = ' + changelogLiteral + ';\n\n';
+
+const js = changelogPrelude + jsFiles
   .map(f => fs.readFileSync(path.join(jsDir, f), 'utf-8'))
   .join('\n\n');
 

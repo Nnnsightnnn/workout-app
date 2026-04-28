@@ -1,12 +1,28 @@
 // ============================================================
 // START / FINISH WORKOUT
 // ============================================================
-function startWorkout() {
-  if (state.adhocActive) return; // Ad-hoc has its own flow
-  // Skip preview — go directly to chapters view with draft auto-created
+function openWorkout() {
+  if (state.adhocActive) return;
   state.trimmedBlocks = null;
   state.previewBlockIdx = null;
   ensureDraft();
+  if (state.autoTimer) {
+    state.workoutStartedAt = getDraft().startedAt;
+    startSessionTimer();
+  }
+  state.workoutView = "chapters";
+  updateFinishButton();
+  showToast(getRandomQuote(), "quote", 3500);
+  renderWorkoutScreen();
+}
+
+function startWorkout() {
+  if (state.adhocActive) return;
+  state.trimmedBlocks = null;
+  state.previewBlockIdx = null;
+  ensureDraft();
+  state.workoutStartedAt = getDraft().startedAt;
+  startSessionTimer();
   state.workoutView = "chapters";
 
   updateFinishButton();
@@ -14,10 +30,33 @@ function startWorkout() {
   renderWorkoutScreen();
 }
 
+function startFirstWorkout() {
+  const day = getCurrentDay();
+  if (!day) { renderWorkoutScreen(); return; }
+
+  // Deliberately undersized first workout (~20 min) per UX research.
+  // The full program regenerates next week via advanceWeek().
+  const estMin = estimateSessionMinutes(day);
+  if (estMin > 20) {
+    const budget = computeTimeBudget(day, 20);
+    if (budget.adjustments.length > 0 && budget.adjustedDay) {
+      updateUser(u => {
+        const dayIdx = u.program.findIndex(d => d.id === day.id);
+        if (dayIdx >= 0) u.program[dayIdx] = budget.adjustedDay;
+      });
+    }
+  }
+
+  state.dayChosen = true;
+  startWorkout();
+}
+
 function _beginWorkoutFocus() {
   state.trimmedBlocks = null;
   state.previewBlockIdx = null;
   ensureDraft();
+  state.workoutStartedAt = getDraft().startedAt;
+  startSessionTimer();
 
   // Jump straight to focus view on first incomplete block
   const day = getCurrentDay();
@@ -267,6 +306,7 @@ function finishWorkout() {
     }
     u.draft = null;
     u.lastDoneDayId = day.id;
+    if (!u.firstWorkoutCompleted) u.firstWorkoutCompleted = true;
     // Increment RP completedSessionsByWeek for isMicrocycleBoundary detection
     if (hasRpBlocks && activeMeso && session.mesoWeek) {
       const meso = getMesocycle(u, activeMeso.id);

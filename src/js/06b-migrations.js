@@ -269,6 +269,40 @@ const MIGRATIONS = [
       }
       return store;
     }
+  },
+  {
+    version: 15,
+    description: "Add firstWorkoutCompleted flag and injuriesDeferred for streamlined onboarding",
+    migrate(store) {
+      store.users.forEach(u => {
+        if (u.firstWorkoutCompleted === undefined) {
+          u.firstWorkoutCompleted = (u.sessions || []).length > 0;
+        }
+      });
+      if (store.onboarding) {
+        if (store.onboarding.injuriesDeferred === undefined) {
+          store.onboarding.injuriesDeferred = false;
+        }
+      }
+      return store;
+    }
+  },
+  {
+    version: 16,
+    description: "Add tutorialState for coach-mark tour persistence",
+    migrate(store) {
+      if (!store.tutorialState) {
+        store.tutorialState = {
+          // Existing users have already learned the app — mark complete so the
+          // tour doesn't auto-fire on their next load. They can still re-open it
+          // from the ? button.
+          completedAt: store.users.some(u => (u.sessions || []).length > 0) ? Date.now() : null,
+          dismissedAt: null,
+          lastStepId: null
+        };
+      }
+      return store;
+    }
   }
 ];
 

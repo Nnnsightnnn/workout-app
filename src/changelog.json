@@ -1,0 +1,12 @@
+[
+  {
+    "version": "0.16",
+    "date": "2026-04-28",
+    "title": "Equipment filter & ad-hoc workouts",
+    "items": [
+      "Filter the exercise library by available equipment",
+      "Start an ad-hoc workout outside your program",
+      "Onboarding flow polish"
+    ]
+  }
+]
