@@ -1888,6 +1888,30 @@
   }
   .program-list-item.active .pli-name { color: var(--text); }
   .day-picker { display: flex; flex-direction: column; gap: 10px; }
+  .preview-banner {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 10px 14px; margin: 0 14px 12px; border-radius: 12px;
+    background: linear-gradient(180deg, rgba(255,107,31,0.10), rgba(255,107,31,0.04));
+    border: 1px solid rgba(255,107,31,0.25);
+  }
+  .preview-banner-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .preview-banner-tag {
+    font-family: var(--font-mono); font-size: 9px; font-weight: 800;
+    color: var(--accent); letter-spacing: 0.14em; text-transform: uppercase;
+  }
+  .preview-banner-date {
+    font-size: 13px; font-weight: 700; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .preview-banner-back {
+    background: transparent; color: var(--accent); border: 1px solid var(--accent);
+    padding: 6px 10px; border-radius: 10px; font-size: 12px; font-weight: 700;
+    cursor: pointer; white-space: nowrap; transition: background 120ms ease;
+  }
+  .preview-banner-back:hover, .preview-banner-back:focus {
+    background: rgba(255,107,31,0.12);
+  }
+
   .rest-day-card {
     background: linear-gradient(180deg, rgba(23,28,40,0.9), rgba(17,21,32,0.85));
     border: 1px solid var(--border);
@@ -8259,6 +8283,10 @@ let state = {
   previewBlockIdx: null,       // pre-start block preview (null = auto, "cd" = cooldown)
   unavailableEquipment: new Set(), // equipment filter: tags user marked unavailable this session
   eqFilterOpen: false,             // whether the equipment filter bar is expanded
+  // Future-date preview: when set, workout screen shows a banner with date + back-to-today
+  previewDateMs: null,
+  // Rest-day "Train anyway" override: when true, workout screen shows banner + back-to-rest
+  restOverride: false,
   // Ad-hoc quick workout state
   adhocActive: false,
   adhocDay: null,
@@ -8576,7 +8604,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 17;
-const APP_BUILD = "04435b76";
+const APP_BUILD = "8665d637";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -9955,7 +9983,18 @@ function openPlanWorkout(dateMs) {
         closeSheet();
         if (typeof openWorkout === "function") openWorkout();
       } else {
-        openLogSets(dateMs, day);
+        // Future date: view/edit the program day (browse blocks, swap exercises,
+        // watch demos). No draft is created — edits apply to the recurring day.
+        state.currentDayId = day.id;
+        state.dayChosen = true;
+        state.workoutView = "chapters";
+        state.previewBlockIdx = null;
+        state.trimmedBlocks = null;
+        state.workoutStartedAt = null;
+        state.previewDateMs = dateMs;
+        if (typeof stopSessionTimer === "function") stopSessionTimer();
+        closeSheet();
+        if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
       }
     };
     wrap.appendChild(btn);
@@ -10593,6 +10632,23 @@ function renderWorkoutScreen() {
   if (state.adhocActive) {
     renderAdhocScreen();
     return;
+  }
+
+  // Rest-day shortcut: if today is set as rest in the recurring weekly schedule
+  // and the user isn't actively engaged in a session/preview, route to the rest
+  // card. This wins over draft auto-resume so a paused session from another
+  // day doesn't hijack the rest screen on hard refresh. Drafts are preserved
+  // and reachable via Switch Day or "Train anyway".
+  {
+    const _todayDow = new Date().getDay();
+    const _isRestToday = Array.isArray(u.weeklySchedule)
+      && u.weeklySchedule.length === 7 && u.weeklySchedule[_todayDow] == null;
+    if (_isRestToday && !state.dayChosen && !state.workoutStartedAt
+        && !state.restOverride && !state.previewDateMs) {
+      renderTimelineStrip();
+      renderDayPicker();
+      return;
+    }
   }
 
   // Show day picker if user hasn't chosen a workout yet (and no draft in progress)
@@ -14314,6 +14370,8 @@ function startWorkout() {
   if (state.adhocActive) return;
   state.trimmedBlocks = null;
   state.previewBlockIdx = null;
+  state.previewDateMs = null;
+  state.restOverride = false;
   ensureDraft();
   state.workoutStartedAt = getDraft().startedAt;
   startSessionTimer();
@@ -16946,6 +17004,8 @@ function initWorkoutScreen() {
       return;
     }
     state.dayChosen = false;
+    state.previewDateMs = null;
+    state.restOverride = false;
     renderTimelineStrip();
     renderDayPicker();
   };
@@ -17023,8 +17083,16 @@ function init() {
   state.userId = s.currentUserId;
   state.currentDayId = determineDefaultDay();
 
+  // On rest days, surface the rest card on launch even if a draft exists
+  // (e.g. paused workout). The draft is preserved — user can reach it via
+  // Switch Day or the rest card's "Train anyway" button.
+  const _u = userData();
+  const _todayDow = new Date().getDay();
+  const _isRestToday = _u && Array.isArray(_u.weeklySchedule)
+    && _u.weeklySchedule.length === 7 && _u.weeklySchedule[_todayDow] == null;
+
   // Restore draft — if draft exists, skip picker and go straight to workout
-  const draft = getDraft();
+  const draft = !_isRestToday ? getDraft() : null;
   if (draft) {
     state.dayChosen = true;
     if (state.autoTimer) {

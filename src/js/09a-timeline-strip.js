@@ -427,7 +427,18 @@ function openPlanWorkout(dateMs) {
         closeSheet();
         if (typeof openWorkout === "function") openWorkout();
       } else {
-        openLogSets(dateMs, day);
+        // Future date: view/edit the program day (browse blocks, swap exercises,
+        // watch demos). No draft is created — edits apply to the recurring day.
+        state.currentDayId = day.id;
+        state.dayChosen = true;
+        state.workoutView = "chapters";
+        state.previewBlockIdx = null;
+        state.trimmedBlocks = null;
+        state.workoutStartedAt = null;
+        state.previewDateMs = dateMs;
+        if (typeof stopSessionTimer === "function") stopSessionTimer();
+        closeSheet();
+        if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
       }
     };
     wrap.appendChild(btn);

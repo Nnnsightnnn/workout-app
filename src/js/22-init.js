@@ -263,6 +263,8 @@ function initWorkoutScreen() {
       return;
     }
     state.dayChosen = false;
+    state.previewDateMs = null;
+    state.restOverride = false;
     renderTimelineStrip();
     renderDayPicker();
   };
@@ -340,8 +342,16 @@ function init() {
   state.userId = s.currentUserId;
   state.currentDayId = determineDefaultDay();
 
+  // On rest days, surface the rest card on launch even if a draft exists
+  // (e.g. paused workout). The draft is preserved — user can reach it via
+  // Switch Day or the rest card's "Train anyway" button.
+  const _u = userData();
+  const _todayDow = new Date().getDay();
+  const _isRestToday = _u && Array.isArray(_u.weeklySchedule)
+    && _u.weeklySchedule.length === 7 && _u.weeklySchedule[_todayDow] == null;
+
   // Restore draft — if draft exists, skip picker and go straight to workout
-  const draft = getDraft();
+  const draft = !_isRestToday ? getDraft() : null;
   if (draft) {
     state.dayChosen = true;
     if (state.autoTimer) {

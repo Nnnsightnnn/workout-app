@@ -20,6 +20,8 @@ function startWorkout() {
   if (state.adhocActive) return;
   state.trimmedBlocks = null;
   state.previewBlockIdx = null;
+  state.previewDateMs = null;
+  state.restOverride = false;
   ensureDraft();
   state.workoutStartedAt = getDraft().startedAt;
   startSessionTimer();

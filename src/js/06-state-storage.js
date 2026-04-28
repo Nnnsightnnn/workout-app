@@ -24,6 +24,10 @@ let state = {
   previewBlockIdx: null,       // pre-start block preview (null = auto, "cd" = cooldown)
   unavailableEquipment: new Set(), // equipment filter: tags user marked unavailable this session
   eqFilterOpen: false,             // whether the equipment filter bar is expanded
+  // Future-date preview: when set, workout screen shows a banner with date + back-to-today
+  previewDateMs: null,
+  // Rest-day "Train anyway" override: when true, workout screen shows banner + back-to-rest
+  restOverride: false,
   // Ad-hoc quick workout state
   adhocActive: false,
   adhocDay: null,

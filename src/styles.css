@@ -1766,6 +1766,30 @@
   }
   .program-list-item.active .pli-name { color: var(--text); }
   .day-picker { display: flex; flex-direction: column; gap: 10px; }
+  .preview-banner {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 10px 14px; margin: 0 14px 12px; border-radius: 12px;
+    background: linear-gradient(180deg, rgba(255,107,31,0.10), rgba(255,107,31,0.04));
+    border: 1px solid rgba(255,107,31,0.25);
+  }
+  .preview-banner-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .preview-banner-tag {
+    font-family: var(--font-mono); font-size: 9px; font-weight: 800;
+    color: var(--accent); letter-spacing: 0.14em; text-transform: uppercase;
+  }
+  .preview-banner-date {
+    font-size: 13px; font-weight: 700; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .preview-banner-back {
+    background: transparent; color: var(--accent); border: 1px solid var(--accent);
+    padding: 6px 10px; border-radius: 10px; font-size: 12px; font-weight: 700;
+    cursor: pointer; white-space: nowrap; transition: background 120ms ease;
+  }
+  .preview-banner-back:hover, .preview-banner-back:focus {
+    background: rgba(255,107,31,0.12);
+  }
+
   .rest-day-card {
     background: linear-gradient(180deg, rgba(23,28,40,0.9), rgba(17,21,32,0.85));
     border: 1px solid var(--border);
