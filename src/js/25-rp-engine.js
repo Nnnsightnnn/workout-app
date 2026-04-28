@@ -184,7 +184,12 @@ function suggestedWeight(exId, targetReps, targetRIR, opts) {
 
   if (est.confidence === "cold-start") {
     // Check for a user-provided cold-start anchor (§3.8)
-    const anchor = u.rp.coldStartAnchors && u.rp.coldStartAnchors[exId];
+    let anchor = u.rp.coldStartAnchors && u.rp.coldStartAnchors[exId];
+    // Pure-BW (load == bodyweight, no added weight): auto-anchor with
+    // library defaults — there's nothing for the user to enter.
+    if (!anchor && isBw && !(lib.defaultWeight || 0)) {
+      anchor = { weight: 0, reps: lib.defaultReps || 10, dateMs: now };
+    }
     if (!anchor) {
       return { weight: null, confidence: "cold-start", reason: "cold-start" };
     }
@@ -452,8 +457,10 @@ function injectRpHint(wrap, ex, u) {
   const draft = getDraft();
   const targetRIR = (draft && draft.targetRIR != null) ? draft.targetRIR : 2;
   const suggestion = suggestedWeight(exId, ex.reps, targetRIR);
+  const isPureBw = !!lib.bodyweight && !(lib.defaultWeight || 0);
 
   if (suggestion.reason === "history" && suggestion.weight != null) {
+    if (isPureBw) return; // load == bodyweight; "Suggested: X lbs" isn't actionable
     const chip = buildRpSuggestionChip(suggestion, state.unit);
     wrap.insertBefore(chip, wrap.firstChild);
     // Stale BW banner (N-12 soft flag): if BW exercise and BW is stale, append note
