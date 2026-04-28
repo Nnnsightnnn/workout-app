@@ -17,7 +17,6 @@ const BODY_METRICS = [
 
 // State for inline-edit metric
 let _bodyEditingMetric = null;
-let _bodyShowLogForm = false;
 
 function _escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c]));
@@ -93,56 +92,22 @@ function renderBodyScreen() {
       <button class="icon-btn" id="bodyCloseBtn" title="Back to workout" style="width:36px;height:36px;border-radius:10px;">&#10005;</button>
     </div>`;
 
-  // ── Quick Log Button ──
-  html += `
-    <button class="body-quick-log-btn${_bodyShowLogForm ? ' is-open' : ''}" onclick="_toggleLogForm()">
-      <span class="body-quick-log-icon">+</span>
-      <span>Log Measurements</span>
-    </button>`;
-
-  // ── Log Form (expandable) ──
-  if (_bodyShowLogForm) {
-    html += `<div class="body-log-form">`;
-    // Weight is always shown
-    html += `
-      <div class="body-log-field body-log-field--primary">
-        <label for="bodyInput-weight">Weight <span class="unit-suffix">(${_escapeHtml(unit)})</span></label>
-        <input type="number" id="bodyInput-weight" placeholder="0" min="0" step="0.1" inputmode="decimal">
-      </div>`;
-    // Other metrics in a grid
-    html += `<div class="body-log-grid">`;
-    BODY_METRICS.forEach(metric => {
-      if (metric.key === "weight") return;
-      const u = metric.unitFn();
-      html += `
-        <div class="body-log-field">
-          <label for="bodyInput-${metric.key}">${_escapeHtml(metric.label)} <span class="unit-suffix">(${_escapeHtml(u)})</span></label>
-          <input type="number" id="bodyInput-${metric.key}" placeholder="0" min="0" step="${metric.step}" inputmode="decimal">
-        </div>`;
-    });
-    html += `</div>`;
-    html += `
-      <button class="body-save-btn" onclick="logMeasurement()">Save Entry</button>
-      <p class="body-log-hint">Weight is required. Other fields are optional.</p>
-    </div>`;
-  }
-
   // ── Nudges / Last Measured ──
   if (latest) {
     const daysAgo = _daysSince(latest.date);
     if (daysAgo >= 7) {
       const nudgeText = daysAgo === 1 ? "1 day" : `${daysAgo} days`;
       html += `
-        <div class="body-nudge" onclick="_toggleLogForm()">
+        <div class="body-nudge body-nudge--static">
           <span class="body-nudge-icon">&#128276;</span>
-          <span>Last measured <strong>${nudgeText} ago</strong> &mdash; tap to log</span>
+          <span>Last measured <strong>${nudgeText} ago</strong> &mdash; tap a card to update</span>
         </div>`;
     }
   } else {
     html += `
-      <div class="body-nudge" onclick="_toggleLogForm()">
+      <div class="body-nudge body-nudge--static">
         <span class="body-nudge-icon">&#128203;</span>
-        <span>No measurements yet &mdash; <strong>tap to log your first</strong></span>
+        <span>No measurements yet &mdash; <strong>tap a card to log your first</strong></span>
       </div>`;
   }
 
@@ -291,23 +256,11 @@ function renderBodyScreen() {
   }
 }
 
-function _toggleLogForm() {
-  _bodyShowLogForm = !_bodyShowLogForm;
-  renderBodyScreen();
-  if (_bodyShowLogForm) {
-    setTimeout(() => {
-      const inp = document.getElementById("bodyInput-weight");
-      if (inp) inp.focus();
-    }, 50);
-  }
-}
-
 // ── Inline-edit helpers ────────────────────────────────────
 
 function _startEditMetric(key) {
   if (_bodyEditingMetric === key) return;
   _bodyEditingMetric = key;
-  _bodyShowLogForm = false;
   renderBodyScreen();
 }
 
@@ -383,30 +336,6 @@ function _saveSingleMetric(key, value) {
       if (u.measurements.length > 365) u.measurements = u.measurements.slice(-365);
     }
   });
-}
-
-function logMeasurement() {
-  const weightInput = document.getElementById("bodyInput-weight");
-  const w = parseFloat(weightInput ? weightInput.value : "");
-  if (!w || w <= 0) { if (weightInput) weightInput.focus(); return; }
-
-  const entry = { date: Date.now(), weight: w };
-  BODY_METRICS.forEach(m => {
-    if (m.key === "weight") return;
-    const inp = document.getElementById("bodyInput-" + m.key);
-    if (!inp) return;
-    const v = parseFloat(inp.value);
-    if (Number.isFinite(v) && v > 0) entry[m.key] = v;
-  });
-
-  updateUser(u => {
-    u.measurements.push(entry);
-    if (u.measurements.length > 365) u.measurements = u.measurements.slice(-365);
-  });
-
-  _bodyShowLogForm = false;
-  renderBodyScreen();
-  showToast(`Logged ${w} ${state.unit}`, "success");
 }
 
 // ── Chart Drawing ───────────────────────────────────────────

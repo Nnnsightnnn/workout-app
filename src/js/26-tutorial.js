@@ -14,14 +14,49 @@ const TUTORIAL_STEPS = [
     target: null,
     placement: "center",
     title: "Quick tour",
-    body: "60-second walkthrough so you know where everything lives. You can re-open it anytime from the ? in the header."
+    body: "60-second walkthrough so you know where everything lives. Re-open it anytime via the ? in the header."
+  },
+  {
+    id: "day-bar",
+    target: ".day-bar",
+    placement: "bottom",
+    title: "Today's workout",
+    body: "This is your day at a glance — the program name, current week, and what's on the menu."
+  },
+  {
+    id: "home-btn",
+    target: "#homeDayBtn",
+    placement: "bottom",
+    title: "Home",
+    body: "Jump back to today's workout from any other view."
+  },
+  {
+    id: "pick-day",
+    target: "#pickDayBtn",
+    placement: "bottom",
+    title: "Switch days",
+    body: "Browse the week, peek at upcoming sessions, or jump to a different day if you're training out of order."
+  },
+  {
+    id: "customize-day",
+    target: "#customizeDayBtn",
+    placement: "bottom",
+    title: "Customize & swap exercises",
+    body: "Edit this day — swap exercises, reorder blocks, tweak rep schemes. Long-press any exercise card for the same options."
+  },
+  {
+    id: "adhoc",
+    target: "#adhocBtn",
+    placement: "bottom",
+    title: "Quick workout",
+    body: "Log an ad-hoc session that's not part of your program — perfect for travel days or a one-off lift."
   },
   {
     id: "start-btn",
     target: "#headerStartBtn",
     placement: "bottom",
-    title: "Start your workout",
-    body: "Tap Start to begin a session. The session timer kicks off automatically."
+    title: "Start your session",
+    body: "Tap Start when you're ready to lift. The session timer fires automatically."
   },
   {
     id: "exercise-card",
@@ -29,42 +64,50 @@ const TUTORIAL_STEPS = [
     fallback: ".exercise-card",
     placement: "bottom",
     title: "Tap an exercise to log sets",
-    body: "Each card opens an editor where you enter weight, reps, and effort. Last session auto-fills so you can just tap to confirm."
+    body: "Each card opens a quick editor for weight, reps, and effort. Last session auto-fills so you usually just tap to confirm."
   },
   {
     id: "set-inputs",
     target: "#f-sets",
     placement: "top",
     title: "Sets · reps · rest",
-    body: "Inside the editor you'll find quick steppers for sets, reps, and rest. Tap once and the rest timer fires between sets."
+    body: "Inside the editor: steppers for sets, reps, and rest. Saving a set fires the rest timer with audio + vibration cues."
   },
   {
     id: "session-pill",
     target: "#sessionPill",
     placement: "bottom",
-    title: "Workout & rest timers",
-    body: "Your session time lives here. A rest-timer ring appears next to it during sets — with audio + vibration cues."
+    title: "Workout & rest timer",
+    body: "Your session time lives here. A rest-timer ring appears alongside it whenever a set is in progress."
+  },
+  {
+    id: "progress",
+    target: "#workoutProgressWrap",
+    fallback: ".day-bar",
+    placement: "top",
+    title: "Progress & pace",
+    body: "Once you're rolling, a progress bar tracks completed sets so you can stay on pace through the whole session."
   },
   {
     id: "finish-btn",
     target: "#headerFinishBtn",
     placement: "bottom",
     title: "Finish & track PRs",
-    body: "When you're done, tap ✓ Sets to wrap the session. Personal records and e1RM updates are tracked automatically."
+    body: "Tap ✓ Sets to wrap. Personal records and e1RM updates land in your history automatically."
   },
   {
     id: "bottom-nav",
     target: "nav.bottom",
     placement: "top",
-    title: "History, body & PRs",
-    body: "The bottom bar gets you to your training history, body-weight log, PRs, and the standalone rest timer."
+    title: "Body, PRs & history",
+    body: "The bottom bar gets you to body-weight tracking, your PRs, and full training history."
   },
   {
-    id: "customize",
-    target: "#customizeDayBtn",
-    placement: "bottom",
-    title: "Customize anything",
-    body: "Tap the menu icon on any exercise to swap, reorder, or rename. The day-bar tools above let you reshape entire days."
+    id: "timer-fab",
+    target: "#timerFab",
+    placement: "top",
+    title: "Standalone rest timer",
+    body: "Need a timer outside a session — between warm-up sets, mobility work, anywhere? Tap TIMER for a free-standing countdown."
   },
   {
     id: "done",
@@ -174,14 +217,18 @@ function _tPosition(step) {
     if (!target && step.fallback) target = document.querySelector(step.fallback);
   }
 
+  // Treat a hidden/zero-rect target as missing so we fall back to centered text.
+  if (target) {
+    const r = target.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) target = null;
+  }
+
   if (!target) {
     bubble.dataset.placement = "center";
     spotlight.setAttribute("x", "-100");
     spotlight.setAttribute("y", "-100");
     spotlight.setAttribute("width", "0");
     spotlight.setAttribute("height", "0");
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
     bubble.style.left = "50%";
     bubble.style.top = "50%";
     bubble.style.transform = "translate(-50%, -50%)";
@@ -189,7 +236,13 @@ function _tPosition(step) {
     return;
   }
 
-  const rect = target.getBoundingClientRect();
+  // Scroll into view if off-screen (header is sticky, so account for that).
+  let rect = target.getBoundingClientRect();
+  const vh0 = window.innerHeight;
+  if (rect.top < 60 || rect.bottom > vh0 - 100) {
+    target.scrollIntoView({ block: "center", behavior: "auto" });
+    rect = target.getBoundingClientRect();
+  }
   const pad = 8;
   const sx = rect.left - pad;
   const sy = rect.top - pad;

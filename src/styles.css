@@ -5375,107 +5375,7 @@
   font-size: 13px; line-height: 1.4;
 }
 
-/* Quick log CTA */
-.body-quick-log-btn {
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-  width: 100%; margin: 16px 0 0;
-  padding: 16px 18px; min-height: 56px;
-  background: var(--bg-card);
-  border: 2px solid var(--accent-border);
-  border-radius: 16px;
-  color: var(--text);
-  font-family: var(--font-display);
-  font-size: 15px; font-weight: 600; letter-spacing: 0.01em;
-  box-shadow: var(--pillow-accent);
-  cursor: pointer;
-  transition: transform 0.08s, box-shadow 0.08s, border-color 0.15s;
-  touch-action: manipulation;
-}
-.body-quick-log-btn:active {
-  transform: var(--squish-sm);
-  box-shadow: var(--pillow-pressed);
-}
-.body-quick-log-btn.is-open {
-  border-color: var(--accent);
-  background: rgba(255,107,31,0.08);
-}
-.body-quick-log-icon {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 26px; height: 26px;
-  background: var(--accent); color: #fff;
-  border-radius: 8px;
-  font-size: 18px; font-weight: 700; line-height: 1;
-  box-shadow: 0 2px 6px rgba(255,107,31,0.35);
-}
-.body-quick-log-btn.is-open .body-quick-log-icon {
-  background: var(--bg-elev); color: var(--accent);
-  box-shadow: none;
-}
-
-/* Log form expansion */
-.body-log-form {
-  margin-top: 12px; padding: 16px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-visible);
-  border-radius: 16px;
-  box-shadow: var(--pillow-sm);
-  animation: bodyLogFormIn 0.18s ease-out;
-}
-@keyframes bodyLogFormIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.body-log-field { display: flex; flex-direction: column; gap: 6px; }
-.body-log-field label {
-  font-family: var(--font-mono);
-  font-size: 10px; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.14em;
-  color: var(--text-dim);
-}
-.body-log-field .unit-suffix {
-  color: var(--text-faint); font-weight: 500; letter-spacing: 0.08em;
-}
-.body-log-field input {
-  width: 100%; padding: 12px 14px; min-height: 48px;
-  background: var(--bg-void);
-  border: 1.5px solid var(--border-visible);
-  border-radius: 12px;
-  color: var(--text); font-family: var(--font-mono);
-  font-size: 18px; font-weight: 600;
-  outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-.body-log-field input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-glow-soft);
-}
-.body-log-field--primary { margin-bottom: 12px; }
-.body-log-field--primary input { font-size: 22px; min-height: 54px; }
-.body-log-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px;
-}
-.body-save-btn {
-  display: block; width: 100%; margin-top: 14px;
-  padding: 14px 18px; min-height: 50px;
-  background: var(--accent); color: #fff;
-  border: 2px solid var(--accent); border-radius: 14px;
-  font-family: var(--font-display);
-  font-size: 15px; font-weight: 700; letter-spacing: 0.02em;
-  box-shadow: var(--pillow-primary);
-  cursor: pointer;
-  transition: transform 0.08s, box-shadow 0.08s;
-  touch-action: manipulation;
-}
-.body-save-btn:active {
-  transform: var(--squish-sm);
-  box-shadow: var(--pillow-primary-pressed);
-}
-.body-log-hint {
-  margin: 10px 0 0; color: var(--text-faint);
-  font-size: 12px; text-align: center;
-}
-
-/* Nudge banner */
+/* Nudge banner (informational; tap a card to update) */
 .body-nudge {
   display: flex; align-items: center; gap: 10px;
   margin: 14px 0 0; padding: 12px 14px;
@@ -5483,10 +5383,8 @@
   border: 1px solid var(--accent-border);
   border-radius: 12px;
   color: var(--text); font-size: 13px; line-height: 1.35;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
 }
-.body-nudge:active { background: rgba(255,107,31,0.12); }
+.body-nudge--static { cursor: default; }
 .body-nudge strong { color: var(--accent); font-weight: 700; }
 .body-nudge-icon { font-size: 16px; flex-shrink: 0; }
 
@@ -5669,7 +5567,8 @@
   border-radius: 14px;
   box-shadow: 0 3px 0 var(--accent-dim), 0 12px 32px rgba(0,0,0,0.4);
   padding: 16px 18px 14px;
-  pointer-events: auto;
+  pointer-events: none;
+  visibility: hidden;
   transform: translateY(4px);
   opacity: 0;
   transition: transform 240ms var(--spring), opacity 200ms ease;
@@ -5677,6 +5576,8 @@
 .tutorial-overlay.active .tutorial-bubble {
   opacity: 1;
   transform: translateY(0);
+  pointer-events: auto;
+  visibility: visible;
 }
 .tutorial-arrow {
   position: absolute;

@@ -5497,107 +5497,7 @@
   font-size: 13px; line-height: 1.4;
 }
 
-/* Quick log CTA */
-.body-quick-log-btn {
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-  width: 100%; margin: 16px 0 0;
-  padding: 16px 18px; min-height: 56px;
-  background: var(--bg-card);
-  border: 2px solid var(--accent-border);
-  border-radius: 16px;
-  color: var(--text);
-  font-family: var(--font-display);
-  font-size: 15px; font-weight: 600; letter-spacing: 0.01em;
-  box-shadow: var(--pillow-accent);
-  cursor: pointer;
-  transition: transform 0.08s, box-shadow 0.08s, border-color 0.15s;
-  touch-action: manipulation;
-}
-.body-quick-log-btn:active {
-  transform: var(--squish-sm);
-  box-shadow: var(--pillow-pressed);
-}
-.body-quick-log-btn.is-open {
-  border-color: var(--accent);
-  background: rgba(255,107,31,0.08);
-}
-.body-quick-log-icon {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 26px; height: 26px;
-  background: var(--accent); color: #fff;
-  border-radius: 8px;
-  font-size: 18px; font-weight: 700; line-height: 1;
-  box-shadow: 0 2px 6px rgba(255,107,31,0.35);
-}
-.body-quick-log-btn.is-open .body-quick-log-icon {
-  background: var(--bg-elev); color: var(--accent);
-  box-shadow: none;
-}
-
-/* Log form expansion */
-.body-log-form {
-  margin-top: 12px; padding: 16px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-visible);
-  border-radius: 16px;
-  box-shadow: var(--pillow-sm);
-  animation: bodyLogFormIn 0.18s ease-out;
-}
-@keyframes bodyLogFormIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.body-log-field { display: flex; flex-direction: column; gap: 6px; }
-.body-log-field label {
-  font-family: var(--font-mono);
-  font-size: 10px; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.14em;
-  color: var(--text-dim);
-}
-.body-log-field .unit-suffix {
-  color: var(--text-faint); font-weight: 500; letter-spacing: 0.08em;
-}
-.body-log-field input {
-  width: 100%; padding: 12px 14px; min-height: 48px;
-  background: var(--bg-void);
-  border: 1.5px solid var(--border-visible);
-  border-radius: 12px;
-  color: var(--text); font-family: var(--font-mono);
-  font-size: 18px; font-weight: 600;
-  outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-.body-log-field input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-glow-soft);
-}
-.body-log-field--primary { margin-bottom: 12px; }
-.body-log-field--primary input { font-size: 22px; min-height: 54px; }
-.body-log-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px;
-}
-.body-save-btn {
-  display: block; width: 100%; margin-top: 14px;
-  padding: 14px 18px; min-height: 50px;
-  background: var(--accent); color: #fff;
-  border: 2px solid var(--accent); border-radius: 14px;
-  font-family: var(--font-display);
-  font-size: 15px; font-weight: 700; letter-spacing: 0.02em;
-  box-shadow: var(--pillow-primary);
-  cursor: pointer;
-  transition: transform 0.08s, box-shadow 0.08s;
-  touch-action: manipulation;
-}
-.body-save-btn:active {
-  transform: var(--squish-sm);
-  box-shadow: var(--pillow-primary-pressed);
-}
-.body-log-hint {
-  margin: 10px 0 0; color: var(--text-faint);
-  font-size: 12px; text-align: center;
-}
-
-/* Nudge banner */
+/* Nudge banner (informational; tap a card to update) */
 .body-nudge {
   display: flex; align-items: center; gap: 10px;
   margin: 14px 0 0; padding: 12px 14px;
@@ -5605,10 +5505,8 @@
   border: 1px solid var(--accent-border);
   border-radius: 12px;
   color: var(--text); font-size: 13px; line-height: 1.35;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
 }
-.body-nudge:active { background: rgba(255,107,31,0.12); }
+.body-nudge--static { cursor: default; }
 .body-nudge strong { color: var(--accent); font-weight: 700; }
 .body-nudge-icon { font-size: 16px; flex-shrink: 0; }
 
@@ -5791,7 +5689,8 @@
   border-radius: 14px;
   box-shadow: 0 3px 0 var(--accent-dim), 0 12px 32px rgba(0,0,0,0.4);
   padding: 16px 18px 14px;
-  pointer-events: auto;
+  pointer-events: none;
+  visibility: hidden;
   transform: translateY(4px);
   opacity: 0;
   transition: transform 240ms var(--spring), opacity 200ms ease;
@@ -5799,6 +5698,8 @@
 .tutorial-overlay.active .tutorial-bubble {
   opacity: 1;
   transform: translateY(0);
+  pointer-events: auto;
+  visibility: visible;
 }
 .tutorial-arrow {
   position: absolute;
@@ -8632,7 +8533,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 16;
-const APP_BUILD = "00fcca3e";
+const APP_BUILD = "66f49808";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -15329,7 +15230,6 @@ const BODY_METRICS = [
 
 // State for inline-edit metric
 let _bodyEditingMetric = null;
-let _bodyShowLogForm = false;
 
 function _escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c]));
@@ -15405,56 +15305,22 @@ function renderBodyScreen() {
       <button class="icon-btn" id="bodyCloseBtn" title="Back to workout" style="width:36px;height:36px;border-radius:10px;">&#10005;</button>
     </div>`;
 
-  // ── Quick Log Button ──
-  html += `
-    <button class="body-quick-log-btn${_bodyShowLogForm ? ' is-open' : ''}" onclick="_toggleLogForm()">
-      <span class="body-quick-log-icon">+</span>
-      <span>Log Measurements</span>
-    </button>`;
-
-  // ── Log Form (expandable) ──
-  if (_bodyShowLogForm) {
-    html += `<div class="body-log-form">`;
-    // Weight is always shown
-    html += `
-      <div class="body-log-field body-log-field--primary">
-        <label for="bodyInput-weight">Weight <span class="unit-suffix">(${_escapeHtml(unit)})</span></label>
-        <input type="number" id="bodyInput-weight" placeholder="0" min="0" step="0.1" inputmode="decimal">
-      </div>`;
-    // Other metrics in a grid
-    html += `<div class="body-log-grid">`;
-    BODY_METRICS.forEach(metric => {
-      if (metric.key === "weight") return;
-      const u = metric.unitFn();
-      html += `
-        <div class="body-log-field">
-          <label for="bodyInput-${metric.key}">${_escapeHtml(metric.label)} <span class="unit-suffix">(${_escapeHtml(u)})</span></label>
-          <input type="number" id="bodyInput-${metric.key}" placeholder="0" min="0" step="${metric.step}" inputmode="decimal">
-        </div>`;
-    });
-    html += `</div>`;
-    html += `
-      <button class="body-save-btn" onclick="logMeasurement()">Save Entry</button>
-      <p class="body-log-hint">Weight is required. Other fields are optional.</p>
-    </div>`;
-  }
-
   // ── Nudges / Last Measured ──
   if (latest) {
     const daysAgo = _daysSince(latest.date);
     if (daysAgo >= 7) {
       const nudgeText = daysAgo === 1 ? "1 day" : `${daysAgo} days`;
       html += `
-        <div class="body-nudge" onclick="_toggleLogForm()">
+        <div class="body-nudge body-nudge--static">
           <span class="body-nudge-icon">&#128276;</span>
-          <span>Last measured <strong>${nudgeText} ago</strong> &mdash; tap to log</span>
+          <span>Last measured <strong>${nudgeText} ago</strong> &mdash; tap a card to update</span>
         </div>`;
     }
   } else {
     html += `
-      <div class="body-nudge" onclick="_toggleLogForm()">
+      <div class="body-nudge body-nudge--static">
         <span class="body-nudge-icon">&#128203;</span>
-        <span>No measurements yet &mdash; <strong>tap to log your first</strong></span>
+        <span>No measurements yet &mdash; <strong>tap a card to log your first</strong></span>
       </div>`;
   }
 
@@ -15603,23 +15469,11 @@ function renderBodyScreen() {
   }
 }
 
-function _toggleLogForm() {
-  _bodyShowLogForm = !_bodyShowLogForm;
-  renderBodyScreen();
-  if (_bodyShowLogForm) {
-    setTimeout(() => {
-      const inp = document.getElementById("bodyInput-weight");
-      if (inp) inp.focus();
-    }, 50);
-  }
-}
-
 // ── Inline-edit helpers ────────────────────────────────────
 
 function _startEditMetric(key) {
   if (_bodyEditingMetric === key) return;
   _bodyEditingMetric = key;
-  _bodyShowLogForm = false;
   renderBodyScreen();
 }
 
@@ -15695,30 +15549,6 @@ function _saveSingleMetric(key, value) {
       if (u.measurements.length > 365) u.measurements = u.measurements.slice(-365);
     }
   });
-}
-
-function logMeasurement() {
-  const weightInput = document.getElementById("bodyInput-weight");
-  const w = parseFloat(weightInput ? weightInput.value : "");
-  if (!w || w <= 0) { if (weightInput) weightInput.focus(); return; }
-
-  const entry = { date: Date.now(), weight: w };
-  BODY_METRICS.forEach(m => {
-    if (m.key === "weight") return;
-    const inp = document.getElementById("bodyInput-" + m.key);
-    if (!inp) return;
-    const v = parseFloat(inp.value);
-    if (Number.isFinite(v) && v > 0) entry[m.key] = v;
-  });
-
-  updateUser(u => {
-    u.measurements.push(entry);
-    if (u.measurements.length > 365) u.measurements = u.measurements.slice(-365);
-  });
-
-  _bodyShowLogForm = false;
-  renderBodyScreen();
-  showToast(`Logged ${w} ${state.unit}`, "success");
 }
 
 // ── Chart Drawing ───────────────────────────────────────────
@@ -22300,14 +22130,49 @@ const TUTORIAL_STEPS = [
     target: null,
     placement: "center",
     title: "Quick tour",
-    body: "60-second walkthrough so you know where everything lives. You can re-open it anytime from the ? in the header."
+    body: "60-second walkthrough so you know where everything lives. Re-open it anytime via the ? in the header."
+  },
+  {
+    id: "day-bar",
+    target: ".day-bar",
+    placement: "bottom",
+    title: "Today's workout",
+    body: "This is your day at a glance — the program name, current week, and what's on the menu."
+  },
+  {
+    id: "home-btn",
+    target: "#homeDayBtn",
+    placement: "bottom",
+    title: "Home",
+    body: "Jump back to today's workout from any other view."
+  },
+  {
+    id: "pick-day",
+    target: "#pickDayBtn",
+    placement: "bottom",
+    title: "Switch days",
+    body: "Browse the week, peek at upcoming sessions, or jump to a different day if you're training out of order."
+  },
+  {
+    id: "customize-day",
+    target: "#customizeDayBtn",
+    placement: "bottom",
+    title: "Customize & swap exercises",
+    body: "Edit this day — swap exercises, reorder blocks, tweak rep schemes. Long-press any exercise card for the same options."
+  },
+  {
+    id: "adhoc",
+    target: "#adhocBtn",
+    placement: "bottom",
+    title: "Quick workout",
+    body: "Log an ad-hoc session that's not part of your program — perfect for travel days or a one-off lift."
   },
   {
     id: "start-btn",
     target: "#headerStartBtn",
     placement: "bottom",
-    title: "Start your workout",
-    body: "Tap Start to begin a session. The session timer kicks off automatically."
+    title: "Start your session",
+    body: "Tap Start when you're ready to lift. The session timer fires automatically."
   },
   {
     id: "exercise-card",
@@ -22315,42 +22180,50 @@ const TUTORIAL_STEPS = [
     fallback: ".exercise-card",
     placement: "bottom",
     title: "Tap an exercise to log sets",
-    body: "Each card opens an editor where you enter weight, reps, and effort. Last session auto-fills so you can just tap to confirm."
+    body: "Each card opens a quick editor for weight, reps, and effort. Last session auto-fills so you usually just tap to confirm."
   },
   {
     id: "set-inputs",
     target: "#f-sets",
     placement: "top",
     title: "Sets · reps · rest",
-    body: "Inside the editor you'll find quick steppers for sets, reps, and rest. Tap once and the rest timer fires between sets."
+    body: "Inside the editor: steppers for sets, reps, and rest. Saving a set fires the rest timer with audio + vibration cues."
   },
   {
     id: "session-pill",
     target: "#sessionPill",
     placement: "bottom",
-    title: "Workout & rest timers",
-    body: "Your session time lives here. A rest-timer ring appears next to it during sets — with audio + vibration cues."
+    title: "Workout & rest timer",
+    body: "Your session time lives here. A rest-timer ring appears alongside it whenever a set is in progress."
+  },
+  {
+    id: "progress",
+    target: "#workoutProgressWrap",
+    fallback: ".day-bar",
+    placement: "top",
+    title: "Progress & pace",
+    body: "Once you're rolling, a progress bar tracks completed sets so you can stay on pace through the whole session."
   },
   {
     id: "finish-btn",
     target: "#headerFinishBtn",
     placement: "bottom",
     title: "Finish & track PRs",
-    body: "When you're done, tap ✓ Sets to wrap the session. Personal records and e1RM updates are tracked automatically."
+    body: "Tap ✓ Sets to wrap. Personal records and e1RM updates land in your history automatically."
   },
   {
     id: "bottom-nav",
     target: "nav.bottom",
     placement: "top",
-    title: "History, body & PRs",
-    body: "The bottom bar gets you to your training history, body-weight log, PRs, and the standalone rest timer."
+    title: "Body, PRs & history",
+    body: "The bottom bar gets you to body-weight tracking, your PRs, and full training history."
   },
   {
-    id: "customize",
-    target: "#customizeDayBtn",
-    placement: "bottom",
-    title: "Customize anything",
-    body: "Tap the menu icon on any exercise to swap, reorder, or rename. The day-bar tools above let you reshape entire days."
+    id: "timer-fab",
+    target: "#timerFab",
+    placement: "top",
+    title: "Standalone rest timer",
+    body: "Need a timer outside a session — between warm-up sets, mobility work, anywhere? Tap TIMER for a free-standing countdown."
   },
   {
     id: "done",
@@ -22460,14 +22333,18 @@ function _tPosition(step) {
     if (!target && step.fallback) target = document.querySelector(step.fallback);
   }
 
+  // Treat a hidden/zero-rect target as missing so we fall back to centered text.
+  if (target) {
+    const r = target.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) target = null;
+  }
+
   if (!target) {
     bubble.dataset.placement = "center";
     spotlight.setAttribute("x", "-100");
     spotlight.setAttribute("y", "-100");
     spotlight.setAttribute("width", "0");
     spotlight.setAttribute("height", "0");
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
     bubble.style.left = "50%";
     bubble.style.top = "50%";
     bubble.style.transform = "translate(-50%, -50%)";
@@ -22475,7 +22352,13 @@ function _tPosition(step) {
     return;
   }
 
-  const rect = target.getBoundingClientRect();
+  // Scroll into view if off-screen (header is sticky, so account for that).
+  let rect = target.getBoundingClientRect();
+  const vh0 = window.innerHeight;
+  if (rect.top < 60 || rect.bottom > vh0 - 100) {
+    target.scrollIntoView({ block: "center", behavior: "auto" });
+    rect = target.getBoundingClientRect();
+  }
   const pad = 8;
   const sx = rect.left - pad;
   const sy = rect.top - pad;
