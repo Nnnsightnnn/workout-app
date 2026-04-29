@@ -376,6 +376,11 @@ function init() {
   renderUserChip();
   renderWorkoutScreen();
 
+  // Shared workout deep link (#share=…) — handled before changelog so a
+  // buddy's link isn't buried under a "What's new" sheet.
+  const handledShare = (typeof maybeHandleShareDeepLink === "function")
+    ? maybeHandleShareDeepLink() : false;
+
   // Show onboarding if not completed and not dismissed.
   // If onboarding isn't due, surface any pending changelog ("What's new") sheet —
   // showChangelogSheet only fires when CHANGELOG[0].version differs from the
@@ -383,7 +388,7 @@ function init() {
   // "latest" in loadStore() so first-installs never see this.
   if (!s.onboarding?.completedAt && !s.onboardingDismissedAt) {
     showOnboardingFlow();
-  } else {
+  } else if (!handledShare) {
     const pendingChangelog = getPendingChangelog();
     if (pendingChangelog) {
       setTimeout(() => showChangelogSheet(pendingChangelog), 800);
