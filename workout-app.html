@@ -6023,6 +6023,11 @@
           <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
       </button>
+      <button class="icon-btn" id="shareDayBtn" title="Share workout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
+          <path d="M4 12v7a1 1 0 001 1h14a1 1 0 001-1v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>
+        </svg>
+      </button>
     </div>
 
     <div id="timelineStrip"></div>
@@ -8613,7 +8618,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 17;
-const APP_BUILD = "9f039257";
+const APP_BUILD = "7775cf3d";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -13523,20 +13528,11 @@ function openDayPicker() {
   };
   wrap.appendChild(adhocBtn);
 
-  // Share current workout (text + deep link to a buddy)
-  const shareBtn = document.createElement("button");
-  shareBtn.className = "sheet-item";
-  shareBtn.style.marginTop = "8px";
-  shareBtn.innerHTML = '<span class="icon" style="font-size:14px;">\u2197</span><span>Share workout<div style="color:var(--text-dim);font-size:11px;font-weight:500;">Send today\u2019s workout to a friend</div></span>';
-  shareBtn.onclick = () => {
-    closeSheet();
-    if (typeof shareCurrentWorkout === "function") setTimeout(shareCurrentWorkout, 80);
-  };
-  wrap.appendChild(shareBtn);
-
   // Import workout from a friend (paste link/code)
+  // (Share lives on the day-bar header.)
   const importBtn = document.createElement("button");
   importBtn.className = "sheet-item";
+  importBtn.style.marginTop = "8px";
   importBtn.innerHTML = '<span class="icon" style="font-size:14px;">\u2199</span><span>Import workout<div style="color:var(--text-dim);font-size:11px;font-weight:500;">Paste a link or code from a friend</div></span>';
   importBtn.onclick = () => {
     closeSheet();
@@ -17453,6 +17449,10 @@ function initWorkoutScreen() {
   document.getElementById("pickDayBtn").onclick = openDayPicker;
   document.getElementById("customizeDayBtn").onclick = openCustomizeDay;
   document.getElementById("adhocBtn").onclick = openAdhocWorkout;
+  const shareDayBtn = document.getElementById("shareDayBtn");
+  if (shareDayBtn) shareDayBtn.onclick = () => {
+    if (typeof shareCurrentWorkout === "function") shareCurrentWorkout();
+  };
   document.getElementById("headerStartBtn").onclick = startWorkout;
   document.getElementById("headerFinishBtn").onclick = handleFinishButton;
   document.getElementById("restPill").onclick = openRestSheet;

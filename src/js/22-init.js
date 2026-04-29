@@ -271,6 +271,10 @@ function initWorkoutScreen() {
   document.getElementById("pickDayBtn").onclick = openDayPicker;
   document.getElementById("customizeDayBtn").onclick = openCustomizeDay;
   document.getElementById("adhocBtn").onclick = openAdhocWorkout;
+  const shareDayBtn = document.getElementById("shareDayBtn");
+  if (shareDayBtn) shareDayBtn.onclick = () => {
+    if (typeof shareCurrentWorkout === "function") shareCurrentWorkout();
+  };
   document.getElementById("headerStartBtn").onclick = startWorkout;
   document.getElementById("headerFinishBtn").onclick = handleFinishButton;
   document.getElementById("restPill").onclick = openRestSheet;

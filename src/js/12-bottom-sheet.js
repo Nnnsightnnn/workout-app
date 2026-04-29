@@ -97,20 +97,11 @@ function openDayPicker() {
   };
   wrap.appendChild(adhocBtn);
 
-  // Share current workout (text + deep link to a buddy)
-  const shareBtn = document.createElement("button");
-  shareBtn.className = "sheet-item";
-  shareBtn.style.marginTop = "8px";
-  shareBtn.innerHTML = '<span class="icon" style="font-size:14px;">\u2197</span><span>Share workout<div style="color:var(--text-dim);font-size:11px;font-weight:500;">Send today\u2019s workout to a friend</div></span>';
-  shareBtn.onclick = () => {
-    closeSheet();
-    if (typeof shareCurrentWorkout === "function") setTimeout(shareCurrentWorkout, 80);
-  };
-  wrap.appendChild(shareBtn);
-
   // Import workout from a friend (paste link/code)
+  // (Share lives on the day-bar header.)
   const importBtn = document.createElement("button");
   importBtn.className = "sheet-item";
+  importBtn.style.marginTop = "8px";
   importBtn.innerHTML = '<span class="icon" style="font-size:14px;">\u2199</span><span>Import workout<div style="color:var(--text-dim);font-size:11px;font-weight:500;">Paste a link or code from a friend</div></span>';
   importBtn.onclick = () => {
     closeSheet();
