@@ -52,6 +52,14 @@ const TUTORIAL_STEPS = [
     body: "Log an ad-hoc session that's not part of your program — perfect for travel days or a one-off lift."
   },
   {
+    id: "edit-schedule",
+    target: ".tl-sched-btn",
+    fallback: "#timelineStrip",
+    placement: "top",
+    title: "Reshape your week",
+    body: "Tap Edit schedule to assign program days to weekdays — swap two days, drop in a rest day, or shift everything to fit your calendar. Picking a day that's already scheduled auto-swaps with the day it lands on."
+  },
+  {
     id: "start-btn",
     target: "#headerStartBtn",
     placement: "bottom",
@@ -68,10 +76,11 @@ const TUTORIAL_STEPS = [
   },
   {
     id: "set-inputs",
-    target: "#f-sets",
+    target: ".set-chip",
+    fallback: ".exercise-card",
     placement: "top",
-    title: "Sets · reps · rest",
-    body: "Inside the editor: steppers for sets, reps, and rest. Saving a set fires the rest timer with audio + vibration cues."
+    title: "Log a set",
+    body: "Each chip is one set — tap to confirm weight, reps, and effort. Saving fires the rest timer with audio + vibration cues. Swipe right to mark done, left to skip."
   },
   {
     id: "session-pill",

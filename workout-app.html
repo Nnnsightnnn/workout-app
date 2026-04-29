@@ -5834,37 +5834,46 @@
 .tutorial-skip,
 .tutorial-back,
 .tutorial-next {
-  border-radius: 10px;
-  padding: 8px 14px;
+  border-radius: 14px;
+  padding: 10px 16px;
+  min-height: 38px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
   font-family: var(--font-display);
-  border: 2px solid var(--border-visible);
-  background: var(--bg-card-2);
-  color: var(--text-dim);
-  box-shadow: 0 3px 0 rgba(0,0,0,0.3);
-  transition: transform 0.15s var(--spring), box-shadow 0.15s ease;
+  letter-spacing: 0.01em;
+  border: 1.5px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  box-shadow: var(--pillow-sm);
+  transition: transform 0.15s var(--spring), box-shadow 0.15s ease, background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
 }
 .tutorial-skip {
   border-color: transparent;
   background: transparent;
+  color: var(--text-dim);
   box-shadow: none;
-  padding-left: 4px;
+  padding: 8px 10px;
+  min-height: 0;
 }
-.tutorial-back {
-  color: var(--text);
+.tutorial-skip:active {
+  transform: var(--squish);
+  box-shadow: none;
+}
+.tutorial-back:active {
+  transform: var(--squish);
+  box-shadow: var(--pillow-pressed);
 }
 .tutorial-next {
   background: var(--accent);
   color: #fff;
-  border-color: var(--accent-dim);
-  box-shadow: 0 3px 0 var(--accent-dim);
+  border-color: var(--accent-border);
+  box-shadow: var(--pillow-accent-sm);
 }
-.tutorial-skip:active,
-.tutorial-back:active,
 .tutorial-next:active {
-  transform: translateY(2px);
-  box-shadow: 0 1px 0 var(--accent-dim);
+  transform: var(--squish);
+  box-shadow: var(--pillow-pressed);
 }
 .tutorial-back[hidden],
 .tutorial-next[hidden] {
@@ -8604,7 +8613,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 17;
-const APP_BUILD = "8665d637";
+const APP_BUILD = "1409b66e";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -22744,6 +22753,14 @@ const TUTORIAL_STEPS = [
     body: "Log an ad-hoc session that's not part of your program — perfect for travel days or a one-off lift."
   },
   {
+    id: "edit-schedule",
+    target: ".tl-sched-btn",
+    fallback: "#timelineStrip",
+    placement: "top",
+    title: "Reshape your week",
+    body: "Tap Edit schedule to assign program days to weekdays — swap two days, drop in a rest day, or shift everything to fit your calendar. Picking a day that's already scheduled auto-swaps with the day it lands on."
+  },
+  {
     id: "start-btn",
     target: "#headerStartBtn",
     placement: "bottom",
@@ -22760,10 +22777,11 @@ const TUTORIAL_STEPS = [
   },
   {
     id: "set-inputs",
-    target: "#f-sets",
+    target: ".set-chip",
+    fallback: ".exercise-card",
     placement: "top",
-    title: "Sets · reps · rest",
-    body: "Inside the editor: steppers for sets, reps, and rest. Saving a set fires the rest timer with audio + vibration cues."
+    title: "Log a set",
+    body: "Each chip is one set — tap to confirm weight, reps, and effort. Saving fires the rest timer with audio + vibration cues. Swipe right to mark done, left to skip."
   },
   {
     id: "session-pill",
