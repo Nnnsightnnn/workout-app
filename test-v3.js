@@ -1977,6 +1977,191 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     eq(s.tutorialState.completedAt, null, "new user (no sessions): tutorial still open");
   });
 
+  // ============================================================
+  // SHARE / IMPORT WORKOUT
+  // ============================================================
+  // Sample day used across the share suite. Mirrors the shape produced
+  // by the program builders: blocks → exercises with sets/reps/rest/etc.
+  const _shareSampleDay = {
+    id: 1,
+    name: "Pull Day",
+    sub: "Back + biceps",
+    blocks: [
+      {
+        id: "b1", letter: "A", name: "Strength", blockType: "strength",
+        exercises: [
+          { exId: "pullup", name: "Weighted Pullups", muscles: ["back"],
+            sets: 3, reps: 5, rest: 180, defaultWeight: 45,
+            tempo: "3-1-1-0", notes: "Chest to bar", bodyweight: false },
+          { exId: "row", name: "Barbell Row", muscles: ["back"],
+            sets: 3, reps: 8, rest: 120, defaultWeight: 185 }
+        ]
+      },
+      {
+        id: "b2", letter: "B", name: "Hypertrophy", blockType: "hypertrophy",
+        exercises: [
+          { exId: "curl", name: "Bicep Curl", muscles: ["biceps"],
+            sets: 4, reps: 12, rest: 60, defaultWeight: 25, perSide: true }
+        ]
+      }
+    ]
+  };
+
+  t("share: serializeDayForShare keeps name + blocks + exercises", () => {
+    const ser = w.serializeDayForShare(_shareSampleDay);
+    eq(ser.v, 1, "schema version stamped");
+    eq(ser.name, "Pull Day", "name preserved");
+    eq(ser.sub, "Back + biceps", "sub preserved");
+    eq(ser.blocks.length, 2, "block count preserved");
+    eq(ser.blocks[0].name, "Strength", "block name preserved");
+    eq(ser.blocks[0].exercises.length, 2, "exercise count preserved");
+    const ex = ser.blocks[0].exercises[0];
+    eq(ex.exId, "pullup", "exId preserved");
+    eq(ex.sets, 3, "sets preserved");
+    eq(ex.reps, 5, "reps preserved");
+    eq(ex.rest, 180, "rest preserved");
+    eq(ex.defaultWeight, 45, "defaultWeight preserved");
+    eq(ex.tempo, "3-1-1-0", "tempo preserved");
+    eq(ex.notes, "Chest to bar", "notes preserved");
+  });
+
+  t("share: serializeDayForShare strips zero/false defaults", () => {
+    const day = { name: "X", blocks: [{ name: "A", exercises: [
+      { exId: "x", name: "Y", sets: 3, reps: 8, rest: 60,
+        defaultWeight: 0, bodyweight: false, perSide: false, tempo: "" }
+    ]}]};
+    const ser = w.serializeDayForShare(day);
+    const ex = ser.blocks[0].exercises[0];
+    assert(!("defaultWeight" in ex), "defaultWeight=0 omitted");
+    assert(!("bodyweight" in ex), "bodyweight=false omitted");
+    assert(!("perSide" in ex), "perSide=false omitted");
+    assert(!("tempo" in ex), "empty tempo omitted");
+    assert(!("notes" in ex), "empty notes omitted");
+  });
+
+  t("share: serializeDayForShare returns null on bad input", () => {
+    eq(w.serializeDayForShare(null), null, "null in → null out");
+    eq(w.serializeDayForShare({}), null, "no blocks → null");
+  });
+
+  t("share: formatDayAsText renders a readable summary", () => {
+    const text = w.formatDayAsText(_shareSampleDay, { unit: "lbs" });
+    assert(text.includes("Pull Day"), "day name present");
+    assert(text.includes("A. Strength"), "block A header present");
+    assert(text.includes("B. Hypertrophy"), "block B header present");
+    assert(text.includes("3×5"), "sets×reps formatted");
+    assert(text.includes("@ 45 lbs"), "weight + unit shown");
+    assert(text.includes("rest 3:00"), "rest formatted");
+    assert(text.includes("tempo 3-1-1-0"), "tempo line present");
+    assert(text.includes("Chest to bar"), "notes line present");
+    assert(text.includes("/side"), "perSide rendered");
+  });
+
+  t("share: formatDayAsText skips warmups", () => {
+    const day = { name: "X", blocks: [{ name: "A", exercises: [
+      { exId: "warm", name: "Foam Roll", sets: 1, reps: 30, isWarmup: true, isTime: true },
+      { exId: "real", name: "Bench", sets: 3, reps: 5, defaultWeight: 135 }
+    ]}]};
+    const text = w.formatDayAsText(day);
+    assert(!text.includes("Foam Roll"), "warmup excluded from share text");
+    assert(text.includes("Bench"), "real exercise included");
+  });
+
+  t("share: encode → decode round-trip preserves payload", () => {
+    const enc = w.encodeDayForShare(_shareSampleDay);
+    assert(typeof enc === "string" && enc.length > 0, "encoded string produced");
+    assert(!/[^A-Za-z0-9_-]/.test(enc), "URL-safe charset only (no +, /, =)");
+    const decoded = w.decodeSharedDay(enc);
+    const ser = w.serializeDayForShare(_shareSampleDay);
+    eq(JSON.stringify(decoded), JSON.stringify(ser), "round-trip identical");
+  });
+
+  t("share: decodeSharedDay accepts full URL with #share=", () => {
+    const enc = w.encodeDayForShare(_shareSampleDay);
+    const url = "https://nnnsightnnn.github.io/workout-app/#share=" + enc;
+    const decoded = w.decodeSharedDay(url);
+    assert(decoded, "decoded from URL");
+    eq(decoded.name, "Pull Day", "name survived URL trip");
+  });
+
+  t("share: decodeSharedDay rejects garbage", () => {
+    eq(w.decodeSharedDay(null), null, "null → null");
+    eq(w.decodeSharedDay(""), null, "empty → null");
+    eq(w.decodeSharedDay("not-base64-!!!"), null, "bad base64 → null");
+    eq(w.decodeSharedDay("aGVsbG8="), null, "valid b64 but not JSON → null");
+  });
+
+  t("share: validateImportedDay enforces shape", () => {
+    eq(w.validateImportedDay(null).length > 0, true, "null rejected");
+    eq(w.validateImportedDay({}).length > 0, true, "empty rejected");
+    eq(w.validateImportedDay({ v: 1 }).length > 0, true, "missing blocks rejected");
+    eq(w.validateImportedDay({ v: 1, blocks: [] }).length > 0, true, "empty blocks rejected");
+    eq(w.validateImportedDay({ v: 1, blocks: [{ exercises: [] }] }).length > 0,
+       true, "no exercises rejected");
+    eq(w.validateImportedDay({ v: 999, blocks: [{ exercises: [{ name: "x" }] }] })[0]
+       .indexOf("newer format") >= 0, true, "future version rejected");
+    const ser = w.serializeDayForShare(_shareSampleDay);
+    eq(w.validateImportedDay(ser).length, 0, "valid payload accepted");
+  });
+
+  t("share: emoji + non-latin in names survive round-trip", () => {
+    const day = { name: "💪 пуш день", sub: "テスト", blocks: [{ name: "A", exercises: [
+      { exId: "x", name: "Übung — 例え", sets: 3, reps: 5 }
+    ]}]};
+    const enc = w.encodeDayForShare(day);
+    const dec = w.decodeSharedDay(enc);
+    eq(dec.name, "💪 пуш день", "emoji + cyrillic survive");
+    eq(dec.sub, "テスト", "japanese survives");
+    eq(dec.blocks[0].exercises[0].name, "Übung — 例え", "umlaut + em-dash + japanese survive");
+  });
+
+  t("share: _beginImportedSession starts ad-hoc and skips warmups", () => {
+    // Reset to a clean post-init state with a user
+    w.localStorage.clear();
+    w.addUser("Kenny");
+    w.state.adhocActive = false;
+    const before = w.userData();
+    const beforeSessions = before.sessions.length;
+    const beforeProgramLen = before.program.length;
+    const beforeProgramHash = JSON.stringify(before.program);
+
+    const importedDay = w.serializeDayForShare(_shareSampleDay);
+    importedDay.blocks[0].exercises.unshift({
+      exId: "warmup_x", name: "Cat-Cow", sets: 1, reps: 30, isWarmup: true
+    });
+    w._beginImportedSession(importedDay);
+
+    eq(w.state.adhocActive, true, "adhoc mode entered");
+    assert(w.state.adhocDay, "adhocDay set");
+    eq(w.state.adhocDay.blocks.length, 1, "imported flattened to one block");
+    const exs = w.state.adhocDay.blocks[0].exercises;
+    eq(exs.length, 3, "3 non-warmup exercises (warmup filtered)");
+    eq(exs[0].name, "Weighted Pullups", "first exercise name");
+    eq(exs[0].sets, 3, "sets preserved");
+    eq(exs[0].reps, 5, "reps preserved");
+    eq(exs[0].defaultWeight, 45, "defaultWeight preserved");
+    // Critical: program / sessions are untouched
+    const after = w.userData();
+    eq(after.sessions.length, beforeSessions, "no session added on start");
+    eq(after.program.length, beforeProgramLen, "program length unchanged");
+    eq(JSON.stringify(after.program), beforeProgramHash, "program contents unchanged");
+
+    // Cleanup so subsequent tests don't see the ad-hoc state
+    w.cancelAdhocWorkout();
+  });
+
+  t("share: deep-link handler clears the hash and surfaces import sheet", () => {
+    w.localStorage.clear();
+    w.addUser("Kenny");
+    w.state.adhocActive = false;
+    const enc = w.encodeDayForShare(_shareSampleDay);
+    // jsdom lets us mutate location.hash directly
+    w.location.hash = "#share=" + enc;
+    const handled = w.maybeHandleShareDeepLink();
+    eq(handled, true, "handler reports it consumed the hash");
+    eq(w.location.hash, "", "hash cleared so refresh doesn't re-prompt");
+  });
+
   console.log("\n===== RESULTS =====");
   let pass = 0, fail = 0;
   for (const [n, s, e] of results) {
