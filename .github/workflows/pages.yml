@@ -46,6 +46,7 @@ jobs:
           mkdir -p dist
           cp index.html dist/
           cp workout-app.html dist/
+          cp -r media dist/
 
       - uses: actions/configure-pages@v5
 

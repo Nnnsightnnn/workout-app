@@ -2091,6 +2091,52 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     eq(w.decodeSharedDay("aGVsbG8="), null, "valid b64 but not JSON → null");
   });
 
+  t("share: decodeSharedDay tolerates whitespace + line wrapping", () => {
+    const enc = w.encodeDayForShare(_shareSampleDay);
+    // Email clients often hard-wrap URLs at column ~76
+    const wrapped = "https://nnnsightnnn.github.io/workout-app/#share="
+      + enc.slice(0, 40) + "\n" + enc.slice(40, 80) + "\r\n" + enc.slice(80);
+    const decoded = w.decodeSharedDay(wrapped);
+    assert(decoded, "decoded from wrapped URL");
+    eq(decoded.name, "Pull Day", "name survived line-wrapping");
+  });
+
+  t("share: decodeSharedDay tolerates Slack-style <url> wrappers", () => {
+    const enc = w.encodeDayForShare(_shareSampleDay);
+    const wrapped = "<https://nnnsightnnn.github.io/workout-app/#share=" + enc + ">";
+    const decoded = w.decodeSharedDay(wrapped);
+    assert(decoded, "decoded from <url> wrapped");
+    eq(decoded.name, "Pull Day", "name survived Slack wrap");
+  });
+
+  t("share: decodeSharedDay tolerates trailing punctuation", () => {
+    const enc = w.encodeDayForShare(_shareSampleDay);
+    const url = "https://nnnsightnnn.github.io/workout-app/#share=" + enc + ".";
+    const decoded = w.decodeSharedDay(url);
+    assert(decoded, "decoded despite trailing period");
+    eq(decoded.name, "Pull Day", "name survived trailing punctuation");
+  });
+
+  t("share: decodeSharedDay tolerates percent-encoded #", () => {
+    const enc = w.encodeDayForShare(_shareSampleDay);
+    const url = "https://nnnsightnnn.github.io/workout-app/%23share=" + enc;
+    const decoded = w.decodeSharedDay(url);
+    assert(decoded, "decoded despite %23-encoded fragment");
+    eq(decoded.name, "Pull Day", "name survived percent-encoded #");
+  });
+
+  t("share: decodeSharedDay handles full pasted message (text + URL)", () => {
+    // Mirrors what shareCurrentWorkout puts on the clipboard:
+    // human-readable summary + blank line + share URL at the end.
+    const text = w.formatDayAsText(_shareSampleDay, { unit: "lbs" });
+    const enc = w.encodeDayForShare(_shareSampleDay);
+    const url = "https://nnnsightnnn.github.io/workout-app/#share=" + enc;
+    const fullMessage = text + "\n\n" + url;
+    const decoded = w.decodeSharedDay(fullMessage);
+    assert(decoded, "decoded from full pasted message");
+    eq(decoded.name, "Pull Day", "name survived full-message paste");
+  });
+
   t("share: validateImportedDay enforces shape", () => {
     eq(w.validateImportedDay(null).length > 0, true, "null rejected");
     eq(w.validateImportedDay({}).length > 0, true, "empty rejected");

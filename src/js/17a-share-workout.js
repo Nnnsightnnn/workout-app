@@ -132,12 +132,24 @@ function buildShareUrl(day) {
 
 function decodeSharedDay(input) {
   if (!input || typeof input !== "string") return null;
-  let enc = input.trim();
-  // Accept either a raw token or a full URL with #share=
-  const hashIdx = enc.indexOf("#share=");
-  if (hashIdx >= 0) enc = enc.slice(hashIdx + 7);
-  // Tolerate stray leading "?" or "#"
-  enc = enc.replace(/^[#?]+/, "");
+  // Strip ALL whitespace first — email/iMessage often wrap long URLs across
+  // lines, leaving newlines or spaces inside the base64 payload.
+  // Also strip common chat-app wrappers: Slack <url>, parens, quotes, brackets.
+  const cleaned = input
+    .replace(/\s+/g, "")
+    .replace(/^[<("'\[]+|[>)"'\]]+$/g, "");
+  // Pull the share token out of a URL. Accepts the literal "#share=" or its
+  // percent-encoded form "%23share=" (some clients escape the fragment).
+  // The [A-Za-z0-9_-]+ class stops at the first non-base64url byte, so any
+  // trailing punctuation, query string, or appended text is naturally trimmed.
+  const m = cleaned.match(/(?:#|%23)share=([A-Za-z0-9_\-]+)/i);
+  let enc;
+  if (m) {
+    enc = m[1];
+  } else {
+    // Raw-token fallback: caller pasted just the encoded payload (no URL).
+    enc = cleaned.replace(/[^A-Za-z0-9_\-]/g, "");
+  }
   if (!enc) return null;
   try {
     const json = _b64UrlDecode(enc);

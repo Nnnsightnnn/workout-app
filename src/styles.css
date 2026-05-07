@@ -66,15 +66,32 @@
     -webkit-text-size-adjust: 100%;
   }
   body {
-    background: var(--bg); color: var(--text);
+    background: transparent; color: var(--text);
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
     font-size: 16px; line-height: 1.45;
     overflow-x: hidden;
     overscroll-behavior-y: contain;
     padding-bottom: 110px;
     min-height: 100vh;
-    background-image: var(--dot-grid);
-    background-size: 22px 22px;
+  }
+  .bg-image {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: url("media/bg-smoke.jpg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    /* Heavy darkening so the smoke reads as ambient texture, not foreground.
+       Layered: dark wash → image. */
+    background-color: var(--bg);
+  }
+  .bg-image::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(10,12,18,0.55);
   }
   body::before {
     content: "";
@@ -82,7 +99,9 @@
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    background: var(--ambient-glow);
+    background-image: var(--ambient-glow), var(--dot-grid);
+    background-size: auto, 22px 22px;
+    background-repeat: no-repeat, repeat;
   }
   body::after {
     content: ""; position: fixed; inset: 0; z-index: 9999; pointer-events: none;

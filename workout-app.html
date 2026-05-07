@@ -188,15 +188,32 @@
     -webkit-text-size-adjust: 100%;
   }
   body {
-    background: var(--bg); color: var(--text);
+    background: transparent; color: var(--text);
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
     font-size: 16px; line-height: 1.45;
     overflow-x: hidden;
     overscroll-behavior-y: contain;
     padding-bottom: 110px;
     min-height: 100vh;
-    background-image: var(--dot-grid);
-    background-size: 22px 22px;
+  }
+  .bg-image {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: url("media/bg-smoke.jpg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    /* Heavy darkening so the smoke reads as ambient texture, not foreground.
+       Layered: dark wash → image. */
+    background-color: var(--bg);
+  }
+  .bg-image::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(10,12,18,0.55);
   }
   body::before {
     content: "";
@@ -204,7 +221,9 @@
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    background: var(--ambient-glow);
+    background-image: var(--ambient-glow), var(--dot-grid);
+    background-size: auto, 22px 22px;
+    background-repeat: no-repeat, repeat;
   }
   body::after {
     content: ""; position: fixed; inset: 0; z-index: 9999; pointer-events: none;
@@ -5969,6 +5988,8 @@
 </head>
 <body>
 
+<div class="bg-image" aria-hidden="true"></div>
+
 <header>
   <div class="header-left">
     <div class="logo" id="logoBtn">K&amp;N <span>Lifts</span></div>
@@ -8618,7 +8639,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 17;
-const APP_BUILD = "d1bc9465";
+const APP_BUILD = "cf5cb0ce";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -15928,12 +15949,24 @@ function buildShareUrl(day) {
 
 function decodeSharedDay(input) {
   if (!input || typeof input !== "string") return null;
-  let enc = input.trim();
-  // Accept either a raw token or a full URL with #share=
-  const hashIdx = enc.indexOf("#share=");
-  if (hashIdx >= 0) enc = enc.slice(hashIdx + 7);
-  // Tolerate stray leading "?" or "#"
-  enc = enc.replace(/^[#?]+/, "");
+  // Strip ALL whitespace first — email/iMessage often wrap long URLs across
+  // lines, leaving newlines or spaces inside the base64 payload.
+  // Also strip common chat-app wrappers: Slack <url>, parens, quotes, brackets.
+  const cleaned = input
+    .replace(/\s+/g, "")
+    .replace(/^[<("'\[]+|[>)"'\]]+$/g, "");
+  // Pull the share token out of a URL. Accepts the literal "#share=" or its
+  // percent-encoded form "%23share=" (some clients escape the fragment).
+  // The [A-Za-z0-9_-]+ class stops at the first non-base64url byte, so any
+  // trailing punctuation, query string, or appended text is naturally trimmed.
+  const m = cleaned.match(/(?:#|%23)share=([A-Za-z0-9_\-]+)/i);
+  let enc;
+  if (m) {
+    enc = m[1];
+  } else {
+    // Raw-token fallback: caller pasted just the encoded payload (no URL).
+    enc = cleaned.replace(/[^A-Za-z0-9_\-]/g, "");
+  }
   if (!enc) return null;
   try {
     const json = _b64UrlDecode(enc);
