@@ -3516,10 +3516,104 @@
   .focus-dot.partial {
     background: var(--bg-card-2); border-color: var(--accent);
   }
+  /* Linear-progression hint — "Last week clean — try 105 lbs" */
+  .lp-hint-chip {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(255,107,31,0.10);
+    border: 1px solid rgba(255,107,31,0.40);
+    border-radius: 14px;
+    padding: 9px 10px 9px 12px;
+    margin-bottom: 10px;
+    box-shadow: var(--pillow-sm);
+  }
+  .lp-hint-chip .lp-hint-icon {
+    font-size: 18px; line-height: 1; font-weight: 700;
+    color: var(--accent); flex-shrink: 0;
+  }
+  .lp-hint-chip .lp-hint-text {
+    flex: 1; min-width: 0; color: var(--text);
+    font-size: 12px; line-height: 1.3;
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  .lp-hint-chip .lp-hint-label {
+    font-family: var(--font-mono); font-size: 9px;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  .lp-hint-chip strong {
+    font-family: var(--font-display); font-weight: 600;
+    font-size: 14px; letter-spacing: 0.01em;
+    color: var(--accent);
+  }
+  .lp-hint-chip .lp-hint-apply {
+    background: var(--accent); color: #fff;
+    border: 2px solid var(--accent); border-radius: 10px;
+    padding: 6px 14px;
+    font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.25);
+    transition: transform 0.12s var(--spring), box-shadow 0.12s ease;
+    flex-shrink: 0;
+  }
+  .lp-hint-chip .lp-hint-apply:hover { filter: brightness(1.08); }
+  .lp-hint-chip .lp-hint-apply:active {
+    transform: translateY(3px);
+    box-shadow: 0 0 0 rgba(0,0,0,0);
+  }
+
+  /* Superset partner peek — click-fallback + visual cue that a side swipe will jump to the partner */
+  .focus-superset-peek {
+    display: flex; gap: 8px;
+    margin: -2px 0 12px;
+    align-items: stretch;
+  }
+  .focus-superset-nav {
+    flex: 1 1 0; min-width: 0;
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg-card-2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 8px 12px;
+    color: var(--text-dim);
+    cursor: pointer; user-select: none;
+    box-shadow: var(--pillow-sm);
+    transition: transform 0.15s var(--spring), border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .focus-superset-nav.next { justify-content: flex-end; text-align: right; }
+  .focus-superset-nav.prev { justify-content: flex-start; text-align: left; }
+  .focus-superset-nav:hover:not(.disabled) {
+    border-color: var(--superset);
+    color: var(--text);
+  }
+  .focus-superset-nav:active:not(.disabled) {
+    transform: var(--squish-sm);
+    box-shadow: var(--pillow-pressed);
+  }
+  .focus-superset-nav.disabled {
+    opacity: 0.35; cursor: default;
+  }
+  .focus-superset-nav .peek-arrow {
+    font-size: 22px; line-height: 1; font-weight: 700;
+    color: var(--superset); flex-shrink: 0;
+  }
+  .focus-superset-nav.disabled .peek-arrow { color: var(--text-faint); }
+  .focus-superset-nav .peek-meta {
+    display: flex; flex-direction: column; min-width: 0;
+  }
+  .focus-superset-nav .peek-label {
+    font-family: var(--font-mono); font-size: 9px;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  .focus-superset-nav .peek-name {
+    font-family: var(--font-display); font-weight: 500;
+    font-size: 13px; line-height: 1.2;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
   .focus-card-wrap {
     overflow: hidden; position: relative;
     min-height: 200px;
+    cursor: grab;
   }
+  .focus-card-wrap:active { cursor: grabbing; }
   .focus-card-wrap .exercise-card {
     animation: focusCardIn 0.25s var(--spring-gentle);
   }
@@ -8639,7 +8733,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 17;
-const APP_BUILD = "cf5cb0ce";
+const APP_BUILD = "c22f5e83";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -11786,6 +11880,10 @@ function renderSetsTable(block, ex, bi, ei) {
   if (typeof injectRpHint === "function") {
     injectRpHint(wrap, ex, userData());
   }
+  // Simple linear-progression hint (for users without RP enabled).
+  if (typeof injectLinearProgressionHint === "function") {
+    injectLinearProgressionHint(wrap, ex, block, ei);
+  }
 
   const last = getLastSetsFor(ex.exId || ex.name);
   const numSets = ex.sets || 3;
@@ -12729,6 +12827,40 @@ function renderFocusView(container, day) {
     const ei = state.focusExIdx;
     const isSuperset = exercises.length > 1;
 
+    // Superset partner peek — discoverable swipe affordance + click-fallback
+    if (isSuperset) {
+      const peek = document.createElement("div");
+      peek.className = "focus-superset-peek";
+      const prevEx = state.focusExIdx > 0 ? exercises[state.focusExIdx - 1] : null;
+      const nextEx = state.focusExIdx < exCount - 1 ? exercises[state.focusExIdx + 1] : null;
+
+      const prevBtn = document.createElement("button");
+      prevBtn.className = "focus-superset-nav prev" + (prevEx ? "" : " disabled");
+      prevBtn.type = "button";
+      prevBtn.innerHTML = prevEx
+        ? `<span class="peek-arrow">‹</span><div class="peek-meta"><span class="peek-label">Prev</span><span class="peek-name">${prevEx.name}</span></div>`
+        : `<span class="peek-arrow">‹</span><div class="peek-meta"><span class="peek-label">Start</span></div>`;
+      if (prevEx) prevBtn.addEventListener("click", () => {
+        state.focusExIdx--;
+        renderWorkoutScreen();
+      });
+
+      const nextBtn = document.createElement("button");
+      nextBtn.className = "focus-superset-nav next" + (nextEx ? "" : " disabled");
+      nextBtn.type = "button";
+      nextBtn.innerHTML = nextEx
+        ? `<div class="peek-meta"><span class="peek-label">Next</span><span class="peek-name">${nextEx.name}</span></div><span class="peek-arrow">›</span>`
+        : `<div class="peek-meta"><span class="peek-label">End</span></div><span class="peek-arrow">›</span>`;
+      if (nextEx) nextBtn.addEventListener("click", () => {
+        state.focusExIdx++;
+        renderWorkoutScreen();
+      });
+
+      peek.appendChild(prevBtn);
+      peek.appendChild(nextBtn);
+      wrap.appendChild(peek);
+    }
+
     // Big serif exercise name (Midnight Forge style)
     const focusTitle = document.createElement("div");
     focusTitle.className = "focus-hero-title";
@@ -12913,15 +13045,29 @@ function buildCooldownFocusCard(ex) {
 
 function wireFocusSwipe(cardWrap, exCount) {
   let swStartX = 0, swStartY = 0, isSwiping = false;
+  let mouseDown = false;
+
+  function shouldIgnore(target) {
+    return !!(target && (target.closest(".set-chip") || target.closest("button") || target.closest("input") || target.closest("textarea")));
+  }
+  function commitSwipe(dx) {
+    if (dx < -60 && state.focusExIdx < exCount - 1) {
+      state.focusExIdx++;
+      renderWorkoutScreen();
+    } else if (dx > 60 && state.focusExIdx > 0) {
+      state.focusExIdx--;
+      renderWorkoutScreen();
+    }
+  }
+
   cardWrap.addEventListener("touchstart", (e) => {
-    // Don't intercept swipes on set chips (they have their own swipe)
-    if (e.target.closest(".set-chip")) return;
+    if (shouldIgnore(e.target)) return;
     swStartX = e.touches[0].clientX;
     swStartY = e.touches[0].clientY;
     isSwiping = false;
   }, { passive: true });
   cardWrap.addEventListener("touchmove", (e) => {
-    if (e.target.closest(".set-chip")) return;
+    if (shouldIgnore(e.target)) return;
     const dx = e.touches[0].clientX - swStartX;
     const dy = e.touches[0].clientY - swStartY;
     if (!isSwiping && Math.abs(dx) > 20 && Math.abs(dx) > Math.abs(dy) * 2) isSwiping = true;
@@ -12930,14 +13076,35 @@ function wireFocusSwipe(cardWrap, exCount) {
   cardWrap.addEventListener("touchend", (e) => {
     if (!isSwiping) return;
     const dx = e.changedTouches[0].clientX - swStartX;
-    if (dx < -60 && state.focusExIdx < exCount - 1) {
-      state.focusExIdx++;
-      renderWorkoutScreen();
-    } else if (dx > 60 && state.focusExIdx > 0) {
-      state.focusExIdx--;
-      renderWorkoutScreen();
-    }
+    commitSwipe(dx);
   }, { passive: true });
+
+  // Desktop / pointer fallback so swipe is testable in a browser.
+  cardWrap.addEventListener("mousedown", (e) => {
+    if (shouldIgnore(e.target)) return;
+    if (e.button !== 0) return; // primary only
+    swStartX = e.clientX;
+    swStartY = e.clientY;
+    mouseDown = true;
+    isSwiping = false;
+  });
+  cardWrap.addEventListener("mousemove", (e) => {
+    if (!mouseDown) return;
+    const dx = e.clientX - swStartX;
+    const dy = e.clientY - swStartY;
+    if (!isSwiping && Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy) * 2) {
+      isSwiping = true;
+      if (e.preventDefault) e.preventDefault(); // suppress text selection mid-drag
+    }
+  });
+  cardWrap.addEventListener("mouseup", (e) => {
+    if (!mouseDown) return;
+    mouseDown = false;
+    if (!isSwiping) return;
+    const dx = e.clientX - swStartX;
+    commitSwipe(dx);
+  });
+  cardWrap.addEventListener("mouseleave", () => { mouseDown = false; isSwiping = false; });
 }
 
 // ============================================================
@@ -13448,6 +13615,80 @@ function getPrevDaySetsFor(dayId, exId) {
     if (sets.length) return sets;
   }
   return [];
+}
+
+// ============================================================
+// LINEAR-PROGRESSION HINT
+// ------------------------------------------------------------
+// Simple, deterministic progression suggestion for users who
+// have NOT opted into the full RP engine (u.rp.enabled === false).
+// Rule: if last session for this exercise was a "clean sweep" —
+// every prescribed set logged at the same weight with reps >=
+// today's prescription — surface a chip suggesting a +5 lbs (or
+// +2.5 kg) bump. One Apply button pre-fills all set weights for
+// the current exercise.
+// ============================================================
+function injectLinearProgressionHint(wrap, ex, block, ei) {
+  if (typeof userData !== "function") return;
+  const u = userData();
+  if (!u) return;
+  // Defer to the RP engine when the user has opted into it (avoids
+  // duplicate suggestions stacked on top of each other).
+  if (u.rp && u.rp.enabled) return;
+
+  const exId = (ex && (ex.exId || ex.name)) || null;
+  if (!exId) return;
+  const lib = (typeof LIB_BY_ID !== "undefined" && LIB_BY_ID[exId]) || ex;
+
+  // Skip prescriptions where "+5 lbs" doesn't apply.
+  if (ex.isWarmup || ex.isTime || ex.isDistance) return;
+  // Pure bodyweight (no added load) — no plate to add.
+  if (lib.bodyweight && !(lib.defaultWeight || 0)) return;
+
+  const lastSets = getLastSetsFor(exId);
+  if (!lastSets.length) return;
+
+  const numSets = ex.sets || 3;
+  const prescribedReps = Number(ex.reps) || 8;
+  const lastWeight = Number(lastSets[0].weight) || 0;
+  if (lastWeight <= 0) return;
+
+  // Clean sweep: at least the prescribed number of sets logged,
+  // all at the same weight, all reps >= today's prescribed reps.
+  const cleanSweep = lastSets.length >= numSets &&
+    lastSets.every(s => Number(s.weight) === lastWeight && (Number(s.reps) || 0) >= prescribedReps);
+  if (!cleanSweep) return;
+
+  // Don't bump if the user has already entered a higher weight
+  // for set 1 in this session (they're clearly ahead of us).
+  const set1Key = (typeof inputKey === "function") ? inputKey(block.id, ei, 0, "w") : null;
+  const set1Cur = set1Key ? Number(getInput(set1Key, lastWeight)) : lastWeight;
+  if (set1Cur > lastWeight) return;
+
+  const bump = state.unit === "lbs" ? 5 : 2.5;
+  const newWeight = lastWeight + bump;
+
+  const chip = document.createElement("div");
+  chip.className = "lp-hint-chip";
+  chip.innerHTML =
+    '<span class="lp-hint-icon">↑</span>' +
+    '<span class="lp-hint-text"><span class="lp-hint-label">Last week clean</span>' +
+    ' <strong>' + newWeight + ' ' + state.unit + '</strong></span>' +
+    '<button class="lp-hint-apply" type="button">Apply</button>';
+
+  const applyBtn = chip.querySelector(".lp-hint-apply");
+  applyBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (typeof inputKey !== "function" || typeof saveInput !== "function") return;
+    for (let s = 0; s < numSets; s++) {
+      saveInput(inputKey(block.id, ei, s, "w"), newWeight);
+    }
+    if (navigator.vibrate) navigator.vibrate(10);
+    if (typeof showToast === "function") showToast("Weight bumped to " + newWeight + " " + state.unit);
+    if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
+  });
+
+  wrap.insertBefore(chip, wrap.firstChild);
 }
 
 // ============================================================

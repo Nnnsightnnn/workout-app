@@ -3394,10 +3394,104 @@
   .focus-dot.partial {
     background: var(--bg-card-2); border-color: var(--accent);
   }
+  /* Linear-progression hint — "Last week clean — try 105 lbs" */
+  .lp-hint-chip {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(255,107,31,0.10);
+    border: 1px solid rgba(255,107,31,0.40);
+    border-radius: 14px;
+    padding: 9px 10px 9px 12px;
+    margin-bottom: 10px;
+    box-shadow: var(--pillow-sm);
+  }
+  .lp-hint-chip .lp-hint-icon {
+    font-size: 18px; line-height: 1; font-weight: 700;
+    color: var(--accent); flex-shrink: 0;
+  }
+  .lp-hint-chip .lp-hint-text {
+    flex: 1; min-width: 0; color: var(--text);
+    font-size: 12px; line-height: 1.3;
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  .lp-hint-chip .lp-hint-label {
+    font-family: var(--font-mono); font-size: 9px;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  .lp-hint-chip strong {
+    font-family: var(--font-display); font-weight: 600;
+    font-size: 14px; letter-spacing: 0.01em;
+    color: var(--accent);
+  }
+  .lp-hint-chip .lp-hint-apply {
+    background: var(--accent); color: #fff;
+    border: 2px solid var(--accent); border-radius: 10px;
+    padding: 6px 14px;
+    font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.25);
+    transition: transform 0.12s var(--spring), box-shadow 0.12s ease;
+    flex-shrink: 0;
+  }
+  .lp-hint-chip .lp-hint-apply:hover { filter: brightness(1.08); }
+  .lp-hint-chip .lp-hint-apply:active {
+    transform: translateY(3px);
+    box-shadow: 0 0 0 rgba(0,0,0,0);
+  }
+
+  /* Superset partner peek — click-fallback + visual cue that a side swipe will jump to the partner */
+  .focus-superset-peek {
+    display: flex; gap: 8px;
+    margin: -2px 0 12px;
+    align-items: stretch;
+  }
+  .focus-superset-nav {
+    flex: 1 1 0; min-width: 0;
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg-card-2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 8px 12px;
+    color: var(--text-dim);
+    cursor: pointer; user-select: none;
+    box-shadow: var(--pillow-sm);
+    transition: transform 0.15s var(--spring), border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .focus-superset-nav.next { justify-content: flex-end; text-align: right; }
+  .focus-superset-nav.prev { justify-content: flex-start; text-align: left; }
+  .focus-superset-nav:hover:not(.disabled) {
+    border-color: var(--superset);
+    color: var(--text);
+  }
+  .focus-superset-nav:active:not(.disabled) {
+    transform: var(--squish-sm);
+    box-shadow: var(--pillow-pressed);
+  }
+  .focus-superset-nav.disabled {
+    opacity: 0.35; cursor: default;
+  }
+  .focus-superset-nav .peek-arrow {
+    font-size: 22px; line-height: 1; font-weight: 700;
+    color: var(--superset); flex-shrink: 0;
+  }
+  .focus-superset-nav.disabled .peek-arrow { color: var(--text-faint); }
+  .focus-superset-nav .peek-meta {
+    display: flex; flex-direction: column; min-width: 0;
+  }
+  .focus-superset-nav .peek-label {
+    font-family: var(--font-mono); font-size: 9px;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  .focus-superset-nav .peek-name {
+    font-family: var(--font-display); font-weight: 500;
+    font-size: 13px; line-height: 1.2;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
   .focus-card-wrap {
     overflow: hidden; position: relative;
     min-height: 200px;
+    cursor: grab;
   }
+  .focus-card-wrap:active { cursor: grabbing; }
   .focus-card-wrap .exercise-card {
     animation: focusCardIn 0.25s var(--spring-gentle);
   }

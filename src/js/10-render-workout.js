@@ -1285,6 +1285,10 @@ function renderSetsTable(block, ex, bi, ei) {
   if (typeof injectRpHint === "function") {
     injectRpHint(wrap, ex, userData());
   }
+  // Simple linear-progression hint (for users without RP enabled).
+  if (typeof injectLinearProgressionHint === "function") {
+    injectLinearProgressionHint(wrap, ex, block, ei);
+  }
 
   const last = getLastSetsFor(ex.exId || ex.name);
   const numSets = ex.sets || 3;
@@ -2228,6 +2232,40 @@ function renderFocusView(container, day) {
     const ei = state.focusExIdx;
     const isSuperset = exercises.length > 1;
 
+    // Superset partner peek — discoverable swipe affordance + click-fallback
+    if (isSuperset) {
+      const peek = document.createElement("div");
+      peek.className = "focus-superset-peek";
+      const prevEx = state.focusExIdx > 0 ? exercises[state.focusExIdx - 1] : null;
+      const nextEx = state.focusExIdx < exCount - 1 ? exercises[state.focusExIdx + 1] : null;
+
+      const prevBtn = document.createElement("button");
+      prevBtn.className = "focus-superset-nav prev" + (prevEx ? "" : " disabled");
+      prevBtn.type = "button";
+      prevBtn.innerHTML = prevEx
+        ? `<span class="peek-arrow">‹</span><div class="peek-meta"><span class="peek-label">Prev</span><span class="peek-name">${prevEx.name}</span></div>`
+        : `<span class="peek-arrow">‹</span><div class="peek-meta"><span class="peek-label">Start</span></div>`;
+      if (prevEx) prevBtn.addEventListener("click", () => {
+        state.focusExIdx--;
+        renderWorkoutScreen();
+      });
+
+      const nextBtn = document.createElement("button");
+      nextBtn.className = "focus-superset-nav next" + (nextEx ? "" : " disabled");
+      nextBtn.type = "button";
+      nextBtn.innerHTML = nextEx
+        ? `<div class="peek-meta"><span class="peek-label">Next</span><span class="peek-name">${nextEx.name}</span></div><span class="peek-arrow">›</span>`
+        : `<div class="peek-meta"><span class="peek-label">End</span></div><span class="peek-arrow">›</span>`;
+      if (nextEx) nextBtn.addEventListener("click", () => {
+        state.focusExIdx++;
+        renderWorkoutScreen();
+      });
+
+      peek.appendChild(prevBtn);
+      peek.appendChild(nextBtn);
+      wrap.appendChild(peek);
+    }
+
     // Big serif exercise name (Midnight Forge style)
     const focusTitle = document.createElement("div");
     focusTitle.className = "focus-hero-title";
@@ -2412,15 +2450,29 @@ function buildCooldownFocusCard(ex) {
 
 function wireFocusSwipe(cardWrap, exCount) {
   let swStartX = 0, swStartY = 0, isSwiping = false;
+  let mouseDown = false;
+
+  function shouldIgnore(target) {
+    return !!(target && (target.closest(".set-chip") || target.closest("button") || target.closest("input") || target.closest("textarea")));
+  }
+  function commitSwipe(dx) {
+    if (dx < -60 && state.focusExIdx < exCount - 1) {
+      state.focusExIdx++;
+      renderWorkoutScreen();
+    } else if (dx > 60 && state.focusExIdx > 0) {
+      state.focusExIdx--;
+      renderWorkoutScreen();
+    }
+  }
+
   cardWrap.addEventListener("touchstart", (e) => {
-    // Don't intercept swipes on set chips (they have their own swipe)
-    if (e.target.closest(".set-chip")) return;
+    if (shouldIgnore(e.target)) return;
     swStartX = e.touches[0].clientX;
     swStartY = e.touches[0].clientY;
     isSwiping = false;
   }, { passive: true });
   cardWrap.addEventListener("touchmove", (e) => {
-    if (e.target.closest(".set-chip")) return;
+    if (shouldIgnore(e.target)) return;
     const dx = e.touches[0].clientX - swStartX;
     const dy = e.touches[0].clientY - swStartY;
     if (!isSwiping && Math.abs(dx) > 20 && Math.abs(dx) > Math.abs(dy) * 2) isSwiping = true;
@@ -2429,14 +2481,35 @@ function wireFocusSwipe(cardWrap, exCount) {
   cardWrap.addEventListener("touchend", (e) => {
     if (!isSwiping) return;
     const dx = e.changedTouches[0].clientX - swStartX;
-    if (dx < -60 && state.focusExIdx < exCount - 1) {
-      state.focusExIdx++;
-      renderWorkoutScreen();
-    } else if (dx > 60 && state.focusExIdx > 0) {
-      state.focusExIdx--;
-      renderWorkoutScreen();
-    }
+    commitSwipe(dx);
   }, { passive: true });
+
+  // Desktop / pointer fallback so swipe is testable in a browser.
+  cardWrap.addEventListener("mousedown", (e) => {
+    if (shouldIgnore(e.target)) return;
+    if (e.button !== 0) return; // primary only
+    swStartX = e.clientX;
+    swStartY = e.clientY;
+    mouseDown = true;
+    isSwiping = false;
+  });
+  cardWrap.addEventListener("mousemove", (e) => {
+    if (!mouseDown) return;
+    const dx = e.clientX - swStartX;
+    const dy = e.clientY - swStartY;
+    if (!isSwiping && Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy) * 2) {
+      isSwiping = true;
+      if (e.preventDefault) e.preventDefault(); // suppress text selection mid-drag
+    }
+  });
+  cardWrap.addEventListener("mouseup", (e) => {
+    if (!mouseDown) return;
+    mouseDown = false;
+    if (!isSwiping) return;
+    const dx = e.clientX - swStartX;
+    commitSwipe(dx);
+  });
+  cardWrap.addEventListener("mouseleave", () => { mouseDown = false; isSwiping = false; });
 }
 
 // ============================================================
