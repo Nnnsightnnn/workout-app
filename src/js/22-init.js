@@ -323,6 +323,7 @@ function init() {
   setupPWA();
   initUserPicker(); initUnitToggle(); initAutoTimerToggle(); initNav(); initTools();
   initWorkoutScreen(); initSheet(); initSidebar(); initInfoGuide();
+  if (typeof initScreenSwipe === "function") initScreenSwipe();
   if (typeof initTutorial === "function") initTutorial();
 
   const versionEl = document.getElementById("appVersionLabel");
