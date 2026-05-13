@@ -339,6 +339,24 @@ const MIGRATIONS = [
       });
       return store;
     }
+  },
+  {
+    version: 20,
+    description: "Remove inaccurate \"5 min easy\" note from warm-up cardio exercises",
+    migrate(store) {
+      (store.users || []).forEach(u => {
+        (u.program || []).forEach(day => {
+          (day.blocks || []).forEach(block => {
+            const isWarmup = block.type === "warmup" || block.blockType === "warmup";
+            if (!isWarmup) return;
+            (block.exercises || []).forEach(ex => {
+              if (ex.notes === "5 min easy") ex.notes = "";
+            });
+          });
+        });
+      });
+      return store;
+    }
   }
 ];
 

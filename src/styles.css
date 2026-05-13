@@ -7184,7 +7184,22 @@ body[data-skin="paper"] .paper-superset-label {
   text-transform: uppercase;
 }
 body[data-skin="paper"] .paper-superset-id { flex: 1; }
-body[data-skin="paper"] .paper-superset-rest { flex: 0 0 auto; }
+body[data-skin="paper"] .paper-superset-rest { flex: 0 0 auto; color: var(--paper-red); }
+body[data-skin="paper"] .paper-superset-rest-btn {
+  background: transparent;
+  border: none;
+  padding: 4px 6px;
+  margin: -4px -6px;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: var(--paper-red);
+  cursor: pointer;
+  border-bottom: 1px dotted var(--paper-red);
+}
+body[data-skin="paper"] .paper-superset-rest-btn:active {
+  background: var(--paper-marker-soft);
+}
 body[data-skin="paper"] .paper-block-menu {
   background: transparent; border: none;
   color: var(--paper-ink-mist);
@@ -8712,6 +8727,20 @@ body[data-skin="paper"] .paper-focus-restline {
   text-transform: uppercase;
   margin: 2px 0 10px;
   min-height: 12px;
+}
+body[data-skin="paper"] button.paper-focus-restline {
+  display: block;
+  width: auto;
+  margin: 2px auto 10px;
+  background: transparent;
+  border: none;
+  padding: 4px 10px;
+  color: var(--paper-red);
+  cursor: pointer;
+  border-bottom: 1px dotted var(--paper-red);
+}
+body[data-skin="paper"] button.paper-focus-restline:active {
+  background: var(--paper-marker-soft);
 }
 
 body[data-skin="paper"] .paper-focus-exlist {

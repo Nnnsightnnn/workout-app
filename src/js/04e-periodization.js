@@ -234,7 +234,7 @@ function buildWarmup(blockId, weekNum, dayId, equipment, injuredIds, programSeed
   var cardio = LIB_BY_ID[cardioId];
   var mobSet = WU_MOBILITY[offset % WU_MOBILITY.length];
   var exercises = [
-    mkSets(cardio, { sets:1, reps: cardio.isDistance ? 1000 : 300, rest:0, notes:"5 min easy" })
+    mkSets(cardio, { sets:1, reps: cardio.isDistance ? 1000 : 300, rest:0 })
   ];
   mobSet.forEach(function(id) {
     var ex = LIB_BY_ID[id];

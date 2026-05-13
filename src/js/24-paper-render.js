@@ -17,12 +17,16 @@ function paperRenderBlock(day, block, bi) {
   // SupersetLabel: "A · STRENGTH" left, "REST 2:00" right
   const label = document.createElement("div");
   label.className = "paper-superset-label";
-  const restStr = block.exercises[0] && block.exercises[0].rest
-    ? "rest " + (typeof formatRest === "function" ? formatRest(block.exercises[0].rest) : block.exercises[0].rest)
+  const blockRestSec = block.exercises[0] && block.exercises[0].rest;
+  const restStr = blockRestSec
+    ? "rest " + (typeof formatRest === "function" ? formatRest(blockRestSec) : blockRestSec)
     : (blockMin ? `~${blockMin} min` : "");
+  const restTag = blockRestSec
+    ? `<button class="paper-superset-rest paper-superset-rest-btn" aria-label="Open rest timer">${restStr}</button>`
+    : `<span class="paper-superset-rest">${restStr}</span>`;
   label.innerHTML = `
     <span class="paper-superset-id">${block.letter} &middot; ${block.name}${isSuperset ? " (superset)" : ""}<span class="paper-superset-cue" aria-hidden="true">tap to focus &rarr;</span></span>
-    <span class="paper-superset-rest">${restStr}</span>
+    ${restTag}
     <button class="paper-block-menu" aria-label="Block menu">&middot;&middot;&middot;</button>
   `;
   // Whole superset header is tappable → opens focus view.
@@ -41,6 +45,15 @@ function paperRenderBlock(day, block, bi) {
     e.stopPropagation();
     if (typeof openBlockMenu === "function") openBlockMenu(block, bi);
   });
+  const restBtnEl = label.querySelector(".paper-superset-rest-btn");
+  if (restBtnEl) {
+    restBtnEl.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (typeof showHeaderRest === "function") showHeaderRest(blockRestSec);
+      if (typeof openRestSheet === "function") openRestSheet();
+      if (navigator.vibrate) navigator.vibrate(10);
+    });
+  }
   wrap.appendChild(label);
 
   // Optional block-level note input — keep as a paper-style single line
@@ -927,12 +940,20 @@ function paperRenderFocusView(container, day) {
   wrap.appendChild(titleRow);
 
   // Rest hint
-  const restLine = document.createElement("div");
-  restLine.className = "paper-focus-restline";
   const restSec = block.exercises[0]?.rest;
+  const restLine = document.createElement(restSec ? "button" : "div");
+  restLine.className = "paper-focus-restline";
   if (restSec) {
     const fmt = (typeof formatRest === "function") ? formatRest(restSec) : (restSec + "s");
     restLine.textContent = "rest " + fmt + " between rounds";
+    restLine.classList.add("paper-focus-restline-btn");
+    restLine.setAttribute("aria-label", "Open rest timer");
+    restLine.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (typeof showHeaderRest === "function") showHeaderRest(restSec);
+      if (typeof openRestSheet === "function") openRestSheet();
+      if (navigator.vibrate) navigator.vibrate(10);
+    });
   }
   wrap.appendChild(restLine);
 

@@ -7396,7 +7396,22 @@ body[data-skin="paper"] .paper-superset-label {
   text-transform: uppercase;
 }
 body[data-skin="paper"] .paper-superset-id { flex: 1; }
-body[data-skin="paper"] .paper-superset-rest { flex: 0 0 auto; }
+body[data-skin="paper"] .paper-superset-rest { flex: 0 0 auto; color: var(--paper-red); }
+body[data-skin="paper"] .paper-superset-rest-btn {
+  background: transparent;
+  border: none;
+  padding: 4px 6px;
+  margin: -4px -6px;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: var(--paper-red);
+  cursor: pointer;
+  border-bottom: 1px dotted var(--paper-red);
+}
+body[data-skin="paper"] .paper-superset-rest-btn:active {
+  background: var(--paper-marker-soft);
+}
 body[data-skin="paper"] .paper-block-menu {
   background: transparent; border: none;
   color: var(--paper-ink-mist);
@@ -8925,6 +8940,20 @@ body[data-skin="paper"] .paper-focus-restline {
   margin: 2px 0 10px;
   min-height: 12px;
 }
+body[data-skin="paper"] button.paper-focus-restline {
+  display: block;
+  width: auto;
+  margin: 2px auto 10px;
+  background: transparent;
+  border: none;
+  padding: 4px 10px;
+  color: var(--paper-red);
+  cursor: pointer;
+  border-bottom: 1px dotted var(--paper-red);
+}
+body[data-skin="paper"] button.paper-focus-restline:active {
+  background: var(--paper-marker-soft);
+}
 
 body[data-skin="paper"] .paper-focus-exlist {
   padding: 0 0 12px;
@@ -10366,7 +10395,7 @@ function buildWarmup(blockId, weekNum, dayId, equipment, injuredIds, programSeed
   var cardio = LIB_BY_ID[cardioId];
   var mobSet = WU_MOBILITY[offset % WU_MOBILITY.length];
   var exercises = [
-    mkSets(cardio, { sets:1, reps: cardio.isDistance ? 1000 : 300, rest:0, notes:"5 min easy" })
+    mkSets(cardio, { sets:1, reps: cardio.isDistance ? 1000 : 300, rest:0 })
   ];
   mobSet.forEach(function(id) {
     var ex = LIB_BY_ID[id];
@@ -12087,8 +12116,8 @@ function switchUser(id) {
 // ============================================================
 // VERSION
 // ============================================================
-const APP_VERSION = 19;
-const APP_BUILD = "be792ea6";
+const APP_VERSION = 20;
+const APP_BUILD = "418619c5";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -12430,6 +12459,24 @@ const MIGRATIONS = [
         if (!u.preferences || typeof u.preferences !== "object") u.preferences = {};
         if (u.preferences.bgColor === undefined)   u.preferences.bgColor = null;
         if (u.preferences.textColor === undefined) u.preferences.textColor = "auto";
+      });
+      return store;
+    }
+  },
+  {
+    version: 20,
+    description: "Remove inaccurate \"5 min easy\" note from warm-up cardio exercises",
+    migrate(store) {
+      (store.users || []).forEach(u => {
+        (u.program || []).forEach(day => {
+          (day.blocks || []).forEach(block => {
+            const isWarmup = block.type === "warmup" || block.blockType === "warmup";
+            if (!isWarmup) return;
+            (block.exercises || []).forEach(ex => {
+              if (ex.notes === "5 min easy") ex.notes = "";
+            });
+          });
+        });
       });
       return store;
     }
@@ -25358,12 +25405,16 @@ function paperRenderBlock(day, block, bi) {
   // SupersetLabel: "A · STRENGTH" left, "REST 2:00" right
   const label = document.createElement("div");
   label.className = "paper-superset-label";
-  const restStr = block.exercises[0] && block.exercises[0].rest
-    ? "rest " + (typeof formatRest === "function" ? formatRest(block.exercises[0].rest) : block.exercises[0].rest)
+  const blockRestSec = block.exercises[0] && block.exercises[0].rest;
+  const restStr = blockRestSec
+    ? "rest " + (typeof formatRest === "function" ? formatRest(blockRestSec) : blockRestSec)
     : (blockMin ? `~${blockMin} min` : "");
+  const restTag = blockRestSec
+    ? `<button class="paper-superset-rest paper-superset-rest-btn" aria-label="Open rest timer">${restStr}</button>`
+    : `<span class="paper-superset-rest">${restStr}</span>`;
   label.innerHTML = `
     <span class="paper-superset-id">${block.letter} &middot; ${block.name}${isSuperset ? " (superset)" : ""}<span class="paper-superset-cue" aria-hidden="true">tap to focus &rarr;</span></span>
-    <span class="paper-superset-rest">${restStr}</span>
+    ${restTag}
     <button class="paper-block-menu" aria-label="Block menu">&middot;&middot;&middot;</button>
   `;
   // Whole superset header is tappable → opens focus view.
@@ -25382,6 +25433,15 @@ function paperRenderBlock(day, block, bi) {
     e.stopPropagation();
     if (typeof openBlockMenu === "function") openBlockMenu(block, bi);
   });
+  const restBtnEl = label.querySelector(".paper-superset-rest-btn");
+  if (restBtnEl) {
+    restBtnEl.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (typeof showHeaderRest === "function") showHeaderRest(blockRestSec);
+      if (typeof openRestSheet === "function") openRestSheet();
+      if (navigator.vibrate) navigator.vibrate(10);
+    });
+  }
   wrap.appendChild(label);
 
   // Optional block-level note input — keep as a paper-style single line
@@ -26268,12 +26328,20 @@ function paperRenderFocusView(container, day) {
   wrap.appendChild(titleRow);
 
   // Rest hint
-  const restLine = document.createElement("div");
-  restLine.className = "paper-focus-restline";
   const restSec = block.exercises[0]?.rest;
+  const restLine = document.createElement(restSec ? "button" : "div");
+  restLine.className = "paper-focus-restline";
   if (restSec) {
     const fmt = (typeof formatRest === "function") ? formatRest(restSec) : (restSec + "s");
     restLine.textContent = "rest " + fmt + " between rounds";
+    restLine.classList.add("paper-focus-restline-btn");
+    restLine.setAttribute("aria-label", "Open rest timer");
+    restLine.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (typeof showHeaderRest === "function") showHeaderRest(restSec);
+      if (typeof openRestSheet === "function") openRestSheet();
+      if (navigator.vibrate) navigator.vibrate(10);
+    });
   }
   wrap.appendChild(restLine);
 
