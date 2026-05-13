@@ -327,6 +327,18 @@ const MIGRATIONS = [
       });
       return store;
     }
+  },
+  {
+    version: 19,
+    description: "Add u.preferences container for appearance overrides (bgColor, textColor)",
+    migrate(store) {
+      (store.users || []).forEach(u => {
+        if (!u.preferences || typeof u.preferences !== "object") u.preferences = {};
+        if (u.preferences.bgColor === undefined)   u.preferences.bgColor = null;
+        if (u.preferences.textColor === undefined) u.preferences.textColor = "auto";
+      });
+      return store;
+    }
   }
 ];
 

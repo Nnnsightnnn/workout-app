@@ -5989,11 +5989,33 @@ body[data-skin="paper"] {
   --paper-marker-soft: rgba(244, 211, 58, 0.5);
   --paper-postit:    #ffe48a;
   --paper-red:       #a83a2a;
+  /* v19 appearance override — body text color. Defaults to ink-black,
+     overridden in dark mode to white. */
+  --paper-fg:        #1a1612;
 
   background: var(--paper-bg);
-  color: #1a1612;
+  color: var(--paper-fg);
   font-family: var(--paper-hand);
 }
+
+/* Dark-paper mode — applied when user picks a dark background (auto-luminance)
+   or forces light text. Flips ink/ruling/text to readable white-on-dark
+   variants and dims the fiber-noise/vignette overlays so they don't muddy
+   the surface. The bg color itself is set inline via document.body style. */
+body[data-skin="paper"][data-paper-mode="dark"] {
+  --paper-fg:        #ffffff;
+  --paper-ink:       #ffffff;
+  --paper-ink-soft:  rgba(255, 255, 255, 0.82);
+  --paper-ink-faint: rgba(255, 255, 255, 0.62);
+  --paper-ink-mist:  rgba(255, 255, 255, 0.32);
+  --paper-rule:      rgba(255, 255, 255, 0.18);
+  --paper-margin:    rgba(255, 120, 120, 0.55);
+  --paper-red:       #ff6b58;
+}
+/* Soften the multiply-blend fiber/vignette overlays so they don't crush
+   already-dark surfaces into muddy black. */
+body[data-skin="paper"][data-paper-mode="dark"]::before { opacity: 0.18; mix-blend-mode: screen; }
+body[data-skin="paper"][data-paper-mode="dark"]::after  { opacity: 0.20; mix-blend-mode: screen; }
 
 /* Ink variants */
 body[data-skin="paper"][data-paper-ink="blue"]   { --paper-ink: #1e3a72; --paper-ink-soft: rgba(30, 58, 114, 0.78); }
@@ -6238,7 +6260,7 @@ body[data-skin="paper"] .body-mcard {
   border: 1.4px solid rgba(40, 30, 15, 0.4) !important;
   border-radius: 0 !important;
   box-shadow: 2px 3px 0 rgba(40, 30, 15, 0.10) !important;
-  color: #1a1612;
+  color: var(--paper-fg, #1a1612);
 }
 
 /* Stat tiles */
@@ -6330,7 +6352,7 @@ body[data-skin="paper"] .body-mcard .body-mcard-value {
 body[data-skin="paper"] .sheet,
 body[data-skin="paper"] .sidebar {
   background: var(--paper-bg-deep);
-  color: #1a1612;
+  color: var(--paper-fg, #1a1612);
   border: 1.4px solid rgba(40, 30, 15, 0.4);
   border-radius: 0;
 }
@@ -6493,6 +6515,59 @@ body[data-skin="paper"] .toast {
   width: 12px; height: 12px; border-radius: 50%;
 }
 .paper-pref-ink-btn.active { border-style: solid; }
+
+/* Appearance picker (v19) — background swatches + text color toggle */
+.paper-appearance-section { margin: 14px 0; }
+.paper-bg-row {
+  display: flex; gap: 6px; flex: 1; flex-wrap: wrap; align-items: center;
+}
+.paper-bg-btn {
+  width: 30px; height: 30px;
+  border: 1.4px dashed rgba(40, 30, 15, 0.4);
+  background: var(--swatch, #f4ecd3);
+  cursor: pointer;
+  padding: 0;
+  position: relative;
+}
+.paper-bg-btn.active {
+  border-style: solid;
+  border-color: var(--paper-ink, #1e3a72);
+  box-shadow: 0 0 0 2px var(--paper-bg, #f4ecd3), 0 0 0 3.4px var(--paper-ink, #1e3a72);
+}
+.paper-bg-btn[data-bg="null"] {
+  background:
+    linear-gradient(135deg, #f4ecd3 0 50%, transparent 50% 100%),
+    repeating-linear-gradient(45deg, rgba(40,30,15,0.18) 0 2px, transparent 2px 5px);
+  background-color: #f4ecd3;
+}
+.paper-bg-custom {
+  width: 30px; height: 30px;
+  border: 1.4px dashed rgba(40, 30, 15, 0.4);
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.paper-bg-custom::-webkit-color-swatch { border: none; padding: 0; }
+.paper-bg-custom::-webkit-color-swatch-wrapper { padding: 0; }
+.paper-bg-custom::-moz-color-swatch { border: none; }
+
+body[data-skin="paper"][data-paper-mode="dark"] .paper-pref-btn,
+body[data-skin="paper"][data-paper-mode="dark"] .paper-pref-ink-btn,
+body[data-skin="paper"][data-paper-mode="dark"] .paper-bg-btn,
+body[data-skin="paper"][data-paper-mode="dark"] .paper-bg-custom {
+  border-color: rgba(255, 255, 255, 0.45);
+  color: var(--paper-fg, #fff);
+}
+body[data-skin="paper"][data-paper-mode="dark"] .paper-pref-btn.active {
+  border-color: var(--paper-fg, #fff);
+  background: rgba(244, 211, 58, 0.18);
+}
+body[data-skin="paper"][data-paper-mode="dark"] .paper-pref-label {
+  color: var(--paper-ink-faint, rgba(255, 255, 255, 0.62));
+}
+
 .paper-pref-hand-btn[data-hand="Kalam"]              { font-family: "Kalam", cursive; }
 .paper-pref-hand-btn[data-hand="Caveat"]             { font-family: "Caveat", cursive; }
 .paper-pref-hand-btn[data-hand="Patrick Hand"]       { font-family: "Patrick Hand", cursive; }
@@ -11417,7 +11492,9 @@ function newUserRecord(name, templateId, totalWeeks, daysPerWeek) {
     paperSkin: true,
     paperRule: "ruled",
     paperInk: "blue",
-    paperHand: "Shadows Into Light"
+    paperHand: "Shadows Into Light",
+    // v19 appearance overrides — null bgColor means "use skin default".
+    preferences: { bgColor: null, textColor: "auto" }
   };
 }
 
@@ -11542,6 +11619,10 @@ function loadStore() {
       if (u.paperRule === undefined) u.paperRule = "ruled";
       if (u.paperInk  === undefined) u.paperInk  = "blue";
       if (u.paperHand === undefined) u.paperHand = "Shadows Into Light";
+      // Defensive defaults for v19 appearance prefs
+      if (!u.preferences || typeof u.preferences !== "object") u.preferences = {};
+      if (u.preferences.bgColor === undefined)   u.preferences.bgColor = null;
+      if (u.preferences.textColor === undefined) u.preferences.textColor = "auto";
       // Defensive defaults for session edit fields (Workstream D)
       // Also cleans up _original audit entries older than 7 days.
       const sevenDaysAgo = Date.now() - 7 * 86400000;
@@ -11700,8 +11781,8 @@ function switchUser(id) {
 // ============================================================
 // VERSION
 // ============================================================
-const APP_VERSION = 18;
-const APP_BUILD = "2b139776";
+const APP_VERSION = 19;
+const APP_BUILD = "dd01bdf0";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -12031,6 +12112,18 @@ const MIGRATIONS = [
         if (u.paperRule === undefined) u.paperRule = "ruled";
         if (u.paperInk  === undefined) u.paperInk  = "blue";
         if (u.paperHand === undefined) u.paperHand = "Shadows Into Light";
+      });
+      return store;
+    }
+  },
+  {
+    version: 19,
+    description: "Add u.preferences container for appearance overrides (bgColor, textColor)",
+    migrate(store) {
+      (store.users || []).forEach(u => {
+        if (!u.preferences || typeof u.preferences !== "object") u.preferences = {};
+        if (u.preferences.bgColor === undefined)   u.preferences.bgColor = null;
+        if (u.preferences.textColor === undefined) u.preferences.textColor = "auto";
       });
       return store;
     }
@@ -23638,6 +23731,82 @@ function paperTornEdge(side, color) {
 // ─────────────────────────────────────────────────────────────
 // Theme application
 // ─────────────────────────────────────────────────────────────
+// Background presets exposed by the Appearance picker. `null` id = use the
+// paper-skin default (don't override --paper-bg). Other ids set both the
+// page background and a slightly-darker "deep" tone for nav/sheets.
+const PAPER_BG_PRESETS = [
+  { id: null,        label: 'Paper',     bg: null,      deep: null      },
+  { id: 'white',     label: 'White',     bg: '#ffffff', deep: '#f0eee8' },
+  { id: 'lightgray', label: 'Light',     bg: '#e6e3dc', deep: '#d4d0c6' },
+  { id: 'darkgray',  label: 'Slate',     bg: '#3a3a3e', deep: '#2c2c30' },
+  { id: 'nearblack', label: 'Near-Black',bg: '#16161a', deep: '#0e0e12' },
+  { id: 'navy',      label: 'Navy',      bg: '#0f1d3a', deep: '#0a1428' },
+];
+
+// Look up a preset by id (or by raw hex for custom colors). Returns
+// { bg, deep } or null. Custom hex → derive a 12% darker deep tone.
+function paperResolveBg(id) {
+  if (!id) return null;
+  const preset = PAPER_BG_PRESETS.find(p => p.id === id);
+  if (preset && preset.bg) return { bg: preset.bg, deep: preset.deep };
+  // Treat as raw hex (custom color).
+  if (typeof id === 'string' && /^#[0-9a-f]{6}$/i.test(id)) {
+    return { bg: id, deep: paperDarken(id, 0.12) };
+  }
+  return null;
+}
+
+// Pure-JS hex darken by a 0..1 factor. Used to derive --paper-bg-deep for
+// custom colors so the bottom nav / sheets don't all collapse to one tone.
+function paperDarken(hex, factor) {
+  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+  if (!m) return hex;
+  const f = Math.max(0, Math.min(1, factor));
+  const c = [parseInt(m[1],16), parseInt(m[2],16), parseInt(m[3],16)]
+    .map(v => Math.max(0, Math.min(255, Math.round(v * (1 - f)))));
+  return '#' + c.map(v => v.toString(16).padStart(2,'0')).join('');
+}
+
+// Perceptual luminance (0..255) using ITU-R BT.601. <128 ⇒ dark surface,
+// so default-light text becomes unreadable and we flip to dark mode.
+function paperLuminance(hex) {
+  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex || '');
+  if (!m) return 255;
+  const r = parseInt(m[1], 16), g = parseInt(m[2], 16), b = parseInt(m[3], 16);
+  return 0.299 * r + 0.587 * g + 0.114 * b;
+}
+
+// Apply v19 appearance prefs (background + text-color override) by writing
+// inline CSS-variable overrides on <body> and toggling data-paper-mode.
+// Called from applyPaperSkin() so it runs on boot AND after every prefs
+// update — single source of truth, no separate boot hook needed.
+function applyAppearancePrefs() {
+  const body = document.body;
+  if (!body) return;
+  const u = (typeof userData === 'function') ? userData() : null;
+  const prefs = (u && u.preferences) || {};
+  const bgResolved = paperResolveBg(prefs.bgColor);
+  if (bgResolved) {
+    body.style.setProperty('--paper-bg', bgResolved.bg);
+    body.style.setProperty('--paper-bg-deep', bgResolved.deep);
+  } else {
+    body.style.removeProperty('--paper-bg');
+    body.style.removeProperty('--paper-bg-deep');
+  }
+  // Text-color decision: 'light' forces dark-mode tokens; 'auto' decides
+  // based on the effective background luminance. Default (no override) =
+  // light surface, dark text — no data-paper-mode attr.
+  const textColor = prefs.textColor || 'auto';
+  let mode = null;
+  if (textColor === 'light') {
+    mode = 'dark';
+  } else if (bgResolved && paperLuminance(bgResolved.bg) < 128) {
+    mode = 'dark';
+  }
+  if (mode) body.setAttribute('data-paper-mode', mode);
+  else      body.removeAttribute('data-paper-mode');
+}
+
 // Read current user's paper-skin prefs and apply them via data attributes
 // on <body>. Safe to call on every render — cheap attribute set.
 function applyPaperSkin() {
@@ -23650,6 +23819,7 @@ function applyPaperSkin() {
     body.setAttribute('data-paper-rule', 'ruled');
     body.setAttribute('data-paper-ink',  'blue');
     body.setAttribute('data-paper-hand', 'Shadows Into Light');
+    applyAppearancePrefs();
     return;
   }
   // Paper is the look — always on. The picker only controls paper/ink/hand.
@@ -23657,6 +23827,7 @@ function applyPaperSkin() {
   body.setAttribute('data-paper-rule', u.paperRule || 'ruled');
   body.setAttribute('data-paper-ink',  u.paperInk  || 'blue');
   body.setAttribute('data-paper-hand', u.paperHand || 'Shadows Into Light');
+  applyAppearancePrefs();
 }
 
 // Helper: am I in paper-skin mode right now?
@@ -23846,6 +24017,121 @@ function ensureNotebookStyleSection() {
     }
   }
   renderNotebookStylePicker(card);
+  ensureAppearanceSection();
+}
+
+// ─────────────────────────────────────────────────────────────
+// Settings: Appearance picker (v19 — background color + text color)
+// ─────────────────────────────────────────────────────────────
+
+function renderAppearancePicker(rootEl) {
+  if (!rootEl) return;
+  const u = (typeof userData === 'function') ? userData() : null;
+  if (!u) { rootEl.innerHTML = ''; return; }
+  const prefs = u.preferences || {};
+  const currentBg = prefs.bgColor || null;
+  const currentText = prefs.textColor || 'auto';
+  // The "active" highlight only matches when the value is a known preset id.
+  // Custom hex colors fall through and light up the custom-color input instead.
+  const isPresetMatch = PAPER_BG_PRESETS.some(p => p.id === currentBg);
+  const customHex = (!isPresetMatch && typeof currentBg === 'string') ? currentBg : '';
+
+  const swatchBtns = PAPER_BG_PRESETS.map(p => {
+    const id = p.id === null ? 'null' : p.id;
+    const active = (currentBg === p.id) ? ' active' : '';
+    const sw = p.bg || '#f4ecd3';
+    return `<button class="paper-bg-btn${active}" data-bg="${id}" aria-label="${p.label}"
+      style="--swatch:${sw};" title="${p.label}"></button>`;
+  }).join('');
+
+  rootEl.innerHTML = `
+    <div class="paper-pref-row">
+      <span class="paper-pref-label">Bg</span>
+      <div class="paper-bg-row">
+        ${swatchBtns}
+        <input type="color" class="paper-bg-custom" id="paperBgCustom"
+          value="${customHex || '#f4ecd3'}" title="Custom color">
+      </div>
+    </div>
+    <div class="paper-pref-row">
+      <span class="paper-pref-label">Text</span>
+      <div class="paper-pref-options">
+        <button class="paper-pref-btn${currentText === 'auto'  ? ' active' : ''}" data-text="auto">Auto</button>
+        <button class="paper-pref-btn${currentText === 'light' ? ' active' : ''}" data-text="light">Light</button>
+      </div>
+    </div>
+  `;
+
+  const onUpdate = () => {
+    if (typeof applyPaperSkin === 'function') applyPaperSkin();
+    try { if (typeof renderWorkoutScreen === 'function') renderWorkoutScreen(); } catch (e) {}
+    try { renderAppearancePicker(rootEl); } catch (e) {}
+  };
+
+  rootEl.querySelectorAll('[data-bg]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.bg === 'null' ? null : btn.dataset.bg;
+      updateUser(u => {
+        if (!u.preferences) u.preferences = {};
+        u.preferences.bgColor = id;
+      });
+      onUpdate();
+    });
+  });
+  const customEl = rootEl.querySelector('#paperBgCustom');
+  if (customEl) {
+    customEl.addEventListener('input', () => {
+      updateUser(u => {
+        if (!u.preferences) u.preferences = {};
+        u.preferences.bgColor = customEl.value;
+      });
+      // Live preview while dragging — don't re-render the picker on every
+      // input tick, just push the variable change.
+      if (typeof applyAppearancePrefs === 'function') applyAppearancePrefs();
+    });
+    customEl.addEventListener('change', onUpdate);
+  }
+  rootEl.querySelectorAll('[data-text]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      updateUser(u => {
+        if (!u.preferences) u.preferences = {};
+        u.preferences.textColor = btn.dataset.text;
+      });
+      onUpdate();
+    });
+  });
+}
+
+// Inject an "Appearance" section into settings, just after Notebook style.
+function ensureAppearanceSection() {
+  const screen = document.getElementById('screen-settings');
+  if (!screen) return;
+  let card = document.getElementById('appearanceCard');
+  if (!card) {
+    card = document.createElement('div');
+    card.id = 'appearanceCard';
+    card.className = 'paper-appearance-section';
+    const heading = document.createElement('div');
+    heading.className = 'section-title';
+    heading.textContent = 'Appearance';
+    // Insert immediately after the Notebook style card (which sits before Program).
+    const notebookCard = document.getElementById('notebookStyleCard');
+    if (notebookCard && notebookCard.nextSibling) {
+      screen.insertBefore(heading, notebookCard.nextSibling);
+      screen.insertBefore(card, heading.nextSibling);
+    } else {
+      const programTitle = Array.from(screen.querySelectorAll('.section-title'))
+        .find(el => el.textContent.trim() === 'Program');
+      if (programTitle) {
+        screen.insertBefore(heading, programTitle);
+        screen.insertBefore(card, programTitle);
+      } else {
+        screen.appendChild(heading);
+        screen.appendChild(card);
+      }
+    }
+  }
+  renderAppearancePicker(card);
 }
 
 // Expose for tests + console use.
@@ -23868,6 +24154,12 @@ try {
     window.renderPaperKicker = renderPaperKicker;
     window.renderNotebookStylePicker = renderNotebookStylePicker;
     window.ensureNotebookStyleSection = ensureNotebookStyleSection;
+    window.PAPER_BG_PRESETS = PAPER_BG_PRESETS;
+    window.paperResolveBg = paperResolveBg;
+    window.paperLuminance = paperLuminance;
+    window.applyAppearancePrefs = applyAppearancePrefs;
+    window.renderAppearancePicker = renderAppearancePicker;
+    window.ensureAppearanceSection = ensureAppearanceSection;
   }
 } catch (e) {}
 

@@ -2018,6 +2018,48 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     eq(w.document.body.getAttribute("data-paper-ink"),  "red",   "data-paper-ink reflects user pref");
     eq(w.document.body.getAttribute("data-paper-hand"), "Kalam", "data-paper-hand reflects user pref");
   });
+  t("appearance: migration v19 adds preferences {bgColor:null, textColor:auto}", () => {
+    w.localStorage.clear();
+    w.localStorage.setItem("kn-lifts-v3", JSON.stringify({
+      _schemaVersion: 18,
+      unit: "lbs",
+      users: [{
+        id: "u_v18", name: "V18", program: [], sessions: [],
+        measurements: [], templateId: "conjugate5",
+        paperSkin: true, paperRule: "ruled", paperInk: "blue", paperHand: "Shadows Into Light"
+      }],
+      currentUserId: "u_v18",
+      onboarding: null,
+      onboardingDismissedAt: null
+    }));
+    w.runMigrations();
+    const s = w.loadStore();
+    const u = s.users[0];
+    assert(u.preferences && typeof u.preferences === "object", "preferences container created");
+    eq(u.preferences.bgColor,   null,   "bgColor defaults to null (use skin default)");
+    eq(u.preferences.textColor, "auto", "textColor defaults to auto");
+  });
+  t("appearance: applyAppearancePrefs writes inline --paper-bg + data-paper-mode", () => {
+    w.localStorage.clear();
+    w.addUser("AppearanceUser");
+    // Dark navy bg + auto text → should flip to dark mode via luminance.
+    w.updateUser(usr => {
+      usr.preferences = { bgColor: "navy", textColor: "auto" };
+    });
+    w.applyPaperSkin();
+    const inlineBg = w.document.body.style.getPropertyValue("--paper-bg");
+    assert(inlineBg && inlineBg.trim() !== "", "inline --paper-bg set for non-default bg");
+    eq(w.document.body.getAttribute("data-paper-mode"), "dark", "navy bg auto-flips to dark mode");
+    // 'light' override forces dark mode even on a light bg.
+    w.updateUser(usr => { usr.preferences = { bgColor: "white", textColor: "light" }; });
+    w.applyPaperSkin();
+    eq(w.document.body.getAttribute("data-paper-mode"), "dark", "textColor=light forces dark mode");
+    // Default state (null bg, auto text) clears the override.
+    w.updateUser(usr => { usr.preferences = { bgColor: null, textColor: "auto" }; });
+    w.applyPaperSkin();
+    eq(w.document.body.style.getPropertyValue("--paper-bg"), "",  "inline --paper-bg cleared when bg=null");
+    assert(!w.document.body.hasAttribute("data-paper-mode"), "data-paper-mode cleared when default");
+  });
 
   // ============================================================
   // SHARE / IMPORT WORKOUT

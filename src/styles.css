@@ -5976,11 +5976,33 @@ body[data-skin="paper"] {
   --paper-marker-soft: rgba(244, 211, 58, 0.5);
   --paper-postit:    #ffe48a;
   --paper-red:       #a83a2a;
+  /* v19 appearance override — body text color. Defaults to ink-black,
+     overridden in dark mode to white. */
+  --paper-fg:        #1a1612;
 
   background: var(--paper-bg);
-  color: #1a1612;
+  color: var(--paper-fg);
   font-family: var(--paper-hand);
 }
+
+/* Dark-paper mode — applied when user picks a dark background (auto-luminance)
+   or forces light text. Flips ink/ruling/text to readable white-on-dark
+   variants and dims the fiber-noise/vignette overlays so they don't muddy
+   the surface. The bg color itself is set inline via document.body style. */
+body[data-skin="paper"][data-paper-mode="dark"] {
+  --paper-fg:        #ffffff;
+  --paper-ink:       #ffffff;
+  --paper-ink-soft:  rgba(255, 255, 255, 0.82);
+  --paper-ink-faint: rgba(255, 255, 255, 0.62);
+  --paper-ink-mist:  rgba(255, 255, 255, 0.32);
+  --paper-rule:      rgba(255, 255, 255, 0.18);
+  --paper-margin:    rgba(255, 120, 120, 0.55);
+  --paper-red:       #ff6b58;
+}
+/* Soften the multiply-blend fiber/vignette overlays so they don't crush
+   already-dark surfaces into muddy black. */
+body[data-skin="paper"][data-paper-mode="dark"]::before { opacity: 0.18; mix-blend-mode: screen; }
+body[data-skin="paper"][data-paper-mode="dark"]::after  { opacity: 0.20; mix-blend-mode: screen; }
 
 /* Ink variants */
 body[data-skin="paper"][data-paper-ink="blue"]   { --paper-ink: #1e3a72; --paper-ink-soft: rgba(30, 58, 114, 0.78); }
@@ -6225,7 +6247,7 @@ body[data-skin="paper"] .body-mcard {
   border: 1.4px solid rgba(40, 30, 15, 0.4) !important;
   border-radius: 0 !important;
   box-shadow: 2px 3px 0 rgba(40, 30, 15, 0.10) !important;
-  color: #1a1612;
+  color: var(--paper-fg, #1a1612);
 }
 
 /* Stat tiles */
@@ -6317,7 +6339,7 @@ body[data-skin="paper"] .body-mcard .body-mcard-value {
 body[data-skin="paper"] .sheet,
 body[data-skin="paper"] .sidebar {
   background: var(--paper-bg-deep);
-  color: #1a1612;
+  color: var(--paper-fg, #1a1612);
   border: 1.4px solid rgba(40, 30, 15, 0.4);
   border-radius: 0;
 }
@@ -6480,6 +6502,59 @@ body[data-skin="paper"] .toast {
   width: 12px; height: 12px; border-radius: 50%;
 }
 .paper-pref-ink-btn.active { border-style: solid; }
+
+/* Appearance picker (v19) — background swatches + text color toggle */
+.paper-appearance-section { margin: 14px 0; }
+.paper-bg-row {
+  display: flex; gap: 6px; flex: 1; flex-wrap: wrap; align-items: center;
+}
+.paper-bg-btn {
+  width: 30px; height: 30px;
+  border: 1.4px dashed rgba(40, 30, 15, 0.4);
+  background: var(--swatch, #f4ecd3);
+  cursor: pointer;
+  padding: 0;
+  position: relative;
+}
+.paper-bg-btn.active {
+  border-style: solid;
+  border-color: var(--paper-ink, #1e3a72);
+  box-shadow: 0 0 0 2px var(--paper-bg, #f4ecd3), 0 0 0 3.4px var(--paper-ink, #1e3a72);
+}
+.paper-bg-btn[data-bg="null"] {
+  background:
+    linear-gradient(135deg, #f4ecd3 0 50%, transparent 50% 100%),
+    repeating-linear-gradient(45deg, rgba(40,30,15,0.18) 0 2px, transparent 2px 5px);
+  background-color: #f4ecd3;
+}
+.paper-bg-custom {
+  width: 30px; height: 30px;
+  border: 1.4px dashed rgba(40, 30, 15, 0.4);
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.paper-bg-custom::-webkit-color-swatch { border: none; padding: 0; }
+.paper-bg-custom::-webkit-color-swatch-wrapper { padding: 0; }
+.paper-bg-custom::-moz-color-swatch { border: none; }
+
+body[data-skin="paper"][data-paper-mode="dark"] .paper-pref-btn,
+body[data-skin="paper"][data-paper-mode="dark"] .paper-pref-ink-btn,
+body[data-skin="paper"][data-paper-mode="dark"] .paper-bg-btn,
+body[data-skin="paper"][data-paper-mode="dark"] .paper-bg-custom {
+  border-color: rgba(255, 255, 255, 0.45);
+  color: var(--paper-fg, #fff);
+}
+body[data-skin="paper"][data-paper-mode="dark"] .paper-pref-btn.active {
+  border-color: var(--paper-fg, #fff);
+  background: rgba(244, 211, 58, 0.18);
+}
+body[data-skin="paper"][data-paper-mode="dark"] .paper-pref-label {
+  color: var(--paper-ink-faint, rgba(255, 255, 255, 0.62));
+}
+
 .paper-pref-hand-btn[data-hand="Kalam"]              { font-family: "Kalam", cursive; }
 .paper-pref-hand-btn[data-hand="Caveat"]             { font-family: "Caveat", cursive; }
 .paper-pref-hand-btn[data-hand="Patrick Hand"]       { font-family: "Patrick Hand", cursive; }

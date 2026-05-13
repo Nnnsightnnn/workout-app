@@ -72,7 +72,9 @@ function newUserRecord(name, templateId, totalWeeks, daysPerWeek) {
     paperSkin: true,
     paperRule: "ruled",
     paperInk: "blue",
-    paperHand: "Shadows Into Light"
+    paperHand: "Shadows Into Light",
+    // v19 appearance overrides — null bgColor means "use skin default".
+    preferences: { bgColor: null, textColor: "auto" }
   };
 }
 
@@ -197,6 +199,10 @@ function loadStore() {
       if (u.paperRule === undefined) u.paperRule = "ruled";
       if (u.paperInk  === undefined) u.paperInk  = "blue";
       if (u.paperHand === undefined) u.paperHand = "Shadows Into Light";
+      // Defensive defaults for v19 appearance prefs
+      if (!u.preferences || typeof u.preferences !== "object") u.preferences = {};
+      if (u.preferences.bgColor === undefined)   u.preferences.bgColor = null;
+      if (u.preferences.textColor === undefined) u.preferences.textColor = "auto";
       // Defensive defaults for session edit fields (Workstream D)
       // Also cleans up _original audit entries older than 7 days.
       const sevenDaysAgo = Date.now() - 7 * 86400000;
