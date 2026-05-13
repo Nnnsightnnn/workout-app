@@ -172,8 +172,11 @@ function applyPaperSkin() {
   const body = document.body;
   if (!body) return;
   if (!u) {
-    // No user yet — keep defaults so onboarding still looks right.
-    body.removeAttribute('data-skin');
+    // No user yet — apply skin defaults so onboarding feels coherent.
+    body.setAttribute('data-skin', 'paper');
+    body.setAttribute('data-paper-rule', 'ruled');
+    body.setAttribute('data-paper-ink',  'blue');
+    body.setAttribute('data-paper-hand', 'Shadows Into Light');
     return;
   }
   const enabled = u.paperSkin !== false; // default true
