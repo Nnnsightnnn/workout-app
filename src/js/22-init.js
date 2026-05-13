@@ -66,16 +66,16 @@ function renderUserSection() {
   container.innerHTML = "";
   s.users.forEach(u => {
     const row = document.createElement("div");
-    row.className = "user-row" + (u.id === state.userId ? " active" : "");
+    row.className = "paper-user-row" + (u.id === state.userId ? " is-active" : "");
     row.innerHTML = `
-      <div class="avatar">${(u.name.trim()[0] || "U").toUpperCase()}</div>
-      <div class="name"></div>
-      <button class="row-icon-btn" title="Rename" data-action="rename">✎</button>
-      <button class="row-icon-btn danger" title="Delete" data-action="delete">🗑</button>
+      <div class="paper-user-avatar">${(u.name.trim()[0] || "U").toUpperCase()}</div>
+      <div class="paper-user-name"></div>
+      <button class="paper-user-icon-btn" title="Rename" data-action="rename" aria-label="Rename">✎</button>
+      <button class="paper-user-icon-btn danger" title="Delete" data-action="delete" aria-label="Delete">🗑</button>
     `;
-    row.querySelector(".name").textContent = u.name;
+    row.querySelector(".paper-user-name").textContent = u.name;
     row.addEventListener("click", (e) => {
-      if (e.target.closest(".row-icon-btn")) return;
+      if (e.target.closest(".paper-user-icon-btn")) return;
       switchUser(u.id);
       renderUserSection();
       renderUserChip();
@@ -92,7 +92,7 @@ function renderUserSection() {
     container.appendChild(row);
   });
   const addBtn = document.createElement("button");
-  addBtn.className = "user-add-row";
+  addBtn.className = "paper-add-row";
   addBtn.textContent = "＋ Add new user";
   addBtn.onclick = openAddUserDialog;
   container.appendChild(addBtn);

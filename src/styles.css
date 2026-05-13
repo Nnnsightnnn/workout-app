@@ -6213,8 +6213,6 @@ body[data-skin="paper"] .card,
 body[data-skin="paper"] .block,
 body[data-skin="paper"] .exercise-card,
 body[data-skin="paper"] .ex-card,
-body[data-skin="paper"] .program-card,
-body[data-skin="paper"] .profile-card,
 body[data-skin="paper"] .plate-card,
 body[data-skin="paper"] .orm-card,
 body[data-skin="paper"] .data-info-card,
@@ -6807,6 +6805,207 @@ body[data-skin="paper"] .hanko-stamp {
   transform: rotate(-12deg);
 }
 body[data-skin="paper"] .hanko-text { color: var(--paper-red); font-family: var(--paper-form); }
+
+/* ============================================================ */
+/* SETTINGS — paper-flat sections                                */
+/* Replaces the old .program-card / .profile-card / .user-row    */
+/* chunky chrome with notebook-row aesthetics.                   */
+/* ============================================================ */
+
+body[data-skin="paper"] .paper-settings-block {
+  padding: 4px 0 14px;
+  margin-bottom: 14px;
+  border-bottom: 1px dotted var(--paper-ink-mist);
+}
+body[data-skin="paper"] .paper-settings-title {
+  font-family: var(--paper-hand);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--paper-ink);
+  line-height: 1.05;
+}
+body[data-skin="paper"] .paper-settings-sub {
+  font-family: var(--paper-hand);
+  font-size: 16px;
+  color: var(--paper-ink-soft);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+body[data-skin="paper"] .paper-settings-meta {
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--paper-ink-faint);
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+body[data-skin="paper"] .paper-settings-meta-dot {
+  color: var(--paper-ink-mist);
+}
+body[data-skin="paper"] .paper-settings-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+/* Training-profile rows */
+body[data-skin="paper"] .paper-profile-list {
+  display: flex;
+  flex-direction: column;
+  margin: 4px 0 14px;
+}
+body[data-skin="paper"] .paper-profile-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px dotted var(--paper-ink-mist);
+}
+body[data-skin="paper"] .paper-profile-row:last-child {
+  border-bottom: none;
+}
+body[data-skin="paper"] .paper-profile-label {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--paper-ink-faint);
+  flex-shrink: 0;
+}
+body[data-skin="paper"] .paper-profile-value {
+  font-family: var(--paper-hand);
+  font-size: 18px;
+  color: var(--paper-ink);
+  text-align: right;
+  line-height: 1.2;
+}
+
+/* User list */
+body[data-skin="paper"] .paper-user-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 6px;
+  border-bottom: 1px dotted var(--paper-ink-mist);
+  background: transparent;
+  border-radius: 0;
+  cursor: pointer;
+}
+body[data-skin="paper"] .paper-user-row.is-active {
+  background: var(--paper-marker-soft);
+}
+body[data-skin="paper"] .paper-user-avatar {
+  width: 36px;
+  height: 36px;
+  border: 1.6px solid var(--paper-ink);
+  background: var(--paper-red);
+  color: var(--paper-bg);
+  font-family: var(--paper-form);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+body[data-skin="paper"] .paper-user-name {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--paper-hand);
+  font-size: 20px;
+  color: var(--paper-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body[data-skin="paper"] .paper-user-icon-btn {
+  width: 36px;
+  height: 36px;
+  border: 1.4px solid var(--paper-ink);
+  background: transparent;
+  color: var(--paper-ink);
+  border-radius: 0;
+  font-family: var(--paper-form);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: none;
+  padding: 0;
+}
+body[data-skin="paper"] .paper-user-icon-btn:active {
+  background: var(--paper-ink);
+  color: var(--paper-bg);
+}
+body[data-skin="paper"] .paper-user-icon-btn.danger {
+  border-color: var(--paper-red);
+  color: var(--paper-red);
+}
+body[data-skin="paper"] .paper-user-icon-btn.danger:active {
+  background: var(--paper-red);
+  color: var(--paper-bg);
+}
+body[data-skin="paper"] .paper-add-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 12px 6px;
+  margin: 8px 0 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 1.2px dashed var(--paper-ink-faint);
+  border-radius: 0;
+  color: var(--paper-red);
+  font-family: var(--paper-hand);
+  font-size: 19px;
+  cursor: pointer;
+  box-shadow: none;
+  letter-spacing: 0;
+  text-transform: none;
+}
+body[data-skin="paper"] .paper-add-row:active {
+  background: var(--paper-marker-soft);
+}
+
+/* Unit / Auto-timer segmented control — flat ink-border */
+body[data-skin="paper"] .unit-toggle {
+  background: transparent;
+  border: 1.4px solid var(--paper-ink);
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  display: inline-flex;
+  overflow: hidden;
+}
+body[data-skin="paper"] .unit-toggle button {
+  background: transparent;
+  color: var(--paper-ink);
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 0;
+  padding: 9px 16px;
+  cursor: pointer;
+}
+body[data-skin="paper"] .unit-toggle button + button {
+  border-left: 1.4px solid var(--paper-ink);
+}
+body[data-skin="paper"] .unit-toggle button.active {
+  background: var(--paper-ink);
+  color: var(--paper-bg);
+}
 
 /* ============================================================ */
 /* PAPER NOTEPAD — flat DOM (no cards, no chips, just notebook   */
@@ -7640,6 +7839,93 @@ body[data-skin="paper"] .session-est-row [class*="sub"] {
   text-transform: uppercase;
 }
 
+/* FUEL CELL — weekly EFFORT progress tank (renderStampCard)        */
+/* Flatten the dark card + glowing liquid into a paper progress     */
+/* line: ruled rectangle, ink fill, dashed segment markers, type-   */
+/* writer kicker, handwritten count.                                */
+body[data-skin="paper"] #stampCard { padding: 0 18px; }
+body[data-skin="paper"] .fuel-cell {
+  background: transparent;
+  border: 1.4px solid var(--paper-ink-faint);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 10px 14px;
+  margin: 8px 0 12px;
+}
+body[data-skin="paper"] .fuel-cell.fuel-full,
+body[data-skin="paper"] .fuel-full .fuel-cell {
+  border-color: var(--paper-red);
+  box-shadow: none;
+  animation: none;
+}
+body[data-skin="paper"] .fuel-header {
+  margin-bottom: 6px;
+}
+body[data-skin="paper"] .fuel-title {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+  font-weight: 400;
+}
+body[data-skin="paper"] .fuel-count {
+  font-family: var(--paper-hand);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--paper-ink);
+  text-shadow: none;
+}
+body[data-skin="paper"] .fuel-of {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--paper-ink-faint);
+  text-transform: lowercase;
+  font-weight: 400;
+}
+body[data-skin="paper"] .fuel-full .fuel-count {
+  color: var(--paper-red);
+  text-shadow: none;
+}
+body[data-skin="paper"] .fuel-tank {
+  background: rgba(40, 30, 15, 0.06);
+  border: 1px solid var(--paper-ink-mist);
+  border-radius: 0;
+  height: 18px;
+  overflow: hidden;
+}
+body[data-skin="paper"] .fuel-liquid {
+  background: var(--paper-ink) !important;
+  border-radius: 0;
+}
+body[data-skin="paper"] .fuel-full .fuel-liquid {
+  background: var(--paper-red) !important;
+}
+body[data-skin="paper"] .fuel-full .fuel-tank {
+  border-color: var(--paper-red);
+  box-shadow: none;
+}
+body[data-skin="paper"] .fuel-wave,
+body[data-skin="paper"] .fuel-sheen {
+  display: none;
+}
+body[data-skin="paper"] .fuel-seg {
+  background: var(--paper-ink-faint);
+  opacity: 1;
+  width: 1px;
+  top: 0; bottom: 0;
+}
+body[data-skin="paper"] .fuel-footer {
+  margin-top: 6px;
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+  font-weight: 400;
+}
+
 /* Phase progress bar at the top — segments + their active color    */
 body[data-skin="paper"] .tl-phase-bar {
   background: transparent;
@@ -8093,8 +8379,633 @@ body[data-skin="paper"] [class*="linprog-hint"] {
 /* Generic catch-all: any remaining dark-bg card class that the     */
 /* sweep missed will still get cream paper bg + ink text.           */
 body[data-skin="paper"] .card,
-body[data-skin="paper"] [class*="-card"]:not(.paper-day-card):not(.paper-rest-card):not(.about-card):not(.profile-card):not(.program-card):not(.plate-card):not(.orm-card):not(.data-info-card) {
+body[data-skin="paper"] [class*="-card"]:not(.paper-day-card):not(.paper-rest-card):not(.about-card):not(.plate-card):not(.orm-card):not(.data-info-card) {
   background: transparent;
   box-shadow: none;
+}
+
+/* ================================================================= */
+/* PAPER FOCUS VIEW — single-superset page                            */
+/* (SupersetFocusScreen from the design bundle)                       */
+/* ================================================================= */
+body[data-skin="paper"] .paper-ex-edit {
+  background: transparent;
+  border: none;
+  color: var(--paper-ink-mist);
+  font-family: var(--paper-form);
+  font-size: 14px;
+  padding: 6px 4px;
+  min-width: 28px;
+  min-height: 28px;
+  cursor: pointer;
+  line-height: 1;
+}
+body[data-skin="paper"] .paper-ex-edit:active {
+  color: var(--paper-ink);
+}
+
+/* Whole superset header is tappable → focus view. */
+body[data-skin="paper"] .paper-superset-label[role="button"] {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease;
+}
+body[data-skin="paper"] .paper-superset-label[role="button"]:active {
+  background: var(--paper-marker-soft);
+}
+
+body[data-skin="paper"] .paper-focus-view {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  padding-bottom: 0;
+}
+
+body[data-skin="paper"] .paper-focus-topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px 4px;
+}
+body[data-skin="paper"] .paper-focus-back,
+body[data-skin="paper"] .paper-focus-close {
+  background: transparent;
+  border: none;
+  padding: 8px;
+  color: var(--paper-ink);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+}
+body[data-skin="paper"] .paper-focus-breadcrumb {
+  flex: 1;
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+  text-align: left;
+}
+body[data-skin="paper"] .paper-focus-pageind {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--paper-ink-faint);
+  padding: 0 4px;
+}
+
+body[data-skin="paper"] .paper-focus-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 14px 0;
+}
+body[data-skin="paper"] .paper-focus-chev {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--paper-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+body[data-skin="paper"] .paper-focus-chev.disabled,
+body[data-skin="paper"] .paper-focus-chev[disabled] {
+  opacity: 0.25;
+  cursor: default;
+}
+body[data-skin="paper"] .paper-focus-title {
+  flex: 1;
+  text-align: center;
+  font-family: var(--paper-hand);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--paper-ink);
+  letter-spacing: -0.01em;
+  padding: 0 6px;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+body[data-skin="paper"] .paper-focus-title-name { color: var(--paper-ink); }
+body[data-skin="paper"] .paper-focus-title-now {
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--paper-red);
+  text-transform: uppercase;
+  font-weight: 400;
+}
+body[data-skin="paper"] .paper-focus-restline {
+  text-align: center;
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+  margin: 2px 0 10px;
+  min-height: 12px;
+}
+
+body[data-skin="paper"] .paper-focus-exlist {
+  padding: 0 0 12px;
+}
+body[data-skin="paper"] .paper-focus-exercise {
+  position: relative;
+  padding: 8px 0 6px;
+  margin-bottom: 6px;
+  opacity: 1;
+}
+body[data-skin="paper"] .paper-focus-ex-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 18px;
+  margin-bottom: 4px;
+}
+body[data-skin="paper"] .paper-focus-ex-left {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+body[data-skin="paper"] .paper-focus-ex-no {
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+body[data-skin="paper"] .paper-focus-ex-name {
+  font-family: var(--paper-hand);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  color: var(--paper-ink);
+  font-size: 36px;
+}
+body[data-skin="paper"] .paper-focus-ex-target {
+  font-family: var(--paper-hand);
+  font-size: 14px;
+  color: var(--paper-ink-soft);
+  white-space: nowrap;
+}
+body[data-skin="paper"] .paper-focus-ex-note {
+  padding-left: 40px;
+  margin: 4px 0 2px;
+}
+
+body[data-skin="paper"] .paper-focus-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 8px 0 4px;
+}
+body[data-skin="paper"] .paper-focus-dot {
+  width: 10px;
+  height: 4px;
+  padding: 0;
+  border: none;
+  background: rgba(40, 30, 15, 0.3);
+  cursor: pointer;
+  transition: width 200ms, background 200ms;
+}
+body[data-skin="paper"] .paper-focus-dot.active {
+  width: 22px;
+  background: var(--paper-ink);
+}
+body[data-skin="paper"] .paper-focus-swipe-hint {
+  text-align: center;
+  font-family: var(--paper-form);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: rgba(40, 30, 15, 0.4);
+  text-transform: uppercase;
+  margin: 4px 0 8px;
+}
+
+/* ---------- Action bar (REST / WEIGHT / SWAP / LOG SET) ---------- */
+body[data-skin="paper"] .paper-action-bar {
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  background: var(--paper-bg-deep);
+  border-top: 1.4px solid rgba(40, 30, 15, 0.4);
+  padding: 10px 12px calc(20px + env(safe-area-inset-bottom, 0px));
+  z-index: 8;
+}
+body[data-skin="paper"] .paper-action-edit-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+}
+body[data-skin="paper"] .pa-label-pre { opacity: 0.55; }
+body[data-skin="paper"] .pa-label-target { color: var(--paper-red); letter-spacing: 0.14em; }
+body[data-skin="paper"] .paper-action-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+body[data-skin="paper"] .paper-action-rest,
+body[data-skin="paper"] .paper-action-swap {
+  flex: 0 0 auto;
+  min-width: 60px;
+  padding: 8px 10px;
+  border: 1.5px solid var(--paper-ink);
+  background: rgba(255, 255, 255, 0.25);
+  color: var(--paper-ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-family: var(--paper-form);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 0;
+}
+body[data-skin="paper"] .paper-action-rest .pa-rest-lbl,
+body[data-skin="paper"] .paper-action-swap span {
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .paper-action-rest .pa-rest-val {
+  font-family: var(--paper-hand);
+  font-size: 14px;
+  color: var(--paper-ink);
+  letter-spacing: 0;
+  text-transform: none;
+  margin-top: 1px;
+}
+
+body[data-skin="paper"] .paper-action-weight {
+  flex: 1;
+  border: 1.5px solid var(--paper-ink);
+  background: rgba(255, 255, 255, 0.25);
+  padding: 6px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+body[data-skin="paper"] .pa-weight-label {
+  font-family: var(--paper-form);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--paper-ink-faint);
+  text-align: center;
+  text-transform: uppercase;
+}
+body[data-skin="paper"] .pa-weight-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+body[data-skin="paper"] .pa-weight-step {
+  width: 32px;
+  height: 32px;
+  border: 1.2px solid var(--paper-ink);
+  background: transparent;
+  color: var(--paper-ink);
+  font-family: var(--paper-form);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 0;
+}
+body[data-skin="paper"] .pa-weight-step:active {
+  background: var(--paper-marker-soft);
+}
+body[data-skin="paper"] .pa-weight-val {
+  flex: 1;
+  text-align: center;
+}
+body[data-skin="paper"] .pa-weight-num {
+  font-family: var(--paper-hand);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .pa-weight-unit {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  color: var(--paper-ink-faint);
+  margin-left: 3px;
+  letter-spacing: 0.1em;
+}
+body[data-skin="paper"] .pa-weight-bw {
+  font-family: var(--paper-hand);
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--paper-ink);
+  padding: 2px 0;
+}
+
+body[data-skin="paper"] .paper-action-log {
+  flex: 0 0 auto;
+  padding: 10px 14px;
+  border: 2px solid var(--paper-red);
+  background: var(--paper-red);
+  color: var(--paper-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  font-family: var(--paper-form);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transform: rotate(-1.5deg);
+  box-shadow: 2px 3px 0 rgba(40, 30, 15, 0.25);
+  border-radius: 0;
+}
+body[data-skin="paper"] .paper-action-log:active {
+  transform: rotate(-1.5deg) translate(1px, 1px);
+  box-shadow: 1px 2px 0 rgba(40, 30, 15, 0.25);
+}
+body[data-skin="paper"] .paper-action-log[disabled] {
+  opacity: 0.35;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
+}
+body[data-skin="paper"] .paper-action-log span {
+  font-weight: 700;
+}
+
+/* ================================================================= */
+/* PAPER SET-EDITOR — overrides the dark chunky modal so it matches   */
+/* the notepad aesthetic (cream paper, flat ink borders, no pillows). */
+/* ================================================================= */
+body[data-skin="paper"] .set-editor {
+  background: transparent;
+  padding: 4px 2px;
+}
+
+body[data-skin="paper"] .set-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+body[data-skin="paper"] .set-editor-nav-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 0;
+  border: 1.4px solid var(--paper-ink);
+  background: transparent;
+  color: var(--paper-ink);
+  font-family: var(--paper-form);
+  font-size: 20px;
+  line-height: 1;
+  box-shadow: none;
+  transition: background 0.12s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+body[data-skin="paper"] .set-editor-nav-btn:active {
+  transform: none;
+  background: var(--paper-marker-soft);
+  box-shadow: none;
+}
+body[data-skin="paper"] .set-editor-nav-btn:disabled {
+  opacity: 0.25;
+  pointer-events: none;
+}
+body[data-skin="paper"] .set-editor-title {
+  flex: 1;
+  text-align: center;
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+  line-height: 1.4;
+}
+body[data-skin="paper"] .set-editor-title strong {
+  display: block;
+  font-family: var(--paper-hand);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  color: var(--paper-ink);
+  text-transform: none;
+  margin-bottom: 2px;
+}
+
+body[data-skin="paper"] .set-editor-zone {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  background: transparent;
+  border: 1.5px solid var(--paper-ink);
+  border-radius: 0;
+  box-shadow: none;
+}
+body[data-skin="paper"] .set-editor-label {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+body[data-skin="paper"] .set-editor-stepper-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+body[data-skin="paper"] .set-editor-stepper {
+  width: 56px;
+  height: 56px;
+  border-radius: 0;
+  border: 1.4px solid var(--paper-ink);
+  background: transparent;
+  color: var(--paper-ink);
+  font-family: var(--paper-form);
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1;
+  box-shadow: none;
+  flex-shrink: 0;
+}
+body[data-skin="paper"] .set-editor-stepper:active {
+  transform: none;
+  background: var(--paper-marker-soft);
+  box-shadow: none;
+}
+body[data-skin="paper"] .set-editor-value {
+  font-family: var(--paper-hand);
+  font-weight: 700;
+  font-size: 44px;
+  color: var(--paper-ink);
+  line-height: 1;
+  min-width: 80px;
+  text-align: center;
+}
+body[data-skin="paper"] .set-editor-value small {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--paper-ink-faint);
+  text-transform: lowercase;
+  font-weight: 400;
+}
+
+body[data-skin="paper"] .set-editor-quick-pills {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 2px 0;
+}
+body[data-skin="paper"] .set-editor-quick-pills::-webkit-scrollbar {
+  display: none;
+}
+body[data-skin="paper"] .set-editor-quick-pill {
+  flex-shrink: 0;
+  min-width: 56px;
+  padding: 10px 12px;
+  border-radius: 0;
+  border: 1.4px solid var(--paper-ink);
+  background: transparent;
+  color: var(--paper-ink);
+  font-family: var(--paper-form);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  font-weight: 400;
+  box-shadow: none;
+}
+body[data-skin="paper"] .set-editor-quick-pill:active {
+  transform: none;
+  background: var(--paper-marker-soft);
+  box-shadow: none;
+}
+body[data-skin="paper"] .set-editor-quick-pill.active {
+  background: var(--paper-marker-soft);
+  border-color: var(--paper-ink);
+  color: var(--paper-ink);
+  box-shadow: none;
+  border-width: 1.8px;
+}
+
+/* RPE grid bubbles → square ink-bordered cells */
+body[data-skin="paper"] .rpe-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+body[data-skin="paper"] .rpe-bubble {
+  width: 48px;
+  height: 48px;
+  border-radius: 0;
+  border: 1.4px solid var(--paper-ink);
+  background: transparent;
+  color: var(--paper-ink);
+  font-family: var(--paper-form);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  box-shadow: none;
+}
+body[data-skin="paper"] .rpe-bubble:active {
+  transform: none;
+  background: var(--paper-marker-soft);
+  box-shadow: none;
+}
+body[data-skin="paper"] .rpe-bubble.selected {
+  background: var(--paper-marker-soft);
+  border-color: var(--paper-ink);
+  color: var(--paper-ink);
+  box-shadow: none;
+  transform: none;
+  border-width: 1.8px;
+}
+body[data-skin="paper"] .rpe-bubble.rpe-high {
+  border-color: var(--paper-red);
+  color: var(--paper-red);
+}
+body[data-skin="paper"] .rpe-bubble.rpe-high.selected {
+  background: rgba(168, 58, 42, 0.12);
+  border-color: var(--paper-red);
+  color: var(--paper-red);
+}
+
+/* DONE button → red rubber-stamp matching LOG SET / Start workout */
+body[data-skin="paper"] .set-editor-done-btn {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 0;
+  border: 2px solid var(--paper-red);
+  background: var(--paper-red);
+  color: var(--paper-bg);
+  font-family: var(--paper-form);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  box-shadow: 2px 3px 0 rgba(40, 30, 15, 0.25);
+  margin-top: 6px;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+body[data-skin="paper"] .set-editor-done-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 2px 0 rgba(40, 30, 15, 0.25);
+}
+
+/* RP suggestion badge inside set editor — paper variant */
+body[data-skin="paper"] .rp-editor-suggestion {
+  background: transparent;
+  border: 1.2px dashed var(--paper-ink-faint);
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--paper-ink-soft);
+  padding: 8px 12px;
+  margin-bottom: 12px;
+}
+body[data-skin="paper"] .rp-editor-suggestion-val {
+  font-family: var(--paper-hand);
+  font-size: 18px;
+  color: var(--paper-ink);
+  font-weight: 700;
+}
+body[data-skin="paper"] .rp-editor-suggestion-why {
+  font-family: var(--paper-form);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
 }
 

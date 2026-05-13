@@ -881,25 +881,34 @@ function renderProfileCard() {
     const bwText = ob.bodyWeight ? (ob.bodyWeight + " " + (s.unit || "lbs")) : "—";
     const ssText = ob.smartSuggestions === "yes" ? "On" : (ob.smartSuggestions === "no" ? "Off" : "—");
 
+    const goalText = (ob.goals && ob.goals.length ? ob.goals.map(g => goalLabels[g] || g).join(", ") : goalLabels[ob.goal] || ob.goal) || "—";
+    const eqText = ob.equipmentDetail && ob.equipmentDetail.length
+      ? ob.equipmentDetail.map(t => EQUIPMENT_LABELS[t] || t).join(", ")
+      : (eqLabels[ob.equipment] || ob.equipment || "—");
+    const goalLabel = "Goal" + (((ob.goals && ob.goals.length > 1) || false) ? "s" : "");
     el.innerHTML = `
-      <div class="profile-summary">
-        <div class="profile-row"><span class="profile-label">Goal${((ob.goals && ob.goals.length > 1) || false) ? "s" : ""}</span><span class="profile-value">${(ob.goals && ob.goals.length ? ob.goals.map(g => goalLabels[g] || g).join(", ") : goalLabels[ob.goal] || ob.goal) || "—"}</span></div>
-        <div class="profile-row"><span class="profile-label">Physique</span><span class="profile-value">${ppText}</span></div>
-        <div class="profile-row"><span class="profile-label">Experience</span><span class="profile-value">${expLabels[ob.experience] || ob.experience || "—"}</span></div>
-        <div class="profile-row"><span class="profile-label">Days / week</span><span class="profile-value">${ob.days || "—"}</span></div>
-        <div class="profile-row"><span class="profile-label">Equipment</span><span class="profile-value">${ob.equipmentDetail && ob.equipmentDetail.length ? ob.equipmentDetail.map(t => EQUIPMENT_LABELS[t] || t).join(", ") : (eqLabels[ob.equipment] || ob.equipment || "—")}</span></div>
-        <div class="profile-row"><span class="profile-label">Body Weight</span><span class="profile-value">${bwText}</span></div>
-        <div class="profile-row"><span class="profile-label">Smart Suggestions</span><span class="profile-value">${ssText}</span></div>
-        <div class="profile-row"><span class="profile-label">Flags</span><span class="profile-value">${injText}</span></div>
+      <div class="paper-profile-list">
+        <div class="paper-profile-row"><span class="paper-profile-label">${goalLabel}</span><span class="paper-profile-value">${goalText}</span></div>
+        <div class="paper-profile-row"><span class="paper-profile-label">Physique</span><span class="paper-profile-value">${ppText}</span></div>
+        <div class="paper-profile-row"><span class="paper-profile-label">Experience</span><span class="paper-profile-value">${expLabels[ob.experience] || ob.experience || "—"}</span></div>
+        <div class="paper-profile-row"><span class="paper-profile-label">Days / week</span><span class="paper-profile-value">${ob.days || "—"}</span></div>
+        <div class="paper-profile-row"><span class="paper-profile-label">Equipment</span><span class="paper-profile-value">${eqText}</span></div>
+        <div class="paper-profile-row"><span class="paper-profile-label">Body Weight</span><span class="paper-profile-value">${bwText}</span></div>
+        <div class="paper-profile-row"><span class="paper-profile-label">Smart Suggestions</span><span class="paper-profile-value">${ssText}</span></div>
+        <div class="paper-profile-row"><span class="paper-profile-label">Flags</span><span class="paper-profile-value">${injText}</span></div>
       </div>
-      <button class="program-change-btn" onclick="showOnboardingFlow(true)">Update Training Profile</button>
+      <div class="paper-settings-actions">
+        <button class="paper-stamp-btn" onclick="showOnboardingFlow(true)">Update Training Profile</button>
+      </div>
     `;
   } else {
     el.innerHTML = `
-      <p style="color:var(--text-dim);font-size:13px;line-height:1.5;margin:0 0 10px;">
+      <p class="paper-settings-sub" style="margin:0 0 12px;">
         Complete the training questionnaire to get personalized program recommendations and exercise safety flags.
       </p>
-      <button class="program-change-btn" onclick="showOnboardingFlow(true)">Complete Questionnaire</button>
+      <div class="paper-settings-actions">
+        <button class="paper-stamp-btn" onclick="showOnboardingFlow(true)">Complete Questionnaire</button>
+      </div>
     `;
   }
 }

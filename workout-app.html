@@ -6425,8 +6425,6 @@ body[data-skin="paper"] .card,
 body[data-skin="paper"] .block,
 body[data-skin="paper"] .exercise-card,
 body[data-skin="paper"] .ex-card,
-body[data-skin="paper"] .program-card,
-body[data-skin="paper"] .profile-card,
 body[data-skin="paper"] .plate-card,
 body[data-skin="paper"] .orm-card,
 body[data-skin="paper"] .data-info-card,
@@ -7019,6 +7017,207 @@ body[data-skin="paper"] .hanko-stamp {
   transform: rotate(-12deg);
 }
 body[data-skin="paper"] .hanko-text { color: var(--paper-red); font-family: var(--paper-form); }
+
+/* ============================================================ */
+/* SETTINGS — paper-flat sections                                */
+/* Replaces the old .program-card / .profile-card / .user-row    */
+/* chunky chrome with notebook-row aesthetics.                   */
+/* ============================================================ */
+
+body[data-skin="paper"] .paper-settings-block {
+  padding: 4px 0 14px;
+  margin-bottom: 14px;
+  border-bottom: 1px dotted var(--paper-ink-mist);
+}
+body[data-skin="paper"] .paper-settings-title {
+  font-family: var(--paper-hand);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--paper-ink);
+  line-height: 1.05;
+}
+body[data-skin="paper"] .paper-settings-sub {
+  font-family: var(--paper-hand);
+  font-size: 16px;
+  color: var(--paper-ink-soft);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+body[data-skin="paper"] .paper-settings-meta {
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--paper-ink-faint);
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+body[data-skin="paper"] .paper-settings-meta-dot {
+  color: var(--paper-ink-mist);
+}
+body[data-skin="paper"] .paper-settings-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+/* Training-profile rows */
+body[data-skin="paper"] .paper-profile-list {
+  display: flex;
+  flex-direction: column;
+  margin: 4px 0 14px;
+}
+body[data-skin="paper"] .paper-profile-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px dotted var(--paper-ink-mist);
+}
+body[data-skin="paper"] .paper-profile-row:last-child {
+  border-bottom: none;
+}
+body[data-skin="paper"] .paper-profile-label {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--paper-ink-faint);
+  flex-shrink: 0;
+}
+body[data-skin="paper"] .paper-profile-value {
+  font-family: var(--paper-hand);
+  font-size: 18px;
+  color: var(--paper-ink);
+  text-align: right;
+  line-height: 1.2;
+}
+
+/* User list */
+body[data-skin="paper"] .paper-user-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 6px;
+  border-bottom: 1px dotted var(--paper-ink-mist);
+  background: transparent;
+  border-radius: 0;
+  cursor: pointer;
+}
+body[data-skin="paper"] .paper-user-row.is-active {
+  background: var(--paper-marker-soft);
+}
+body[data-skin="paper"] .paper-user-avatar {
+  width: 36px;
+  height: 36px;
+  border: 1.6px solid var(--paper-ink);
+  background: var(--paper-red);
+  color: var(--paper-bg);
+  font-family: var(--paper-form);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+body[data-skin="paper"] .paper-user-name {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--paper-hand);
+  font-size: 20px;
+  color: var(--paper-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body[data-skin="paper"] .paper-user-icon-btn {
+  width: 36px;
+  height: 36px;
+  border: 1.4px solid var(--paper-ink);
+  background: transparent;
+  color: var(--paper-ink);
+  border-radius: 0;
+  font-family: var(--paper-form);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: none;
+  padding: 0;
+}
+body[data-skin="paper"] .paper-user-icon-btn:active {
+  background: var(--paper-ink);
+  color: var(--paper-bg);
+}
+body[data-skin="paper"] .paper-user-icon-btn.danger {
+  border-color: var(--paper-red);
+  color: var(--paper-red);
+}
+body[data-skin="paper"] .paper-user-icon-btn.danger:active {
+  background: var(--paper-red);
+  color: var(--paper-bg);
+}
+body[data-skin="paper"] .paper-add-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 12px 6px;
+  margin: 8px 0 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 1.2px dashed var(--paper-ink-faint);
+  border-radius: 0;
+  color: var(--paper-red);
+  font-family: var(--paper-hand);
+  font-size: 19px;
+  cursor: pointer;
+  box-shadow: none;
+  letter-spacing: 0;
+  text-transform: none;
+}
+body[data-skin="paper"] .paper-add-row:active {
+  background: var(--paper-marker-soft);
+}
+
+/* Unit / Auto-timer segmented control — flat ink-border */
+body[data-skin="paper"] .unit-toggle {
+  background: transparent;
+  border: 1.4px solid var(--paper-ink);
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  display: inline-flex;
+  overflow: hidden;
+}
+body[data-skin="paper"] .unit-toggle button {
+  background: transparent;
+  color: var(--paper-ink);
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 0;
+  padding: 9px 16px;
+  cursor: pointer;
+}
+body[data-skin="paper"] .unit-toggle button + button {
+  border-left: 1.4px solid var(--paper-ink);
+}
+body[data-skin="paper"] .unit-toggle button.active {
+  background: var(--paper-ink);
+  color: var(--paper-bg);
+}
 
 /* ============================================================ */
 /* PAPER NOTEPAD — flat DOM (no cards, no chips, just notebook   */
@@ -7852,6 +8051,93 @@ body[data-skin="paper"] .session-est-row [class*="sub"] {
   text-transform: uppercase;
 }
 
+/* FUEL CELL — weekly EFFORT progress tank (renderStampCard)        */
+/* Flatten the dark card + glowing liquid into a paper progress     */
+/* line: ruled rectangle, ink fill, dashed segment markers, type-   */
+/* writer kicker, handwritten count.                                */
+body[data-skin="paper"] #stampCard { padding: 0 18px; }
+body[data-skin="paper"] .fuel-cell {
+  background: transparent;
+  border: 1.4px solid var(--paper-ink-faint);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 10px 14px;
+  margin: 8px 0 12px;
+}
+body[data-skin="paper"] .fuel-cell.fuel-full,
+body[data-skin="paper"] .fuel-full .fuel-cell {
+  border-color: var(--paper-red);
+  box-shadow: none;
+  animation: none;
+}
+body[data-skin="paper"] .fuel-header {
+  margin-bottom: 6px;
+}
+body[data-skin="paper"] .fuel-title {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+  font-weight: 400;
+}
+body[data-skin="paper"] .fuel-count {
+  font-family: var(--paper-hand);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--paper-ink);
+  text-shadow: none;
+}
+body[data-skin="paper"] .fuel-of {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--paper-ink-faint);
+  text-transform: lowercase;
+  font-weight: 400;
+}
+body[data-skin="paper"] .fuel-full .fuel-count {
+  color: var(--paper-red);
+  text-shadow: none;
+}
+body[data-skin="paper"] .fuel-tank {
+  background: rgba(40, 30, 15, 0.06);
+  border: 1px solid var(--paper-ink-mist);
+  border-radius: 0;
+  height: 18px;
+  overflow: hidden;
+}
+body[data-skin="paper"] .fuel-liquid {
+  background: var(--paper-ink) !important;
+  border-radius: 0;
+}
+body[data-skin="paper"] .fuel-full .fuel-liquid {
+  background: var(--paper-red) !important;
+}
+body[data-skin="paper"] .fuel-full .fuel-tank {
+  border-color: var(--paper-red);
+  box-shadow: none;
+}
+body[data-skin="paper"] .fuel-wave,
+body[data-skin="paper"] .fuel-sheen {
+  display: none;
+}
+body[data-skin="paper"] .fuel-seg {
+  background: var(--paper-ink-faint);
+  opacity: 1;
+  width: 1px;
+  top: 0; bottom: 0;
+}
+body[data-skin="paper"] .fuel-footer {
+  margin-top: 6px;
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+  font-weight: 400;
+}
+
 /* Phase progress bar at the top — segments + their active color    */
 body[data-skin="paper"] .tl-phase-bar {
   background: transparent;
@@ -8305,9 +8591,634 @@ body[data-skin="paper"] [class*="linprog-hint"] {
 /* Generic catch-all: any remaining dark-bg card class that the     */
 /* sweep missed will still get cream paper bg + ink text.           */
 body[data-skin="paper"] .card,
-body[data-skin="paper"] [class*="-card"]:not(.paper-day-card):not(.paper-rest-card):not(.about-card):not(.profile-card):not(.program-card):not(.plate-card):not(.orm-card):not(.data-info-card) {
+body[data-skin="paper"] [class*="-card"]:not(.paper-day-card):not(.paper-rest-card):not(.about-card):not(.plate-card):not(.orm-card):not(.data-info-card) {
   background: transparent;
   box-shadow: none;
+}
+
+/* ================================================================= */
+/* PAPER FOCUS VIEW — single-superset page                            */
+/* (SupersetFocusScreen from the design bundle)                       */
+/* ================================================================= */
+body[data-skin="paper"] .paper-ex-edit {
+  background: transparent;
+  border: none;
+  color: var(--paper-ink-mist);
+  font-family: var(--paper-form);
+  font-size: 14px;
+  padding: 6px 4px;
+  min-width: 28px;
+  min-height: 28px;
+  cursor: pointer;
+  line-height: 1;
+}
+body[data-skin="paper"] .paper-ex-edit:active {
+  color: var(--paper-ink);
+}
+
+/* Whole superset header is tappable → focus view. */
+body[data-skin="paper"] .paper-superset-label[role="button"] {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease;
+}
+body[data-skin="paper"] .paper-superset-label[role="button"]:active {
+  background: var(--paper-marker-soft);
+}
+
+body[data-skin="paper"] .paper-focus-view {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  padding-bottom: 0;
+}
+
+body[data-skin="paper"] .paper-focus-topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px 4px;
+}
+body[data-skin="paper"] .paper-focus-back,
+body[data-skin="paper"] .paper-focus-close {
+  background: transparent;
+  border: none;
+  padding: 8px;
+  color: var(--paper-ink);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+}
+body[data-skin="paper"] .paper-focus-breadcrumb {
+  flex: 1;
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+  text-align: left;
+}
+body[data-skin="paper"] .paper-focus-pageind {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--paper-ink-faint);
+  padding: 0 4px;
+}
+
+body[data-skin="paper"] .paper-focus-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 14px 0;
+}
+body[data-skin="paper"] .paper-focus-chev {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--paper-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+body[data-skin="paper"] .paper-focus-chev.disabled,
+body[data-skin="paper"] .paper-focus-chev[disabled] {
+  opacity: 0.25;
+  cursor: default;
+}
+body[data-skin="paper"] .paper-focus-title {
+  flex: 1;
+  text-align: center;
+  font-family: var(--paper-hand);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--paper-ink);
+  letter-spacing: -0.01em;
+  padding: 0 6px;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+body[data-skin="paper"] .paper-focus-title-name { color: var(--paper-ink); }
+body[data-skin="paper"] .paper-focus-title-now {
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--paper-red);
+  text-transform: uppercase;
+  font-weight: 400;
+}
+body[data-skin="paper"] .paper-focus-restline {
+  text-align: center;
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+  margin: 2px 0 10px;
+  min-height: 12px;
+}
+
+body[data-skin="paper"] .paper-focus-exlist {
+  padding: 0 0 12px;
+}
+body[data-skin="paper"] .paper-focus-exercise {
+  position: relative;
+  padding: 8px 0 6px;
+  margin-bottom: 6px;
+  opacity: 1;
+}
+body[data-skin="paper"] .paper-focus-ex-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 18px;
+  margin-bottom: 4px;
+}
+body[data-skin="paper"] .paper-focus-ex-left {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+body[data-skin="paper"] .paper-focus-ex-no {
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+body[data-skin="paper"] .paper-focus-ex-name {
+  font-family: var(--paper-hand);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  color: var(--paper-ink);
+  font-size: 36px;
+}
+body[data-skin="paper"] .paper-focus-ex-target {
+  font-family: var(--paper-hand);
+  font-size: 14px;
+  color: var(--paper-ink-soft);
+  white-space: nowrap;
+}
+body[data-skin="paper"] .paper-focus-ex-note {
+  padding-left: 40px;
+  margin: 4px 0 2px;
+}
+
+body[data-skin="paper"] .paper-focus-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 8px 0 4px;
+}
+body[data-skin="paper"] .paper-focus-dot {
+  width: 10px;
+  height: 4px;
+  padding: 0;
+  border: none;
+  background: rgba(40, 30, 15, 0.3);
+  cursor: pointer;
+  transition: width 200ms, background 200ms;
+}
+body[data-skin="paper"] .paper-focus-dot.active {
+  width: 22px;
+  background: var(--paper-ink);
+}
+body[data-skin="paper"] .paper-focus-swipe-hint {
+  text-align: center;
+  font-family: var(--paper-form);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: rgba(40, 30, 15, 0.4);
+  text-transform: uppercase;
+  margin: 4px 0 8px;
+}
+
+/* ---------- Action bar (REST / WEIGHT / SWAP / LOG SET) ---------- */
+body[data-skin="paper"] .paper-action-bar {
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  background: var(--paper-bg-deep);
+  border-top: 1.4px solid rgba(40, 30, 15, 0.4);
+  padding: 10px 12px calc(20px + env(safe-area-inset-bottom, 0px));
+  z-index: 8;
+}
+body[data-skin="paper"] .paper-action-edit-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+}
+body[data-skin="paper"] .pa-label-pre { opacity: 0.55; }
+body[data-skin="paper"] .pa-label-target { color: var(--paper-red); letter-spacing: 0.14em; }
+body[data-skin="paper"] .paper-action-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+body[data-skin="paper"] .paper-action-rest,
+body[data-skin="paper"] .paper-action-swap {
+  flex: 0 0 auto;
+  min-width: 60px;
+  padding: 8px 10px;
+  border: 1.5px solid var(--paper-ink);
+  background: rgba(255, 255, 255, 0.25);
+  color: var(--paper-ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-family: var(--paper-form);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 0;
+}
+body[data-skin="paper"] .paper-action-rest .pa-rest-lbl,
+body[data-skin="paper"] .paper-action-swap span {
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .paper-action-rest .pa-rest-val {
+  font-family: var(--paper-hand);
+  font-size: 14px;
+  color: var(--paper-ink);
+  letter-spacing: 0;
+  text-transform: none;
+  margin-top: 1px;
+}
+
+body[data-skin="paper"] .paper-action-weight {
+  flex: 1;
+  border: 1.5px solid var(--paper-ink);
+  background: rgba(255, 255, 255, 0.25);
+  padding: 6px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+body[data-skin="paper"] .pa-weight-label {
+  font-family: var(--paper-form);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--paper-ink-faint);
+  text-align: center;
+  text-transform: uppercase;
+}
+body[data-skin="paper"] .pa-weight-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+body[data-skin="paper"] .pa-weight-step {
+  width: 32px;
+  height: 32px;
+  border: 1.2px solid var(--paper-ink);
+  background: transparent;
+  color: var(--paper-ink);
+  font-family: var(--paper-form);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 0;
+}
+body[data-skin="paper"] .pa-weight-step:active {
+  background: var(--paper-marker-soft);
+}
+body[data-skin="paper"] .pa-weight-val {
+  flex: 1;
+  text-align: center;
+}
+body[data-skin="paper"] .pa-weight-num {
+  font-family: var(--paper-hand);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .pa-weight-unit {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  color: var(--paper-ink-faint);
+  margin-left: 3px;
+  letter-spacing: 0.1em;
+}
+body[data-skin="paper"] .pa-weight-bw {
+  font-family: var(--paper-hand);
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--paper-ink);
+  padding: 2px 0;
+}
+
+body[data-skin="paper"] .paper-action-log {
+  flex: 0 0 auto;
+  padding: 10px 14px;
+  border: 2px solid var(--paper-red);
+  background: var(--paper-red);
+  color: var(--paper-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  font-family: var(--paper-form);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transform: rotate(-1.5deg);
+  box-shadow: 2px 3px 0 rgba(40, 30, 15, 0.25);
+  border-radius: 0;
+}
+body[data-skin="paper"] .paper-action-log:active {
+  transform: rotate(-1.5deg) translate(1px, 1px);
+  box-shadow: 1px 2px 0 rgba(40, 30, 15, 0.25);
+}
+body[data-skin="paper"] .paper-action-log[disabled] {
+  opacity: 0.35;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
+}
+body[data-skin="paper"] .paper-action-log span {
+  font-weight: 700;
+}
+
+/* ================================================================= */
+/* PAPER SET-EDITOR — overrides the dark chunky modal so it matches   */
+/* the notepad aesthetic (cream paper, flat ink borders, no pillows). */
+/* ================================================================= */
+body[data-skin="paper"] .set-editor {
+  background: transparent;
+  padding: 4px 2px;
+}
+
+body[data-skin="paper"] .set-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+body[data-skin="paper"] .set-editor-nav-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 0;
+  border: 1.4px solid var(--paper-ink);
+  background: transparent;
+  color: var(--paper-ink);
+  font-family: var(--paper-form);
+  font-size: 20px;
+  line-height: 1;
+  box-shadow: none;
+  transition: background 0.12s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+body[data-skin="paper"] .set-editor-nav-btn:active {
+  transform: none;
+  background: var(--paper-marker-soft);
+  box-shadow: none;
+}
+body[data-skin="paper"] .set-editor-nav-btn:disabled {
+  opacity: 0.25;
+  pointer-events: none;
+}
+body[data-skin="paper"] .set-editor-title {
+  flex: 1;
+  text-align: center;
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+  line-height: 1.4;
+}
+body[data-skin="paper"] .set-editor-title strong {
+  display: block;
+  font-family: var(--paper-hand);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  color: var(--paper-ink);
+  text-transform: none;
+  margin-bottom: 2px;
+}
+
+body[data-skin="paper"] .set-editor-zone {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  background: transparent;
+  border: 1.5px solid var(--paper-ink);
+  border-radius: 0;
+  box-shadow: none;
+}
+body[data-skin="paper"] .set-editor-label {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+body[data-skin="paper"] .set-editor-stepper-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+body[data-skin="paper"] .set-editor-stepper {
+  width: 56px;
+  height: 56px;
+  border-radius: 0;
+  border: 1.4px solid var(--paper-ink);
+  background: transparent;
+  color: var(--paper-ink);
+  font-family: var(--paper-form);
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1;
+  box-shadow: none;
+  flex-shrink: 0;
+}
+body[data-skin="paper"] .set-editor-stepper:active {
+  transform: none;
+  background: var(--paper-marker-soft);
+  box-shadow: none;
+}
+body[data-skin="paper"] .set-editor-value {
+  font-family: var(--paper-hand);
+  font-weight: 700;
+  font-size: 44px;
+  color: var(--paper-ink);
+  line-height: 1;
+  min-width: 80px;
+  text-align: center;
+}
+body[data-skin="paper"] .set-editor-value small {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--paper-ink-faint);
+  text-transform: lowercase;
+  font-weight: 400;
+}
+
+body[data-skin="paper"] .set-editor-quick-pills {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 2px 0;
+}
+body[data-skin="paper"] .set-editor-quick-pills::-webkit-scrollbar {
+  display: none;
+}
+body[data-skin="paper"] .set-editor-quick-pill {
+  flex-shrink: 0;
+  min-width: 56px;
+  padding: 10px 12px;
+  border-radius: 0;
+  border: 1.4px solid var(--paper-ink);
+  background: transparent;
+  color: var(--paper-ink);
+  font-family: var(--paper-form);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  font-weight: 400;
+  box-shadow: none;
+}
+body[data-skin="paper"] .set-editor-quick-pill:active {
+  transform: none;
+  background: var(--paper-marker-soft);
+  box-shadow: none;
+}
+body[data-skin="paper"] .set-editor-quick-pill.active {
+  background: var(--paper-marker-soft);
+  border-color: var(--paper-ink);
+  color: var(--paper-ink);
+  box-shadow: none;
+  border-width: 1.8px;
+}
+
+/* RPE grid bubbles → square ink-bordered cells */
+body[data-skin="paper"] .rpe-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+body[data-skin="paper"] .rpe-bubble {
+  width: 48px;
+  height: 48px;
+  border-radius: 0;
+  border: 1.4px solid var(--paper-ink);
+  background: transparent;
+  color: var(--paper-ink);
+  font-family: var(--paper-form);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  box-shadow: none;
+}
+body[data-skin="paper"] .rpe-bubble:active {
+  transform: none;
+  background: var(--paper-marker-soft);
+  box-shadow: none;
+}
+body[data-skin="paper"] .rpe-bubble.selected {
+  background: var(--paper-marker-soft);
+  border-color: var(--paper-ink);
+  color: var(--paper-ink);
+  box-shadow: none;
+  transform: none;
+  border-width: 1.8px;
+}
+body[data-skin="paper"] .rpe-bubble.rpe-high {
+  border-color: var(--paper-red);
+  color: var(--paper-red);
+}
+body[data-skin="paper"] .rpe-bubble.rpe-high.selected {
+  background: rgba(168, 58, 42, 0.12);
+  border-color: var(--paper-red);
+  color: var(--paper-red);
+}
+
+/* DONE button → red rubber-stamp matching LOG SET / Start workout */
+body[data-skin="paper"] .set-editor-done-btn {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 0;
+  border: 2px solid var(--paper-red);
+  background: var(--paper-red);
+  color: var(--paper-bg);
+  font-family: var(--paper-form);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  box-shadow: 2px 3px 0 rgba(40, 30, 15, 0.25);
+  margin-top: 6px;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+body[data-skin="paper"] .set-editor-done-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 2px 0 rgba(40, 30, 15, 0.25);
+}
+
+/* RP suggestion badge inside set editor — paper variant */
+body[data-skin="paper"] .rp-editor-suggestion {
+  background: transparent;
+  border: 1.2px dashed var(--paper-ink-faint);
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--paper-ink-soft);
+  padding: 8px 12px;
+  margin-bottom: 12px;
+}
+body[data-skin="paper"] .rp-editor-suggestion-val {
+  font-family: var(--paper-hand);
+  font-size: 18px;
+  color: var(--paper-ink);
+  font-weight: 700;
+}
+body[data-skin="paper"] .rp-editor-suggestion-why {
+  font-family: var(--paper-form);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
 }
 
 
@@ -8433,17 +9344,15 @@ body[data-skin="paper"] [class*="-card"]:not(.paper-day-card):not(.paper-rest-ca
     <p style="color: var(--text-dim); font-size: 12px; margin-bottom: 14px;">Account, tools, and preferences.</p>
 
     <div class="section-title">Program</div>
-    <div class="program-card" id="programCard">
-      <div id="programContent"></div>
-    </div>
+    <div id="programContent"></div>
 
     <div class="section-title">Training Profile</div>
-    <div class="profile-card" id="profileCard">
-      <div id="profileContent"></div>
-    </div>
+    <div id="profileContent"></div>
 
     <div class="section-title">Body Measurements</div>
-    <button class="action-btn" onclick="showScreen('body')" style="margin-bottom:14px;">Open Body Tracker</button>
+    <div class="paper-settings-actions" style="margin-bottom:14px;">
+      <button class="paper-stamp-btn" onclick="showScreen('body')">Open Body Tracker</button>
+    </div>
 
     <div class="section-title">Users</div>
     <div id="userSection"></div>
@@ -10977,7 +11886,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 18;
-const APP_BUILD = "99121915";
+const APP_BUILD = "dcadfd25";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -13137,13 +14046,16 @@ function renderWorkoutScreen() {
     return;
   }
 
-  // Paper skin: always use the chapters/notepad view (flat paper rows).
-  // Focus view will get its own paper-styled rebuild in a follow-up; until
-  // then, the notepad layout is the user-facing surface for active workouts.
+  // Paper skin dispatcher: focus view goes to the paper-styled rebuild;
+  // the chunky renderFocusView path is kept for the non-paper fallback.
   const _paperOn = (typeof isPaperSkin === "function" && isPaperSkin());
 
   // View dispatcher: focus view or chapters (scrollable overview)
-  if (!_paperOn && state.workoutView === "focus" && state.focusBlockIdx != null) {
+  if (_paperOn && state.workoutView === "focus" && state.focusBlockIdx != null
+      && state.focusBlockIdx >= 0 && typeof paperRenderFocusView === "function") {
+    paperRenderFocusView(container, day);
+    if (state.workoutStartedAt) renderStatsBar(container, day);
+  } else if (!_paperOn && state.workoutView === "focus" && state.focusBlockIdx != null) {
     renderFocusView(container, day);
     if (state.workoutStartedAt) renderStatsBar(container, day);
   } else {
@@ -19284,21 +20196,24 @@ function renderProgramPicker() {
   const u = userData();
   if (!u) { el.innerHTML = ''; return; }
   const tpl = PROGRAM_TEMPLATES.find(t => t.id === u.templateId) || PROGRAM_TEMPLATES[0];
-  const weekInfo = u.totalWeeks ? ` · Week ${u.currentWeek || 1} of ${u.totalWeeks}` : "";
+  const weekInfo = u.totalWeeks ? `Week ${u.currentWeek || 1} of ${u.totalWeeks}` : "";
   const phases = getPhasesForTemplate(u.templateId, u.totalWeeks);
   const phase = phases ? phaseForWeek(phases, u.currentWeek || 1) : null;
-  const phaseLabel = phase ? ` · <span style="color:${phase.color}">${phase.name}</span>` : "";
+  const metaParts = [];
+  if (weekInfo) metaParts.push(`<span class="paper-settings-meta-item">${weekInfo}</span>`);
+  if (phase) metaParts.push(`<span class="paper-settings-meta-item" style="color:${phase.color};">${phase.name}</span>`);
+  const metaHtml = metaParts.length
+    ? `<div class="paper-settings-meta">${metaParts.join('<span class="paper-settings-meta-dot">·</span>')}</div>`
+    : "";
   el.innerHTML = `
-    <div class="program-current">
-      <div class="program-info">
-        <div class="name">${tpl.name}</div>
-        <div class="desc">${tpl.description}</div>
-        <div class="desc" style="margin-top:2px;font-weight:600;">${weekInfo}${phaseLabel}</div>
+    <div class="paper-settings-block">
+      <div class="paper-settings-title">${tpl.name}</div>
+      <div class="paper-settings-sub">${tpl.description}</div>
+      ${metaHtml}
+      <div class="paper-settings-actions">
+        <button class="paper-stamp-btn" onclick="openProgramPicker()">Change Program</button>
+        ${u.totalWeeks ? '<button class="paper-link-btn" onclick="openWeekControl()">Week ▾</button>' : ''}
       </div>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:8px;">
-      <button class="program-change-btn" style="flex:1" onclick="openProgramPicker()">Change Program</button>
-      ${u.totalWeeks ? '<button class="program-change-btn" style="flex:0 0 auto;padding:8px 12px;" onclick="openWeekControl()">Week</button>' : ''}
     </div>
   `;
 }
@@ -19815,16 +20730,16 @@ function renderUserSection() {
   container.innerHTML = "";
   s.users.forEach(u => {
     const row = document.createElement("div");
-    row.className = "user-row" + (u.id === state.userId ? " active" : "");
+    row.className = "paper-user-row" + (u.id === state.userId ? " is-active" : "");
     row.innerHTML = `
-      <div class="avatar">${(u.name.trim()[0] || "U").toUpperCase()}</div>
-      <div class="name"></div>
-      <button class="row-icon-btn" title="Rename" data-action="rename">✎</button>
-      <button class="row-icon-btn danger" title="Delete" data-action="delete">🗑</button>
+      <div class="paper-user-avatar">${(u.name.trim()[0] || "U").toUpperCase()}</div>
+      <div class="paper-user-name"></div>
+      <button class="paper-user-icon-btn" title="Rename" data-action="rename" aria-label="Rename">✎</button>
+      <button class="paper-user-icon-btn danger" title="Delete" data-action="delete" aria-label="Delete">🗑</button>
     `;
-    row.querySelector(".name").textContent = u.name;
+    row.querySelector(".paper-user-name").textContent = u.name;
     row.addEventListener("click", (e) => {
-      if (e.target.closest(".row-icon-btn")) return;
+      if (e.target.closest(".paper-user-icon-btn")) return;
       switchUser(u.id);
       renderUserSection();
       renderUserChip();
@@ -19841,7 +20756,7 @@ function renderUserSection() {
     container.appendChild(row);
   });
   const addBtn = document.createElement("button");
-  addBtn.className = "user-add-row";
+  addBtn.className = "paper-add-row";
   addBtn.textContent = "＋ Add new user";
   addBtn.onclick = openAddUserDialog;
   container.appendChild(addBtn);
@@ -22554,25 +23469,34 @@ function renderProfileCard() {
     const bwText = ob.bodyWeight ? (ob.bodyWeight + " " + (s.unit || "lbs")) : "—";
     const ssText = ob.smartSuggestions === "yes" ? "On" : (ob.smartSuggestions === "no" ? "Off" : "—");
 
+    const goalText = (ob.goals && ob.goals.length ? ob.goals.map(g => goalLabels[g] || g).join(", ") : goalLabels[ob.goal] || ob.goal) || "—";
+    const eqText = ob.equipmentDetail && ob.equipmentDetail.length
+      ? ob.equipmentDetail.map(t => EQUIPMENT_LABELS[t] || t).join(", ")
+      : (eqLabels[ob.equipment] || ob.equipment || "—");
+    const goalLabel = "Goal" + (((ob.goals && ob.goals.length > 1) || false) ? "s" : "");
     el.innerHTML = `
-      <div class="profile-summary">
-        <div class="profile-row"><span class="profile-label">Goal${((ob.goals && ob.goals.length > 1) || false) ? "s" : ""}</span><span class="profile-value">${(ob.goals && ob.goals.length ? ob.goals.map(g => goalLabels[g] || g).join(", ") : goalLabels[ob.goal] || ob.goal) || "—"}</span></div>
-        <div class="profile-row"><span class="profile-label">Physique</span><span class="profile-value">${ppText}</span></div>
-        <div class="profile-row"><span class="profile-label">Experience</span><span class="profile-value">${expLabels[ob.experience] || ob.experience || "—"}</span></div>
-        <div class="profile-row"><span class="profile-label">Days / week</span><span class="profile-value">${ob.days || "—"}</span></div>
-        <div class="profile-row"><span class="profile-label">Equipment</span><span class="profile-value">${ob.equipmentDetail && ob.equipmentDetail.length ? ob.equipmentDetail.map(t => EQUIPMENT_LABELS[t] || t).join(", ") : (eqLabels[ob.equipment] || ob.equipment || "—")}</span></div>
-        <div class="profile-row"><span class="profile-label">Body Weight</span><span class="profile-value">${bwText}</span></div>
-        <div class="profile-row"><span class="profile-label">Smart Suggestions</span><span class="profile-value">${ssText}</span></div>
-        <div class="profile-row"><span class="profile-label">Flags</span><span class="profile-value">${injText}</span></div>
+      <div class="paper-profile-list">
+        <div class="paper-profile-row"><span class="paper-profile-label">${goalLabel}</span><span class="paper-profile-value">${goalText}</span></div>
+        <div class="paper-profile-row"><span class="paper-profile-label">Physique</span><span class="paper-profile-value">${ppText}</span></div>
+        <div class="paper-profile-row"><span class="paper-profile-label">Experience</span><span class="paper-profile-value">${expLabels[ob.experience] || ob.experience || "—"}</span></div>
+        <div class="paper-profile-row"><span class="paper-profile-label">Days / week</span><span class="paper-profile-value">${ob.days || "—"}</span></div>
+        <div class="paper-profile-row"><span class="paper-profile-label">Equipment</span><span class="paper-profile-value">${eqText}</span></div>
+        <div class="paper-profile-row"><span class="paper-profile-label">Body Weight</span><span class="paper-profile-value">${bwText}</span></div>
+        <div class="paper-profile-row"><span class="paper-profile-label">Smart Suggestions</span><span class="paper-profile-value">${ssText}</span></div>
+        <div class="paper-profile-row"><span class="paper-profile-label">Flags</span><span class="paper-profile-value">${injText}</span></div>
       </div>
-      <button class="program-change-btn" onclick="showOnboardingFlow(true)">Update Training Profile</button>
+      <div class="paper-settings-actions">
+        <button class="paper-stamp-btn" onclick="showOnboardingFlow(true)">Update Training Profile</button>
+      </div>
     `;
   } else {
     el.innerHTML = `
-      <p style="color:var(--text-dim);font-size:13px;line-height:1.5;margin:0 0 10px;">
+      <p class="paper-settings-sub" style="margin:0 0 12px;">
         Complete the training questionnaire to get personalized program recommendations and exercise safety flags.
       </p>
-      <button class="program-change-btn" onclick="showOnboardingFlow(true)">Complete Questionnaire</button>
+      <div class="paper-settings-actions">
+        <button class="paper-stamp-btn" onclick="showOnboardingFlow(true)">Complete Questionnaire</button>
+      </div>
     `;
   }
 }
@@ -23702,6 +24626,17 @@ function paperRenderBlock(day, block, bi) {
     <span class="paper-superset-rest">${restStr}</span>
     <button class="paper-block-menu" aria-label="Block menu">&middot;&middot;&middot;</button>
   `;
+  // Whole superset header is tappable → opens focus view.
+  label.setAttribute("role", "button");
+  label.setAttribute("tabindex", "0");
+  label.title = "Tap to focus on this block";
+  label.addEventListener("click", (e) => {
+    if (e.target.closest("button, input, [contenteditable]")) return;
+    state.workoutView = "focus";
+    state.focusBlockIdx = bi;
+    state.focusExIdx = 0;
+    if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
+  });
   const menuBtn = label.querySelector(".paper-block-menu");
   menuBtn.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -23774,9 +24709,26 @@ function paperRenderExercise(day, block, ex, bi, ei, isSuperset) {
       <span class="paper-ex-name">${escapeHtml(ex.name || "")}</span>
     </div>
     <div class="paper-ex-target">${targetSpec}</div>
+    <button class="paper-ex-edit" aria-label="Edit sets" title="Edit sets">&#9998;</button>
     <button class="paper-ex-swap" aria-label="Swap exercise">&hArr;</button>
     <button class="paper-ex-menu" aria-label="Exercise menu">&middot;&middot;&middot;</button>
   `;
+  const editBtn = head.querySelector(".paper-ex-edit");
+  editBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (typeof openSetEditor !== "function") return;
+    const lib = (typeof LIB_BY_ID !== "undefined") ? (LIB_BY_ID[ex.exId] || ex) : ex;
+    const bw = lib.bodyweight;
+    // Open editor on first incomplete set (fallback to set 0).
+    const nSets = ex.sets || 3;
+    let target = 0;
+    for (let i = 0; i < nSets; i++) {
+      const st = (typeof getInput === "function")
+        ? getInput(inputKey(block.id, ei, i, "status"), null) : null;
+      if (st !== "done") { target = i; break; }
+    }
+    openSetEditor(block, ex, bi, ei, target, bw);
+  });
   const swapBtn = head.querySelector(".paper-ex-swap");
   swapBtn.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -24042,11 +24994,12 @@ function paperRebuildBottomNav() {
   if (!nav || nav.dataset.paperBuilt === "1") return;
   // Determine current active tab from the existing buttons (which screen has .active class on its section)
   const tabs = [
-    { id: "timer",   label: "Timer",   screen: null,      onClick: "openStandaloneTimer()" },
-    { id: "workout", label: "Lift",    screen: "workout" },
-    { id: "history", label: "Log",     screen: "history" },
-    { id: "prs",     label: "PRs",     screen: "prs" },
-    { id: "body",    label: "Body",    screen: "body" },
+    { id: "timer",    label: "Timer",    screen: null,       onClick: "openStandaloneTimer()" },
+    { id: "workout",  label: "Lift",     screen: "workout"  },
+    { id: "history",  label: "Log",      screen: "history"  },
+    { id: "prs",      label: "PRs",      screen: "prs"      },
+    { id: "body",     label: "Body",     screen: "body"     },
+    { id: "settings", label: "Settings", screen: "settings" },
   ];
   const inkColor = paperInkColor();
   nav.innerHTML = `
@@ -24279,6 +25232,388 @@ function paperBuildDayCard(d, isHero) {
   return card;
 }
 
+// ============================================================
+// PAPER FOCUS VIEW — single-superset page (SupersetFocusScreen)
+// Mirrors /tmp/design-bundle/.../paper-other-screens.jsx:813.
+// Reuses paperRenderSetsTable for set rows (same handlers).
+// ============================================================
+
+// Find the first not-done set in a block. Returns { exIdx, setIdx, allDone }.
+function paperFindActiveSet(block) {
+  if (!block || !block.exercises) return { exIdx: 0, setIdx: 0, allDone: true };
+  for (let ei = 0; ei < block.exercises.length; ei++) {
+    const ex = block.exercises[ei];
+    if (ex.isWarmup) continue;
+    const nSets = ex.sets || 3;
+    for (let si = 0; si < nSets; si++) {
+      const st = (typeof getInput === "function")
+        ? getInput(inputKey(block.id, ei, si, "status"), null) : null;
+      if (st !== "done") return { exIdx: ei, setIdx: si, allDone: false };
+    }
+  }
+  return { exIdx: 0, setIdx: 0, allDone: true };
+}
+
+// Find the next non-cooldown block index after/before bi, or null at endpoints.
+function paperFindNextBlockIdx(day, bi, dir) {
+  if (!day || !day.blocks) return null;
+  const step = dir > 0 ? 1 : -1;
+  for (let i = bi + step; i >= 0 && i < day.blocks.length; i += step) {
+    return i;
+  }
+  return null;
+}
+
+function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone) {
+  const bar = document.createElement("div");
+  bar.className = "paper-action-bar";
+
+  const ex = block.exercises[activeExIdx] || block.exercises[0];
+  const lib = (typeof LIB_BY_ID !== "undefined") ? (LIB_BY_ID[ex.exId] || ex) : ex;
+  const bw = lib.bodyweight;
+  const isKg = (typeof state !== "undefined" && state.unit === "kg");
+  const unit = isKg ? "kg" : "lb";
+  const step = isKg ? 2.5 : 5;
+
+  // EDITING label
+  const lbl = document.createElement("div");
+  lbl.className = "paper-action-edit-label";
+  if (allDone) {
+    lbl.innerHTML = `<span class="pa-label-pre">EDITING &rarr;</span> <span class="pa-label-target">${escapeHtml(block.name || "")} &middot; ALL DONE</span>`;
+  } else {
+    lbl.innerHTML = `<span class="pa-label-pre">EDITING &rarr;</span> <span class="pa-label-target">${escapeHtml(ex.name || "")} &middot; Set ${activeSetIdx + 1}</span>`;
+  }
+  bar.appendChild(lbl);
+
+  const row = document.createElement("div");
+  row.className = "paper-action-row";
+
+  // REST button
+  const restBtn = document.createElement("button");
+  restBtn.className = "paper-action-rest";
+  const restSec = (ex.rest != null ? ex.rest
+                    : (block.exercises[0] && block.exercises[0].rest != null
+                       ? block.exercises[0].rest : 90));
+  const restStr = (typeof formatRest === "function") ? formatRest(restSec) : (restSec + "s");
+  restBtn.innerHTML = `
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+         style="filter:url(#paper-roughen);">
+      <circle cx="12" cy="13" r="8"/>
+      <path d="M12 9v4l2 2"/>
+      <line x1="9" y1="2" x2="15" y2="2"/>
+      <line x1="12" y1="2" x2="12" y2="4"/>
+    </svg>
+    <span class="pa-rest-lbl">Rest</span>
+    <span class="pa-rest-val">${restStr}</span>
+  `;
+  restBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (typeof showHeaderRest === "function") showHeaderRest(restSec);
+    if (navigator.vibrate) navigator.vibrate(10);
+  });
+  row.appendChild(restBtn);
+
+  // WEIGHT stepper (skip for bodyweight)
+  const wWrap = document.createElement("div");
+  wWrap.className = "paper-action-weight";
+  if (bw) {
+    wWrap.classList.add("paper-action-weight-bw");
+    wWrap.innerHTML = `<div class="pa-weight-label">Weight</div><div class="pa-weight-bw">BW</div>`;
+  } else {
+    const wkey = inputKey(block.id, activeExIdx, activeSetIdx, "w");
+    const last = (typeof getLastSetsFor === "function") ? getLastSetsFor(ex.exId || ex.name) : [];
+    const lastSet = last[activeSetIdx] || last[last.length - 1];
+    const cur = (typeof getInput === "function")
+      ? getInput(wkey, lastSet?.weight ?? ex.defaultWeight ?? 0) : 0;
+    wWrap.innerHTML = `
+      <div class="pa-weight-label">Weight</div>
+      <div class="pa-weight-row">
+        <button class="pa-weight-step pa-weight-minus" aria-label="Decrease weight">&minus;</button>
+        <div class="pa-weight-val"><span class="pa-weight-num">${cur}</span><span class="pa-weight-unit">${unit}</span></div>
+        <button class="pa-weight-step pa-weight-plus" aria-label="Increase weight">+</button>
+      </div>
+    `;
+    const minus = wWrap.querySelector(".pa-weight-minus");
+    const plus = wWrap.querySelector(".pa-weight-plus");
+    const apply = (delta) => {
+      const v = Math.max(0, Number(cur) + delta);
+      if (typeof saveInput === "function") saveInput(wkey, v);
+      if (navigator.vibrate) navigator.vibrate(5);
+      if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
+    };
+    minus.addEventListener("click", (e) => { e.stopPropagation(); apply(-step); });
+    plus.addEventListener("click", (e) => { e.stopPropagation(); apply(+step); });
+  }
+  row.appendChild(wWrap);
+
+  // SWAP button
+  const swapBtn = document.createElement("button");
+  swapBtn.className = "paper-action-swap";
+  swapBtn.innerHTML = `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+         style="filter:url(#paper-roughen);">
+      <path d="M3 7 L17 7 L13 3"/>
+      <path d="M21 17 L7 17 L11 21"/>
+    </svg>
+    <span>Swap</span>
+  `;
+  swapBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (typeof openSidebar === "function") {
+      const libEx = (typeof LIB_BY_ID !== "undefined") ? LIB_BY_ID[ex.exId] : null;
+      const cat = libEx ? libEx.cat : (block.type === "warmup" ? "Warmup" : null);
+      openSidebar(cat, state.focusBlockIdx, activeExIdx);
+    }
+  });
+  row.appendChild(swapBtn);
+
+  // LOG SET — primary stamp
+  const logBtn = document.createElement("button");
+  logBtn.className = "paper-action-log";
+  logBtn.disabled = !!allDone;
+  logBtn.innerHTML = `
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 12 l5 5 L20 6"/>
+    </svg>
+    <span>Log set</span>
+  `;
+  logBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (allDone) return;
+    const statusKey = inputKey(block.id, activeExIdx, activeSetIdx, "status");
+    if (typeof saveInput === "function") saveInput(statusKey, "done");
+    if (typeof showHeaderRest === "function") showHeaderRest(restSec);
+    if (navigator.vibrate) navigator.vibrate(15);
+    if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
+  });
+  row.appendChild(logBtn);
+
+  bar.appendChild(row);
+  return bar;
+}
+
+function paperRenderFocusView(container, day) {
+  if (!day || !day.blocks || !day.blocks.length) return;
+  // Clamp focusBlockIdx into a real block range (no cooldown handling here).
+  let bi = state.focusBlockIdx;
+  if (bi == null || bi < 0 || bi >= day.blocks.length) bi = 0;
+  state.focusBlockIdx = bi;
+  const block = day.blocks[bi];
+  const total = day.blocks.length;
+
+  const wrap = document.createElement("div");
+  wrap.className = "paper-focus-view";
+
+  // ── TOP BAR ──
+  const top = document.createElement("div");
+  top.className = "paper-focus-topbar";
+
+  const back = document.createElement("button");
+  back.className = "paper-focus-back";
+  back.setAttribute("aria-label", "Back to overview");
+  back.innerHTML = `
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+         style="filter:url(#paper-roughen);">
+      <path d="M13 4 L6 10 L13 16"/>
+    </svg>
+  `;
+  const exitFocus = () => {
+    state.workoutView = "chapters";
+    state.focusBlockIdx = null;
+    state.focusExIdx = 0;
+    if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
+  };
+  back.addEventListener("click", (e) => { e.stopPropagation(); exitFocus(); });
+  top.appendChild(back);
+
+  const crumb = document.createElement("div");
+  crumb.className = "paper-focus-breadcrumb";
+  crumb.textContent = day.name || day.label || "Workout";
+  top.appendChild(crumb);
+
+  const pageInd = document.createElement("div");
+  pageInd.className = "paper-focus-pageind";
+  pageInd.textContent = (bi + 1) + " / " + total;
+  top.appendChild(pageInd);
+
+  const close = document.createElement("button");
+  close.className = "paper-focus-close";
+  close.setAttribute("aria-label", "Close focus view");
+  close.innerHTML = `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round"
+         style="filter:url(#paper-roughen);">
+      <path d="M6 6 L18 18 M18 6 L6 18"/>
+    </svg>
+  `;
+  close.addEventListener("click", (e) => { e.stopPropagation(); exitFocus(); });
+  top.appendChild(close);
+
+  wrap.appendChild(top);
+
+  // ── TITLE ROW with prev/next chevrons ──
+  const titleRow = document.createElement("div");
+  titleRow.className = "paper-focus-title-row";
+
+  const prevIdx = paperFindNextBlockIdx(day, bi, -1);
+  const nextIdx = paperFindNextBlockIdx(day, bi, +1);
+
+  const prevChev = document.createElement("button");
+  prevChev.className = "paper-focus-chev paper-focus-chev-prev" + (prevIdx == null ? " disabled" : "");
+  prevChev.setAttribute("aria-label", "Previous block");
+  prevChev.disabled = prevIdx == null;
+  prevChev.innerHTML = `
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+         style="filter:url(#paper-roughen);">
+      <path d="M15 5 L8 12 L15 19"/>
+    </svg>
+  `;
+  prevChev.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (prevIdx == null) return;
+    state.focusBlockIdx = prevIdx;
+    state.focusExIdx = 0;
+    if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
+  });
+  titleRow.appendChild(prevChev);
+
+  const title = document.createElement("div");
+  title.className = "paper-focus-title";
+  const isSuperset = (block.exercises || []).length > 1;
+  // NOW marker lives on the superset title — user works the whole superset,
+  // not one exercise at a time.
+  const blockHasIncomplete = (() => {
+    for (const ex of (block.exercises || [])) {
+      if (ex.isWarmup) continue;
+      const n = ex.sets || 3;
+      for (let i = 0; i < n; i++) {
+        const st = (typeof getInput === "function")
+          ? getInput(inputKey(block.id, 0, i, "status"), null) : null;
+        if (st !== "done") return true;
+      }
+    }
+    return false;
+  })();
+  title.innerHTML = `<span class="paper-focus-title-name">${escapeHtml((block.name || "") + (isSuperset ? " (superset)" : ""))}</span>${blockHasIncomplete ? '<span class="paper-focus-title-now">&middot; NOW</span>' : ''}`;
+  titleRow.appendChild(title);
+
+  const nextChev = document.createElement("button");
+  nextChev.className = "paper-focus-chev paper-focus-chev-next" + (nextIdx == null ? " disabled" : "");
+  nextChev.setAttribute("aria-label", "Next block");
+  nextChev.disabled = nextIdx == null;
+  nextChev.innerHTML = `
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+         style="filter:url(#paper-roughen);">
+      <path d="M9 5 L16 12 L9 19"/>
+    </svg>
+  `;
+  nextChev.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (nextIdx == null) return;
+    state.focusBlockIdx = nextIdx;
+    state.focusExIdx = 0;
+    if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
+  });
+  titleRow.appendChild(nextChev);
+
+  wrap.appendChild(titleRow);
+
+  // Rest hint
+  const restLine = document.createElement("div");
+  restLine.className = "paper-focus-restline";
+  const restSec = block.exercises[0]?.rest;
+  if (restSec) {
+    const fmt = (typeof formatRest === "function") ? formatRest(restSec) : (restSec + "s");
+    restLine.textContent = "rest " + fmt + " between rounds";
+  }
+  wrap.appendChild(restLine);
+
+  // ── EXERCISE LIST ──
+  const active = paperFindActiveSet(block);
+  const exList = document.createElement("div");
+  exList.className = "paper-focus-exlist";
+  (block.exercises || []).forEach((ex, ei) => {
+    // In a superset, all partner exercises are equally "active" — user is
+    // working the whole superset. No per-exercise size/emphasis distinction.
+    const exWrap = document.createElement("div");
+    exWrap.className = "paper-focus-exercise";
+
+    const head = document.createElement("div");
+    head.className = "paper-focus-ex-head";
+    const numLabel = `${block.letter}${isSuperset ? (ei + 1) : ""}`;
+    const nSets = ex.sets || 3;
+    let targetSpec = `${nSets} &times; ${ex.reps || "?"}`;
+    if (ex.tempo) targetSpec += ` &middot; ${ex.tempo}`;
+    head.innerHTML = `
+      <div class="paper-focus-ex-left">
+        <span class="paper-focus-ex-no">${numLabel}</span>
+        <span class="paper-focus-ex-name">${escapeHtml(ex.name || "")}</span>
+      </div>
+      <span class="paper-focus-ex-target">${targetSpec}</span>
+    `;
+    exWrap.appendChild(head);
+
+    if (ex.notes) {
+      const noteWrap = document.createElement("div");
+      noteWrap.className = "paper-focus-ex-note";
+      noteWrap.innerHTML = (typeof paperMarginNote === "function")
+        ? paperMarginNote(escapeHtml(ex.notes), (typeof PAPER !== "undefined" ? PAPER.inkRed : "#a83a2a"))
+        : `<div class="paper-margin-note">${escapeHtml(ex.notes)}</div>`;
+      exWrap.appendChild(noteWrap);
+    }
+
+    if (!ex.isWarmup) {
+      exWrap.appendChild(paperRenderSetsTable(block, ex, bi, ei));
+    } else {
+      const w = document.createElement("button");
+      w.className = "paper-warmup-done";
+      w.textContent = "☐ mark warm-up done";
+      w.addEventListener("click", function() {
+        this.classList.toggle("done");
+        this.textContent = this.classList.contains("done") ? "☒ warm-up done" : "☐ mark warm-up done";
+        if (navigator.vibrate) navigator.vibrate(10);
+      });
+      exWrap.appendChild(w);
+    }
+
+    exList.appendChild(exWrap);
+  });
+  wrap.appendChild(exList);
+
+  // ── PAGE DOTS ──
+  const dots = document.createElement("div");
+  dots.className = "paper-focus-dots";
+  for (let i = 0; i < total; i++) {
+    const d = document.createElement("button");
+    d.className = "paper-focus-dot" + (i === bi ? " active" : "");
+    d.setAttribute("aria-label", "Go to block " + (i + 1));
+    d.addEventListener("click", (e) => {
+      e.stopPropagation();
+      state.focusBlockIdx = i;
+      state.focusExIdx = 0;
+      if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
+    });
+    dots.appendChild(d);
+  }
+  wrap.appendChild(dots);
+
+  const swipeHint = document.createElement("div");
+  swipeHint.className = "paper-focus-swipe-hint";
+  swipeHint.textContent = "← swipe between blocks →";
+  wrap.appendChild(swipeHint);
+
+  // ── ACTION BAR ──
+  wrap.appendChild(paperBuildActionBar(day, block, active.exIdx, active.setIdx, active.allDone));
+
+  container.appendChild(wrap);
+}
+
 if (typeof window !== "undefined") {
   window.paperRenderBlock = paperRenderBlock;
   window.paperRenderExercise = paperRenderExercise;
@@ -24288,6 +25623,9 @@ if (typeof window !== "undefined") {
   window.paperUpdateActiveNavTab = paperUpdateActiveNavTab;
   window.paperRenderDayPicker = paperRenderDayPicker;
   window.paperBuildDayCard = paperBuildDayCard;
+  window.paperRenderFocusView = paperRenderFocusView;
+  window.paperBuildActionBar = paperBuildActionBar;
+  window.paperFindActiveSet = paperFindActiveSet;
 }
 
 

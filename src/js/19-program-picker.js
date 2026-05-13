@@ -66,21 +66,24 @@ function renderProgramPicker() {
   const u = userData();
   if (!u) { el.innerHTML = ''; return; }
   const tpl = PROGRAM_TEMPLATES.find(t => t.id === u.templateId) || PROGRAM_TEMPLATES[0];
-  const weekInfo = u.totalWeeks ? ` · Week ${u.currentWeek || 1} of ${u.totalWeeks}` : "";
+  const weekInfo = u.totalWeeks ? `Week ${u.currentWeek || 1} of ${u.totalWeeks}` : "";
   const phases = getPhasesForTemplate(u.templateId, u.totalWeeks);
   const phase = phases ? phaseForWeek(phases, u.currentWeek || 1) : null;
-  const phaseLabel = phase ? ` · <span style="color:${phase.color}">${phase.name}</span>` : "";
+  const metaParts = [];
+  if (weekInfo) metaParts.push(`<span class="paper-settings-meta-item">${weekInfo}</span>`);
+  if (phase) metaParts.push(`<span class="paper-settings-meta-item" style="color:${phase.color};">${phase.name}</span>`);
+  const metaHtml = metaParts.length
+    ? `<div class="paper-settings-meta">${metaParts.join('<span class="paper-settings-meta-dot">·</span>')}</div>`
+    : "";
   el.innerHTML = `
-    <div class="program-current">
-      <div class="program-info">
-        <div class="name">${tpl.name}</div>
-        <div class="desc">${tpl.description}</div>
-        <div class="desc" style="margin-top:2px;font-weight:600;">${weekInfo}${phaseLabel}</div>
+    <div class="paper-settings-block">
+      <div class="paper-settings-title">${tpl.name}</div>
+      <div class="paper-settings-sub">${tpl.description}</div>
+      ${metaHtml}
+      <div class="paper-settings-actions">
+        <button class="paper-stamp-btn" onclick="openProgramPicker()">Change Program</button>
+        ${u.totalWeeks ? '<button class="paper-link-btn" onclick="openWeekControl()">Week ▾</button>' : ''}
       </div>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:8px;">
-      <button class="program-change-btn" style="flex:1" onclick="openProgramPicker()">Change Program</button>
-      ${u.totalWeeks ? '<button class="program-change-btn" style="flex:0 0 auto;padding:8px 12px;" onclick="openWeekControl()">Week</button>' : ''}
     </div>
   `;
 }

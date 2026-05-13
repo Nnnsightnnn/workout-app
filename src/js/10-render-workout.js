@@ -285,13 +285,16 @@ function renderWorkoutScreen() {
     return;
   }
 
-  // Paper skin: always use the chapters/notepad view (flat paper rows).
-  // Focus view will get its own paper-styled rebuild in a follow-up; until
-  // then, the notepad layout is the user-facing surface for active workouts.
+  // Paper skin dispatcher: focus view goes to the paper-styled rebuild;
+  // the chunky renderFocusView path is kept for the non-paper fallback.
   const _paperOn = (typeof isPaperSkin === "function" && isPaperSkin());
 
   // View dispatcher: focus view or chapters (scrollable overview)
-  if (!_paperOn && state.workoutView === "focus" && state.focusBlockIdx != null) {
+  if (_paperOn && state.workoutView === "focus" && state.focusBlockIdx != null
+      && state.focusBlockIdx >= 0 && typeof paperRenderFocusView === "function") {
+    paperRenderFocusView(container, day);
+    if (state.workoutStartedAt) renderStatsBar(container, day);
+  } else if (!_paperOn && state.workoutView === "focus" && state.focusBlockIdx != null) {
     renderFocusView(container, day);
     if (state.workoutStartedAt) renderStatsBar(container, day);
   } else {

@@ -25,6 +25,17 @@ function paperRenderBlock(day, block, bi) {
     <span class="paper-superset-rest">${restStr}</span>
     <button class="paper-block-menu" aria-label="Block menu">&middot;&middot;&middot;</button>
   `;
+  // Whole superset header is tappable → opens focus view.
+  label.setAttribute("role", "button");
+  label.setAttribute("tabindex", "0");
+  label.title = "Tap to focus on this block";
+  label.addEventListener("click", (e) => {
+    if (e.target.closest("button, input, [contenteditable]")) return;
+    state.workoutView = "focus";
+    state.focusBlockIdx = bi;
+    state.focusExIdx = 0;
+    if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
+  });
   const menuBtn = label.querySelector(".paper-block-menu");
   menuBtn.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -97,9 +108,26 @@ function paperRenderExercise(day, block, ex, bi, ei, isSuperset) {
       <span class="paper-ex-name">${escapeHtml(ex.name || "")}</span>
     </div>
     <div class="paper-ex-target">${targetSpec}</div>
+    <button class="paper-ex-edit" aria-label="Edit sets" title="Edit sets">&#9998;</button>
     <button class="paper-ex-swap" aria-label="Swap exercise">&hArr;</button>
     <button class="paper-ex-menu" aria-label="Exercise menu">&middot;&middot;&middot;</button>
   `;
+  const editBtn = head.querySelector(".paper-ex-edit");
+  editBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (typeof openSetEditor !== "function") return;
+    const lib = (typeof LIB_BY_ID !== "undefined") ? (LIB_BY_ID[ex.exId] || ex) : ex;
+    const bw = lib.bodyweight;
+    // Open editor on first incomplete set (fallback to set 0).
+    const nSets = ex.sets || 3;
+    let target = 0;
+    for (let i = 0; i < nSets; i++) {
+      const st = (typeof getInput === "function")
+        ? getInput(inputKey(block.id, ei, i, "status"), null) : null;
+      if (st !== "done") { target = i; break; }
+    }
+    openSetEditor(block, ex, bi, ei, target, bw);
+  });
   const swapBtn = head.querySelector(".paper-ex-swap");
   swapBtn.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -365,11 +393,12 @@ function paperRebuildBottomNav() {
   if (!nav || nav.dataset.paperBuilt === "1") return;
   // Determine current active tab from the existing buttons (which screen has .active class on its section)
   const tabs = [
-    { id: "timer",   label: "Timer",   screen: null,      onClick: "openStandaloneTimer()" },
-    { id: "workout", label: "Lift",    screen: "workout" },
-    { id: "history", label: "Log",     screen: "history" },
-    { id: "prs",     label: "PRs",     screen: "prs" },
-    { id: "body",    label: "Body",    screen: "body" },
+    { id: "timer",    label: "Timer",    screen: null,       onClick: "openStandaloneTimer()" },
+    { id: "workout",  label: "Lift",     screen: "workout"  },
+    { id: "history",  label: "Log",      screen: "history"  },
+    { id: "prs",      label: "PRs",      screen: "prs"      },
+    { id: "body",     label: "Body",     screen: "body"     },
+    { id: "settings", label: "Settings", screen: "settings" },
   ];
   const inkColor = paperInkColor();
   nav.innerHTML = `
@@ -602,6 +631,388 @@ function paperBuildDayCard(d, isHero) {
   return card;
 }
 
+// ============================================================
+// PAPER FOCUS VIEW — single-superset page (SupersetFocusScreen)
+// Mirrors /tmp/design-bundle/.../paper-other-screens.jsx:813.
+// Reuses paperRenderSetsTable for set rows (same handlers).
+// ============================================================
+
+// Find the first not-done set in a block. Returns { exIdx, setIdx, allDone }.
+function paperFindActiveSet(block) {
+  if (!block || !block.exercises) return { exIdx: 0, setIdx: 0, allDone: true };
+  for (let ei = 0; ei < block.exercises.length; ei++) {
+    const ex = block.exercises[ei];
+    if (ex.isWarmup) continue;
+    const nSets = ex.sets || 3;
+    for (let si = 0; si < nSets; si++) {
+      const st = (typeof getInput === "function")
+        ? getInput(inputKey(block.id, ei, si, "status"), null) : null;
+      if (st !== "done") return { exIdx: ei, setIdx: si, allDone: false };
+    }
+  }
+  return { exIdx: 0, setIdx: 0, allDone: true };
+}
+
+// Find the next non-cooldown block index after/before bi, or null at endpoints.
+function paperFindNextBlockIdx(day, bi, dir) {
+  if (!day || !day.blocks) return null;
+  const step = dir > 0 ? 1 : -1;
+  for (let i = bi + step; i >= 0 && i < day.blocks.length; i += step) {
+    return i;
+  }
+  return null;
+}
+
+function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone) {
+  const bar = document.createElement("div");
+  bar.className = "paper-action-bar";
+
+  const ex = block.exercises[activeExIdx] || block.exercises[0];
+  const lib = (typeof LIB_BY_ID !== "undefined") ? (LIB_BY_ID[ex.exId] || ex) : ex;
+  const bw = lib.bodyweight;
+  const isKg = (typeof state !== "undefined" && state.unit === "kg");
+  const unit = isKg ? "kg" : "lb";
+  const step = isKg ? 2.5 : 5;
+
+  // EDITING label
+  const lbl = document.createElement("div");
+  lbl.className = "paper-action-edit-label";
+  if (allDone) {
+    lbl.innerHTML = `<span class="pa-label-pre">EDITING &rarr;</span> <span class="pa-label-target">${escapeHtml(block.name || "")} &middot; ALL DONE</span>`;
+  } else {
+    lbl.innerHTML = `<span class="pa-label-pre">EDITING &rarr;</span> <span class="pa-label-target">${escapeHtml(ex.name || "")} &middot; Set ${activeSetIdx + 1}</span>`;
+  }
+  bar.appendChild(lbl);
+
+  const row = document.createElement("div");
+  row.className = "paper-action-row";
+
+  // REST button
+  const restBtn = document.createElement("button");
+  restBtn.className = "paper-action-rest";
+  const restSec = (ex.rest != null ? ex.rest
+                    : (block.exercises[0] && block.exercises[0].rest != null
+                       ? block.exercises[0].rest : 90));
+  const restStr = (typeof formatRest === "function") ? formatRest(restSec) : (restSec + "s");
+  restBtn.innerHTML = `
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+         style="filter:url(#paper-roughen);">
+      <circle cx="12" cy="13" r="8"/>
+      <path d="M12 9v4l2 2"/>
+      <line x1="9" y1="2" x2="15" y2="2"/>
+      <line x1="12" y1="2" x2="12" y2="4"/>
+    </svg>
+    <span class="pa-rest-lbl">Rest</span>
+    <span class="pa-rest-val">${restStr}</span>
+  `;
+  restBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (typeof showHeaderRest === "function") showHeaderRest(restSec);
+    if (navigator.vibrate) navigator.vibrate(10);
+  });
+  row.appendChild(restBtn);
+
+  // WEIGHT stepper (skip for bodyweight)
+  const wWrap = document.createElement("div");
+  wWrap.className = "paper-action-weight";
+  if (bw) {
+    wWrap.classList.add("paper-action-weight-bw");
+    wWrap.innerHTML = `<div class="pa-weight-label">Weight</div><div class="pa-weight-bw">BW</div>`;
+  } else {
+    const wkey = inputKey(block.id, activeExIdx, activeSetIdx, "w");
+    const last = (typeof getLastSetsFor === "function") ? getLastSetsFor(ex.exId || ex.name) : [];
+    const lastSet = last[activeSetIdx] || last[last.length - 1];
+    const cur = (typeof getInput === "function")
+      ? getInput(wkey, lastSet?.weight ?? ex.defaultWeight ?? 0) : 0;
+    wWrap.innerHTML = `
+      <div class="pa-weight-label">Weight</div>
+      <div class="pa-weight-row">
+        <button class="pa-weight-step pa-weight-minus" aria-label="Decrease weight">&minus;</button>
+        <div class="pa-weight-val"><span class="pa-weight-num">${cur}</span><span class="pa-weight-unit">${unit}</span></div>
+        <button class="pa-weight-step pa-weight-plus" aria-label="Increase weight">+</button>
+      </div>
+    `;
+    const minus = wWrap.querySelector(".pa-weight-minus");
+    const plus = wWrap.querySelector(".pa-weight-plus");
+    const apply = (delta) => {
+      const v = Math.max(0, Number(cur) + delta);
+      if (typeof saveInput === "function") saveInput(wkey, v);
+      if (navigator.vibrate) navigator.vibrate(5);
+      if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
+    };
+    minus.addEventListener("click", (e) => { e.stopPropagation(); apply(-step); });
+    plus.addEventListener("click", (e) => { e.stopPropagation(); apply(+step); });
+  }
+  row.appendChild(wWrap);
+
+  // SWAP button
+  const swapBtn = document.createElement("button");
+  swapBtn.className = "paper-action-swap";
+  swapBtn.innerHTML = `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+         style="filter:url(#paper-roughen);">
+      <path d="M3 7 L17 7 L13 3"/>
+      <path d="M21 17 L7 17 L11 21"/>
+    </svg>
+    <span>Swap</span>
+  `;
+  swapBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (typeof openSidebar === "function") {
+      const libEx = (typeof LIB_BY_ID !== "undefined") ? LIB_BY_ID[ex.exId] : null;
+      const cat = libEx ? libEx.cat : (block.type === "warmup" ? "Warmup" : null);
+      openSidebar(cat, state.focusBlockIdx, activeExIdx);
+    }
+  });
+  row.appendChild(swapBtn);
+
+  // LOG SET — primary stamp
+  const logBtn = document.createElement("button");
+  logBtn.className = "paper-action-log";
+  logBtn.disabled = !!allDone;
+  logBtn.innerHTML = `
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 12 l5 5 L20 6"/>
+    </svg>
+    <span>Log set</span>
+  `;
+  logBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (allDone) return;
+    const statusKey = inputKey(block.id, activeExIdx, activeSetIdx, "status");
+    if (typeof saveInput === "function") saveInput(statusKey, "done");
+    if (typeof showHeaderRest === "function") showHeaderRest(restSec);
+    if (navigator.vibrate) navigator.vibrate(15);
+    if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
+  });
+  row.appendChild(logBtn);
+
+  bar.appendChild(row);
+  return bar;
+}
+
+function paperRenderFocusView(container, day) {
+  if (!day || !day.blocks || !day.blocks.length) return;
+  // Clamp focusBlockIdx into a real block range (no cooldown handling here).
+  let bi = state.focusBlockIdx;
+  if (bi == null || bi < 0 || bi >= day.blocks.length) bi = 0;
+  state.focusBlockIdx = bi;
+  const block = day.blocks[bi];
+  const total = day.blocks.length;
+
+  const wrap = document.createElement("div");
+  wrap.className = "paper-focus-view";
+
+  // ── TOP BAR ──
+  const top = document.createElement("div");
+  top.className = "paper-focus-topbar";
+
+  const back = document.createElement("button");
+  back.className = "paper-focus-back";
+  back.setAttribute("aria-label", "Back to overview");
+  back.innerHTML = `
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+         style="filter:url(#paper-roughen);">
+      <path d="M13 4 L6 10 L13 16"/>
+    </svg>
+  `;
+  const exitFocus = () => {
+    state.workoutView = "chapters";
+    state.focusBlockIdx = null;
+    state.focusExIdx = 0;
+    if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
+  };
+  back.addEventListener("click", (e) => { e.stopPropagation(); exitFocus(); });
+  top.appendChild(back);
+
+  const crumb = document.createElement("div");
+  crumb.className = "paper-focus-breadcrumb";
+  crumb.textContent = day.name || day.label || "Workout";
+  top.appendChild(crumb);
+
+  const pageInd = document.createElement("div");
+  pageInd.className = "paper-focus-pageind";
+  pageInd.textContent = (bi + 1) + " / " + total;
+  top.appendChild(pageInd);
+
+  const close = document.createElement("button");
+  close.className = "paper-focus-close";
+  close.setAttribute("aria-label", "Close focus view");
+  close.innerHTML = `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round"
+         style="filter:url(#paper-roughen);">
+      <path d="M6 6 L18 18 M18 6 L6 18"/>
+    </svg>
+  `;
+  close.addEventListener("click", (e) => { e.stopPropagation(); exitFocus(); });
+  top.appendChild(close);
+
+  wrap.appendChild(top);
+
+  // ── TITLE ROW with prev/next chevrons ──
+  const titleRow = document.createElement("div");
+  titleRow.className = "paper-focus-title-row";
+
+  const prevIdx = paperFindNextBlockIdx(day, bi, -1);
+  const nextIdx = paperFindNextBlockIdx(day, bi, +1);
+
+  const prevChev = document.createElement("button");
+  prevChev.className = "paper-focus-chev paper-focus-chev-prev" + (prevIdx == null ? " disabled" : "");
+  prevChev.setAttribute("aria-label", "Previous block");
+  prevChev.disabled = prevIdx == null;
+  prevChev.innerHTML = `
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+         style="filter:url(#paper-roughen);">
+      <path d="M15 5 L8 12 L15 19"/>
+    </svg>
+  `;
+  prevChev.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (prevIdx == null) return;
+    state.focusBlockIdx = prevIdx;
+    state.focusExIdx = 0;
+    if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
+  });
+  titleRow.appendChild(prevChev);
+
+  const title = document.createElement("div");
+  title.className = "paper-focus-title";
+  const isSuperset = (block.exercises || []).length > 1;
+  // NOW marker lives on the superset title — user works the whole superset,
+  // not one exercise at a time.
+  const blockHasIncomplete = (() => {
+    for (const ex of (block.exercises || [])) {
+      if (ex.isWarmup) continue;
+      const n = ex.sets || 3;
+      for (let i = 0; i < n; i++) {
+        const st = (typeof getInput === "function")
+          ? getInput(inputKey(block.id, 0, i, "status"), null) : null;
+        if (st !== "done") return true;
+      }
+    }
+    return false;
+  })();
+  title.innerHTML = `<span class="paper-focus-title-name">${escapeHtml((block.name || "") + (isSuperset ? " (superset)" : ""))}</span>${blockHasIncomplete ? '<span class="paper-focus-title-now">&middot; NOW</span>' : ''}`;
+  titleRow.appendChild(title);
+
+  const nextChev = document.createElement("button");
+  nextChev.className = "paper-focus-chev paper-focus-chev-next" + (nextIdx == null ? " disabled" : "");
+  nextChev.setAttribute("aria-label", "Next block");
+  nextChev.disabled = nextIdx == null;
+  nextChev.innerHTML = `
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+         style="filter:url(#paper-roughen);">
+      <path d="M9 5 L16 12 L9 19"/>
+    </svg>
+  `;
+  nextChev.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (nextIdx == null) return;
+    state.focusBlockIdx = nextIdx;
+    state.focusExIdx = 0;
+    if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
+  });
+  titleRow.appendChild(nextChev);
+
+  wrap.appendChild(titleRow);
+
+  // Rest hint
+  const restLine = document.createElement("div");
+  restLine.className = "paper-focus-restline";
+  const restSec = block.exercises[0]?.rest;
+  if (restSec) {
+    const fmt = (typeof formatRest === "function") ? formatRest(restSec) : (restSec + "s");
+    restLine.textContent = "rest " + fmt + " between rounds";
+  }
+  wrap.appendChild(restLine);
+
+  // ── EXERCISE LIST ──
+  const active = paperFindActiveSet(block);
+  const exList = document.createElement("div");
+  exList.className = "paper-focus-exlist";
+  (block.exercises || []).forEach((ex, ei) => {
+    // In a superset, all partner exercises are equally "active" — user is
+    // working the whole superset. No per-exercise size/emphasis distinction.
+    const exWrap = document.createElement("div");
+    exWrap.className = "paper-focus-exercise";
+
+    const head = document.createElement("div");
+    head.className = "paper-focus-ex-head";
+    const numLabel = `${block.letter}${isSuperset ? (ei + 1) : ""}`;
+    const nSets = ex.sets || 3;
+    let targetSpec = `${nSets} &times; ${ex.reps || "?"}`;
+    if (ex.tempo) targetSpec += ` &middot; ${ex.tempo}`;
+    head.innerHTML = `
+      <div class="paper-focus-ex-left">
+        <span class="paper-focus-ex-no">${numLabel}</span>
+        <span class="paper-focus-ex-name">${escapeHtml(ex.name || "")}</span>
+      </div>
+      <span class="paper-focus-ex-target">${targetSpec}</span>
+    `;
+    exWrap.appendChild(head);
+
+    if (ex.notes) {
+      const noteWrap = document.createElement("div");
+      noteWrap.className = "paper-focus-ex-note";
+      noteWrap.innerHTML = (typeof paperMarginNote === "function")
+        ? paperMarginNote(escapeHtml(ex.notes), (typeof PAPER !== "undefined" ? PAPER.inkRed : "#a83a2a"))
+        : `<div class="paper-margin-note">${escapeHtml(ex.notes)}</div>`;
+      exWrap.appendChild(noteWrap);
+    }
+
+    if (!ex.isWarmup) {
+      exWrap.appendChild(paperRenderSetsTable(block, ex, bi, ei));
+    } else {
+      const w = document.createElement("button");
+      w.className = "paper-warmup-done";
+      w.textContent = "☐ mark warm-up done";
+      w.addEventListener("click", function() {
+        this.classList.toggle("done");
+        this.textContent = this.classList.contains("done") ? "☒ warm-up done" : "☐ mark warm-up done";
+        if (navigator.vibrate) navigator.vibrate(10);
+      });
+      exWrap.appendChild(w);
+    }
+
+    exList.appendChild(exWrap);
+  });
+  wrap.appendChild(exList);
+
+  // ── PAGE DOTS ──
+  const dots = document.createElement("div");
+  dots.className = "paper-focus-dots";
+  for (let i = 0; i < total; i++) {
+    const d = document.createElement("button");
+    d.className = "paper-focus-dot" + (i === bi ? " active" : "");
+    d.setAttribute("aria-label", "Go to block " + (i + 1));
+    d.addEventListener("click", (e) => {
+      e.stopPropagation();
+      state.focusBlockIdx = i;
+      state.focusExIdx = 0;
+      if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
+    });
+    dots.appendChild(d);
+  }
+  wrap.appendChild(dots);
+
+  const swipeHint = document.createElement("div");
+  swipeHint.className = "paper-focus-swipe-hint";
+  swipeHint.textContent = "← swipe between blocks →";
+  wrap.appendChild(swipeHint);
+
+  // ── ACTION BAR ──
+  wrap.appendChild(paperBuildActionBar(day, block, active.exIdx, active.setIdx, active.allDone));
+
+  container.appendChild(wrap);
+}
+
 if (typeof window !== "undefined") {
   window.paperRenderBlock = paperRenderBlock;
   window.paperRenderExercise = paperRenderExercise;
@@ -611,4 +1022,7 @@ if (typeof window !== "undefined") {
   window.paperUpdateActiveNavTab = paperUpdateActiveNavTab;
   window.paperRenderDayPicker = paperRenderDayPicker;
   window.paperBuildDayCard = paperBuildDayCard;
+  window.paperRenderFocusView = paperRenderFocusView;
+  window.paperBuildActionBar = paperBuildActionBar;
+  window.paperFindActiveSet = paperFindActiveSet;
 }
