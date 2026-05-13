@@ -7155,7 +7155,7 @@ body[data-skin="paper"] .paper-exercise.swap-target::before {
 }
 body[data-skin="paper"] .paper-exercise-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
   margin-bottom: 2px;
 }
@@ -7193,9 +7193,19 @@ body[data-skin="paper"] .paper-ex-menu {
   color: var(--paper-ink-mist);
   font-family: var(--paper-form);
   font-size: 14px;
-  padding: 0 4px;
+  padding: 0;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+}
+body[data-skin="paper"] .paper-ex-swap:active,
+body[data-skin="paper"] .paper-ex-menu:active {
+  color: var(--paper-ink);
 }
 body[data-skin="paper"] .paper-ex-note-wrap {
   padding-left: 22px;
@@ -8394,11 +8404,15 @@ body[data-skin="paper"] .paper-ex-edit {
   color: var(--paper-ink-mist);
   font-family: var(--paper-form);
   font-size: 14px;
-  padding: 6px 4px;
-  min-width: 28px;
-  min-height: 28px;
+  padding: 0;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   line-height: 1;
+  -webkit-tap-highlight-color: transparent;
 }
 body[data-skin="paper"] .paper-ex-edit:active {
   color: var(--paper-ink);
