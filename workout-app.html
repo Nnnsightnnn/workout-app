@@ -6726,6 +6726,300 @@ body[data-skin="paper"] .toast {
   opacity: 1;
 }
 
+/* ── Lift screen blocks / exercises under paper skin ── */
+body[data-skin="paper"] .block,
+body[data-skin="paper"] .block-wrap,
+body[data-skin="paper"] .block-card {
+  background: rgba(255, 255, 255, 0.10) !important;
+  border: 1.4px solid rgba(40, 30, 15, 0.35) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+body[data-skin="paper"] .block-header {
+  background: transparent !important;
+  border-bottom: 1px dashed rgba(40, 30, 15, 0.3);
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+}
+body[data-skin="paper"] .block-letter {
+  background: var(--paper-ink) !important;
+  color: var(--paper-bg) !important;
+  font-family: var(--paper-form);
+  border-radius: 0;
+  border: 1.4px solid var(--paper-ink);
+  box-shadow: 2px 2px 0 rgba(40, 30, 15, 0.2);
+}
+body[data-skin="paper"] .block-letter.superset {
+  background: var(--paper-red) !important;
+  border-color: var(--paper-red) !important;
+}
+body[data-skin="paper"] .block-letter.cooldown-letter {
+  background: transparent !important;
+  color: var(--paper-ink) !important;
+}
+body[data-skin="paper"] .block-title {
+  font-family: var(--paper-hand);
+  font-weight: 700;
+  color: var(--paper-ink);
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+body[data-skin="paper"] .block-time-badge {
+  font-family: var(--paper-form);
+  color: var(--paper-ink-faint);
+  background: transparent;
+  border: 1px dashed rgba(40, 30, 15, 0.3);
+  border-radius: 0;
+  letter-spacing: 0.1em;
+}
+body[data-skin="paper"] .exercise-card {
+  background: rgba(255, 255, 255, 0.10) !important;
+  border: 1.2px solid rgba(40, 30, 15, 0.3) !important;
+  border-radius: 0 !important;
+  box-shadow: 1px 2px 0 rgba(40, 30, 15, 0.08) !important;
+}
+body[data-skin="paper"] .exercise-card .ex-name,
+body[data-skin="paper"] .exercise-card .exercise-name {
+  font-family: var(--paper-hand);
+  font-weight: 700;
+  color: var(--paper-ink);
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+body[data-skin="paper"] .exercise-card .ex-meta,
+body[data-skin="paper"] .exercise-card .exercise-meta,
+body[data-skin="paper"] .exercise-card .ex-target,
+body[data-skin="paper"] .exercise-card .exercise-target {
+  font-family: var(--paper-form);
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 10px;
+}
+
+/* Set chips */
+body[data-skin="paper"] .set-chip {
+  background: transparent !important;
+  border: 1.2px solid rgba(40, 30, 15, 0.35) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: var(--paper-ink) !important;
+  font-family: var(--paper-hand);
+}
+body[data-skin="paper"] .set-chip.done {
+  background: rgba(244, 211, 58, 0.15) !important;
+  border-color: var(--paper-ink) !important;
+}
+body[data-skin="paper"] .set-chip-num {
+  font-family: var(--paper-form);
+  color: var(--paper-ink-faint);
+  letter-spacing: 0.08em;
+}
+body[data-skin="paper"] .set-chip-x,
+body[data-skin="paper"] .set-chip-rpe {
+  font-family: var(--paper-form);
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .set-chip-weight,
+body[data-skin="paper"] .set-chip-reps,
+body[data-skin="paper"] .rpe-num {
+  font-family: var(--paper-hand);
+  color: var(--paper-ink);
+  font-weight: 700;
+}
+body[data-skin="paper"] .set-chip.done .set-chip-weight,
+body[data-skin="paper"] .set-chip.done .set-chip-reps {
+  text-decoration: line-through;
+  text-decoration-color: var(--paper-ink);
+  text-decoration-thickness: 1.4px;
+}
+body[data-skin="paper"] .add-set-row,
+body[data-skin="paper"] .set-add-btn,
+body[data-skin="paper"] .add-set-btn {
+  background: transparent;
+  color: var(--paper-ink-soft);
+  border: 1.2px dashed var(--paper-ink);
+  border-radius: 0;
+  font-family: var(--paper-form);
+  text-transform: uppercase; letter-spacing: 0.1em;
+}
+
+/* Day picker cards */
+body[data-skin="paper"] .day-picker-card {
+  background: rgba(255, 255, 255, 0.18) !important;
+  border: 1.5px solid var(--paper-ink) !important;
+  border-radius: 0 !important;
+  box-shadow: 3px 4px 0 rgba(40, 30, 15, 0.15) !important;
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .day-picker-card.recommended {
+  border-color: var(--paper-red) !important;
+  box-shadow: 3px 4px 0 rgba(168, 58, 42, 0.25) !important;
+}
+body[data-skin="paper"] .picker-label {
+  font-family: var(--paper-hand);
+  font-weight: 700;
+  color: var(--paper-ink);
+  font-size: 26px;
+  letter-spacing: -0.01em;
+}
+body[data-skin="paper"] .picker-sub,
+body[data-skin="paper"] .picker-duration,
+body[data-skin="paper"] .picker-breakdown,
+body[data-skin="paper"] .picker-today-tag {
+  font-family: var(--paper-form);
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+body[data-skin="paper"] .picker-today-tag {
+  background: var(--paper-red);
+  color: var(--paper-bg);
+  border-radius: 0;
+}
+body[data-skin="paper"] .picker-block-tag {
+  background: rgba(40, 30, 15, 0.08);
+  color: var(--paper-ink);
+  font-family: var(--paper-form);
+  border: 1px dashed rgba(40, 30, 15, 0.3);
+  border-radius: 0;
+}
+body[data-skin="paper"] .picker-metric-label,
+body[data-skin="paper"] .picker-metric-sub {
+  font-family: var(--paper-form);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .picker-metric-val {
+  font-family: var(--paper-hand);
+  font-weight: 700;
+  color: var(--paper-ink);
+}
+
+/* Timeline strip */
+body[data-skin="paper"] #timelineStrip > *,
+body[data-skin="paper"] .ts-cell {
+  border-radius: 0 !important;
+}
+body[data-skin="paper"] .ts-cell {
+  background: transparent !important;
+  border: 1.2px solid rgba(40, 30, 15, 0.35) !important;
+  color: var(--paper-ink);
+  font-family: var(--paper-hand);
+}
+body[data-skin="paper"] .ts-cell.today {
+  background: var(--paper-ink) !important;
+  color: var(--paper-bg) !important;
+}
+body[data-skin="paper"] .ts-cell.scheduled,
+body[data-skin="paper"] .ts-cell.planned {
+  border-style: dashed !important;
+  border-color: var(--paper-red) !important;
+  color: var(--paper-red) !important;
+}
+body[data-skin="paper"] .ts-day,
+body[data-skin="paper"] .ts-num,
+body[data-skin="paper"] .ts-date {
+  font-family: var(--paper-hand);
+}
+body[data-skin="paper"] .ts-day {
+  font-family: var(--paper-form);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* History log entries / vol bars */
+body[data-skin="paper"] .log-entry-info .name {
+  font-family: var(--paper-hand);
+  font-weight: 700;
+}
+body[data-skin="paper"] .log-entry-info .note {
+  font-family: var(--paper-form);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .log-entry-info .note.pr {
+  color: var(--paper-red);
+}
+body[data-skin="paper"] .log-entry-vol,
+body[data-skin="paper"] .log-entry-date {
+  font-family: var(--paper-form);
+  color: var(--paper-ink-faint);
+  letter-spacing: 0.1em;
+}
+body[data-skin="paper"] .log-entry-adhoc-tag {
+  background: transparent !important;
+  border: 1px dashed var(--paper-red);
+  color: var(--paper-red) !important;
+  font-family: var(--paper-form);
+  border-radius: 0;
+}
+body[data-skin="paper"] .log-vol-header span.section-title { border-bottom: none; padding: 0; margin: 0; }
+body[data-skin="paper"] .log-header h2,
+body[data-skin="paper"] .settings-header h2 {
+  font-family: var(--paper-hand);
+  font-weight: 700;
+  color: var(--paper-ink);
+  font-size: 34px;
+  letter-spacing: -0.01em;
+}
+
+/* PR screen */
+body[data-skin="paper"] .pr-card,
+body[data-skin="paper"] .pr-row {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1.2px solid rgba(40, 30, 15, 0.3);
+  border-radius: 0;
+}
+body[data-skin="paper"] .pr-name,
+body[data-skin="paper"] .pr-value,
+body[data-skin="paper"] .pr-e1rm {
+  font-family: var(--paper-hand);
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .pr-badge {
+  background: transparent;
+  border: 1.6px solid var(--paper-red);
+  color: var(--paper-red);
+  font-family: var(--paper-form);
+  border-radius: 0;
+  transform: rotate(-6deg);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Body screen — metric cards as paper tiles */
+body[data-skin="paper"] .body-mcard {
+  border-radius: 0 !important;
+}
+body[data-skin="paper"] .body-mcard .body-mcard-icon {
+  filter: grayscale(0.4);
+}
+
+/* About / hanko stamp */
+body[data-skin="paper"] .about-card { background: rgba(255,255,255,0.15) !important; }
+body[data-skin="paper"] .about-title {
+  font-family: var(--paper-hand);
+  font-weight: 700;
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .about-version,
+body[data-skin="paper"] .about-build {
+  font-family: var(--paper-form);
+  color: var(--paper-ink-faint);
+  text-transform: uppercase; letter-spacing: 0.12em;
+}
+body[data-skin="paper"] .hanko-stamp {
+  background: transparent;
+  border: 2.5px solid var(--paper-red);
+  color: var(--paper-red);
+  border-radius: 0;
+  transform: rotate(-12deg);
+}
+body[data-skin="paper"] .hanko-text { color: var(--paper-red); font-family: var(--paper-form); }
+
 </style>
 </head>
 <body>
@@ -9392,7 +9686,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 18;
-const APP_BUILD = "5c8f8de5";
+const APP_BUILD = "233fa6e6";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
