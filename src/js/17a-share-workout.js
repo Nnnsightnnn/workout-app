@@ -53,10 +53,15 @@ function _shareFmtSetsReps(ex) {
   return sets + "×" + repsLabel;
 }
 
+// North Star: a missing load is missing data — never silently emit "bodyweight"
+// or "@ 0 lbs". Only emit "bodyweight" when the exercise is explicitly flagged
+// as bodyweight. Otherwise, an unset load renders as "—" so it's visible.
 function _shareFmtWeight(ex, unit) {
-  if (ex.bodyweight) return "bodyweight";
-  if (!ex.defaultWeight) return null;
-  return ex.defaultWeight + " " + (unit || "lbs") + (ex.perSide ? "/side" : "");
+  if (ex.bodyweight === true) return "bodyweight";
+  if (ex.defaultWeight && ex.defaultWeight > 0) {
+    return ex.defaultWeight + " " + (unit || "lbs") + (ex.perSide ? "/side" : "");
+  }
+  return "—";
 }
 
 function _shareFmtRest(sec) {
@@ -66,38 +71,71 @@ function _shareFmtRest(sec) {
   return m === 0 ? s + "s" : m + ":" + String(s).padStart(2, "0");
 }
 
-function formatDayAsText(day, opts) {
+// Public: format a single workout day as human-readable plain text.
+// Spec lives in CLAUDE.md / project docs — keep this function and its tests
+// in sync with that canonical example.
+function formatWorkoutAsText(day, opts) {
   opts = opts || {};
+  if (!day || !Array.isArray(day.blocks)) return "";
   const unit = opts.unit || (typeof state !== "undefined" && state && state.unit) || "lbs";
+
   const lines = [];
   lines.push("🏋️ " + (day.name || "Workout"));
-  if (day.sub) lines.push(day.sub);
+  // Subtitle: prefer day.sub; otherwise build from opts.programName/phase if given.
+  let subtitle = day.sub || "";
+  if (!subtitle && (opts.programName || opts.phase)) {
+    subtitle = [opts.programName, opts.phase].filter(Boolean).join(" · ");
+  }
+  if (subtitle) lines.push(subtitle);
   lines.push("");
 
   (day.blocks || []).forEach((block, bi) => {
     const letter = String.fromCharCode(65 + bi);
     const head = block.name ? (letter + ". " + block.name) : ("Block " + letter);
     lines.push(head);
-    lines.push("─".repeat(Math.min(head.length, 32)));
+    // Divider matches label width — no cap. Box-drawing U+2500 is one char wide.
+    lines.push("─".repeat(Array.from(head).length));
 
-    const exs = (block.exercises || []).filter(e => !e.isWarmup);
+    const exs = (block.exercises || []);
     exs.forEach((ex, i) => {
       const sr = _shareFmtSetsReps(ex);
       const wt = _shareFmtWeight(ex, unit);
-      const head = (i + 1) + ". " + (ex.name || "Exercise") +
-        " — " + sr + (wt ? " @ " + wt : "");
-      lines.push(head);
+      lines.push((i + 1) + ". " + (ex.name || "Exercise") + " — " + sr + " @ " + wt);
       const sub = [];
       const rest = _shareFmtRest(ex.rest);
       if (rest) sub.push("rest " + rest);
       if (ex.tempo) sub.push("tempo " + ex.tempo);
       if (sub.length) lines.push("   " + sub.join(" · "));
-      if (ex.notes) lines.push("   " + ex.notes);
+      if (ex.notes) {
+        String(ex.notes).split(/\r?\n/).forEach(n => {
+          if (n.length) lines.push("   " + n);
+        });
+      }
     });
     lines.push("");
   });
 
   return lines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+// Legacy alias — keep so existing call sites and tests don't break.
+function formatDayAsText(day, opts) {
+  return formatWorkoutAsText(day, opts);
+}
+
+// ----- combined-share helper -------------------------------------------------
+
+const SHARE_IMPORT_LABEL = "📲 Import in K&N Lifts:";
+const SHARE_DIVIDER = "────────────";
+
+// Build the combined "text + import URL" blob that's posted to navigator.share()
+// or copied wholesale via "Share everything". Recipient can read the workout
+// in their messaging app and also tap the URL to import.
+function buildCombinedShareText(day, opts) {
+  const text = formatWorkoutAsText(day, opts);
+  const url = buildShareUrl(day);
+  if (!url) return text;
+  return text + "\n\n" + SHARE_DIVIDER + "\n" + SHARE_IMPORT_LABEL + "\n" + url;
 }
 
 // ----- encode / decode -------------------------------------------------------
@@ -302,62 +340,83 @@ function _beginImportedSession(importedDay) {
 function shareCurrentWorkout() {
   const day = (typeof getCurrentDay === "function") ? getCurrentDay() : null;
   if (!day) { showToast("No workout to share"); return; }
+  _openShareSheet(day);
+}
 
-  const text = formatDayAsText(day, { unit: state.unit });
-  const url = buildShareUrl(day);
-  const title = day.name || "Workout";
-  const fullText = url ? (text + "\n\n" + url) : text;
-
-  // Prefer native share sheet on mobile (iMessage, etc.)
+// Single share sheet — shows the formatted preview and offers:
+//   • Copy as text (primary) — readable in iMessage/Slack/email
+//   • Copy import link        — base64 URL, secondary
+//   • Share…                  — navigator.share with combined text + URL
+// Recipient gets both readability AND a tappable import URL.
+function _openShareSheet(day) {
+  const unit = (typeof state !== "undefined" && state && state.unit) || "lbs";
+  const text = formatWorkoutAsText(day, { unit: unit });
+  const url = buildShareUrl(day) || "";
+  const combined = buildCombinedShareText(day, { unit: unit });
   const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
-  if (canShare) {
-    navigator.share({ title: title, text: text, url: url || undefined })
-      .then(() => { /* user shared */ })
-      .catch(err => {
-        // User cancel is normal — only fall back on actual failure
-        if (err && err.name === "AbortError") return;
-        _shareFallbackCopy(fullText);
-      });
-    return;
-  }
-  _shareFallbackCopy(fullText);
-}
 
-function _shareFallbackCopy(text) {
-  const done = () => showToast("Workout copied — paste it in iMessage", "success");
-  if (typeof navigator !== "undefined" && navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(done).catch(() => _shareShowTextSheet(text));
-    return;
-  }
-  _shareShowTextSheet(text);
-}
-
-function _shareShowTextSheet(text) {
   const safe = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
   const html = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
       <h3 style="margin:0;">Share workout</h3>
       <button class="icon-btn" onclick="closeSheet()" title="Close">✕</button>
     </div>
     <p style="color:var(--text-dim); font-size:12px; margin-bottom:8px;">
-      Copy this and send to your buddy.
+      Anyone can read this — the import link lets K&amp;N Lifts users run it.
     </p>
-    <textarea id="shareTextArea" readonly style="width:100%;min-height:240px;background:var(--bg-elev);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px;font-family:var(--font-mono,monospace);font-size:12px;">${safe}</textarea>
-    <div class="sheet-actions">
-      <button class="primary" id="shareCopyBtn">Copy</button>
+    <textarea id="shareTextArea" readonly style="width:100%;min-height:220px;max-height:42vh;background:var(--bg-elev);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px;font-family:var(--font-mono,monospace);font-size:12px;line-height:1.45;white-space:pre;">${safe}</textarea>
+    <div class="sheet-actions" style="display:flex;flex-wrap:wrap;gap:8px;">
+      <button class="primary" id="shareCopyTextBtn" style="flex:1 1 auto;min-width:140px;">Copy as text</button>
+      <button id="shareCopyLinkBtn" style="flex:1 1 auto;min-width:140px;" ${url ? "" : "disabled"}>Copy import link</button>
+      ${canShare ? `<button id="shareNativeBtn" style="flex:1 1 100%;">Share…</button>` : ""}
     </div>
   `;
   openSheet(html);
+
   setTimeout(() => {
     const ta = document.getElementById("shareTextArea");
-    if (ta) { ta.focus(); ta.select(); }
-    const btn = document.getElementById("shareCopyBtn");
-    if (btn) btn.onclick = () => {
-      const t = document.getElementById("shareTextArea");
-      if (t) { t.select(); document.execCommand && document.execCommand("copy"); }
-      showToast("Copied", "success");
+    if (ta) ta.scrollTop = 0;
+
+    const copyText = document.getElementById("shareCopyTextBtn");
+    if (copyText) copyText.onclick = () => _shareCopy(text, "Workout copied — paste it anywhere");
+
+    const copyLink = document.getElementById("shareCopyLinkBtn");
+    if (copyLink && url) copyLink.onclick = () => _shareCopy(url, "Import link copied");
+
+    const nativeBtn = document.getElementById("shareNativeBtn");
+    if (nativeBtn) nativeBtn.onclick = () => {
+      const title = day.name || "Workout";
+      navigator.share({ title: title, text: combined })
+        .catch(err => {
+          if (err && err.name === "AbortError") return;
+          _shareCopy(combined, "Workout copied — paste it anywhere");
+        });
     };
   }, 30);
+}
+
+function _shareCopy(text, successMsg) {
+  const done = () => showToast(successMsg || "Copied", "success");
+  if (typeof navigator !== "undefined" && navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => _shareCopyFallback(text, done));
+    return;
+  }
+  _shareCopyFallback(text, done);
+}
+
+function _shareCopyFallback(text, done) {
+  // execCommand("copy") needs a focused selection of the textarea
+  const ta = document.getElementById("shareTextArea");
+  if (ta) {
+    ta.value = text;
+    ta.focus();
+    ta.select();
+    try {
+      if (document.execCommand && document.execCommand("copy")) { done(); return; }
+    } catch (e) { /* fall through */ }
+  }
+  showToast("Couldn't copy — long-press to select", "error");
 }
 
 // ----- import entry points ---------------------------------------------------
@@ -466,10 +525,15 @@ try {
   if (typeof window !== "undefined") {
     window.serializeDayForShare = serializeDayForShare;
     window.formatDayAsText = formatDayAsText;
+    window.formatWorkoutAsText = formatWorkoutAsText;
+    window.buildCombinedShareText = buildCombinedShareText;
     window.encodeDayForShare = encodeDayForShare;
+    window.buildShareUrl = buildShareUrl;
     window.decodeSharedDay = decodeSharedDay;
     window.parseShareInput = parseShareInput;
     window.SHARE_PARSE_REASONS = SHARE_PARSE_REASONS;
+    window.SHARE_IMPORT_LABEL = SHARE_IMPORT_LABEL;
+    window.SHARE_DIVIDER = SHARE_DIVIDER;
     window.validateImportedDay = validateImportedDay;
   }
 } catch (e) {}

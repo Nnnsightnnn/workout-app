@@ -2141,14 +2141,206 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     assert(text.includes("/side"), "perSide rendered");
   });
 
-  t("share: formatDayAsText skips warmups", () => {
-    const day = { name: "X", blocks: [{ name: "A", exercises: [
-      { exId: "warm", name: "Foam Roll", sets: 1, reps: 30, isWarmup: true, isTime: true },
+  t("share: formatWorkoutAsText INCLUDES warmups (spec change 2026-05-13)", () => {
+    // Old behavior filtered out exercises marked isWarmup. New spec keeps them
+    // — the canonical example shows "A. Warm-Up" with bodyweight exercises.
+    // Warmups without rest/tempo simply omit the indented metadata line.
+    const day = { name: "X", blocks: [{ name: "Warm-Up", exercises: [
+      { exId: "warm", name: "Foam Roll", sets: 1, reps: 30, isWarmup: true, isTime: true, bodyweight: true }
+    ]}, { name: "Main", exercises: [
       { exId: "real", name: "Bench", sets: 3, reps: 5, defaultWeight: 135 }
     ]}]};
-    const text = w.formatDayAsText(day);
-    assert(!text.includes("Foam Roll"), "warmup excluded from share text");
-    assert(text.includes("Bench"), "real exercise included");
+    const text = w.formatWorkoutAsText(day);
+    assert(text.includes("Foam Roll"), "warmup IS included in share text");
+    assert(text.includes("A. Warm-Up"), "warmup block keeps its label");
+    assert(text.includes("Bench"), "main exercise included");
+  });
+
+  // ---- formatWorkoutAsText: canonical spec coverage ----------------------
+  // These fixtures match the canonical example Kenny gave when he asked for
+  // human-readable share format (see project history). The format IS the spec.
+
+  t("share: formatWorkoutAsText header uses 🏋️ + day name", () => {
+    const day = { name: "Full Body — Squat Focus", sub: "Back Squat · Accumulation",
+      blocks: [{ name: "Main", exercises: [{ name: "Squat", sets: 5, reps: 8, defaultWeight: 135 }] }] };
+    const text = w.formatWorkoutAsText(day);
+    const lines = text.split("\n");
+    eq(lines[0], "🏋️ Full Body — Squat Focus", "header line exact");
+    eq(lines[1], "Back Squat · Accumulation", "subtitle line exact");
+  });
+
+  t("share: formatWorkoutAsText subtitle omitted when no sub", () => {
+    const day = { name: "Workout", blocks: [{ name: "A", exercises: [
+      { name: "Squat", sets: 3, reps: 5, defaultWeight: 135 }
+    ]}]};
+    const text = w.formatWorkoutAsText(day);
+    const lines = text.split("\n");
+    eq(lines[0], "🏋️ Workout", "header");
+    eq(lines[1], "", "blank line directly after header (no subtitle)");
+  });
+
+  t("share: formatWorkoutAsText divider width matches label width", () => {
+    const day = { name: "X", blocks: [
+      { name: "Warm-Up", exercises: [{ name: "Bike", sets: 2, reps: 60, isTime: true, bodyweight: true }] },
+      { name: "Row + Shoulders", exercises: [{ name: "Row", sets: 4, reps: 12, defaultWeight: 35, perSide: true }] }
+    ]};
+    const text = w.formatWorkoutAsText(day);
+    // "A. Warm-Up" = 10 chars → 10 ─
+    assert(text.includes("A. Warm-Up\n──────────"), "warm-up divider = 10 chars");
+    // "B. Row + Shoulders" = 18 chars → 18 ─
+    assert(text.includes("B. Row + Shoulders\n──────────────────"), "row+shoulders divider = 18 chars");
+  });
+
+  t("share: formatWorkoutAsText bodyweight renders @ bodyweight", () => {
+    const day = { name: "X", blocks: [{ name: "Warm-Up", exercises: [
+      { name: "Bike Erg", sets: 2, reps: 60, isTime: true, bodyweight: true }
+    ]}]};
+    const text = w.formatWorkoutAsText(day);
+    assert(text.includes("Bike Erg — 2×60s @ bodyweight"), "bodyweight + time format");
+  });
+
+  t("share: formatWorkoutAsText per-side renders @ X lbs/side", () => {
+    const day = { name: "X", blocks: [{ name: "A", exercises: [
+      { name: "Single-Leg Hip Thrust", sets: 4, reps: 12, defaultWeight: 95, perSide: true, rest: 60 }
+    ]}]};
+    const text = w.formatWorkoutAsText(day);
+    assert(text.includes("@ 95 lbs/side"), "per-side rendered");
+  });
+
+  t("share: formatWorkoutAsText missing load renders @ — (NOT silent default)", () => {
+    // North Star: never silently emit "bodyweight" or "@ 0 lbs" when load is unset.
+    const day = { name: "X", blocks: [{ name: "A", exercises: [
+      { name: "Mystery Lift", sets: 3, reps: 8 },              // no weight, no bodyweight flag
+      { name: "Zero Lift", sets: 3, reps: 8, defaultWeight: 0 } // explicit zero
+    ]}]};
+    const text = w.formatWorkoutAsText(day);
+    assert(text.includes("Mystery Lift — 3×8 @ —"), "unset load → em-dash");
+    assert(text.includes("Zero Lift — 3×8 @ —"), "zero load → em-dash");
+    assert(!text.includes("@ 0 lbs"), "never emits @ 0 lbs");
+  });
+
+  t("share: formatWorkoutAsText rest <60s → 'rest 45s', ≥60s → 'rest m:ss'", () => {
+    const day = { name: "X", blocks: [{ name: "A", exercises: [
+      { name: "Short Rest", sets: 4, reps: 15, defaultWeight: 30, rest: 45 },
+      { name: "Min Rest",   sets: 4, reps: 12, defaultWeight: 30, rest: 60 },
+      { name: "Long Rest",  sets: 5, reps: 8,  defaultWeight: 135, rest: 120 }
+    ]}]};
+    const text = w.formatWorkoutAsText(day);
+    assert(text.includes("rest 45s"),  "rest <60s as seconds");
+    assert(text.includes("rest 1:00"), "rest =60s as m:ss");
+    assert(text.includes("rest 2:00"), "rest 120s as m:ss");
+  });
+
+  t("share: formatWorkoutAsText tempo and notes on indented lines", () => {
+    const day = { name: "X", blocks: [{ name: "Squat", exercises: [
+      { name: "Back Squat", sets: 5, reps: 8, defaultWeight: 135, rest: 120,
+        tempo: "2-0-1-0", notes: "Moderate load." }
+    ]}]};
+    const text = w.formatWorkoutAsText(day);
+    assert(text.includes("   rest 2:00 · tempo 2-0-1-0"), "rest · tempo on indented line");
+    assert(text.includes("   Moderate load."),            "notes on indented line");
+  });
+
+  t("share: formatWorkoutAsText multi-line notes each get indented", () => {
+    const day = { name: "X", blocks: [{ name: "A", exercises: [
+      { name: "Lift", sets: 3, reps: 5, defaultWeight: 100, notes: "line one\nline two" }
+    ]}]};
+    const text = w.formatWorkoutAsText(day);
+    assert(text.includes("   line one"), "first note line indented");
+    assert(text.includes("   line two"), "second note line indented");
+  });
+
+  t("share: formatWorkoutAsText canonical example renders verbatim", () => {
+    // Build the exact day Kenny used as the canonical spec example. The output
+    // must match line-for-line — this is the regression guard for the format.
+    const day = {
+      name: "Full Body — Squat Focus",
+      sub:  "Back Squat · Accumulation",
+      blocks: [
+        { name: "Warm-Up", exercises: [
+          { name: "Bike Erg",                sets: 2, reps: 60, isTime: true, bodyweight: true, notes: "5 min easy" },
+          { name: "World's Greatest Stretch", sets: 2, reps: 5, bodyweight: true },
+          { name: "Scap Push-Up",            sets: 2, reps: 10, bodyweight: true },
+          { name: "Cossack Squat",           sets: 2, reps: 5, bodyweight: true }
+        ]},
+        { name: "Squat", exercises: [
+          { name: "Back Squat", sets: 5, reps: 8, defaultWeight: 135, rest: 120,
+            tempo: "2-0-1-0", notes: "Moderate load." }
+        ]},
+        { name: "Row + Shoulders", exercises: [
+          { name: "Gorilla Row", sets: 4, reps: 12, defaultWeight: 35, perSide: true,
+            rest: 60, tempo: "2-0-1-0" },
+          { name: "Face Pull",   sets: 4, reps: 15, defaultWeight: 30,
+            rest: 45, tempo: "2-1-1-0" }
+        ]},
+        { name: "Posterior + Arms", exercises: [
+          { name: "Single-Leg Hip Thrust", sets: 4, reps: 12, defaultWeight: 95, perSide: true,
+            rest: 60, tempo: "2-0-1-0" },
+          { name: "Reverse Curl", sets: 4, reps: 15, defaultWeight: 30,
+            rest: 45, tempo: "2-1-1-0" }
+        ]}
+      ]
+    };
+    const expected = [
+      "🏋️ Full Body — Squat Focus",
+      "Back Squat · Accumulation",
+      "",
+      "A. Warm-Up",
+      "──────────",
+      "1. Bike Erg — 2×60s @ bodyweight",
+      "   5 min easy",
+      "2. World's Greatest Stretch — 2×5 @ bodyweight",
+      "3. Scap Push-Up — 2×10 @ bodyweight",
+      "4. Cossack Squat — 2×5 @ bodyweight",
+      "",
+      "B. Squat",
+      "────────",
+      "1. Back Squat — 5×8 @ 135 lbs",
+      "   rest 2:00 · tempo 2-0-1-0",
+      "   Moderate load.",
+      "",
+      "C. Row + Shoulders",
+      "──────────────────",
+      "1. Gorilla Row — 4×12 @ 35 lbs/side",
+      "   rest 1:00 · tempo 2-0-1-0",
+      "2. Face Pull — 4×15 @ 30 lbs",
+      "   rest 45s · tempo 2-1-1-0",
+      "",
+      "D. Posterior + Arms",
+      "───────────────────",
+      "1. Single-Leg Hip Thrust — 4×12 @ 95 lbs/side",
+      "   rest 1:00 · tempo 2-0-1-0",
+      "2. Reverse Curl — 4×15 @ 30 lbs",
+      "   rest 45s · tempo 2-1-1-0"
+    ].join("\n");
+    const got = w.formatWorkoutAsText(day, { unit: "lbs" });
+    eq(got, expected, "canonical spec example matches verbatim");
+  });
+
+  t("share: buildCombinedShareText appends divider + import URL", () => {
+    // jsdom location.origin is something like http://localhost — buildShareUrl
+    // will still produce a valid URL with #share=<token>.
+    const combined = w.buildCombinedShareText(_shareSampleDay, { unit: "lbs" });
+    assert(combined.includes("🏋️ Pull Day"), "starts with formatted text");
+    assert(combined.includes(w.SHARE_DIVIDER), "divider line included");
+    assert(combined.includes(w.SHARE_IMPORT_LABEL), "📲 Import label included");
+    assert(combined.includes("#share="), "import URL appended");
+    // Order matters: text → divider → label → URL
+    const i1 = combined.indexOf("🏋️ Pull Day");
+    const i2 = combined.indexOf(w.SHARE_DIVIDER);
+    const i3 = combined.indexOf(w.SHARE_IMPORT_LABEL);
+    const i4 = combined.indexOf("#share=");
+    assert(i1 < i2 && i2 < i3 && i3 < i4, "ordering: text → divider → label → URL");
+  });
+
+  t("share: parseShareInput extracts URL from combined text+URL paste", () => {
+    // Round-trip: someone pastes the entire share blob (readable text + URL).
+    // The importer must still find the URL even though the readable text
+    // contains plenty of non-URL characters above it.
+    const combined = w.buildCombinedShareText(_shareSampleDay, { unit: "lbs" });
+    const parsed = w.parseShareInput(combined);
+    eq(parsed.ok, true, "combined paste parsed");
+    eq(parsed.data.name, "Pull Day", "name extracted from combined paste");
   });
 
   t("share: encode → decode round-trip preserves payload", () => {
