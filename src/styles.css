@@ -7262,15 +7262,16 @@ body[data-skin="paper"] .paper-ex-target {
   color: var(--paper-ink-soft);
   white-space: nowrap;
 }
+body[data-skin="paper"] .paper-ex-edit,
 body[data-skin="paper"] .paper-ex-swap,
 body[data-skin="paper"] .paper-ex-menu {
   background: transparent; border: none;
-  color: var(--paper-ink-mist);
+  color: var(--paper-ink-faint);
   font-family: var(--paper-form);
-  font-size: 14px;
-  padding: 0;
-  min-width: 44px;
-  min-height: 44px;
+  font-size: 28px;
+  padding: 0 6px;
+  min-width: 52px;
+  min-height: 52px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -7278,6 +7279,7 @@ body[data-skin="paper"] .paper-ex-menu {
   line-height: 1;
   -webkit-tap-highlight-color: transparent;
 }
+body[data-skin="paper"] .paper-ex-edit:active,
 body[data-skin="paper"] .paper-ex-swap:active,
 body[data-skin="paper"] .paper-ex-menu:active {
   color: var(--paper-ink);
@@ -7313,12 +7315,18 @@ body[data-skin="paper"] .paper-set-row {
   padding: 3px 0;
   font-family: var(--paper-hand);
   color: var(--paper-ink);
-  cursor: pointer;
+  cursor: default;
   user-select: none;
   -webkit-user-select: none;
   background: transparent;
   border: none;
   border-radius: 0;
+}
+/* Only the actually-interactive children of a row get the pointer:
+   the checkbox and the inline-editable weight/reps/rpe spans. */
+body[data-skin="paper"] .paper-set-row .paper-set-box,
+body[data-skin="paper"] .paper-set-row [data-field] {
+  cursor: pointer;
 }
 body[data-skin="paper"] .paper-set-row.set-skipped {
   opacity: 0.4;
@@ -7427,6 +7435,9 @@ body[data-skin="paper"] .paper-nav-tabs {
   display: flex;
   justify-content: space-around;
   align-items: center;
+  flex: 1;
+  max-width: 700px;
+  margin: 0 auto;
 }
 body[data-skin="paper"] .paper-nav-tab {
   display: flex;
@@ -8142,6 +8153,43 @@ body[data-skin="paper"] .sheet .name-input {
   color: var(--paper-ink);
 }
 
+/* Numeric steppers (sets / reps / rest) inside the edit sheet      */
+body[data-skin="paper"] .sheet .num-input-wrap {
+  background: transparent;
+  border: none;
+  border-bottom: 1.2px dashed var(--paper-ink-faint);
+  border-radius: 0;
+  height: 36px;
+  box-shadow: none;
+  overflow: visible;
+}
+body[data-skin="paper"] .sheet .num-input-wrap .step {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  color: var(--paper-ink);
+  font-family: var(--paper-form);
+  font-size: 20px;
+  font-weight: 700;
+  width: 36px;
+  padding: 0;
+}
+body[data-skin="paper"] .sheet .num-input-wrap .step:active {
+  background: var(--paper-marker-soft);
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .sheet .num-input-wrap input[type="number"] {
+  background: transparent;
+  border: none;
+  border-bottom: none;
+  border-radius: 0;
+  font-family: var(--paper-hand);
+  font-size: 20px;
+  color: var(--paper-ink);
+  text-align: center;
+  padding: 0 4px;
+}
+
 /* Sheet pick items (Plan Workout list of dark cards)               */
 body[data-skin="paper"] .sheet [class*="pick-item"],
 body[data-skin="paper"] .sheet [class*="picker-item"],
@@ -8473,26 +8521,6 @@ body[data-skin="paper"] [class*="-card"]:not(.paper-day-card):not(.paper-rest-ca
 /* PAPER FOCUS VIEW — single-superset page                            */
 /* (SupersetFocusScreen from the design bundle)                       */
 /* ================================================================= */
-body[data-skin="paper"] .paper-ex-edit {
-  background: transparent;
-  border: none;
-  color: var(--paper-ink-mist);
-  font-family: var(--paper-form);
-  font-size: 14px;
-  padding: 0;
-  min-width: 44px;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  line-height: 1;
-  -webkit-tap-highlight-color: transparent;
-}
-body[data-skin="paper"] .paper-ex-edit:active {
-  color: var(--paper-ink);
-}
-
 /* Whole superset header is tappable → focus view. */
 body[data-skin="paper"] .paper-superset-label[role="button"] {
   cursor: pointer;
@@ -8503,6 +8531,24 @@ body[data-skin="paper"] .paper-superset-label[role="button"] {
 }
 body[data-skin="paper"] .paper-superset-label[role="button"]:active {
   background: var(--paper-marker-soft);
+}
+/* Affordance cue inside the superset header — "tap to focus →" in red
+   handwriting-adjacent typewriter, so it reads as interactive without
+   adding chrome. Roughen filter gives the arrow a hand-drawn wobble. */
+body[data-skin="paper"] .paper-superset-cue {
+  display: inline-block;
+  margin-left: 10px;
+  font-family: var(--paper-form);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: lowercase;
+  color: var(--paper-red);
+  opacity: 0.85;
+  filter: url(#paper-roughen);
+  white-space: nowrap;
+}
+body[data-skin="paper"] .paper-superset-label[role="button"]:active .paper-superset-cue {
+  opacity: 1;
 }
 
 body[data-skin="paper"] .paper-focus-view {
@@ -8618,7 +8664,7 @@ body[data-skin="paper"] .paper-focus-exercise {
 }
 body[data-skin="paper"] .paper-focus-ex-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
   padding: 0 18px;

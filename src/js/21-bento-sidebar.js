@@ -113,10 +113,7 @@ function onWorkoutCardTapForSwap(bi, ei) {
 
 function executeSidebarSwap(libEx, bi, ei) {
   mutateDay(d => {
-    const oldEx = d.blocks[bi].exercises[ei];
-    d.blocks[bi].exercises[ei] = mkSets(libEx, {
-      notes: oldEx.notes || ""
-    });
+    d.blocks[bi].exercises[ei] = mkSets(libEx);
   });
   renderWorkoutScreen();
   showToast(`Swapped to ${libEx.name}`, "success");

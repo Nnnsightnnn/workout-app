@@ -21,7 +21,7 @@ function paperRenderBlock(day, block, bi) {
     ? "rest " + (typeof formatRest === "function" ? formatRest(block.exercises[0].rest) : block.exercises[0].rest)
     : (blockMin ? `~${blockMin} min` : "");
   label.innerHTML = `
-    <span class="paper-superset-id">${block.letter} &middot; ${block.name}${isSuperset ? " (superset)" : ""}</span>
+    <span class="paper-superset-id">${block.letter} &middot; ${block.name}${isSuperset ? " (superset)" : ""}<span class="paper-superset-cue" aria-hidden="true">tap to focus &rarr;</span></span>
     <span class="paper-superset-rest">${restStr}</span>
     <button class="paper-block-menu" aria-label="Block menu">&middot;&middot;&middot;</button>
   `;
@@ -112,9 +112,7 @@ function paperRenderExercise(day, block, ex, bi, ei, isSuperset) {
     <button class="paper-ex-swap" aria-label="Swap exercise">&hArr;</button>
     <button class="paper-ex-menu" aria-label="Exercise menu">&middot;&middot;&middot;</button>
   `;
-  const editBtn = head.querySelector(".paper-ex-edit");
-  editBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
+  const openEditorAtFirstIncomplete = () => {
     if (typeof openSetEditor !== "function") return;
     const lib = (typeof LIB_BY_ID !== "undefined") ? (LIB_BY_ID[ex.exId] || ex) : ex;
     const bw = lib.bodyweight;
@@ -127,7 +125,22 @@ function paperRenderExercise(day, block, ex, bi, ei, isSuperset) {
       if (st !== "done") { target = i; break; }
     }
     openSetEditor(block, ex, bi, ei, target, bw);
+  };
+  const editBtn = head.querySelector(".paper-ex-edit");
+  editBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    openEditorAtFirstIncomplete();
   });
+  const nameEl = head.querySelector(".paper-ex-name");
+  if (nameEl) {
+    nameEl.style.cursor = "pointer";
+    nameEl.addEventListener("click", (e) => {
+      // Defer to swap mode (wrap-level handler will perform the swap).
+      if (typeof state !== "undefined" && state.sidebarOpen && state.sidebarSelectedEx) return;
+      e.stopPropagation();
+      openEditorAtFirstIncomplete();
+    });
+  }
   const swapBtn = head.querySelector(".paper-ex-swap");
   swapBtn.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -262,7 +275,9 @@ function paperRenderSetsTable(block, ex, bi, ei) {
 
 // Wire interactions on a paper set row — mirrors wireChip() in 10-render-workout.js.
 // Handles: checkbox tap → toggle done, swipe right → done, swipe left → skipped,
-// row tap → openSetEditor, weight/reps/rpe tap → openInlineEditor.
+// weight/reps/rpe tap → openInlineEditor. Row-tap on empty space is inert;
+// the set editor only opens from the pencil button or exercise name (handled
+// in paperRenderExercise / paperRenderFocusView).
 function paperWireSetRow(row, block, ex, bi, ei, setIdx, bw) {
   const statusKey = inputKey(block.id, ei, setIdx, "status");
 
@@ -337,23 +352,11 @@ function paperWireSetRow(row, block, ex, bi, ei, setIdx, bw) {
         renderWorkoutScreen();
       }
       setTimeout(() => { row.style.transition = ""; }, 160);
-      return;
     }
-    // Tap on row (not on inline-edit field) → open full set editor
-    if (e.target.closest("[data-field]") || e.target.closest(".paper-set-box")) return;
-    if (typeof openSetEditor === "function") {
-      openSetEditor(block, ex, bi, ei, setIdx, bw);
-    }
+    // Row-tap on empty space is inert. User must tap the pencil/edit button
+    // or the exercise name to open the set editor. Inline taps on weight /
+    // reps / rpe spans still open the inline editor below.
   }, { passive: true });
-
-  // Desktop click fallback
-  row.addEventListener("click", (e) => {
-    if (isSwiping) return;
-    if (e.target.closest("[data-field]") || e.target.closest(".paper-set-box")) return;
-    if (typeof openSetEditor === "function") {
-      openSetEditor(block, ex, bi, ei, setIdx, bw);
-    }
-  });
 
   // Inline quick-edit on weight / reps / rpe spans
   ["w", "r", "p"].forEach(field => {
@@ -955,7 +958,53 @@ function paperRenderFocusView(container, day) {
         <span class="paper-focus-ex-name">${escapeHtml(ex.name || "")}</span>
       </div>
       <span class="paper-focus-ex-target">${targetSpec}</span>
+      <button class="paper-ex-edit" aria-label="Edit sets" title="Edit sets">&#9998;</button>
+      <button class="paper-ex-swap" aria-label="Swap exercise">&hArr;</button>
+      <button class="paper-ex-menu" aria-label="Exercise menu">&middot;&middot;&middot;</button>
     `;
+    head.querySelector(".paper-ex-edit").addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (typeof openSetEditor !== "function") return;
+      const lib = (typeof LIB_BY_ID !== "undefined") ? (LIB_BY_ID[ex.exId] || ex) : ex;
+      const bw = lib.bodyweight;
+      const nSets = ex.sets || 3;
+      let target = 0;
+      for (let i = 0; i < nSets; i++) {
+        const st = (typeof getInput === "function")
+          ? getInput(inputKey(block.id, ei, i, "status"), null) : null;
+        if (st !== "done") { target = i; break; }
+      }
+      openSetEditor(block, ex, bi, ei, target, bw);
+    });
+    head.querySelector(".paper-ex-swap").addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (typeof openSidebar === "function") {
+        const libEx = (typeof LIB_BY_ID !== "undefined") ? LIB_BY_ID[ex.exId] : null;
+        const cat = libEx ? libEx.cat : (block.type === "warmup" ? "Warmup" : null);
+        openSidebar(cat, bi, ei);
+      }
+    });
+    head.querySelector(".paper-ex-menu").addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (typeof openExerciseMenu === "function") openExerciseMenu(block, ex, bi, ei);
+    });
+    const focusNameEl = head.querySelector(".paper-focus-ex-name");
+    if (focusNameEl && !ex.isWarmup) {
+      focusNameEl.style.cursor = "pointer";
+      focusNameEl.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (typeof openSetEditor !== "function") return;
+        const lib = (typeof LIB_BY_ID !== "undefined") ? (LIB_BY_ID[ex.exId] || ex) : ex;
+        const bw = lib.bodyweight;
+        let target = 0;
+        for (let i = 0; i < nSets; i++) {
+          const st = (typeof getInput === "function")
+            ? getInput(inputKey(block.id, ei, i, "status"), null) : null;
+          if (st !== "done") { target = i; break; }
+        }
+        openSetEditor(block, ex, bi, ei, target, bw);
+      });
+    }
     exWrap.appendChild(head);
 
     if (ex.notes) {
