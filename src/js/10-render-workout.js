@@ -154,10 +154,13 @@ function renderWorkoutScreen() {
   const u = userData();
 
   if (!u) {
-    document.getElementById("dayBadge").textContent = "–";
-    document.getElementById("dayName").textContent = "No user yet";
-    document.getElementById("daySub").textContent = "Tap the user chip to create one";
-    container.innerHTML = "";
+    const _b = document.getElementById("dayBadge");
+    const _n = document.getElementById("dayName");
+    const _s = document.getElementById("daySub");
+    if (_b) _b.textContent = "–";
+    if (_n) _n.textContent = "No user yet";
+    if (_s) _s.textContent = "Tap the user chip to create one";
+    if (container) container.innerHTML = "";
     updateFinishButton();
     return;
   }
@@ -303,6 +306,12 @@ function renderWorkoutScreen() {
 }
 
 function renderDayPicker() {
+  // Paper skin: delegate to flat-notepad day picker (24-paper-render.js).
+  if (typeof isPaperSkin === "function" && isPaperSkin()
+      && typeof paperRenderDayPicker === "function") {
+    paperRenderDayPicker();
+    return;
+  }
   const container = document.getElementById("blocksContainer");
   const u = userData();
   if (!u) return;

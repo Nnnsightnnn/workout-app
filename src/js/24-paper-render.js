@@ -403,6 +403,205 @@ function paperUpdateActiveNavTab(screenId) {
   });
 }
 
+// ─────────────────────────────────────────────────────────────
+// DAY PICKER — flat notepad day cards (replaces .day-picker-card)
+// ─────────────────────────────────────────────────────────────
+// Produces the paper version of the "choose today's workout" screen.
+// Wired through the existing renderDayPicker dispatcher.
+// Reuses class names .dpc-controls-outer, .tb-target-row, .tb-step,
+// .tb-target-val, .tb-start-row, .tb-start-btn, .tb-adj-preview so
+// the time-budget wiring (_wireTimeBudgetCard) still attaches.
+
+function paperRenderDayPicker() {
+  const container = document.getElementById("blocksContainer");
+  const u = (typeof userData === "function") ? userData() : null;
+  if (!container || !u) return;
+
+  const tpl = (typeof PROGRAM_TEMPLATES !== "undefined")
+    ? (PROGRAM_TEMPLATES.find(t => t.id === u.templateId) || PROGRAM_TEMPLATES[0])
+    : null;
+
+  const dayNameEl = document.getElementById("dayName");
+  const daySubEl = document.getElementById("daySub");
+  if (dayNameEl) dayNameEl.textContent = "Today's Workout";
+  if (daySubEl) {
+    daySubEl.textContent = (tpl ? tpl.name : "") + (u.totalWeeks ? " · Week " + (u.currentWeek || 1) + " of " + u.totalWeeks : "");
+  }
+
+  const startBtn = document.getElementById("headerStartBtn");
+  const finishBtn = document.getElementById("headerFinishBtn");
+  if (startBtn) startBtn.classList.remove("active");
+  if (finishBtn) finishBtn.classList.remove("active");
+
+  container.innerHTML = "";
+
+  // Rest-day branch
+  const todayDow = new Date().getDay();
+  const sched = (Array.isArray(u.weeklySchedule) && u.weeklySchedule.length === 7) ? u.weeklySchedule : null;
+  const isRestToday = sched && sched[todayDow] == null;
+
+  if (isRestToday) {
+    const dowName = (typeof _DOW_LABELS_LONG !== "undefined") ? _DOW_LABELS_LONG[todayDow] : "today";
+    if (dayNameEl) dayNameEl.textContent = "Rest Day";
+    if (daySubEl) daySubEl.textContent = "Recovery scheduled — every " + dowName;
+
+    const rest = document.createElement("div");
+    rest.className = "paper-rest-card";
+    rest.innerHTML = `
+      <div class="paper-rest-kicker">today &middot; rest day</div>
+      <div class="paper-rest-title">Recover</div>
+      <div class="paper-rest-sub">Every ${escapeHtml(dowName)} is set as rest. Mobility, sleep, food.</div>
+    `;
+    const actions = document.createElement("div");
+    actions.className = "paper-rest-actions";
+
+    const trainBtn = document.createElement("button");
+    trainBtn.className = "paper-stamp-btn";
+    trainBtn.innerHTML = `<span>Train anyway</span>`;
+    trainBtn.onclick = () => {
+      state.restOverride = true;
+      if (typeof openTrainAnywayPicker === "function") openTrainAnywayPicker();
+    };
+    actions.appendChild(trainBtn);
+
+    const editBtn = document.createElement("button");
+    editBtn.className = "paper-link-btn";
+    editBtn.textContent = "edit schedule →";
+    editBtn.onclick = () => {
+      if (typeof openWeeklyScheduleEditor === "function") openWeeklyScheduleEditor();
+    };
+    actions.appendChild(editBtn);
+
+    rest.appendChild(actions);
+    container.appendChild(rest);
+    return;
+  }
+
+  // Normal branch — hero day + others
+  const nextId = (typeof determineDefaultDay === "function") ? determineDefaultDay() : (u.program[0] && u.program[0].id);
+  const nextDay = u.program.find(d => d.id === nextId) || u.program[0];
+  const picker = document.createElement("div");
+  picker.className = "paper-day-picker";
+
+  picker.appendChild(paperBuildDayCard(nextDay, true));
+
+  const others = u.program.filter(d => d.id !== nextDay.id);
+  if (others.length) {
+    const toggle = document.createElement("button");
+    toggle.className = "paper-day-picker-toggle";
+    toggle.textContent = `+ other workouts (${others.length})`;
+    const otherWrap = document.createElement("div");
+    otherWrap.className = "paper-day-picker-others";
+    otherWrap.style.display = "none";
+    others.forEach(d => otherWrap.appendChild(paperBuildDayCard(d, false)));
+    toggle.onclick = () => {
+      const showing = otherWrap.style.display !== "none";
+      otherWrap.style.display = showing ? "none" : "";
+      toggle.textContent = (showing ? "+ other workouts" : "− hide other workouts") + ` (${others.length})`;
+    };
+    picker.appendChild(toggle);
+    picker.appendChild(otherWrap);
+  }
+
+  container.appendChild(picker);
+}
+
+function paperBuildDayCard(d, isHero) {
+  const card = document.createElement("div");
+  card.className = "paper-day-card" + (isHero ? " paper-day-card-hero" : "");
+  card.dataset.dayId = d.id;
+
+  const breakdown = (typeof getSessionBreakdown === "function") ? getSessionBreakdown(d) : { totalMin: 30, warmupSec: 300, workingSec: 1200, cooldownSec: 300 };
+  const wuMin = Math.round(breakdown.warmupSec / 60);
+  const wkMin = Math.round(breakdown.workingSec / 60);
+  const cdMin = Math.round(breakdown.cooldownSec / 60);
+
+  const totalSets = d.blocks.reduce((n, b) => n + b.exercises.reduce((s, ex) => s + (ex.sets || 0), 0), 0);
+  const blockLetters = d.blocks.map(b => b.letter).join(" ");
+
+  const todayKicker = isHero
+    ? `<div class="paper-day-card-kicker">today &middot; day ${String(d.id).padStart(2, "0")}</div>`
+    : `<div class="paper-day-card-kicker">day ${String(d.id).padStart(2, "0")}</div>`;
+
+  const blockTagsHtml = d.blocks.map(b =>
+    `<span class="paper-day-block-tag">${b.letter} &middot; ${escapeHtml(b.name)}</span>`
+  ).join("");
+
+  const metricsHtml = isHero ? `
+    <div class="paper-day-metrics">
+      <div class="paper-day-metric">
+        <div class="paper-day-metric-label">Sets</div>
+        <div class="paper-day-metric-val">${String(totalSets).padStart(2, "0")}</div>
+        <div class="paper-day-metric-sub">${d.blocks.length} blocks</div>
+      </div>
+      <div class="paper-day-metric">
+        <div class="paper-day-metric-label">Blocks</div>
+        <div class="paper-day-metric-val">${String(d.blocks.length).padStart(2, "0")}</div>
+        <div class="paper-day-metric-sub">${escapeHtml(blockLetters)}</div>
+      </div>
+      <div class="paper-day-metric">
+        <div class="paper-day-metric-label">Est.</div>
+        <div class="paper-day-metric-val">${breakdown.totalMin}</div>
+        <div class="paper-day-metric-sub">min</div>
+      </div>
+    </div>
+  ` : "";
+
+  const defaultTarget = Math.round(breakdown.totalMin / 5) * 5;
+
+  card.innerHTML = `
+    ${todayKicker}
+    <div class="paper-day-card-name">${escapeHtml(d.name || "")}</div>
+    ${d.sub ? `<div class="paper-day-card-sub">${escapeHtml(d.sub)}</div>` : ""}
+    <div class="paper-day-block-list">${blockTagsHtml}</div>
+    ${metricsHtml}
+    <div class="paper-day-card-time">
+      <span class="paper-day-card-time-total picker-duration">⏱ ~${breakdown.totalMin} min</span>
+      <span class="paper-day-card-time-split picker-breakdown">WU ${wuMin}m &middot; Work ${wkMin}m &middot; CD ${cdMin}m</span>
+    </div>
+    <button class="paper-day-card-expand dpc-expand-hint">
+      <span class="dpc-chevron">▾</span> adjust time
+    </button>
+    <div class="dpc-controls-outer">
+      <div class="dpc-controls-inner">
+        <div class="tb-target-row paper-tb-row" data-day-id="${d.id}">
+          <span class="tb-target-label">Target</span>
+          <button class="tb-step tb-down paper-tb-step" data-dir="-1">−</button>
+          <span class="tb-target-val paper-tb-val">${defaultTarget}</span>
+          <span class="tb-target-unit">min</span>
+          <button class="tb-step tb-up paper-tb-step" data-dir="1">+</button>
+        </div>
+        <div class="tb-adj-preview" data-day-id="${d.id}"></div>
+        <div class="tb-start-row paper-tb-start-row" data-day-id="${d.id}">
+          <button class="tb-start-btn paper-start-stamp" data-day-id="${d.id}">Start workout</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Tapping the card opens the workout (unless the tap was on the time-budget controls or the expand hint)
+  card.addEventListener("click", (e) => {
+    if (e.target.closest(".dpc-controls-inner") || e.target.closest(".dpc-expand-hint")) return;
+    state.currentDayId = d.id;
+    state.dayChosen = true;
+    if (typeof openWorkout === "function") openWorkout();
+  });
+
+  // "Adjust time" link toggles the config panel
+  const expand = card.querySelector(".dpc-expand-hint");
+  if (expand) {
+    expand.addEventListener("click", (e) => {
+      e.stopPropagation();
+      card.classList.toggle("expanded");
+    });
+  }
+
+  if (typeof _wireTimeBudgetCard === "function") {
+    _wireTimeBudgetCard(card, d, breakdown);
+  }
+  return card;
+}
+
 if (typeof window !== "undefined") {
   window.paperRenderBlock = paperRenderBlock;
   window.paperRenderExercise = paperRenderExercise;
@@ -410,4 +609,6 @@ if (typeof window !== "undefined") {
   window.paperWireSetRow = paperWireSetRow;
   window.paperRebuildBottomNav = paperRebuildBottomNav;
   window.paperUpdateActiveNavTab = paperUpdateActiveNavTab;
+  window.paperRenderDayPicker = paperRenderDayPicker;
+  window.paperBuildDayCard = paperBuildDayCard;
 }

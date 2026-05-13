@@ -197,12 +197,15 @@ function renderAdhocScreen() {
 
   const container = document.getElementById("blocksContainer");
   const badge = document.getElementById("dayBadge");
-  badge.textContent = "+";
-  document.getElementById("dayName").textContent = state.adhocDay.name;
-  document.getElementById("daySub").textContent = "Ad-hoc \u00b7 won't affect program";
+  if (badge) badge.textContent = "+";
+  const dayName = document.getElementById("dayName");
+  if (dayName) dayName.textContent = state.adhocDay.name;
+  const daySub = document.getElementById("daySub");
+  if (daySub) daySub.textContent = "Ad-hoc \u00b7 won't affect program";
 
   // Hide normal start/finish
-  document.getElementById("headerStartBtn").classList.remove("active");
+  const startBtn = document.getElementById("headerStartBtn");
+  if (startBtn) startBtn.classList.remove("active");
 
   // Start the session timer
   if (!state.workoutStartedAt) {

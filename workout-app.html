@@ -7331,13 +7331,20 @@ body[data-skin="paper"] .paper-warmup-done.done {
 }
 
 /* PAPER BOTTOM NAV — cream-deep bar with torn-edge top, 5 tabs,    */
-/* hand-drawn squiggle under the active tab.                        */
+/* hand-drawn squiggle under the active tab. Stay pinned to the     */
+/* viewport bottom (default nav.bottom uses position:fixed).        */
 body[data-skin="paper"] nav.bottom {
   background: var(--paper-bg-deep);
   border-top: 1.4px solid rgba(40, 30, 15, 0.35);
-  padding: 10px 14px 28px;
+  padding: 10px 14px calc(env(safe-area-inset-bottom, 12px) + 12px);
   box-shadow: none;
-  position: relative;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+/* Reserve scroll-bottom room so the last block isn't hidden by the */
+/* fixed paper-nav bar.                                             */
+body[data-skin="paper"] main {
+  padding-bottom: 120px;
 }
 body[data-skin="paper"] nav.bottom .paper-torn-edge {
   position: absolute;
@@ -7419,6 +7426,888 @@ body[data-skin="paper"] .tl-pill .tl-date {
   font-family: var(--paper-hand);
   font-size: 18px;
   font-weight: 700;
+}
+
+/* ============================================================ */
+/* PAPER DAY PICKER — flat day cards (no pillows, no borders)   */
+/* ============================================================ */
+
+body[data-skin="paper"] .paper-day-picker {
+  padding: 4px 18px 16px;
+}
+
+/* Hero "today" day — no card chrome. Just a typewriter kicker,    */
+/* a HUGE handwritten day name, sub, block tags, metrics, then     */
+/* the bottom row with time + Adjust time / Start.                 */
+body[data-skin="paper"] .paper-day-card {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+  margin: 0 0 18px;
+  position: relative;
+}
+body[data-skin="paper"] .paper-day-card + .paper-day-card {
+  border-top: 1px dotted var(--paper-ink-mist);
+  padding-top: 14px;
+}
+
+body[data-skin="paper"] .paper-day-card-kicker {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+body[data-skin="paper"] .paper-day-card-hero .paper-day-card-kicker {
+  color: var(--paper-red);
+}
+body[data-skin="paper"] .paper-day-card-name {
+  font-family: var(--paper-hand);
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--paper-ink);
+  letter-spacing: -0.01em;
+}
+body[data-skin="paper"] .paper-day-card:not(.paper-day-card-hero) .paper-day-card-name {
+  font-size: 22px;
+}
+body[data-skin="paper"] .paper-day-card-sub {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+body[data-skin="paper"] .paper-day-block-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 8px 0 0;
+}
+body[data-skin="paper"] .paper-day-block-tag {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+}
+
+/* Hero metrics — three flat cells side-by-side, dashed dividers. */
+body[data-skin="paper"] .paper-day-metrics {
+  display: flex;
+  gap: 0;
+  margin: 12px 0 4px;
+  border-top: 1px dashed var(--paper-ink-mist);
+  border-bottom: 1px dashed var(--paper-ink-mist);
+  padding: 8px 0;
+}
+body[data-skin="paper"] .paper-day-metric {
+  flex: 1;
+  text-align: center;
+  position: relative;
+}
+body[data-skin="paper"] .paper-day-metric + .paper-day-metric::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 6px; bottom: 6px;
+  width: 1px;
+  background: var(--paper-ink-mist);
+}
+body[data-skin="paper"] .paper-day-metric-label {
+  font-family: var(--paper-form);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+}
+body[data-skin="paper"] .paper-day-metric-val {
+  font-family: var(--paper-hand);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--paper-ink);
+  margin-top: 2px;
+}
+body[data-skin="paper"] .paper-day-metric-sub {
+  font-family: var(--paper-form);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+body[data-skin="paper"] .paper-day-card-time {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 10px 0 4px;
+  gap: 12px;
+}
+body[data-skin="paper"] .paper-day-card-time-total {
+  font-family: var(--paper-hand);
+  font-size: 18px;
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .paper-day-card-time-split {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+}
+
+body[data-skin="paper"] .paper-day-card-expand {
+  background: transparent;
+  border: none;
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--paper-ink-soft);
+  text-transform: uppercase;
+  padding: 4px 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+body[data-skin="paper"] .paper-day-card-expand .dpc-chevron {
+  transition: transform 180ms ease;
+  display: inline-block;
+}
+body[data-skin="paper"] .paper-day-card.expanded .dpc-chevron {
+  transform: rotate(180deg);
+}
+
+/* Time-budget controls (paper-toned form underlines + stamp Start). */
+body[data-skin="paper"] .paper-day-card .dpc-controls-outer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 220ms ease;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+body[data-skin="paper"] .paper-day-card.expanded .dpc-controls-outer {
+  max-height: 320px;
+  padding-top: 6px;
+}
+body[data-skin="paper"] .paper-day-card .dpc-controls-inner {
+  padding: 0;
+  background: transparent;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+body[data-skin="paper"] .paper-tb-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--paper-hand);
+  font-size: 18px;
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .paper-tb-row .tb-target-label {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+  margin-right: 6px;
+}
+body[data-skin="paper"] .paper-tb-step {
+  width: 30px; height: 30px;
+  background: transparent;
+  border: 1.4px solid var(--paper-ink);
+  border-radius: 0;
+  color: var(--paper-ink);
+  font-family: var(--paper-form);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: none;
+}
+body[data-skin="paper"] .paper-tb-step:active {
+  background: var(--paper-marker-soft);
+  transform: none;
+}
+body[data-skin="paper"] .paper-tb-val {
+  font-family: var(--paper-hand);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--paper-ink);
+  min-width: 48px;
+  text-align: center;
+  border-bottom: 1.2px solid var(--paper-ink);
+  padding: 0 4px 2px;
+}
+body[data-skin="paper"] .paper-tb-row .tb-target-unit {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+}
+body[data-skin="paper"] .tb-adj-preview {
+  font-family: var(--paper-hand);
+  font-size: 14px;
+  color: var(--paper-ink-soft);
+}
+body[data-skin="paper"] .paper-tb-start-row {
+  display: flex;
+  justify-content: flex-end;
+}
+body[data-skin="paper"] .paper-start-stamp {
+  background: var(--paper-red);
+  color: var(--paper-bg);
+  border: 2px solid var(--paper-red);
+  border-radius: 0;
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 10px 18px;
+  cursor: pointer;
+  transform: rotate(-1.5deg);
+  box-shadow: 2px 3px 0 rgba(40,30,15,0.2);
+}
+body[data-skin="paper"] .paper-start-stamp:active {
+  transform: rotate(-1.5deg) translate(1px, 1px);
+  box-shadow: 1px 2px 0 rgba(40,30,15,0.2);
+}
+
+/* "Other workouts" toggle + list */
+body[data-skin="paper"] .paper-day-picker-toggle {
+  background: transparent;
+  border: none;
+  border-top: 1px dotted var(--paper-ink-mist);
+  width: 100%;
+  text-align: left;
+  font-family: var(--paper-hand);
+  font-size: 16px;
+  color: var(--paper-ink-soft);
+  padding: 12px 0 4px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+body[data-skin="paper"] .paper-day-picker-others {
+  padding-top: 8px;
+}
+
+/* Rest-day card */
+body[data-skin="paper"] .paper-rest-card {
+  padding: 12px 18px 16px;
+  position: relative;
+}
+body[data-skin="paper"] .paper-rest-kicker {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--paper-red);
+  text-transform: uppercase;
+}
+body[data-skin="paper"] .paper-rest-title {
+  font-family: var(--paper-hand);
+  font-size: 42px;
+  font-weight: 700;
+  color: var(--paper-ink);
+  line-height: 1;
+  margin-top: 4px;
+}
+body[data-skin="paper"] .paper-rest-sub {
+  font-family: var(--paper-hand);
+  font-size: 16px;
+  color: var(--paper-ink-soft);
+  margin: 6px 0 14px;
+  line-height: 1.4;
+}
+body[data-skin="paper"] .paper-rest-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+body[data-skin="paper"] .paper-stamp-btn {
+  background: var(--paper-red);
+  color: var(--paper-bg);
+  border: 2px solid var(--paper-red);
+  border-radius: 0;
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 10px 18px;
+  cursor: pointer;
+  transform: rotate(-1.5deg);
+  box-shadow: 2px 3px 0 rgba(40,30,15,0.2);
+}
+body[data-skin="paper"] .paper-stamp-btn:active {
+  transform: rotate(-1.5deg) translate(1px, 1px);
+  box-shadow: 1px 2px 0 rgba(40,30,15,0.2);
+}
+body[data-skin="paper"] .paper-link-btn {
+  background: transparent;
+  border: none;
+  font-family: var(--paper-hand);
+  font-size: 16px;
+  color: var(--paper-ink-soft);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline wavy;
+  text-decoration-color: var(--paper-ink-mist);
+  text-underline-offset: 4px;
+}
+
+/* ============================================================ */
+/* PAPER SWEEP — kill every remaining dark surface              */
+/* Each rule below targets a specific dark UI element from the  */
+/* original app and re-tones it as paper. Names match existing  */
+/* renderer output (.stats-bar, .session-est-row, .preview-     */
+/* banner, .sheet, .sa-timer, .tl-phase-*, etc.)                */
+/* ============================================================ */
+
+/* EFFORT progress card (renderStatsBar)                            */
+body[data-skin="paper"] .stats-bar {
+  background: transparent;
+  border: 1.4px solid var(--paper-ink-faint);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 10px 14px;
+  margin: 8px 18px 14px;
+}
+body[data-skin="paper"] .stats-bar .stats-bar-header,
+body[data-skin="paper"] .stats-bar .stats-bar-label,
+body[data-skin="paper"] .stats-bar .stats-effort-label {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+}
+body[data-skin="paper"] .stats-bar .stats-bar-count,
+body[data-skin="paper"] .stats-bar .stats-effort-count {
+  font-family: var(--paper-hand);
+  color: var(--paper-ink);
+  font-weight: 700;
+}
+body[data-skin="paper"] .stats-bar .stats-bar-fill,
+body[data-skin="paper"] .stats-bar .stats-progress-fill,
+body[data-skin="paper"] .stats-bar [class*="progress"] {
+  background: var(--paper-ink);
+}
+body[data-skin="paper"] .stats-bar .stats-bar-track,
+body[data-skin="paper"] .stats-bar [class*="track"] {
+  background: rgba(40, 30, 15, 0.08);
+  border: 1px solid var(--paper-ink-mist);
+  border-radius: 0;
+  overflow: hidden;
+}
+body[data-skin="paper"] .stats-bar .stats-bar-footer,
+body[data-skin="paper"] .stats-bar [class*="footer"],
+body[data-skin="paper"] .stats-bar [class*="meta"] {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+}
+
+/* "~47 min · 25 sets" estimate row                                 */
+body[data-skin="paper"] .session-est-row,
+body[data-skin="paper"] #sessionEstRow {
+  background: transparent;
+  border: none;
+  border-top: 1px dashed var(--paper-ink-mist);
+  border-bottom: 1px dashed var(--paper-ink-mist);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 6px 18px;
+  margin: 0 18px 12px;
+  color: var(--paper-ink);
+  font-family: var(--paper-hand);
+}
+body[data-skin="paper"] .session-est-row .est-icon { filter: grayscale(1) opacity(0.55); }
+body[data-skin="paper"] .session-est-row .est-badge {
+  font-family: var(--paper-hand);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .session-est-row .est-sub,
+body[data-skin="paper"] .session-est-row [class*="sub"] {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+}
+
+/* Phase progress bar at the top — segments + their active color    */
+body[data-skin="paper"] .tl-phase-bar {
+  background: transparent;
+  border: 1px solid var(--paper-ink-mist);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 2px;
+  gap: 2px;
+}
+body[data-skin="paper"] .tl-phase-seg {
+  background: rgba(40, 30, 15, 0.06) !important;
+  border: none !important;
+  border-radius: 0;
+  box-shadow: none;
+  opacity: 0.6;
+}
+body[data-skin="paper"] .tl-phase-seg.active {
+  background: var(--paper-ink) !important;
+  border: none !important;
+  opacity: 1;
+}
+
+/* Edit-schedule pill                                               */
+body[data-skin="paper"] .tl-sched-btn {
+  background: transparent;
+  border: none;
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--paper-ink-soft);
+  text-transform: uppercase;
+  box-shadow: none;
+}
+body[data-skin="paper"] .tl-sched-ico {
+  color: var(--paper-ink-soft);
+}
+
+/* Preview banner ("Previewing Wednesday May 13 / Back to today")   */
+body[data-skin="paper"] .preview-banner {
+  background: rgba(244, 211, 58, 0.18);
+  border: 1.4px dashed var(--paper-red);
+  border-radius: 0;
+  padding: 10px 14px;
+  margin: 6px 18px 12px;
+  box-shadow: none;
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .preview-banner-tag {
+  background: transparent;
+  border: 1.4px solid var(--paper-red);
+  color: var(--paper-red);
+  font-family: var(--paper-form);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border-radius: 0;
+  padding: 2px 6px;
+}
+body[data-skin="paper"] .preview-banner-date {
+  font-family: var(--paper-hand);
+  font-size: 18px;
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .preview-banner-back {
+  background: transparent;
+  border: 1.4px solid var(--paper-red);
+  color: var(--paper-red);
+  border-radius: 0;
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  box-shadow: none;
+}
+
+/* Bottom sheet (Plan Workout picker, sheets, pickers)              */
+body[data-skin="paper"] .sheet-bg {
+  background: rgba(40, 30, 15, 0.45);
+  backdrop-filter: blur(3px);
+}
+body[data-skin="paper"] .sheet {
+  background: var(--paper-bg);
+  border: none;
+  border-top: 2px solid var(--paper-ink-faint);
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  box-shadow: 0 -6px 30px rgba(40, 30, 15, 0.3);
+  color: var(--paper-ink);
+  background-image:
+    linear-gradient(transparent 31px, var(--paper-rule) 32px);
+  background-size: 32px 32px;
+  background-position: 0 12px;
+}
+body[data-skin="paper"] .sheet-handle {
+  background: var(--paper-ink-mist);
+}
+body[data-skin="paper"] .sheet h3,
+body[data-skin="paper"] .sheet h2 {
+  font-family: var(--paper-hand);
+  font-weight: 700;
+  color: var(--paper-ink);
+  text-shadow: none;
+}
+body[data-skin="paper"] .sheet p {
+  font-family: var(--paper-hand);
+  color: var(--paper-ink-soft);
+}
+body[data-skin="paper"] .sheet input[type="text"],
+body[data-skin="paper"] .sheet input[type="number"],
+body[data-skin="paper"] .sheet textarea,
+body[data-skin="paper"] .sheet select {
+  background: transparent;
+  border: none;
+  border-bottom: 1.2px solid var(--paper-ink);
+  border-radius: 0;
+  font-family: var(--paper-hand);
+  font-size: 18px;
+  color: var(--paper-ink);
+  padding: 4px 0;
+}
+body[data-skin="paper"] .sheet .name-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1.2px solid var(--paper-ink);
+  border-radius: 0;
+  font-family: var(--paper-hand);
+  font-size: 22px;
+  color: var(--paper-ink);
+}
+
+/* Sheet pick items (Plan Workout list of dark cards)               */
+body[data-skin="paper"] .sheet [class*="pick-item"],
+body[data-skin="paper"] .sheet [class*="picker-item"],
+body[data-skin="paper"] .sheet .plan-pick-card,
+body[data-skin="paper"] .sheet [class*="plan-pick"],
+body[data-skin="paper"] .sheet [class*="sheet-item"] {
+  background: transparent;
+  border: 1.4px dashed var(--paper-ink-faint);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .sheet [class*="pick-item"].active,
+body[data-skin="paper"] .sheet [class*="pick-item"].selected,
+body[data-skin="paper"] .sheet [class*="pick-item"][data-state="selected"] {
+  border-style: solid;
+  border-color: var(--paper-red);
+  background: rgba(244, 211, 58, 0.12);
+}
+body[data-skin="paper"] .sheet [class*="pick-title"],
+body[data-skin="paper"] .sheet [class*="pick-name"] {
+  font-family: var(--paper-hand);
+  font-size: 20px;
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .sheet [class*="pick-sub"],
+body[data-skin="paper"] .sheet [class*="pick-meta"] {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+}
+/* Number-bullet on each plan-pick row (the dark "1", "2", "+", "≡") */
+body[data-skin="paper"] .sheet [class*="pick-num"],
+body[data-skin="paper"] .sheet [class*="pick-bullet"],
+body[data-skin="paper"] .sheet [class*="pick-marker"] {
+  background: transparent !important;
+  color: var(--paper-red);
+  font-family: var(--paper-hand);
+  font-size: 22px;
+  border: none;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Sheet primary/secondary buttons                                  */
+body[data-skin="paper"] .sheet button.primary,
+body[data-skin="paper"] .sheet .sheet-actions button.primary,
+body[data-skin="paper"] .sheet .action-btn.primary {
+  background: var(--paper-red);
+  color: var(--paper-bg);
+  border: 2px solid var(--paper-red);
+  border-radius: 0;
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 8px 14px;
+  box-shadow: 2px 3px 0 rgba(40,30,15,0.2);
+  transform: rotate(-1.5deg);
+}
+body[data-skin="paper"] .sheet button:not(.primary),
+body[data-skin="paper"] .sheet .sheet-actions button:not(.primary),
+body[data-skin="paper"] .sheet .action-btn {
+  background: transparent;
+  color: var(--paper-ink);
+  border: 1.4px solid var(--paper-ink);
+  border-radius: 0;
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 8px 14px;
+  box-shadow: none;
+}
+
+/* Sheet close icon (the X) — paper-toned                           */
+body[data-skin="paper"] .sheet .icon-btn {
+  background: transparent;
+  border: 1.4px solid var(--paper-ink);
+  border-radius: 6px;
+  color: var(--paper-ink);
+  box-shadow: none;
+}
+
+/* Standalone rest timer (open via the Timer nav tab)               */
+body[data-skin="paper"] .sa-timer {
+  padding: 14px 16px 18px;
+  color: var(--paper-ink);
+  background: transparent;
+}
+body[data-skin="paper"] .ring-timer {
+  background: transparent;
+}
+body[data-skin="paper"] .ring-timer-arc,
+body[data-skin="paper"] .ring-timer-glow {
+  stroke: var(--paper-red) !important;
+  filter: url(#paper-roughen) !important;
+}
+body[data-skin="paper"] .ring-timer-center .ring-timer-label,
+body[data-skin="paper"] .sa-timer .ring-timer-label {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+  text-shadow: none;
+}
+body[data-skin="paper"] .ring-timer-center .ring-timer-label.accent {
+  color: var(--paper-red);
+}
+body[data-skin="paper"] .ring-timer-center .ring-timer-time,
+body[data-skin="paper"] .sa-timer .ring-timer-time {
+  font-family: var(--paper-hand);
+  font-weight: 700;
+  font-size: 72px;
+  color: var(--paper-ink);
+  text-shadow: none;
+  letter-spacing: -0.02em;
+}
+
+/* Preset duration buttons (45s, 1:00, 1:30, 2:00, 3:00)            */
+body[data-skin="paper"] .sa-timer-pills {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin: 10px 0 10px;
+}
+body[data-skin="paper"] .rest-pill {
+  background: transparent;
+  border: 1.4px dashed var(--paper-ink-faint);
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--paper-ink);
+  font-family: var(--paper-hand);
+  font-size: 18px;
+  font-weight: 700;
+  padding: 6px 10px;
+  transform: none;
+  text-shadow: none;
+}
+body[data-skin="paper"] .rest-pill.active {
+  background: rgba(244, 211, 58, 0.22);
+  border: 1.4px solid var(--paper-ink);
+  color: var(--paper-ink);
+}
+
+/* +30 / Skip action row                                            */
+body[data-skin="paper"] .sa-timer-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 6px;
+}
+body[data-skin="paper"] .rest-inline-btn {
+  background: transparent;
+  border: 1.2px solid var(--paper-ink-faint);
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--paper-ink);
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+}
+body[data-skin="paper"] .rest-inline-btn[data-action="skip"] {
+  border-color: var(--paper-red);
+  color: var(--paper-red);
+}
+
+/* Sidebar (Exercise Library)                                       */
+body[data-skin="paper"] .sidebar-bg {
+  background: rgba(40, 30, 15, 0.45);
+  backdrop-filter: blur(3px);
+}
+body[data-skin="paper"] .sidebar {
+  background: var(--paper-bg);
+  border-left: 2px solid var(--paper-ink-faint);
+  box-shadow: -6px 0 30px rgba(40, 30, 15, 0.3);
+  color: var(--paper-ink);
+  background-image: linear-gradient(transparent 31px, var(--paper-rule) 32px);
+  background-size: 32px 32px;
+}
+body[data-skin="paper"] .sidebar-header h3 {
+  font-family: var(--paper-hand);
+  font-weight: 700;
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .lib-search {
+  background: transparent;
+  border: none;
+  border-bottom: 1.2px solid var(--paper-ink);
+  border-radius: 0;
+  font-family: var(--paper-hand);
+  color: var(--paper-ink);
+  padding: 4px 0;
+}
+
+/* Toasts                                                            */
+body[data-skin="paper"] .toast {
+  background: var(--paper-bg-deep);
+  border: 1.5px solid var(--paper-ink);
+  border-radius: 0;
+  color: var(--paper-ink);
+  font-family: var(--paper-hand);
+  box-shadow: 2px 4px 10px rgba(40, 20, 10, 0.25);
+}
+body[data-skin="paper"] .toast.success {
+  border-color: var(--paper-ink);
+}
+body[data-skin="paper"] .toast.toast-undo {
+  background: var(--paper-bg-deep);
+  border-color: var(--paper-red);
+}
+
+/* Session pill / rest pill in header (when visible, e.g. test mode) */
+body[data-skin="paper"] .session-pill,
+body[data-skin="paper"] .rest-pill-header {
+  background: transparent;
+  border: 1.2px solid var(--paper-ink);
+  border-radius: 0;
+  color: var(--paper-ink);
+  font-family: var(--paper-hand);
+  box-shadow: none;
+}
+
+/* Inline editor popover                                             */
+body[data-skin="paper"] .inline-editor,
+body[data-skin="paper"] [class*="inline-edit"] {
+  background: var(--paper-bg);
+  border: 1.5px solid var(--paper-ink);
+  border-radius: 0;
+  box-shadow: 2px 3px 0 rgba(40,30,15,0.18);
+  color: var(--paper-ink);
+  font-family: var(--paper-hand);
+}
+
+/* Onboarding overlay & cards                                        */
+body[data-skin="paper"] .onboarding-overlay {
+  background: var(--paper-bg);
+  background-image: linear-gradient(transparent 31px, var(--paper-rule) 32px);
+  background-size: 32px 32px;
+}
+body[data-skin="paper"] .onboarding-inner,
+body[data-skin="paper"] .onboarding-overlay [class*="card"] {
+  background: transparent;
+  border: 1.4px solid var(--paper-ink-faint);
+  border-radius: 0;
+  color: var(--paper-ink);
+  font-family: var(--paper-hand);
+}
+
+/* Tutorial overlay bubble                                           */
+body[data-skin="paper"] .tutorial-bubble {
+  background: var(--paper-bg);
+  border: 1.6px solid var(--paper-ink);
+  border-radius: 0;
+  color: var(--paper-ink);
+  font-family: var(--paper-hand);
+  box-shadow: 3px 4px 0 rgba(40, 30, 15, 0.18);
+}
+body[data-skin="paper"] .tutorial-title {
+  font-family: var(--paper-hand);
+  font-weight: 700;
+}
+body[data-skin="paper"] .tutorial-body {
+  font-family: var(--paper-hand);
+}
+body[data-skin="paper"] .tutorial-skip,
+body[data-skin="paper"] .tutorial-back,
+body[data-skin="paper"] .tutorial-next {
+  background: transparent;
+  border: 1.4px solid var(--paper-ink);
+  border-radius: 0;
+  color: var(--paper-ink);
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  box-shadow: none;
+}
+body[data-skin="paper"] .tutorial-next {
+  background: var(--paper-red);
+  border-color: var(--paper-red);
+  color: var(--paper-bg);
+}
+
+/* Info Guide overlay                                                */
+body[data-skin="paper"] .info-guide-overlay {
+  background: var(--paper-bg);
+}
+body[data-skin="paper"] #infoGuideInner {
+  color: var(--paper-ink);
+  font-family: var(--paper-hand);
+}
+
+/* RP hint / linear-progression hint chips that sometimes show in   */
+/* exercise blocks — paper-tone them so they don't look implanted.  */
+body[data-skin="paper"] .rp-hint-chip,
+body[data-skin="paper"] [class*="rp-hint"],
+body[data-skin="paper"] [class*="linprog-hint"] {
+  background: transparent;
+  border: 1.2px dashed var(--paper-ink-faint);
+  border-radius: 0;
+  color: var(--paper-ink-soft);
+  font-family: var(--paper-form);
+  box-shadow: none;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Generic catch-all: any remaining dark-bg card class that the     */
+/* sweep missed will still get cream paper bg + ink text.           */
+body[data-skin="paper"] .card,
+body[data-skin="paper"] [class*="-card"]:not(.paper-day-card):not(.paper-rest-card):not(.about-card):not(.profile-card):not(.program-card):not(.plate-card):not(.orm-card):not(.data-info-card) {
+  background: transparent;
+  box-shadow: none;
 }
 
 
@@ -10088,7 +10977,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 18;
-const APP_BUILD = "f0412185";
+const APP_BUILD = "99121915";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -12117,10 +13006,13 @@ function renderWorkoutScreen() {
   const u = userData();
 
   if (!u) {
-    document.getElementById("dayBadge").textContent = "–";
-    document.getElementById("dayName").textContent = "No user yet";
-    document.getElementById("daySub").textContent = "Tap the user chip to create one";
-    container.innerHTML = "";
+    const _b = document.getElementById("dayBadge");
+    const _n = document.getElementById("dayName");
+    const _s = document.getElementById("daySub");
+    if (_b) _b.textContent = "–";
+    if (_n) _n.textContent = "No user yet";
+    if (_s) _s.textContent = "Tap the user chip to create one";
+    if (container) container.innerHTML = "";
     updateFinishButton();
     return;
   }
@@ -12266,6 +13158,12 @@ function renderWorkoutScreen() {
 }
 
 function renderDayPicker() {
+  // Paper skin: delegate to flat-notepad day picker (24-paper-render.js).
+  if (typeof isPaperSkin === "function" && isPaperSkin()
+      && typeof paperRenderDayPicker === "function") {
+    paperRenderDayPicker();
+    return;
+  }
   const container = document.getElementById("blocksContainer");
   const u = userData();
   if (!u) return;
@@ -19478,12 +20376,15 @@ function renderAdhocScreen() {
 
   const container = document.getElementById("blocksContainer");
   const badge = document.getElementById("dayBadge");
-  badge.textContent = "+";
-  document.getElementById("dayName").textContent = state.adhocDay.name;
-  document.getElementById("daySub").textContent = "Ad-hoc \u00b7 won't affect program";
+  if (badge) badge.textContent = "+";
+  const dayName = document.getElementById("dayName");
+  if (dayName) dayName.textContent = state.adhocDay.name;
+  const daySub = document.getElementById("daySub");
+  if (daySub) daySub.textContent = "Ad-hoc \u00b7 won't affect program";
 
   // Hide normal start/finish
-  document.getElementById("headerStartBtn").classList.remove("active");
+  const startBtn = document.getElementById("headerStartBtn");
+  if (startBtn) startBtn.classList.remove("active");
 
   // Start the session timer
   if (!state.workoutStartedAt) {
@@ -23179,6 +24080,205 @@ function paperUpdateActiveNavTab(screenId) {
   });
 }
 
+// ─────────────────────────────────────────────────────────────
+// DAY PICKER — flat notepad day cards (replaces .day-picker-card)
+// ─────────────────────────────────────────────────────────────
+// Produces the paper version of the "choose today's workout" screen.
+// Wired through the existing renderDayPicker dispatcher.
+// Reuses class names .dpc-controls-outer, .tb-target-row, .tb-step,
+// .tb-target-val, .tb-start-row, .tb-start-btn, .tb-adj-preview so
+// the time-budget wiring (_wireTimeBudgetCard) still attaches.
+
+function paperRenderDayPicker() {
+  const container = document.getElementById("blocksContainer");
+  const u = (typeof userData === "function") ? userData() : null;
+  if (!container || !u) return;
+
+  const tpl = (typeof PROGRAM_TEMPLATES !== "undefined")
+    ? (PROGRAM_TEMPLATES.find(t => t.id === u.templateId) || PROGRAM_TEMPLATES[0])
+    : null;
+
+  const dayNameEl = document.getElementById("dayName");
+  const daySubEl = document.getElementById("daySub");
+  if (dayNameEl) dayNameEl.textContent = "Today's Workout";
+  if (daySubEl) {
+    daySubEl.textContent = (tpl ? tpl.name : "") + (u.totalWeeks ? " · Week " + (u.currentWeek || 1) + " of " + u.totalWeeks : "");
+  }
+
+  const startBtn = document.getElementById("headerStartBtn");
+  const finishBtn = document.getElementById("headerFinishBtn");
+  if (startBtn) startBtn.classList.remove("active");
+  if (finishBtn) finishBtn.classList.remove("active");
+
+  container.innerHTML = "";
+
+  // Rest-day branch
+  const todayDow = new Date().getDay();
+  const sched = (Array.isArray(u.weeklySchedule) && u.weeklySchedule.length === 7) ? u.weeklySchedule : null;
+  const isRestToday = sched && sched[todayDow] == null;
+
+  if (isRestToday) {
+    const dowName = (typeof _DOW_LABELS_LONG !== "undefined") ? _DOW_LABELS_LONG[todayDow] : "today";
+    if (dayNameEl) dayNameEl.textContent = "Rest Day";
+    if (daySubEl) daySubEl.textContent = "Recovery scheduled — every " + dowName;
+
+    const rest = document.createElement("div");
+    rest.className = "paper-rest-card";
+    rest.innerHTML = `
+      <div class="paper-rest-kicker">today &middot; rest day</div>
+      <div class="paper-rest-title">Recover</div>
+      <div class="paper-rest-sub">Every ${escapeHtml(dowName)} is set as rest. Mobility, sleep, food.</div>
+    `;
+    const actions = document.createElement("div");
+    actions.className = "paper-rest-actions";
+
+    const trainBtn = document.createElement("button");
+    trainBtn.className = "paper-stamp-btn";
+    trainBtn.innerHTML = `<span>Train anyway</span>`;
+    trainBtn.onclick = () => {
+      state.restOverride = true;
+      if (typeof openTrainAnywayPicker === "function") openTrainAnywayPicker();
+    };
+    actions.appendChild(trainBtn);
+
+    const editBtn = document.createElement("button");
+    editBtn.className = "paper-link-btn";
+    editBtn.textContent = "edit schedule →";
+    editBtn.onclick = () => {
+      if (typeof openWeeklyScheduleEditor === "function") openWeeklyScheduleEditor();
+    };
+    actions.appendChild(editBtn);
+
+    rest.appendChild(actions);
+    container.appendChild(rest);
+    return;
+  }
+
+  // Normal branch — hero day + others
+  const nextId = (typeof determineDefaultDay === "function") ? determineDefaultDay() : (u.program[0] && u.program[0].id);
+  const nextDay = u.program.find(d => d.id === nextId) || u.program[0];
+  const picker = document.createElement("div");
+  picker.className = "paper-day-picker";
+
+  picker.appendChild(paperBuildDayCard(nextDay, true));
+
+  const others = u.program.filter(d => d.id !== nextDay.id);
+  if (others.length) {
+    const toggle = document.createElement("button");
+    toggle.className = "paper-day-picker-toggle";
+    toggle.textContent = `+ other workouts (${others.length})`;
+    const otherWrap = document.createElement("div");
+    otherWrap.className = "paper-day-picker-others";
+    otherWrap.style.display = "none";
+    others.forEach(d => otherWrap.appendChild(paperBuildDayCard(d, false)));
+    toggle.onclick = () => {
+      const showing = otherWrap.style.display !== "none";
+      otherWrap.style.display = showing ? "none" : "";
+      toggle.textContent = (showing ? "+ other workouts" : "− hide other workouts") + ` (${others.length})`;
+    };
+    picker.appendChild(toggle);
+    picker.appendChild(otherWrap);
+  }
+
+  container.appendChild(picker);
+}
+
+function paperBuildDayCard(d, isHero) {
+  const card = document.createElement("div");
+  card.className = "paper-day-card" + (isHero ? " paper-day-card-hero" : "");
+  card.dataset.dayId = d.id;
+
+  const breakdown = (typeof getSessionBreakdown === "function") ? getSessionBreakdown(d) : { totalMin: 30, warmupSec: 300, workingSec: 1200, cooldownSec: 300 };
+  const wuMin = Math.round(breakdown.warmupSec / 60);
+  const wkMin = Math.round(breakdown.workingSec / 60);
+  const cdMin = Math.round(breakdown.cooldownSec / 60);
+
+  const totalSets = d.blocks.reduce((n, b) => n + b.exercises.reduce((s, ex) => s + (ex.sets || 0), 0), 0);
+  const blockLetters = d.blocks.map(b => b.letter).join(" ");
+
+  const todayKicker = isHero
+    ? `<div class="paper-day-card-kicker">today &middot; day ${String(d.id).padStart(2, "0")}</div>`
+    : `<div class="paper-day-card-kicker">day ${String(d.id).padStart(2, "0")}</div>`;
+
+  const blockTagsHtml = d.blocks.map(b =>
+    `<span class="paper-day-block-tag">${b.letter} &middot; ${escapeHtml(b.name)}</span>`
+  ).join("");
+
+  const metricsHtml = isHero ? `
+    <div class="paper-day-metrics">
+      <div class="paper-day-metric">
+        <div class="paper-day-metric-label">Sets</div>
+        <div class="paper-day-metric-val">${String(totalSets).padStart(2, "0")}</div>
+        <div class="paper-day-metric-sub">${d.blocks.length} blocks</div>
+      </div>
+      <div class="paper-day-metric">
+        <div class="paper-day-metric-label">Blocks</div>
+        <div class="paper-day-metric-val">${String(d.blocks.length).padStart(2, "0")}</div>
+        <div class="paper-day-metric-sub">${escapeHtml(blockLetters)}</div>
+      </div>
+      <div class="paper-day-metric">
+        <div class="paper-day-metric-label">Est.</div>
+        <div class="paper-day-metric-val">${breakdown.totalMin}</div>
+        <div class="paper-day-metric-sub">min</div>
+      </div>
+    </div>
+  ` : "";
+
+  const defaultTarget = Math.round(breakdown.totalMin / 5) * 5;
+
+  card.innerHTML = `
+    ${todayKicker}
+    <div class="paper-day-card-name">${escapeHtml(d.name || "")}</div>
+    ${d.sub ? `<div class="paper-day-card-sub">${escapeHtml(d.sub)}</div>` : ""}
+    <div class="paper-day-block-list">${blockTagsHtml}</div>
+    ${metricsHtml}
+    <div class="paper-day-card-time">
+      <span class="paper-day-card-time-total picker-duration">⏱ ~${breakdown.totalMin} min</span>
+      <span class="paper-day-card-time-split picker-breakdown">WU ${wuMin}m &middot; Work ${wkMin}m &middot; CD ${cdMin}m</span>
+    </div>
+    <button class="paper-day-card-expand dpc-expand-hint">
+      <span class="dpc-chevron">▾</span> adjust time
+    </button>
+    <div class="dpc-controls-outer">
+      <div class="dpc-controls-inner">
+        <div class="tb-target-row paper-tb-row" data-day-id="${d.id}">
+          <span class="tb-target-label">Target</span>
+          <button class="tb-step tb-down paper-tb-step" data-dir="-1">−</button>
+          <span class="tb-target-val paper-tb-val">${defaultTarget}</span>
+          <span class="tb-target-unit">min</span>
+          <button class="tb-step tb-up paper-tb-step" data-dir="1">+</button>
+        </div>
+        <div class="tb-adj-preview" data-day-id="${d.id}"></div>
+        <div class="tb-start-row paper-tb-start-row" data-day-id="${d.id}">
+          <button class="tb-start-btn paper-start-stamp" data-day-id="${d.id}">Start workout</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Tapping the card opens the workout (unless the tap was on the time-budget controls or the expand hint)
+  card.addEventListener("click", (e) => {
+    if (e.target.closest(".dpc-controls-inner") || e.target.closest(".dpc-expand-hint")) return;
+    state.currentDayId = d.id;
+    state.dayChosen = true;
+    if (typeof openWorkout === "function") openWorkout();
+  });
+
+  // "Adjust time" link toggles the config panel
+  const expand = card.querySelector(".dpc-expand-hint");
+  if (expand) {
+    expand.addEventListener("click", (e) => {
+      e.stopPropagation();
+      card.classList.toggle("expanded");
+    });
+  }
+
+  if (typeof _wireTimeBudgetCard === "function") {
+    _wireTimeBudgetCard(card, d, breakdown);
+  }
+  return card;
+}
+
 if (typeof window !== "undefined") {
   window.paperRenderBlock = paperRenderBlock;
   window.paperRenderExercise = paperRenderExercise;
@@ -23186,6 +24286,8 @@ if (typeof window !== "undefined") {
   window.paperWireSetRow = paperWireSetRow;
   window.paperRebuildBottomNav = paperRebuildBottomNav;
   window.paperUpdateActiveNavTab = paperUpdateActiveNavTab;
+  window.paperRenderDayPicker = paperRenderDayPicker;
+  window.paperBuildDayCard = paperBuildDayCard;
 }
 
 
