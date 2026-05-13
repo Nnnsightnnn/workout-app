@@ -723,6 +723,7 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone) {
   restBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     if (typeof showHeaderRest === "function") showHeaderRest(restSec);
+    if (typeof openRestSheet === "function") openRestSheet();
     if (navigator.vibrate) navigator.vibrate(10);
   });
   row.appendChild(restBtn);

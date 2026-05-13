@@ -12117,7 +12117,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 20;
-const APP_BUILD = "094248bc";
+const APP_BUILD = "9b875498";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -26111,6 +26111,7 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone) {
   restBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     if (typeof showHeaderRest === "function") showHeaderRest(restSec);
+    if (typeof openRestSheet === "function") openRestSheet();
     if (navigator.vibrate) navigator.vibrate(10);
   });
   row.appendChild(restBtn);
