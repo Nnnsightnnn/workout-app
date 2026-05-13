@@ -2280,6 +2280,69 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     w.cancelAdhocWorkout();
   });
 
+  t("share: parseShareInput diagnoses url-missing-payload (#share alone)", () => {
+    // The bug Kenny hit: pasted URL ends with literal `#share`, no payload.
+    const r = w.parseShareInput("https://nnnsightnnn.github.io/workout-app/workout-app.html#share");
+    eq(r.ok, false, "rejected");
+    eq(r.reason, "url_missing_payload", "diagnosed as missing payload");
+    assert(w.SHARE_PARSE_REASONS[r.reason].indexOf("FULL URL") >= 0,
+      "user-facing message tells them to copy full URL");
+  });
+
+  t("share: parseShareInput diagnoses url-missing-payload (#share= empty)", () => {
+    const r = w.parseShareInput("https://nnnsightnnn.github.io/workout-app/#share=");
+    eq(r.ok, false, "rejected");
+    eq(r.reason, "url_missing_payload", "diagnosed as missing payload");
+  });
+
+  t("share: parseShareInput diagnoses url-missing-payload (%23share alone)", () => {
+    const r = w.parseShareInput("https://nnnsightnnn.github.io/workout-app/workout-app.html%23share");
+    eq(r.ok, false, "rejected");
+    eq(r.reason, "url_missing_payload", "%23share alone also caught");
+  });
+
+  t("share: parseShareInput diagnoses not_a_share for unrelated URLs", () => {
+    const r = w.parseShareInput("https://google.com");
+    eq(r.ok, false, "rejected");
+    eq(r.reason, "not_a_share", "diagnosed as not-a-share");
+  });
+
+  t("share: parseShareInput diagnoses empty input", () => {
+    eq(w.parseShareInput("").reason, "empty", "empty string");
+    eq(w.parseShareInput(null).reason, "empty", "null");
+    eq(w.parseShareInput("   \n  ").reason, "empty", "whitespace-only");
+  });
+
+  t("share: parseShareInput diagnoses garbage as not_a_share", () => {
+    // Short non-URL garbage shouldn't be mis-decoded — used to throw a
+    // generic 'Not a valid shared workout' that masked the real problem.
+    eq(w.parseShareInput("hi there").reason, "not_a_share", "casual text");
+    eq(w.parseShareInput("not-base64-!!!").reason, "not_a_share", "short almost-token");
+  });
+
+  t("share: parseShareInput accepts valid URL with surrounding noise", () => {
+    const enc = w.encodeDayForShare(_shareSampleDay);
+    const url = "Hey check this out: https://nnnsightnnn.github.io/workout-app/#share=" + enc + " — try it";
+    const r = w.parseShareInput(url);
+    eq(r.ok, true, "URL embedded in message decoded");
+    eq(r.data.name, "Pull Day", "name extracted");
+  });
+
+  t("share: parseShareInput accepts valid URL with trailing whitespace", () => {
+    const enc = w.encodeDayForShare(_shareSampleDay);
+    const r = w.parseShareInput("  https://nnnsightnnn.github.io/workout-app/#share=" + enc + "  \n");
+    eq(r.ok, true, "whitespace tolerated");
+    eq(r.data.name, "Pull Day", "name extracted");
+  });
+
+  t("share: every reason code has a user-facing message", () => {
+    const codes = ["empty", "url_missing_payload", "not_a_share", "bad_base64", "bad_json", "bad_shape"];
+    codes.forEach(c => {
+      assert(typeof w.SHARE_PARSE_REASONS[c] === "string" && w.SHARE_PARSE_REASONS[c].length > 0,
+        c + " has a message");
+    });
+  });
+
   t("share: deep-link handler clears the hash and surfaces import sheet", () => {
     w.localStorage.clear();
     w.addUser("Kenny");

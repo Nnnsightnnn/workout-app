@@ -130,33 +130,76 @@ function buildShareUrl(day) {
   return base + "#share=" + enc;
 }
 
-function decodeSharedDay(input) {
-  if (!input || typeof input !== "string") return null;
+// Reason codes for parseShareInput failures, mapped to user-facing messages.
+// Surfaced via the import sheet and deep-link handler so the user can tell
+// "I pasted half a URL" from "the payload is corrupted" from "this isn't a
+// share link at all."
+const SHARE_PARSE_REASONS = {
+  empty: "Paste a share link or code first.",
+  url_missing_payload: "Share link is missing the workout data. Copy the FULL URL — everything after #share= is required.",
+  not_a_share: "That doesn't look like a share link. Paste the full URL your friend sent.",
+  bad_base64: "Share code is corrupted. Try copying the link again.",
+  bad_json: "Share data is corrupted. Try copying the link again.",
+  bad_shape: "Share link is missing workout data."
+};
+
+function _decodeShareToken(enc) {
+  let json;
+  try { json = _b64UrlDecode(enc); }
+  catch (e) { return { ok: false, reason: "bad_base64" }; }
+  let data;
+  try { data = JSON.parse(json); }
+  catch (e) { return { ok: false, reason: "bad_json" }; }
+  if (!data || typeof data !== "object") return { ok: false, reason: "bad_shape" };
+  return { ok: true, data: data };
+}
+
+// Parse whatever the user pasted into either { ok:true, data } or
+// { ok:false, reason }. Reason codes feed SHARE_PARSE_REASONS so the user
+// sees a specific diagnostic rather than one generic error.
+function parseShareInput(input) {
+  if (!input || typeof input !== "string") return { ok: false, reason: "empty" };
   // Strip ALL whitespace first — email/iMessage often wrap long URLs across
   // lines, leaving newlines or spaces inside the base64 payload.
   // Also strip common chat-app wrappers: Slack <url>, parens, quotes, brackets.
   const cleaned = input
     .replace(/\s+/g, "")
     .replace(/^[<("'\[]+|[>)"'\]]+$/g, "");
-  // Pull the share token out of a URL. Accepts the literal "#share=" or its
-  // percent-encoded form "%23share=" (some clients escape the fragment).
-  // The [A-Za-z0-9_-]+ class stops at the first non-base64url byte, so any
-  // trailing punctuation, query string, or appended text is naturally trimmed.
+  if (!cleaned) return { ok: false, reason: "empty" };
+
+  // 1) Try to extract a #share=<token> (or its percent-encoded form).
+  //    The [A-Za-z0-9_-]+ class stops at the first non-base64url byte, so
+  //    trailing punctuation, query strings, or appended text are trimmed.
   const m = cleaned.match(/(?:#|%23)share=([A-Za-z0-9_\-]+)/i);
-  let enc;
-  if (m) {
-    enc = m[1];
-  } else {
-    // Raw-token fallback: caller pasted just the encoded payload (no URL).
-    enc = cleaned.replace(/[^A-Za-z0-9_\-]/g, "");
+  if (m) return _decodeShareToken(m[1]);
+
+  // 2) URL-shaped input that didn't yield a token. Either the payload is
+  //    missing (#share alone, #share= empty, or non-base64 garbage after =)
+  //    or it isn't a share link at all.
+  const looksLikeUrl = /^(https?:|\/\/)/i.test(cleaned) ||
+                       /github\.io|workout-app\.html/i.test(cleaned);
+  if (looksLikeUrl) {
+    if (/(?:#|%23)share/i.test(cleaned)) {
+      return { ok: false, reason: "url_missing_payload" };
+    }
+    return { ok: false, reason: "not_a_share" };
   }
-  if (!enc) return null;
-  try {
-    const json = _b64UrlDecode(enc);
-    return JSON.parse(json);
-  } catch (e) {
-    return null;
-  }
+
+  // 3) Raw-token fallback: caller pasted just the encoded payload (no URL).
+  //    Be conservative — require a meaningful run of base64url chars so a
+  //    stray "hi there" doesn't get mis-decoded into a generic parse error.
+  //    Real workout payloads are hundreds of base64url chars; 20 is well
+  //    below that floor but well above accidental short strings.
+  const enc = cleaned.replace(/[^A-Za-z0-9_\-]/g, "");
+  if (enc.length < 20) return { ok: false, reason: "not_a_share" };
+  return _decodeShareToken(enc);
+}
+
+// Legacy: returns decoded data or null. Preserved so existing call sites
+// and tests keep working; new code should call parseShareInput directly.
+function decodeSharedDay(input) {
+  const r = parseShareInput(input);
+  return r.ok ? r.data : null;
 }
 
 function validateImportedDay(obj) {
@@ -343,10 +386,14 @@ function openImportWorkoutSheet() {
     const next = document.getElementById("shareImportNext");
     if (next) next.onclick = () => {
       const raw = (document.getElementById("shareImportInput") || {}).value || "";
-      const decoded = decodeSharedDay(raw);
-      const errors = validateImportedDay(decoded);
+      const parsed = parseShareInput(raw);
+      if (!parsed.ok) {
+        showToast(SHARE_PARSE_REASONS[parsed.reason] || "Couldn't read share link");
+        return;
+      }
+      const errors = validateImportedDay(parsed.data);
       if (errors.length) { showToast(errors[0]); return; }
-      _showImportConfirmSheet(decoded);
+      _showImportConfirmSheet(parsed.data);
     };
   }, 30);
 }
@@ -398,14 +445,19 @@ function maybeHandleShareDeepLink() {
     history.replaceState(null, "", location.pathname + location.search + (cleaned ? "#" + cleaned : ""));
   } catch (e) { /* non-fatal */ }
 
-  const decoded = decodeSharedDay(m[1]);
-  const errors = validateImportedDay(decoded);
+  const parsed = parseShareInput("#share=" + m[1]);
+  if (!parsed.ok) {
+    const msg = SHARE_PARSE_REASONS[parsed.reason] || "Couldn't read share link";
+    setTimeout(() => showToast("Couldn't import: " + msg), 600);
+    return true;
+  }
+  const errors = validateImportedDay(parsed.data);
   if (errors.length) {
     setTimeout(() => showToast("Couldn't import: " + errors[0]), 600);
     return true;
   }
   // Defer slightly so the workout screen is mounted before the sheet opens
-  setTimeout(() => _showImportConfirmSheet(decoded), 600);
+  setTimeout(() => _showImportConfirmSheet(parsed.data), 600);
   return true;
 }
 
@@ -416,6 +468,8 @@ try {
     window.formatDayAsText = formatDayAsText;
     window.encodeDayForShare = encodeDayForShare;
     window.decodeSharedDay = decodeSharedDay;
+    window.parseShareInput = parseShareInput;
+    window.SHARE_PARSE_REASONS = SHARE_PARSE_REASONS;
     window.validateImportedDay = validateImportedDay;
   }
 } catch (e) {}
