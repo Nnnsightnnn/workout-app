@@ -2367,6 +2367,75 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     eq(w.decodeSharedDay("aGVsbG8="), null, "valid b64 but not JSON → null");
   });
 
+  // ---- buildShareUrl redirect-strip fix ----
+  // GitHub Pages serves /workout-app/ via an index.html that meta-refreshes to
+  // workout-app.html, and meta-refresh DROPS the URL hash. Share URLs must
+  // therefore point directly at workout-app.html, never at the redirect page.
+
+  t("share: buildShareUrl points at workout-app.html when pathname is /workout-app/", () => {
+    dom.reconfigure({ url: "https://nnnsightnnn.github.io/workout-app/" });
+    const url = w.buildShareUrl(_shareSampleDay);
+    assert(url.includes("workout-app.html#share="),
+      "URL must contain workout-app.html#share= (got: " + url + ")");
+    assert(!/workout-app\/#share=/.test(url),
+      "URL must NOT end with /workout-app/#share= (got: " + url + ")");
+  });
+
+  t("share: buildShareUrl preserves workout-app.html when already in pathname", () => {
+    dom.reconfigure({ url: "https://nnnsightnnn.github.io/workout-app/workout-app.html" });
+    const url = w.buildShareUrl(_shareSampleDay);
+    assert(url.includes("workout-app.html#share="),
+      "URL must contain workout-app.html#share= (got: " + url + ")");
+    assert(!url.includes("workout-app.html/workout-app.html"),
+      "must not double-append workout-app.html (got: " + url + ")");
+  });
+
+  t("share: buildShareUrl falls back to canonical workout-app.html when location is undefined", () => {
+    // jsdom's window.location is non-configurable, so we re-evaluate the
+    // function's source in a fresh vm context with no `location` global.
+    // The pre-computed encoded payload comes from the production helper so
+    // we're testing the real URL-building branch under the real fn source.
+    const vm = require("vm");
+    const enc = w.encodeDayForShare(_shareSampleDay);
+    const sandbox = { encodeDayForShare: () => enc };
+    vm.createContext(sandbox);
+    const code = "(" + w.buildShareUrl.toString() + ")(null)";
+    const url = vm.runInContext(code, sandbox);
+    assert(typeof url === "string", "produced a string URL (got: " + url + ")");
+    assert(url.includes("workout-app.html#share="),
+      "URL must contain workout-app.html#share= (got: " + url + ")");
+    assert(url.startsWith("https://nnnsightnnn.github.io/workout-app/workout-app.html#share="),
+      "must use canonical Pages URL (got: " + url + ")");
+  });
+
+  t("share: parseShareInput round-trips buildShareUrl output across pathname variants", () => {
+    // Variant 1: redirect-index pathname /workout-app/
+    dom.reconfigure({ url: "https://nnnsightnnn.github.io/workout-app/" });
+    const url1 = w.buildShareUrl(_shareSampleDay);
+    const parsed1 = w.parseShareInput(url1);
+    eq(parsed1.ok, true, "round-trip from /workout-app/ pathname");
+    eq(parsed1.data.name, "Pull Day", "name survived /workout-app/ round-trip");
+
+    // Variant 2: already at workout-app.html
+    dom.reconfigure({ url: "https://nnnsightnnn.github.io/workout-app/workout-app.html" });
+    const url2 = w.buildShareUrl(_shareSampleDay);
+    const parsed2 = w.parseShareInput(url2);
+    eq(parsed2.ok, true, "round-trip from workout-app.html pathname");
+    eq(parsed2.data.name, "Pull Day", "name survived workout-app.html round-trip");
+
+    // Variant 3: location undefined (Node env) — synthesize URL via vm sandbox
+    // (matches the buildShareUrl-fallback test), then feed it back through
+    // the production parser to confirm it round-trips end-to-end.
+    const vm = require("vm");
+    const enc = w.encodeDayForShare(_shareSampleDay);
+    const sandbox = { encodeDayForShare: () => enc };
+    vm.createContext(sandbox);
+    const url3 = vm.runInContext("(" + w.buildShareUrl.toString() + ")(null)", sandbox);
+    const parsed3 = w.parseShareInput(url3);
+    eq(parsed3.ok, true, "round-trip from canonical-fallback URL");
+    eq(parsed3.data.name, "Pull Day", "name survived fallback round-trip");
+  });
+
   t("share: decodeSharedDay tolerates whitespace + line wrapping", () => {
     const enc = w.encodeDayForShare(_shareSampleDay);
     // Email clients often hard-wrap URLs at column ~76

@@ -161,10 +161,19 @@ function encodeDayForShare(day) {
 function buildShareUrl(day) {
   const enc = encodeDayForShare(day);
   if (!enc) return null;
-  // Use location.origin + pathname so the user lands on this exact app build
-  const base = (typeof location !== "undefined")
-    ? (location.origin + location.pathname)
-    : "https://nnnsightnnn.github.io/workout-app/";
+  // Resolve to the app file directly. GitHub Pages serves an index.html at
+  // /workout-app/ that meta-refreshes to workout-app.html, and meta-refresh
+  // drops the URL hash — so a share URL ending in /workout-app/#share=… loses
+  // the payload during redirect. Force the URL to point at workout-app.html.
+  let base;
+  if (typeof location !== "undefined") {
+    base = location.origin + location.pathname;
+    if (/\/$/.test(location.pathname)) {
+      base += "workout-app.html";
+    }
+  } else {
+    base = "https://nnnsightnnn.github.io/workout-app/workout-app.html";
+  }
   return base + "#share=" + enc;
 }
 
