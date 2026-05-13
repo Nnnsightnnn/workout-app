@@ -7410,6 +7410,67 @@ body[data-skin="paper"] .paper-warmup-done.done {
   text-decoration: line-through wavy;
 }
 
+/* PAPER AD-HOC — inline number inputs styled like handwritten values */
+body[data-skin="paper"] .adhoc-paper-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 24px;
+}
+body[data-skin="paper"] input.adhoc-paper-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px dotted var(--paper-ink-mist);
+  border-radius: 0;
+  font-family: var(--paper-hand);
+  font-size: 18px;
+  color: var(--paper-ink);
+  padding: 2px 2px;
+  min-width: 48px;
+  width: 48px;
+  text-align: center;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+body[data-skin="paper"] input.adhoc-paper-input::-webkit-outer-spin-button,
+body[data-skin="paper"] input.adhoc-paper-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+body[data-skin="paper"] input.adhoc-paper-input:focus {
+  outline: none;
+  background: var(--paper-marker-soft);
+  border-bottom-color: var(--paper-ink);
+}
+body[data-skin="paper"] .paper-set-row.set-done input.adhoc-paper-input {
+  color: var(--paper-ink-faint);
+  text-decoration: line-through;
+}
+body[data-skin="paper"] .adhoc-paper-set-ctrls {
+  display: flex;
+  gap: 16px;
+  padding-left: 28px;
+  margin-top: 2px;
+}
+body[data-skin="paper"] .adhoc-paper-remove {
+  background: transparent;
+  border: none;
+  font-family: var(--paper-form);
+  font-size: 16px;
+  color: var(--paper-ink-faint);
+  cursor: pointer;
+  padding: 6px 8px;
+  margin-left: 6px;
+  line-height: 1;
+}
+body[data-skin="paper"] .adhoc-paper-remove:active {
+  color: var(--paper-red);
+}
+body[data-skin="paper"] .adhoc-paper-finish {
+  margin-top: 18px;
+  align-self: center;
+}
+
 /* PAPER BOTTOM NAV — cream-deep bar with torn-edge top, 5 tabs,    */
 /* hand-drawn squiggle under the active tab. Stay pinned to the     */
 /* viewport bottom (default nav.bottom uses position:fixed).        */

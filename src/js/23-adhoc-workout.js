@@ -203,6 +203,16 @@ function renderAdhocScreen() {
   const daySub = document.getElementById("daySub");
   if (daySub) daySub.textContent = "Ad-hoc \u00b7 won't affect program";
 
+  // Hide program-only chrome from the workout screen \u2014 these refer to the
+  // user's scheduled program (week strip, weekly progress, sticky stats bar)
+  // and bleed visually into an imported / ad-hoc session.
+  const tStrip = document.getElementById("timelineStrip");
+  if (tStrip) tStrip.style.display = "none";
+  const sCard = document.getElementById("stampCard");
+  if (sCard) sCard.style.display = "none";
+  const sEst = document.getElementById("sessionEstRow");
+  if (sEst) sEst.style.display = "none";
+
   // Hide normal start/finish
   const startBtn = document.getElementById("headerStartBtn");
   if (startBtn) startBtn.classList.remove("active");
@@ -215,25 +225,29 @@ function renderAdhocScreen() {
 
   container.innerHTML = "";
 
+  const paperOn = (typeof isPaperSkin === "function" && isPaperSkin());
+
   const wrap = document.createElement("div");
-  wrap.className = "adhoc-workout-wrap";
+  wrap.className = paperOn ? "adhoc-paper-wrap" : "adhoc-workout-wrap";
 
   // If we have exercises, render them
   if (state.adhocDay.blocks.length > 0) {
     state.adhocDay.blocks.forEach((block, bi) => {
-      // Block header
-      const hdr = document.createElement("div");
-      hdr.className = "block-header";
-      hdr.innerHTML = `
-        <div class="block-letter">${block.letter}</div>
-        <div class="block-title">${block.name}</div>
-      `;
-      wrap.appendChild(hdr);
-
-      // Render each exercise with set logging
-      block.exercises.forEach((ex, ei) => {
-        wrap.appendChild(_renderAdhocExercise(block, ex, bi, ei));
-      });
+      if (paperOn) {
+        wrap.appendChild(_renderAdhocPaperBlock(block, bi));
+      } else {
+        // Legacy chunky path \u2014 kept as fallback; paper skin is unconditional today.
+        const hdr = document.createElement("div");
+        hdr.className = "block-header";
+        hdr.innerHTML = `
+          <div class="block-letter">${block.letter}</div>
+          <div class="block-title">${block.name}</div>
+        `;
+        wrap.appendChild(hdr);
+        block.exercises.forEach((ex, ei) => {
+          wrap.appendChild(_renderAdhocExercise(block, ex, bi, ei));
+        });
+      }
     });
   }
 
@@ -294,15 +308,20 @@ function renderAdhocScreen() {
 
   // Add exercise button
   const addExBtn = document.createElement("button");
-  addExBtn.className = "adhoc-add-exercise-btn";
-  addExBtn.innerHTML = '+ Add Exercise';
+  addExBtn.className = paperOn ? "paper-add-ex" : "adhoc-add-exercise-btn";
+  addExBtn.innerHTML = paperOn ? "+ add exercise" : "+ Add Exercise";
   addExBtn.onclick = () => _openAdhocAddExercise();
   wrap.appendChild(addExBtn);
 
   // Finish button
   const finBtn = document.createElement("button");
-  finBtn.className = "action-btn success adhoc-finish-btn";
-  finBtn.textContent = "\u2713 Finish Quick Workout";
+  if (paperOn) {
+    finBtn.className = "paper-stamp-btn adhoc-paper-finish";
+    finBtn.innerHTML = `<span>\u2713 finish quick workout</span>`;
+  } else {
+    finBtn.className = "action-btn success adhoc-finish-btn";
+    finBtn.textContent = "\u2713 Finish Quick Workout";
+  }
   finBtn.onclick = finishAdhocWorkout;
   wrap.appendChild(finBtn);
 
@@ -457,6 +476,190 @@ function _renderAdhocExercise(block, ex, bi, ei) {
 
   card.appendChild(setsWrap);
   return card;
+}
+
+// ─────────────────────────────────────────────────────────────
+// PAPER-SKIN AD-HOC RENDERERS
+// ─────────────────────────────────────────────────────────────
+// Mirror the flat-notepad DOM from 24-paper-render.js (paperRenderBlock /
+// paperRenderExercise / paperRenderSetsTable) so imported & quick workouts
+// match the rest of the app. Reads/writes state.adhocInputs (not the regular
+// draft) because ad-hoc sessions are not bound to state.currentDayId.
+
+function _renderAdhocPaperBlock(block, bi) {
+  const wrap = document.createElement("div");
+  wrap.className = "paper-block";
+  wrap.dataset.bi = bi;
+
+  const label = document.createElement("div");
+  label.className = "paper-superset-label";
+  label.innerHTML = `
+    <span class="paper-superset-id">${_escA(block.letter)} &middot; ${_escA(block.name || "")}</span>
+    <span class="paper-superset-rest"></span>
+  `;
+  wrap.appendChild(label);
+
+  block.exercises.forEach((ex, ei) => {
+    wrap.appendChild(_renderAdhocPaperExercise(block, ex, bi, ei));
+  });
+
+  return wrap;
+}
+
+function _renderAdhocPaperExercise(block, ex, bi, ei) {
+  const wrap = document.createElement("div");
+  wrap.className = "paper-exercise";
+  wrap.dataset.bi = bi;
+  wrap.dataset.ei = ei;
+
+  const head = document.createElement("div");
+  head.className = "paper-exercise-head";
+  const isSuperset = block.exercises.length > 1;
+  const numLabel = `${block.letter}${isSuperset ? (ei + 1) : ""})`;
+  const numSets = ex.sets || 3;
+  const targetSpec = `${numSets} &times; ${ex.reps || "?"}`;
+
+  head.innerHTML = `
+    <div class="paper-ex-left">
+      <span class="paper-ex-no">${numLabel}</span>
+      <span class="paper-ex-name">${_escA(ex.name || "")}</span>
+    </div>
+    <div class="paper-ex-target">${targetSpec}</div>
+    <button class="paper-ex-menu adhoc-paper-remove" aria-label="Remove exercise" title="Remove exercise">&times;</button>
+  `;
+  head.querySelector(".adhoc-paper-remove").onclick = (e) => {
+    e.stopPropagation();
+    block.exercises.splice(ei, 1);
+    if (block.exercises.length === 0) {
+      state.adhocDay.blocks = state.adhocDay.blocks.filter(b => b.id !== block.id);
+    }
+    renderAdhocScreen();
+  };
+  wrap.appendChild(head);
+
+  wrap.appendChild(_renderAdhocPaperSetsTable(block, ex, bi, ei));
+  return wrap;
+}
+
+function _renderAdhocPaperSetsTable(block, ex, bi, ei) {
+  const list = document.createElement("div");
+  list.className = "paper-set-list";
+
+  const numSets = ex.sets || 3;
+  const bw = !!ex.bodyweight;
+  const last = (typeof getLastSetsFor === "function") ? getLastSetsFor(ex.exId || ex.name) : [];
+  const repsLabel = ex.isTime ? "s" : ex.isDistance ? "m" : "reps";
+  const ink = (typeof paperInkColor === "function") ? paperInkColor() : "#1e3a72";
+
+  for (let si = 0; si < numSets; si++) {
+    const sKey = `adhoc|${bi}|${ei}|${si}`;
+    const existing = state.adhocInputs[sKey] || {};
+    const lastSet = last[si] || last[last.length - 1];
+    const done = existing.status === "done";
+    const skipped = existing.status === "skipped";
+
+    const wVal = existing.w != null ? existing.w
+      : (lastSet ? lastSet.weight : (ex.defaultWeight || 0));
+    const rVal = existing.r != null ? existing.r
+      : (lastSet ? lastSet.reps : (ex.reps || 0));
+
+    const row = document.createElement("div");
+    row.className = "paper-set-row adhoc-paper-set-row";
+    if (done) row.classList.add("set-done");
+    if (skipped) row.classList.add("set-skipped");
+    row.dataset.setIdx = si;
+
+    const cbHtml = (typeof paperCheckboxSvg === "function")
+      ? paperCheckboxSvg(done, ink, 18)
+      : `<span>${done ? "☒" : "☐"}</span>`;
+
+    row.innerHTML = `
+      <span class="paper-set-idx">${si + 1}.</span>
+      <span class="paper-set-box" role="checkbox" aria-checked="${done}">${cbHtml}</span>
+      ${bw ? "" : `<input class="paper-set-weight adhoc-paper-input" type="number" inputmode="decimal" data-field="w" value="${wVal}" placeholder="wt"><span class="paper-set-x">&times;</span>`}
+      <input class="paper-set-reps adhoc-paper-input" type="number" inputmode="numeric" data-field="r" value="${rVal}" placeholder="reps">
+      <span class="paper-set-rpe-lbl">${_escA(repsLabel)}</span>
+    `;
+
+    _wireAdhocPaperSetRow(row, ex, bi, ei, si, bw);
+    list.appendChild(row);
+  }
+
+  // Add-set / remove-set as flat handwritten links
+  const ctrls = document.createElement("div");
+  ctrls.className = "adhoc-paper-set-ctrls";
+  const addBtn = document.createElement("button");
+  addBtn.className = "paper-add-set";
+  addBtn.textContent = "+ add set";
+  addBtn.onclick = () => {
+    ex.sets = (ex.sets || 3) + 1;
+    renderAdhocScreen();
+  };
+  ctrls.appendChild(addBtn);
+
+  if (numSets > 1) {
+    const rmBtn = document.createElement("button");
+    rmBtn.className = "paper-add-set";
+    rmBtn.textContent = "− remove set";
+    rmBtn.onclick = () => {
+      delete state.adhocInputs[`adhoc|${bi}|${ei}|${numSets - 1}`];
+      ex.sets = Math.max(1, (ex.sets || 3) - 1);
+      renderAdhocScreen();
+    };
+    ctrls.appendChild(rmBtn);
+  }
+  list.appendChild(ctrls);
+
+  return list;
+}
+
+function _wireAdhocPaperSetRow(row, ex, bi, ei, si, bw) {
+  const sKey = `adhoc|${bi}|${ei}|${si}`;
+
+  function ensure() {
+    if (!state.adhocInputs[sKey]) state.adhocInputs[sKey] = {};
+    return state.adhocInputs[sKey];
+  }
+
+  const toggleDone = () => {
+    const cur = ensure();
+    const wasDone = cur.status === "done";
+    cur.status = wasDone ? null : "done";
+    if (cur.status === "done") {
+      // Capture current displayed values so they persist on finish
+      const wEl = row.querySelector('input[data-field="w"]');
+      const rEl = row.querySelector('input[data-field="r"]');
+      if (wEl) cur.w = parseFloat(wEl.value) || 0;
+      if (rEl) cur.r = parseInt(rEl.value) || 0;
+    }
+    if (navigator.vibrate) navigator.vibrate(10);
+    renderAdhocScreen();
+  };
+
+  const box = row.querySelector(".paper-set-box");
+  if (box) {
+    box.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleDone();
+    });
+  }
+
+  row.querySelectorAll("input.adhoc-paper-input").forEach(inp => {
+    const field = inp.dataset.field;
+    inp.addEventListener("change", () => {
+      const cur = ensure();
+      cur[field] = field === "w" ? (parseFloat(inp.value) || 0) : (parseInt(inp.value) || 0);
+    });
+    // Prevent row-level taps from toggling done while user is editing
+    inp.addEventListener("click", e => e.stopPropagation());
+  });
+}
+
+// Local html escaper — keeps this file independent of 24-paper-render.js
+function _escA(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
 function _openAdhocAddExercise() {
