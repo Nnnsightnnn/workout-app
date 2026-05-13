@@ -59,7 +59,10 @@ function showScreen(name) {
   document.querySelectorAll("nav.bottom button").forEach(b => b.classList.toggle("active", b.dataset.screen === name));
   if (name === "history") renderHistory();
   if (name === "workout") renderWorkoutScreen();
-  if (name === "settings") { renderProgramPicker(); renderProfileCard(); renderUserSection(); renderDataInfo(); }
+  if (name === "settings") {
+    renderProgramPicker(); renderProfileCard(); renderUserSection(); renderDataInfo();
+    if (typeof ensureNotebookStyleSection === "function") ensureNotebookStyleSection();
+  }
   if (name === "body") renderBodyScreen();
   if (name === "prs") { _prDetailExId = null; renderPRScreen(); }
 }

@@ -1978,6 +1978,52 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
   });
 
   // ============================================================
+  // PAPER SKIN (v18)
+  // ============================================================
+  t("paper-skin: primitives exported on window", () => {
+    assert(typeof w.PAPER === "object" && w.PAPER.inkBlue, "PAPER tokens exposed");
+    assert(typeof w.paperCheckboxSvg === "function", "paperCheckboxSvg exposed");
+    assert(typeof w.paperStrikeWrap === "function", "paperStrikeWrap exposed");
+    assert(typeof w.paperStamp === "function", "paperStamp exposed");
+    assert(typeof w.applyPaperSkin === "function", "applyPaperSkin exposed");
+  });
+  t("paper-skin: migration v18 backfills prefs on existing users", () => {
+    w.localStorage.clear();
+    w.localStorage.setItem("kn-lifts-v3", JSON.stringify({
+      _schemaVersion: 17,
+      unit: "lbs",
+      users: [{
+        id: "u_old", name: "Old", program: [], sessions: [],
+        measurements: [], templateId: "conjugate5"
+      }],
+      currentUserId: "u_old",
+      onboarding: null,
+      onboardingDismissedAt: null
+    }));
+    w.runMigrations();
+    const s = w.loadStore();
+    const u = s.users[0];
+    eq(u.paperSkin, true,                "paperSkin defaults to true");
+    eq(u.paperRule, "ruled",             "paperRule defaults to ruled");
+    eq(u.paperInk,  "blue",              "paperInk defaults to blue");
+    eq(u.paperHand, "Shadows Into Light","paperHand defaults to Shadows Into Light");
+  });
+  t("paper-skin: applyPaperSkin toggles body[data-skin]", () => {
+    w.localStorage.clear();
+    const u = w.addUser("PaperUser");
+    w.applyPaperSkin();
+    eq(w.document.body.getAttribute("data-skin"), "paper", "body data-skin = paper after apply");
+    // Flip off via updateUser
+    w.updateUser(usr => { usr.paperSkin = false; });
+    w.applyPaperSkin();
+    eq(w.document.body.getAttribute("data-skin"), null, "body data-skin cleared when paperSkin=false");
+    // Restore
+    w.updateUser(usr => { usr.paperSkin = true; });
+    w.applyPaperSkin();
+    eq(w.document.body.getAttribute("data-skin"), "paper", "body data-skin restored when paperSkin=true");
+  });
+
+  // ============================================================
   // SHARE / IMPORT WORKOUT
   // ============================================================
   // Sample day used across the share suite. Mirrors the shape produced

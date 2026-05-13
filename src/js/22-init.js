@@ -136,6 +136,7 @@ function openAddUserDialog(isFirstRun) {
     const u = addUser(name, tplId);
     state.currentDayId = determineDefaultDay();
     closeSheet();
+    if (typeof applyPaperSkin === "function") applyPaperSkin();
     renderUserChip();
     renderUserSection();
     renderWorkoutScreen();
@@ -321,8 +322,13 @@ function init() {
   document.querySelectorAll("#unitToggle button").forEach(b => b.classList.toggle("active", b.dataset.unit === state.unit));
 
   setupPWA();
+  // Paper-skin: inject SVG defs + read prefs onto <body>
+  if (typeof paperRoughenDefs === "function") paperRoughenDefs();
+  if (typeof applyPaperSkin === "function") applyPaperSkin();
   initUserPicker(); initUnitToggle(); initAutoTimerToggle(); initNav(); initTools();
   initWorkoutScreen(); initSheet(); initSidebar(); initInfoGuide();
+  // Paper-skin: inject the Notebook Style picker into Settings.
+  if (typeof ensureNotebookStyleSection === "function") ensureNotebookStyleSection();
   if (typeof initScreenSwipe === "function") initScreenSwipe();
   if (typeof initTutorial === "function") initTutorial();
 

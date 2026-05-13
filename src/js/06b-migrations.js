@@ -314,6 +314,19 @@ const MIGRATIONS = [
       });
       return store;
     }
+  },
+  {
+    version: 18,
+    description: "Add paper-notepad skin prefs (paperSkin, paperRule, paperInk, paperHand) per user",
+    migrate(store) {
+      (store.users || []).forEach(u => {
+        if (u.paperSkin === undefined) u.paperSkin = true;
+        if (u.paperRule === undefined) u.paperRule = "ruled";
+        if (u.paperInk  === undefined) u.paperInk  = "blue";
+        if (u.paperHand === undefined) u.paperHand = "Shadows Into Light";
+      });
+      return store;
+    }
   }
 ];
 

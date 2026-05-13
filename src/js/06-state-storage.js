@@ -67,7 +67,12 @@ function newUserRecord(name, templateId, totalWeeks, daysPerWeek) {
     daysPerWeek: dpw,
     pinnedLifts: [],
     manualPRs: [],
-    firstWorkoutCompleted: false
+    firstWorkoutCompleted: false,
+    // Paper-notepad skin prefs (defaults match design spec).
+    paperSkin: true,
+    paperRule: "ruled",
+    paperInk: "blue",
+    paperHand: "Shadows Into Light"
   };
 }
 
@@ -187,6 +192,11 @@ function loadStore() {
       if (!Array.isArray(u.manualPRs)) u.manualPRs = [];
       if (!Array.isArray(u.pinnedLifts)) u.pinnedLifts = [];
       if (u.firstWorkoutCompleted === undefined) u.firstWorkoutCompleted = false;
+      // Defensive defaults for v18 paper-skin prefs
+      if (u.paperSkin === undefined) u.paperSkin = true;
+      if (u.paperRule === undefined) u.paperRule = "ruled";
+      if (u.paperInk  === undefined) u.paperInk  = "blue";
+      if (u.paperHand === undefined) u.paperHand = "Shadows Into Light";
       // Defensive defaults for session edit fields (Workstream D)
       // Also cleans up _original audit entries older than 7 days.
       const sevenDaysAgo = Date.now() - 7 * 86400000;
@@ -337,6 +347,7 @@ function switchUser(id) {
   state.currentDayId = determineDefaultDay();
   const d = getDraft();
   if (d && state.autoTimer) { state.workoutStartedAt = d.startedAt; startSessionTimer(); }
+  if (typeof applyPaperSkin === "function") applyPaperSkin();
   renderWorkoutScreen();
   renderUserChip();
 }
