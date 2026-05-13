@@ -31,6 +31,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Download fonts (Google Fonts → mockups/fonts/)
+        # Fonts are gitignored and inlined at build time. Without this step,
+        # build.js silently falls back to system fonts and the paper skin
+        # loses its handwriting/typewriter typography.
+        run: node mockups/download-fonts.js
+
       - name: Build workout-app.html from src/
         run: npm run build
 
