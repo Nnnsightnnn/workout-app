@@ -57,6 +57,7 @@ function showScreen(name) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   document.getElementById("screen-" + name).classList.add("active");
   document.querySelectorAll("nav.bottom button").forEach(b => b.classList.toggle("active", b.dataset.screen === name));
+  if (typeof paperUpdateActiveNavTab === "function") paperUpdateActiveNavTab(name);
   if (name === "history") renderHistory();
   if (name === "workout") renderWorkoutScreen();
   if (name === "settings") {

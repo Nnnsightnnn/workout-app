@@ -6807,3 +6807,405 @@ body[data-skin="paper"] .hanko-stamp {
   transform: rotate(-12deg);
 }
 body[data-skin="paper"] .hanko-text { color: var(--paper-red); font-family: var(--paper-form); }
+
+/* ============================================================ */
+/* PAPER NOTEPAD — flat DOM (no cards, no chips, just notebook   */
+/* lines and handwriting). Produced by 24-paper-render.js when   */
+/* paper skin is active. Renders alongside the old chunky chrome */
+/* below; the JS only emits one or the other.                    */
+/* ============================================================ */
+
+/* Hide the dark-themed top app header in paper mode — the page     */
+/* renders its own kicker (renderPaperKicker) inline at the top.    */
+body[data-skin="paper"] > header {
+  display: none;
+}
+
+/* Day-bar (template's day badge + 5 icon buttons) becomes the      */
+/* paper DayHeader + QuickActionRow. Flat, no chunky chrome.        */
+body[data-skin="paper"] .day-bar {
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  border-radius: 0;
+  padding: 6px 16px 4px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+}
+body[data-skin="paper"] .day-bar .badge {
+  display: none;  /* badge number not used in paper layout */
+}
+body[data-skin="paper"] .day-bar .info {
+  flex: 1 0 100%;
+  margin-bottom: 4px;
+}
+body[data-skin="paper"] .day-bar .name {
+  font-family: var(--paper-hand);
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+  color: var(--paper-ink);
+  text-shadow: none;
+}
+body[data-skin="paper"] .day-bar .sub {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+body[data-skin="paper"] .day-bar .icon-btn {
+  width: 36px; height: 36px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .day-bar .icon-btn:active {
+  transform: translateY(1px);
+  box-shadow: none;
+  background: transparent;
+}
+body[data-skin="paper"] .day-bar .icon-btn.adhoc-btn {
+  color: var(--paper-red);
+}
+body[data-skin="paper"] .day-bar .icon-btn svg {
+  filter: url(#paper-roughen);
+  stroke-width: 1.6;
+}
+
+/* Paper-kicker (K&N LIFTS · TRAINING JOURNAL  WK 06/16 · PG. 110) */
+body[data-skin="paper"] .paper-kicker {
+  padding: 14px 16px 4px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+}
+
+/* SUPERSET LABEL — "A · STRENGTH" + "REST 2:00" */
+body[data-skin="paper"] .paper-block {
+  position: relative;
+  margin: 0 0 18px;
+}
+body[data-skin="paper"] .paper-superset-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 6px 18px 2px;
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+}
+body[data-skin="paper"] .paper-superset-id { flex: 1; }
+body[data-skin="paper"] .paper-superset-rest { flex: 0 0 auto; }
+body[data-skin="paper"] .paper-block-menu {
+  background: transparent; border: none;
+  color: var(--paper-ink-mist);
+  font-family: var(--paper-form);
+  font-size: 14px;
+  padding: 0 0 0 10px;
+  cursor: pointer;
+  line-height: 1;
+}
+body[data-skin="paper"] .paper-block-note {
+  padding: 2px 18px 4px;
+}
+body[data-skin="paper"] .paper-block-note input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px dotted var(--paper-ink-mist);
+  font-family: var(--paper-hand);
+  font-size: 16px;
+  color: var(--paper-ink-soft);
+  padding: 2px 0;
+  outline: none;
+}
+body[data-skin="paper"] .paper-block-note input:focus {
+  border-bottom-color: var(--paper-ink);
+}
+
+/* EXERCISE — name on left, target on right, then indented set rows */
+body[data-skin="paper"] .paper-exercise {
+  padding: 0 18px;
+  margin-bottom: 14px;
+  position: relative;
+}
+body[data-skin="paper"] .paper-exercise.swap-target::before {
+  content: "tap to swap";
+  position: absolute;
+  top: 4px; right: 18px;
+  font-family: var(--paper-form);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--paper-red);
+}
+body[data-skin="paper"] .paper-exercise-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 2px;
+}
+body[data-skin="paper"] .paper-ex-left {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+body[data-skin="paper"] .paper-ex-no {
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--paper-ink-faint);
+  flex-shrink: 0;
+}
+body[data-skin="paper"] .paper-ex-name {
+  font-family: var(--paper-hand);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--paper-ink);
+  letter-spacing: -0.01em;
+}
+body[data-skin="paper"] .paper-ex-target {
+  font-family: var(--paper-hand);
+  font-size: 14px;
+  color: var(--paper-ink-soft);
+  white-space: nowrap;
+}
+body[data-skin="paper"] .paper-ex-swap,
+body[data-skin="paper"] .paper-ex-menu {
+  background: transparent; border: none;
+  color: var(--paper-ink-mist);
+  font-family: var(--paper-form);
+  font-size: 14px;
+  padding: 0 4px;
+  cursor: pointer;
+  line-height: 1;
+}
+body[data-skin="paper"] .paper-ex-note-wrap {
+  padding-left: 22px;
+  margin: 2px 0 4px;
+}
+
+/* SET LIST — indented under the exercise heading */
+body[data-skin="paper"] .paper-set-list {
+  padding-left: 22px;
+}
+body[data-skin="paper"] .paper-prev-session {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--paper-ink-faint);
+  margin: 2px 0 2px;
+}
+body[data-skin="paper"] .paper-prev-label {
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  margin-right: 4px;
+}
+
+/* SET ROW — checkbox · weight × reps · RPE n. No box, just a line. */
+body[data-skin="paper"] .paper-set-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-height: 28px;
+  padding: 3px 0;
+  font-family: var(--paper-hand);
+  color: var(--paper-ink);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+body[data-skin="paper"] .paper-set-row.set-skipped {
+  opacity: 0.4;
+}
+body[data-skin="paper"] .paper-set-idx {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  color: var(--paper-ink-faint);
+  width: 18px;
+  text-align: right;
+  flex-shrink: 0;
+}
+body[data-skin="paper"] .paper-set-box {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 4px;  /* larger touch target */
+  margin: -4px 0;
+}
+body[data-skin="paper"] .paper-set-box .paper-checkbox {
+  display: block;
+}
+body[data-skin="paper"] .paper-set-weight,
+body[data-skin="paper"] .paper-set-reps {
+  font-size: 18px;
+  min-width: 30px;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+body[data-skin="paper"] .paper-set-weight {
+  min-width: 56px;
+}
+body[data-skin="paper"] .paper-set-weight:active,
+body[data-skin="paper"] .paper-set-reps:active,
+body[data-skin="paper"] .paper-set-rpe-val:active {
+  background: var(--paper-marker-soft);
+}
+body[data-skin="paper"] .paper-set-x {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .paper-set-rpe-lbl {
+  margin-left: auto;
+  font-family: var(--paper-form);
+  font-size: 10px;
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .paper-set-rpe-val {
+  font-size: 18px;
+  min-width: 18px;
+}
+
+body[data-skin="paper"] .paper-add-set,
+body[data-skin="paper"] .paper-add-ex {
+  background: transparent;
+  border: none;
+  font-family: var(--paper-hand);
+  font-size: 14px;
+  color: var(--paper-ink-soft);
+  padding: 6px 0 4px;
+  cursor: pointer;
+  margin-top: 2px;
+  text-align: left;
+}
+body[data-skin="paper"] .paper-add-ex {
+  padding: 8px 18px 12px;
+}
+body[data-skin="paper"] .paper-warmup-done {
+  background: transparent;
+  border: none;
+  font-family: var(--paper-hand);
+  font-size: 16px;
+  color: var(--paper-ink);
+  padding: 6px 0 4px 22px;
+  cursor: pointer;
+  text-align: left;
+}
+body[data-skin="paper"] .paper-warmup-done.done {
+  color: var(--paper-ink-soft);
+  text-decoration: line-through wavy;
+}
+
+/* PAPER BOTTOM NAV — cream-deep bar with torn-edge top, 5 tabs,    */
+/* hand-drawn squiggle under the active tab.                        */
+body[data-skin="paper"] nav.bottom {
+  background: var(--paper-bg-deep);
+  border-top: 1.4px solid rgba(40, 30, 15, 0.35);
+  padding: 10px 14px 28px;
+  box-shadow: none;
+  position: relative;
+}
+body[data-skin="paper"] nav.bottom .paper-torn-edge {
+  position: absolute;
+  left: 0; right: 0; top: -8px;
+  width: 100%; height: 10px;
+}
+body[data-skin="paper"] .paper-nav-tabs {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+body[data-skin="paper"] .paper-nav-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--paper-ink-faint);
+  font-family: var(--paper-hand);
+  font-size: 16px;
+  font-weight: 400;
+  position: relative;
+}
+body[data-skin="paper"] .paper-nav-tab.active {
+  color: var(--paper-ink);
+  font-weight: 700;
+}
+body[data-skin="paper"] .paper-nav-tab .paper-nav-squiggle {
+  margin-top: -2px;
+  opacity: 0;
+  height: 6px;
+}
+body[data-skin="paper"] .paper-nav-tab.active .paper-nav-squiggle {
+  opacity: 1;
+}
+
+/* Hide the legacy timeline strip's chunky chrome — it produces a   */
+/* lot of background-fills that fight the cream paper. The strip's  */
+/* day pills are still useful, just need re-toning.                 */
+body[data-skin="paper"] #timelineStrip {
+  background: transparent;
+  box-shadow: none;
+}
+body[data-skin="paper"] .tl-pill {
+  background: transparent;
+  border: 1.2px solid var(--paper-ink-faint);
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--paper-ink);
+  font-family: var(--paper-form);
+}
+body[data-skin="paper"] .tl-pill.today {
+  background: var(--paper-ink);
+  border-color: var(--paper-ink);
+  color: var(--paper-bg);
+}
+body[data-skin="paper"] .tl-pill.today .tl-date,
+body[data-skin="paper"] .tl-pill.today .tl-dow {
+  color: var(--paper-bg);
+}
+body[data-skin="paper"] .tl-pill.scheduled {
+  border-color: var(--paper-red);
+  border-style: dashed;
+  color: var(--paper-red);
+}
+body[data-skin="paper"] .tl-pill.completed {
+  background: transparent;
+  border-color: var(--paper-ink);
+}
+body[data-skin="paper"] .tl-date,
+body[data-skin="paper"] .tl-dow {
+  font-family: var(--paper-form);
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .tl-pill .tl-date {
+  font-family: var(--paper-hand);
+  font-size: 18px;
+  font-weight: 700;
+}
+

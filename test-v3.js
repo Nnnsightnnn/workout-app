@@ -2008,19 +2008,15 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     eq(u.paperInk,  "blue",              "paperInk defaults to blue");
     eq(u.paperHand, "Shadows Into Light","paperHand defaults to Shadows Into Light");
   });
-  t("paper-skin: applyPaperSkin toggles body[data-skin]", () => {
+  t("paper-skin: applyPaperSkin sets body[data-skin]=paper and ink/rule/hand attrs", () => {
     w.localStorage.clear();
     const u = w.addUser("PaperUser");
+    w.updateUser(usr => { usr.paperRule = "dot"; usr.paperInk = "red"; usr.paperHand = "Kalam"; });
     w.applyPaperSkin();
-    eq(w.document.body.getAttribute("data-skin"), "paper", "body data-skin = paper after apply");
-    // Flip off via updateUser
-    w.updateUser(usr => { usr.paperSkin = false; });
-    w.applyPaperSkin();
-    eq(w.document.body.getAttribute("data-skin"), null, "body data-skin cleared when paperSkin=false");
-    // Restore
-    w.updateUser(usr => { usr.paperSkin = true; });
-    w.applyPaperSkin();
-    eq(w.document.body.getAttribute("data-skin"), "paper", "body data-skin restored when paperSkin=true");
+    eq(w.document.body.getAttribute("data-skin"),       "paper", "data-skin = paper");
+    eq(w.document.body.getAttribute("data-paper-rule"), "dot",   "data-paper-rule reflects user pref");
+    eq(w.document.body.getAttribute("data-paper-ink"),  "red",   "data-paper-ink reflects user pref");
+    eq(w.document.body.getAttribute("data-paper-hand"), "Kalam", "data-paper-hand reflects user pref");
   });
 
   // ============================================================

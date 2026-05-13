@@ -179,18 +179,11 @@ function applyPaperSkin() {
     body.setAttribute('data-paper-hand', 'Shadows Into Light');
     return;
   }
-  const enabled = u.paperSkin !== false; // default true
-  if (enabled) {
-    body.setAttribute('data-skin', 'paper');
-    body.setAttribute('data-paper-rule', u.paperRule || 'ruled');
-    body.setAttribute('data-paper-ink',  u.paperInk  || 'blue');
-    body.setAttribute('data-paper-hand', u.paperHand || 'Shadows Into Light');
-  } else {
-    body.removeAttribute('data-skin');
-    body.removeAttribute('data-paper-rule');
-    body.removeAttribute('data-paper-ink');
-    body.removeAttribute('data-paper-hand');
-  }
+  // Paper is the look — always on. The picker only controls paper/ink/hand.
+  body.setAttribute('data-skin', 'paper');
+  body.setAttribute('data-paper-rule', u.paperRule || 'ruled');
+  body.setAttribute('data-paper-ink',  u.paperInk  || 'blue');
+  body.setAttribute('data-paper-hand', u.paperHand || 'Shadows Into Light');
 }
 
 // Helper: am I in paper-skin mode right now?
@@ -315,13 +308,6 @@ function renderNotebookStylePicker(rootEl) {
   ).join('');
 
   rootEl.innerHTML = `
-    <div class="paper-pref-toggle">
-      <span>Paper skin</span>
-      <span class="switch">
-        <button data-enabled="true"${enabled ? ' class="active"' : ''}>On</button>
-        <button data-enabled="false"${!enabled ? ' class="active"' : ''}>Off</button>
-      </span>
-    </div>
     <div class="paper-pref-row">
       <span class="paper-pref-label">Paper</span>
       <div class="paper-pref-options">${ruleBtns}</div>
@@ -343,13 +329,6 @@ function renderNotebookStylePicker(rootEl) {
     try { renderNotebookStylePicker(rootEl); } catch (e) {}
   };
 
-  rootEl.querySelectorAll('[data-enabled]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const on = btn.dataset.enabled === 'true';
-      updateUser(u => { u.paperSkin = on; });
-      onUpdate();
-    });
-  });
   rootEl.querySelectorAll('[data-rule]').forEach(btn => {
     btn.addEventListener('click', () => {
       updateUser(u => { u.paperRule = btn.dataset.rule; });

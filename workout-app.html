@@ -7020,6 +7020,408 @@ body[data-skin="paper"] .hanko-stamp {
 }
 body[data-skin="paper"] .hanko-text { color: var(--paper-red); font-family: var(--paper-form); }
 
+/* ============================================================ */
+/* PAPER NOTEPAD — flat DOM (no cards, no chips, just notebook   */
+/* lines and handwriting). Produced by 24-paper-render.js when   */
+/* paper skin is active. Renders alongside the old chunky chrome */
+/* below; the JS only emits one or the other.                    */
+/* ============================================================ */
+
+/* Hide the dark-themed top app header in paper mode — the page     */
+/* renders its own kicker (renderPaperKicker) inline at the top.    */
+body[data-skin="paper"] > header {
+  display: none;
+}
+
+/* Day-bar (template's day badge + 5 icon buttons) becomes the      */
+/* paper DayHeader + QuickActionRow. Flat, no chunky chrome.        */
+body[data-skin="paper"] .day-bar {
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  border-radius: 0;
+  padding: 6px 16px 4px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+}
+body[data-skin="paper"] .day-bar .badge {
+  display: none;  /* badge number not used in paper layout */
+}
+body[data-skin="paper"] .day-bar .info {
+  flex: 1 0 100%;
+  margin-bottom: 4px;
+}
+body[data-skin="paper"] .day-bar .name {
+  font-family: var(--paper-hand);
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+  color: var(--paper-ink);
+  text-shadow: none;
+}
+body[data-skin="paper"] .day-bar .sub {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+body[data-skin="paper"] .day-bar .icon-btn {
+  width: 36px; height: 36px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .day-bar .icon-btn:active {
+  transform: translateY(1px);
+  box-shadow: none;
+  background: transparent;
+}
+body[data-skin="paper"] .day-bar .icon-btn.adhoc-btn {
+  color: var(--paper-red);
+}
+body[data-skin="paper"] .day-bar .icon-btn svg {
+  filter: url(#paper-roughen);
+  stroke-width: 1.6;
+}
+
+/* Paper-kicker (K&N LIFTS · TRAINING JOURNAL  WK 06/16 · PG. 110) */
+body[data-skin="paper"] .paper-kicker {
+  padding: 14px 16px 4px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+}
+
+/* SUPERSET LABEL — "A · STRENGTH" + "REST 2:00" */
+body[data-skin="paper"] .paper-block {
+  position: relative;
+  margin: 0 0 18px;
+}
+body[data-skin="paper"] .paper-superset-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 6px 18px 2px;
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+}
+body[data-skin="paper"] .paper-superset-id { flex: 1; }
+body[data-skin="paper"] .paper-superset-rest { flex: 0 0 auto; }
+body[data-skin="paper"] .paper-block-menu {
+  background: transparent; border: none;
+  color: var(--paper-ink-mist);
+  font-family: var(--paper-form);
+  font-size: 14px;
+  padding: 0 0 0 10px;
+  cursor: pointer;
+  line-height: 1;
+}
+body[data-skin="paper"] .paper-block-note {
+  padding: 2px 18px 4px;
+}
+body[data-skin="paper"] .paper-block-note input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px dotted var(--paper-ink-mist);
+  font-family: var(--paper-hand);
+  font-size: 16px;
+  color: var(--paper-ink-soft);
+  padding: 2px 0;
+  outline: none;
+}
+body[data-skin="paper"] .paper-block-note input:focus {
+  border-bottom-color: var(--paper-ink);
+}
+
+/* EXERCISE — name on left, target on right, then indented set rows */
+body[data-skin="paper"] .paper-exercise {
+  padding: 0 18px;
+  margin-bottom: 14px;
+  position: relative;
+}
+body[data-skin="paper"] .paper-exercise.swap-target::before {
+  content: "tap to swap";
+  position: absolute;
+  top: 4px; right: 18px;
+  font-family: var(--paper-form);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--paper-red);
+}
+body[data-skin="paper"] .paper-exercise-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 2px;
+}
+body[data-skin="paper"] .paper-ex-left {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+body[data-skin="paper"] .paper-ex-no {
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--paper-ink-faint);
+  flex-shrink: 0;
+}
+body[data-skin="paper"] .paper-ex-name {
+  font-family: var(--paper-hand);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--paper-ink);
+  letter-spacing: -0.01em;
+}
+body[data-skin="paper"] .paper-ex-target {
+  font-family: var(--paper-hand);
+  font-size: 14px;
+  color: var(--paper-ink-soft);
+  white-space: nowrap;
+}
+body[data-skin="paper"] .paper-ex-swap,
+body[data-skin="paper"] .paper-ex-menu {
+  background: transparent; border: none;
+  color: var(--paper-ink-mist);
+  font-family: var(--paper-form);
+  font-size: 14px;
+  padding: 0 4px;
+  cursor: pointer;
+  line-height: 1;
+}
+body[data-skin="paper"] .paper-ex-note-wrap {
+  padding-left: 22px;
+  margin: 2px 0 4px;
+}
+
+/* SET LIST — indented under the exercise heading */
+body[data-skin="paper"] .paper-set-list {
+  padding-left: 22px;
+}
+body[data-skin="paper"] .paper-prev-session {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--paper-ink-faint);
+  margin: 2px 0 2px;
+}
+body[data-skin="paper"] .paper-prev-label {
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  margin-right: 4px;
+}
+
+/* SET ROW — checkbox · weight × reps · RPE n. No box, just a line. */
+body[data-skin="paper"] .paper-set-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-height: 28px;
+  padding: 3px 0;
+  font-family: var(--paper-hand);
+  color: var(--paper-ink);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+body[data-skin="paper"] .paper-set-row.set-skipped {
+  opacity: 0.4;
+}
+body[data-skin="paper"] .paper-set-idx {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  color: var(--paper-ink-faint);
+  width: 18px;
+  text-align: right;
+  flex-shrink: 0;
+}
+body[data-skin="paper"] .paper-set-box {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 4px;  /* larger touch target */
+  margin: -4px 0;
+}
+body[data-skin="paper"] .paper-set-box .paper-checkbox {
+  display: block;
+}
+body[data-skin="paper"] .paper-set-weight,
+body[data-skin="paper"] .paper-set-reps {
+  font-size: 18px;
+  min-width: 30px;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+body[data-skin="paper"] .paper-set-weight {
+  min-width: 56px;
+}
+body[data-skin="paper"] .paper-set-weight:active,
+body[data-skin="paper"] .paper-set-reps:active,
+body[data-skin="paper"] .paper-set-rpe-val:active {
+  background: var(--paper-marker-soft);
+}
+body[data-skin="paper"] .paper-set-x {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .paper-set-rpe-lbl {
+  margin-left: auto;
+  font-family: var(--paper-form);
+  font-size: 10px;
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .paper-set-rpe-val {
+  font-size: 18px;
+  min-width: 18px;
+}
+
+body[data-skin="paper"] .paper-add-set,
+body[data-skin="paper"] .paper-add-ex {
+  background: transparent;
+  border: none;
+  font-family: var(--paper-hand);
+  font-size: 14px;
+  color: var(--paper-ink-soft);
+  padding: 6px 0 4px;
+  cursor: pointer;
+  margin-top: 2px;
+  text-align: left;
+}
+body[data-skin="paper"] .paper-add-ex {
+  padding: 8px 18px 12px;
+}
+body[data-skin="paper"] .paper-warmup-done {
+  background: transparent;
+  border: none;
+  font-family: var(--paper-hand);
+  font-size: 16px;
+  color: var(--paper-ink);
+  padding: 6px 0 4px 22px;
+  cursor: pointer;
+  text-align: left;
+}
+body[data-skin="paper"] .paper-warmup-done.done {
+  color: var(--paper-ink-soft);
+  text-decoration: line-through wavy;
+}
+
+/* PAPER BOTTOM NAV — cream-deep bar with torn-edge top, 5 tabs,    */
+/* hand-drawn squiggle under the active tab.                        */
+body[data-skin="paper"] nav.bottom {
+  background: var(--paper-bg-deep);
+  border-top: 1.4px solid rgba(40, 30, 15, 0.35);
+  padding: 10px 14px 28px;
+  box-shadow: none;
+  position: relative;
+}
+body[data-skin="paper"] nav.bottom .paper-torn-edge {
+  position: absolute;
+  left: 0; right: 0; top: -8px;
+  width: 100%; height: 10px;
+}
+body[data-skin="paper"] .paper-nav-tabs {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+body[data-skin="paper"] .paper-nav-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--paper-ink-faint);
+  font-family: var(--paper-hand);
+  font-size: 16px;
+  font-weight: 400;
+  position: relative;
+}
+body[data-skin="paper"] .paper-nav-tab.active {
+  color: var(--paper-ink);
+  font-weight: 700;
+}
+body[data-skin="paper"] .paper-nav-tab .paper-nav-squiggle {
+  margin-top: -2px;
+  opacity: 0;
+  height: 6px;
+}
+body[data-skin="paper"] .paper-nav-tab.active .paper-nav-squiggle {
+  opacity: 1;
+}
+
+/* Hide the legacy timeline strip's chunky chrome — it produces a   */
+/* lot of background-fills that fight the cream paper. The strip's  */
+/* day pills are still useful, just need re-toning.                 */
+body[data-skin="paper"] #timelineStrip {
+  background: transparent;
+  box-shadow: none;
+}
+body[data-skin="paper"] .tl-pill {
+  background: transparent;
+  border: 1.2px solid var(--paper-ink-faint);
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--paper-ink);
+  font-family: var(--paper-form);
+}
+body[data-skin="paper"] .tl-pill.today {
+  background: var(--paper-ink);
+  border-color: var(--paper-ink);
+  color: var(--paper-bg);
+}
+body[data-skin="paper"] .tl-pill.today .tl-date,
+body[data-skin="paper"] .tl-pill.today .tl-dow {
+  color: var(--paper-bg);
+}
+body[data-skin="paper"] .tl-pill.scheduled {
+  border-color: var(--paper-red);
+  border-style: dashed;
+  color: var(--paper-red);
+}
+body[data-skin="paper"] .tl-pill.completed {
+  background: transparent;
+  border-color: var(--paper-ink);
+}
+body[data-skin="paper"] .tl-date,
+body[data-skin="paper"] .tl-dow {
+  font-family: var(--paper-form);
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .tl-pill .tl-date {
+  font-family: var(--paper-hand);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+
 </style>
 </head>
 <body>
@@ -9686,7 +10088,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 18;
-const APP_BUILD = "e8483ea6";
+const APP_BUILD = "f0412185";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -11843,8 +12245,13 @@ function renderWorkoutScreen() {
     return;
   }
 
+  // Paper skin: always use the chapters/notepad view (flat paper rows).
+  // Focus view will get its own paper-styled rebuild in a follow-up; until
+  // then, the notepad layout is the user-facing surface for active workouts.
+  const _paperOn = (typeof isPaperSkin === "function" && isPaperSkin());
+
   // View dispatcher: focus view or chapters (scrollable overview)
-  if (state.workoutView === "focus" && state.focusBlockIdx != null) {
+  if (!_paperOn && state.workoutView === "focus" && state.focusBlockIdx != null) {
     renderFocusView(container, day);
     if (state.workoutStartedAt) renderStatsBar(container, day);
   } else {
@@ -12477,6 +12884,11 @@ function _buildRpBlockMeta(block) {
 }
 
 function renderBlock(day, block, bi) {
+  // Paper skin: delegate to flat-notepad renderer (24-paper-render.js).
+  if (typeof isPaperSkin === "function" && isPaperSkin()
+      && typeof paperRenderBlock === "function") {
+    return paperRenderBlock(day, block, bi);
+  }
   const wrap = document.createElement("div");
   const isSuperset = block.exercises.length > 1;
 
@@ -13394,6 +13806,23 @@ function openInlineEditor(anchorEl, field, block, ex, bi, ei, setIdx, bw) {
 // CHAPTERS VIEW (Command Center)
 // ============================================================
 function renderChaptersView(container, day) {
+  // Paper skin: render the flat-notepad layout (no bento tiles, no cards) —
+  // SupersetLabel + ExerciseBlock with indented SetRows, matching the
+  // paper-screens.jsx design spec.
+  if (typeof isPaperSkin === "function" && isPaperSkin()
+      && typeof paperRenderBlock === "function") {
+    const wrap = document.createElement("div");
+    wrap.className = "paper-chapters-view";
+    day.blocks.forEach((block, bi) => {
+      wrap.appendChild(paperRenderBlock(day, block, bi));
+    });
+    if (typeof renderCooldownBlock === "function") {
+      // Cool-down still renders its own block — leave default for now
+    }
+    container.appendChild(wrap);
+    return;
+  }
+
   const wrap = document.createElement("div");
   wrap.className = "chapters-view chapters-enter";
 
@@ -18284,6 +18713,7 @@ function showScreen(name) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   document.getElementById("screen-" + name).classList.add("active");
   document.querySelectorAll("nav.bottom button").forEach(b => b.classList.toggle("active", b.dataset.screen === name));
+  if (typeof paperUpdateActiveNavTab === "function") paperUpdateActiveNavTab(name);
   if (name === "history") renderHistory();
   if (name === "workout") renderWorkoutScreen();
   if (name === "settings") {
@@ -18746,6 +19176,8 @@ function init() {
   // Paper-skin: inject SVG defs + read prefs onto <body>
   if (typeof paperRoughenDefs === "function") paperRoughenDefs();
   if (typeof applyPaperSkin === "function") applyPaperSkin();
+  // Paper-skin: replace bottom nav DOM with PaperNav (cream-deep, squiggle).
+  if (typeof paperRebuildBottomNav === "function") paperRebuildBottomNav();
   initUserPicker(); initUnitToggle(); initAutoTimerToggle(); initNav(); initTools();
   initWorkoutScreen(); initSheet(); initSidebar(); initInfoGuide();
   // Paper-skin: inject the Notebook Style picker into Settings.
@@ -21580,18 +22012,11 @@ function applyPaperSkin() {
     body.setAttribute('data-paper-hand', 'Shadows Into Light');
     return;
   }
-  const enabled = u.paperSkin !== false; // default true
-  if (enabled) {
-    body.setAttribute('data-skin', 'paper');
-    body.setAttribute('data-paper-rule', u.paperRule || 'ruled');
-    body.setAttribute('data-paper-ink',  u.paperInk  || 'blue');
-    body.setAttribute('data-paper-hand', u.paperHand || 'Shadows Into Light');
-  } else {
-    body.removeAttribute('data-skin');
-    body.removeAttribute('data-paper-rule');
-    body.removeAttribute('data-paper-ink');
-    body.removeAttribute('data-paper-hand');
-  }
+  // Paper is the look — always on. The picker only controls paper/ink/hand.
+  body.setAttribute('data-skin', 'paper');
+  body.setAttribute('data-paper-rule', u.paperRule || 'ruled');
+  body.setAttribute('data-paper-ink',  u.paperInk  || 'blue');
+  body.setAttribute('data-paper-hand', u.paperHand || 'Shadows Into Light');
 }
 
 // Helper: am I in paper-skin mode right now?
@@ -21716,13 +22141,6 @@ function renderNotebookStylePicker(rootEl) {
   ).join('');
 
   rootEl.innerHTML = `
-    <div class="paper-pref-toggle">
-      <span>Paper skin</span>
-      <span class="switch">
-        <button data-enabled="true"${enabled ? ' class="active"' : ''}>On</button>
-        <button data-enabled="false"${!enabled ? ' class="active"' : ''}>Off</button>
-      </span>
-    </div>
     <div class="paper-pref-row">
       <span class="paper-pref-label">Paper</span>
       <div class="paper-pref-options">${ruleBtns}</div>
@@ -21744,13 +22162,6 @@ function renderNotebookStylePicker(rootEl) {
     try { renderNotebookStylePicker(rootEl); } catch (e) {}
   };
 
-  rootEl.querySelectorAll('[data-enabled]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const on = btn.dataset.enabled === 'true';
-      updateUser(u => { u.paperSkin = on; });
-      onUpdate();
-    });
-  });
   rootEl.querySelectorAll('[data-rule]').forEach(btn => {
     btn.addEventListener('click', () => {
       updateUser(u => { u.paperRule = btn.dataset.rule; });
@@ -22360,6 +22771,421 @@ function computeTimeBudget(day, targetMinutes) {
     adjustments,
     adjustedDay
   };
+}
+
+
+// ============================================================
+// PAPER RENDER — flat-notepad DOM for the Lift screen
+// ============================================================
+// Replaces renderBlock / renderExercise / renderSetsTable when
+// paper skin is active. Produces the design's flat layout —
+// no cards, no chips, just SupersetLabel + indented set rows.
+// Wires the same handlers as wireChip so editing/logging still works.
+
+function paperRenderBlock(day, block, bi) {
+  const wrap = document.createElement("div");
+  wrap.className = "paper-block";
+  wrap.dataset.bi = bi;
+  const isSuperset = block.exercises.length > 1;
+  const blockMin = (typeof estimateBlockSec === "function")
+    ? Math.round(estimateBlockSec(block) / 60) : null;
+
+  // SupersetLabel: "A · STRENGTH" left, "REST 2:00" right
+  const label = document.createElement("div");
+  label.className = "paper-superset-label";
+  const restStr = block.exercises[0] && block.exercises[0].rest
+    ? "rest " + (typeof formatRest === "function" ? formatRest(block.exercises[0].rest) : block.exercises[0].rest)
+    : (blockMin ? `~${blockMin} min` : "");
+  label.innerHTML = `
+    <span class="paper-superset-id">${block.letter} &middot; ${block.name}${isSuperset ? " (superset)" : ""}</span>
+    <span class="paper-superset-rest">${restStr}</span>
+    <button class="paper-block-menu" aria-label="Block menu">&middot;&middot;&middot;</button>
+  `;
+  const menuBtn = label.querySelector(".paper-block-menu");
+  menuBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (typeof openBlockMenu === "function") openBlockMenu(block, bi);
+  });
+  wrap.appendChild(label);
+
+  // Optional block-level note input — keep as a paper-style single line
+  const noteKey = `${block.id}|__note`;
+  const noteVal = (typeof getInput === "function") ? getInput(noteKey, "") : "";
+  if (noteVal || true) {
+    const noteRow = document.createElement("div");
+    noteRow.className = "paper-block-note";
+    noteRow.innerHTML = `<input type="text" placeholder="add a note…" value="${(noteVal || "").replace(/"/g, "&quot;")}">`;
+    const input = noteRow.querySelector("input");
+    input.addEventListener("click", e => e.stopPropagation());
+    input.addEventListener("change", () => {
+      if (typeof saveInput === "function") saveInput(noteKey, input.value);
+    });
+    wrap.appendChild(noteRow);
+  }
+
+  // Each exercise rendered as a flat ExerciseBlock
+  block.exercises.forEach((ex, ei) => {
+    wrap.appendChild(paperRenderExercise(day, block, ex, bi, ei, isSuperset));
+  });
+
+  // Add-exercise affordance — handwritten, no box
+  const addEx = document.createElement("button");
+  addEx.className = "paper-add-ex";
+  addEx.textContent = "+ add exercise";
+  addEx.addEventListener("click", () => {
+    if (typeof openLibrary === "function") openLibrary(block.id);
+  });
+  wrap.appendChild(addEx);
+
+  return wrap;
+}
+
+function paperRenderExercise(day, block, ex, bi, ei, isSuperset) {
+  const wrap = document.createElement("div");
+  wrap.className = "paper-exercise";
+  wrap.dataset.bi = bi;
+  wrap.dataset.ei = ei;
+  wrap.dataset.warmup = String(!!ex.isWarmup);
+
+  // Tap-anywhere swap mode (mirrors existing exercise-card behavior)
+  wrap.addEventListener("click", (e) => {
+    if (e.target.closest("button, input, [contenteditable]")) return;
+    if (typeof onWorkoutCardTapForSwap === "function"
+        && onWorkoutCardTapForSwap(bi, ei)) e.stopPropagation();
+  });
+  if (typeof state !== "undefined" && state.sidebarOpen && state.sidebarSelectedEx) {
+    wrap.classList.add("swap-target");
+  }
+
+  // Heading row: "A1) Back Squat" left, target spec right
+  const head = document.createElement("div");
+  head.className = "paper-exercise-head";
+  const numLabel = `${block.letter}${isSuperset ? (ei + 1) : ""})`;
+
+  // Target spec: try to derive from ex (e.g. "4 × 1-5 @ RPE 8")
+  const numSets = ex.sets || 3;
+  let targetSpec = `${numSets} &times; ${ex.reps || "?"}`;
+  if (ex.tempo) targetSpec += ` &middot; ${ex.tempo}`;
+
+  head.innerHTML = `
+    <div class="paper-ex-left">
+      <span class="paper-ex-no">${numLabel}</span>
+      <span class="paper-ex-name">${escapeHtml(ex.name || "")}</span>
+    </div>
+    <div class="paper-ex-target">${targetSpec}</div>
+    <button class="paper-ex-swap" aria-label="Swap exercise">&hArr;</button>
+    <button class="paper-ex-menu" aria-label="Exercise menu">&middot;&middot;&middot;</button>
+  `;
+  const swapBtn = head.querySelector(".paper-ex-swap");
+  swapBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (typeof openSidebar === "function") {
+      const libEx = (typeof LIB_BY_ID !== "undefined") ? LIB_BY_ID[ex.exId] : null;
+      const cat = libEx ? libEx.cat : (block.type === "warmup" ? "Warmup" : null);
+      openSidebar(cat, bi, ei);
+    }
+  });
+  const menuBtn = head.querySelector(".paper-ex-menu");
+  menuBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (typeof openExerciseMenu === "function") openExerciseMenu(block, ex, bi, ei);
+  });
+  wrap.appendChild(head);
+
+  // Margin note for ex.notes — handwritten in red with scribbled arrow
+  if (ex.notes) {
+    const noteWrap = document.createElement("div");
+    noteWrap.className = "paper-ex-note-wrap";
+    noteWrap.innerHTML = paperMarginNote(escapeHtml(ex.notes), PAPER.inkRed);
+    wrap.appendChild(noteWrap);
+  }
+
+  // Set list — flat indented rows. Skip for warmups (just a "mark done" line).
+  if (!ex.isWarmup) {
+    wrap.appendChild(paperRenderSetsTable(block, ex, bi, ei));
+  } else {
+    const w = document.createElement("button");
+    w.className = "paper-warmup-done";
+    w.textContent = "☐ mark warm-up done";
+    w.addEventListener("click", function() {
+      this.classList.toggle("done");
+      this.textContent = this.classList.contains("done") ? "☒ warm-up done" : "☐ mark warm-up done";
+      if (navigator.vibrate) navigator.vibrate(10);
+    });
+    wrap.appendChild(w);
+  }
+
+  return wrap;
+}
+
+function paperRenderSetsTable(block, ex, bi, ei) {
+  const lib = (typeof LIB_BY_ID !== "undefined") ? (LIB_BY_ID[ex.exId] || ex) : ex;
+  const bw = lib.bodyweight;
+  const list = document.createElement("div");
+  list.className = "paper-set-list";
+
+  // Previous-session "last lifted" inline — handwritten kicker
+  if (typeof getPrevDaySetsFor === "function") {
+    const prevSets = getPrevDaySetsFor(state.currentDayId, ex.exId || ex.name);
+    if (prevSets.length) {
+      const prev = document.createElement("div");
+      prev.className = "paper-prev-session";
+      const items = prevSets.map(s =>
+        (s.bodyweight || s.weight === 0) ? `${s.reps}r` : `${s.weight}&times;${s.reps}`
+      ).join(" &middot; ");
+      prev.innerHTML = `<span class="paper-prev-label">last:</span> ${items}`;
+      list.appendChild(prev);
+    }
+  }
+
+  const numSets = ex.sets || 3;
+  const repsLabel = ex.isTime ? "s" : ex.isDistance ? "m" : "reps";
+  const last = (typeof getLastSetsFor === "function") ? getLastSetsFor(ex.exId || ex.name) : [];
+
+  for (let i = 0; i < numSets; i++) {
+    const lastSet = last[i] || last[last.length - 1];
+    const wkey = inputKey(block.id, ei, i, "w");
+    const rkey = inputKey(block.id, ei, i, "r");
+    const pkey = inputKey(block.id, ei, i, "p");
+    const statusKey = inputKey(block.id, ei, i, "status");
+
+    const curW = getInput(wkey, lastSet?.weight ?? ex.defaultWeight ?? 0);
+    const curR = getInput(rkey, lastSet?.reps ?? ex.reps);
+    const curP = getInput(pkey, 7);
+    const status = getInput(statusKey, null);
+    const done = status === "done";
+    const skipped = status === "skipped";
+
+    const row = document.createElement("div");
+    row.className = "paper-set-row";
+    if (done) row.classList.add("set-done");
+    if (skipped) row.classList.add("set-skipped");
+    row.dataset.setIdx = i;
+
+    const ink = paperInkColor();
+    const weightDisp = bw ? "" : `${curW} lb`;
+    const repsDisp = `${curR} ${repsLabel}`;
+    const rpeDisp = lib.noRpe ? "" : String(curP);
+
+    // Strikethrough completed values; plain when not done
+    const weightHtml = bw ? "" :
+      `<span class="paper-set-weight" data-field="w">${
+        done ? paperStrikeWrap(weightDisp, ink) : weightDisp
+      }</span>
+       <span class="paper-set-x">&times;</span>`;
+    const repsHtml = `<span class="paper-set-reps" data-field="r">${
+      done ? paperStrikeWrap(repsDisp, ink) : repsDisp
+    }</span>`;
+    const rpeHtml = lib.noRpe ? "" :
+      `<span class="paper-set-rpe-lbl">RPE</span>
+       <span class="paper-set-rpe-val" data-field="p">${rpeDisp}</span>`;
+
+    row.innerHTML = `
+      <span class="paper-set-idx">${i + 1}.</span>
+      <span class="paper-set-box" role="checkbox" aria-checked="${done}">
+        ${paperCheckboxSvg(done, ink, 18)}
+      </span>
+      ${weightHtml}
+      ${repsHtml}
+      ${rpeHtml}
+    `;
+    paperWireSetRow(row, block, ex, bi, ei, i, bw);
+    list.appendChild(row);
+  }
+
+  // Add-set affordance — handwritten, no box
+  const addBtn = document.createElement("button");
+  addBtn.className = "paper-add-set";
+  addBtn.textContent = "+ add set";
+  addBtn.addEventListener("click", () => {
+    if (typeof mutateDay === "function") {
+      mutateDay(d => { d.blocks[bi].exercises[ei].sets++; });
+      renderWorkoutScreen();
+    }
+  });
+  list.appendChild(addBtn);
+
+  return list;
+}
+
+// Wire interactions on a paper set row — mirrors wireChip() in 10-render-workout.js.
+// Handles: checkbox tap → toggle done, swipe right → done, swipe left → skipped,
+// row tap → openSetEditor, weight/reps/rpe tap → openInlineEditor.
+function paperWireSetRow(row, block, ex, bi, ei, setIdx, bw) {
+  const statusKey = inputKey(block.id, ei, setIdx, "status");
+
+  function toggleDone() {
+    const wasDone = row.classList.contains("set-done");
+    row.classList.remove("set-done", "set-skipped");
+    if (!wasDone) {
+      row.classList.add("set-done");
+      if (state.workoutStartedAt && typeof showHeaderRest === "function") {
+        showHeaderRest(90);
+      }
+    }
+    saveInput(statusKey, wasDone ? null : "done");
+    if (navigator.vibrate) navigator.vibrate(10);
+    renderWorkoutScreen();
+  }
+
+  // Checkbox tap → toggle done
+  const box = row.querySelector(".paper-set-box");
+  let boxTapped = false;
+  box.addEventListener("touchend", (e) => {
+    e.stopPropagation();
+    boxTapped = true;
+    toggleDone();
+  }, { passive: true });
+  box.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (boxTapped) { boxTapped = false; return; }
+    toggleDone();
+  });
+
+  // Swipe gestures: right → done, left → skipped
+  let swStartX = 0, swStartY = 0, isSwiping = false;
+  row.addEventListener("touchstart", (e) => {
+    if (!state.workoutStartedAt) return;
+    swStartX = e.touches[0].clientX;
+    swStartY = e.touches[0].clientY;
+    isSwiping = false;
+  }, { passive: true });
+  row.addEventListener("touchmove", (e) => {
+    if (!state.workoutStartedAt) return;
+    const dx = e.touches[0].clientX - swStartX;
+    const dy = e.touches[0].clientY - swStartY;
+    if (!isSwiping && Math.abs(dx) > 15 && Math.abs(dx) > Math.abs(dy) * 1.5) isSwiping = true;
+    if (isSwiping) {
+      e.preventDefault();
+      row.style.transition = "none";
+      row.style.transform = `translateX(${Math.max(-80, Math.min(80, dx))}px)`;
+    }
+  }, { passive: false });
+  row.addEventListener("touchend", (e) => {
+    if (isSwiping) {
+      const dx = e.changedTouches[0].clientX - swStartX;
+      row.style.transition = "transform 0.15s ease-out";
+      row.style.transform = "";
+      if (dx > 60) {
+        const was = row.classList.contains("set-done");
+        row.classList.remove("set-done", "set-skipped");
+        if (!was) {
+          row.classList.add("set-done");
+          if (state.workoutStartedAt && typeof showHeaderRest === "function") showHeaderRest(90);
+        }
+        saveInput(statusKey, was ? null : "done");
+        if (navigator.vibrate) navigator.vibrate(10);
+        renderWorkoutScreen();
+      } else if (dx < -60) {
+        const was = row.classList.contains("set-skipped");
+        row.classList.remove("set-done", "set-skipped");
+        if (!was) row.classList.add("set-skipped");
+        saveInput(statusKey, was ? null : "skipped");
+        if (navigator.vibrate) navigator.vibrate(10);
+        renderWorkoutScreen();
+      }
+      setTimeout(() => { row.style.transition = ""; }, 160);
+      return;
+    }
+    // Tap on row (not on inline-edit field) → open full set editor
+    if (e.target.closest("[data-field]") || e.target.closest(".paper-set-box")) return;
+    if (typeof openSetEditor === "function") {
+      openSetEditor(block, ex, bi, ei, setIdx, bw);
+    }
+  }, { passive: true });
+
+  // Desktop click fallback
+  row.addEventListener("click", (e) => {
+    if (isSwiping) return;
+    if (e.target.closest("[data-field]") || e.target.closest(".paper-set-box")) return;
+    if (typeof openSetEditor === "function") {
+      openSetEditor(block, ex, bi, ei, setIdx, bw);
+    }
+  });
+
+  // Inline quick-edit on weight / reps / rpe spans
+  ["w", "r", "p"].forEach(field => {
+    const span = row.querySelector(`[data-field="${field}"]`);
+    if (!span) return;
+    let handled = false;
+    span.addEventListener("touchend", (e) => {
+      if (isSwiping) return;
+      e.stopPropagation();
+      handled = true;
+      if (typeof openInlineEditor === "function") {
+        openInlineEditor(span, field, block, ex, bi, ei, setIdx, bw);
+      }
+    });
+    span.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (handled) { handled = false; return; }
+      if (typeof openInlineEditor === "function") {
+        openInlineEditor(span, field, block, ex, bi, ei, setIdx, bw);
+      }
+    });
+  });
+}
+
+// Minimal HTML escape — names from user data may include &, <, >, etc.
+function escapeHtml(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+// Replace the bottom nav DOM with the design's PaperNav: cream-deep bar
+// with torn-edge top, 5 tabs (Timer · Lift · Log · PRs · Body), squiggle
+// underline on the active tab. Preserves the existing data-screen wiring.
+function paperRebuildBottomNav() {
+  const nav = document.querySelector("nav.bottom");
+  if (!nav || nav.dataset.paperBuilt === "1") return;
+  // Determine current active tab from the existing buttons (which screen has .active class on its section)
+  const tabs = [
+    { id: "timer",   label: "Timer",   screen: null,      onClick: "openStandaloneTimer()" },
+    { id: "workout", label: "Lift",    screen: "workout" },
+    { id: "history", label: "Log",     screen: "history" },
+    { id: "prs",     label: "PRs",     screen: "prs" },
+    { id: "body",    label: "Body",    screen: "body" },
+  ];
+  const inkColor = paperInkColor();
+  nav.innerHTML = `
+    ${paperTornEdge("top", PAPER.creamDeep)}
+    <div class="paper-nav-tabs">
+      ${tabs.map(t => `
+        <button class="paper-nav-tab" ${t.screen ? `data-screen="${t.screen}"` : ""}
+                ${t.onClick ? `onclick="${t.onClick}"` : ""}>
+          <span class="paper-nav-label">${t.label}</span>
+          <svg class="paper-nav-squiggle" width="44" height="6" viewBox="0 0 44 6" aria-hidden="true">
+            <path d="M2 4 Q 12 1, 22 3 T 42 2.5" fill="none"
+              stroke="${inkColor}" stroke-width="2" stroke-linecap="round"
+              style="filter:url(#paper-roughen);"/>
+          </svg>
+        </button>
+      `).join("")}
+    </div>
+  `;
+  nav.dataset.paperBuilt = "1";
+  // initNav() in 20-toast-nav.js wires data-screen buttons on subsequent calls
+  if (typeof initNav === "function") initNav();
+}
+
+// Update which paper-nav tab is highlighted as active.
+function paperUpdateActiveNavTab(screenId) {
+  const nav = document.querySelector("nav.bottom");
+  if (!nav) return;
+  nav.querySelectorAll(".paper-nav-tab").forEach(btn => {
+    const id = btn.dataset.screen;
+    btn.classList.toggle("active", id === screenId);
+  });
+}
+
+if (typeof window !== "undefined") {
+  window.paperRenderBlock = paperRenderBlock;
+  window.paperRenderExercise = paperRenderExercise;
+  window.paperRenderSetsTable = paperRenderSetsTable;
+  window.paperWireSetRow = paperWireSetRow;
+  window.paperRebuildBottomNav = paperRebuildBottomNav;
+  window.paperUpdateActiveNavTab = paperUpdateActiveNavTab;
 }
 
 

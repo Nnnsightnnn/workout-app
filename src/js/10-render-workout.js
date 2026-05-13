@@ -282,8 +282,13 @@ function renderWorkoutScreen() {
     return;
   }
 
+  // Paper skin: always use the chapters/notepad view (flat paper rows).
+  // Focus view will get its own paper-styled rebuild in a follow-up; until
+  // then, the notepad layout is the user-facing surface for active workouts.
+  const _paperOn = (typeof isPaperSkin === "function" && isPaperSkin());
+
   // View dispatcher: focus view or chapters (scrollable overview)
-  if (state.workoutView === "focus" && state.focusBlockIdx != null) {
+  if (!_paperOn && state.workoutView === "focus" && state.focusBlockIdx != null) {
     renderFocusView(container, day);
     if (state.workoutStartedAt) renderStatsBar(container, day);
   } else {
@@ -916,6 +921,11 @@ function _buildRpBlockMeta(block) {
 }
 
 function renderBlock(day, block, bi) {
+  // Paper skin: delegate to flat-notepad renderer (24-paper-render.js).
+  if (typeof isPaperSkin === "function" && isPaperSkin()
+      && typeof paperRenderBlock === "function") {
+    return paperRenderBlock(day, block, bi);
+  }
   const wrap = document.createElement("div");
   const isSuperset = block.exercises.length > 1;
 
@@ -1833,6 +1843,23 @@ function openInlineEditor(anchorEl, field, block, ex, bi, ei, setIdx, bw) {
 // CHAPTERS VIEW (Command Center)
 // ============================================================
 function renderChaptersView(container, day) {
+  // Paper skin: render the flat-notepad layout (no bento tiles, no cards) —
+  // SupersetLabel + ExerciseBlock with indented SetRows, matching the
+  // paper-screens.jsx design spec.
+  if (typeof isPaperSkin === "function" && isPaperSkin()
+      && typeof paperRenderBlock === "function") {
+    const wrap = document.createElement("div");
+    wrap.className = "paper-chapters-view";
+    day.blocks.forEach((block, bi) => {
+      wrap.appendChild(paperRenderBlock(day, block, bi));
+    });
+    if (typeof renderCooldownBlock === "function") {
+      // Cool-down still renders its own block — leave default for now
+    }
+    container.appendChild(wrap);
+    return;
+  }
+
   const wrap = document.createElement("div");
   wrap.className = "chapters-view chapters-enter";
 

@@ -325,6 +325,8 @@ function init() {
   // Paper-skin: inject SVG defs + read prefs onto <body>
   if (typeof paperRoughenDefs === "function") paperRoughenDefs();
   if (typeof applyPaperSkin === "function") applyPaperSkin();
+  // Paper-skin: replace bottom nav DOM with PaperNav (cream-deep, squiggle).
+  if (typeof paperRebuildBottomNav === "function") paperRebuildBottomNav();
   initUserPicker(); initUnitToggle(); initAutoTimerToggle(); initNav(); initTools();
   initWorkoutScreen(); initSheet(); initSidebar(); initInfoGuide();
   // Paper-skin: inject the Notebook Style picker into Settings.
