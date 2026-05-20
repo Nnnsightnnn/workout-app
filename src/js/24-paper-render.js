@@ -478,6 +478,14 @@ function paperRenderDayPicker() {
 
   container.innerHTML = "";
 
+  // Same-day completed sessions strip — surfaces today's saved workouts so the
+  // user can review what they just finished. Renders before the rest-day card
+  // and the normal picker so it shows up on every day-picker variant.
+  if (typeof buildCompletedTodayStrip === "function") {
+    const _ctStrip = buildCompletedTodayStrip();
+    if (_ctStrip) container.appendChild(_ctStrip);
+  }
+
   // Rest-day branch
   const todayDow = new Date().getDay();
   const sched = (Array.isArray(u.weeklySchedule) && u.weeklySchedule.length === 7) ? u.weeklySchedule : null;

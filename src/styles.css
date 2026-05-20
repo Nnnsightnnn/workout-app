@@ -9234,3 +9234,325 @@ body[data-skin="paper"] .rp-editor-suggestion-why {
   text-transform: uppercase;
 }
 
+/* ============================================================
+   COMPLETED-TODAY STRIP — same-day session review (15c-session-review.js)
+   Renders at the top of the day-picker after a workout is finished/exited.
+   ============================================================ */
+.completed-today-strip {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-soft, rgba(255,255,255,0.04));
+}
+.ct-strip-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.ct-strip-title {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  font-weight: 700;
+}
+.ct-strip-count {
+  font-size: 11px;
+  color: var(--text-dim);
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: var(--surface, rgba(255,255,255,0.05));
+}
+.ct-strip-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+}
+.ct-card {
+  flex: 0 0 auto;
+  min-width: 156px;
+  max-width: 220px;
+  text-align: left;
+  padding: 10px 12px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface, rgba(255,255,255,0.03));
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: transform 80ms ease, border-color 120ms ease;
+}
+.ct-card:hover { border-color: var(--accent); }
+.ct-card:active { transform: translateY(1px); }
+.ct-card-kicker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.ct-card-kicker-tag {
+  color: var(--accent);
+}
+.ct-card-name {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text);
+}
+.ct-card-stats {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.ct-card-sep { color: var(--text-faint); }
+.ct-card-pr {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+
+/* Paper-skin override — flat ruled-paper style, no card chrome. */
+body[data-skin="paper"] .completed-today-strip {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  border-top: 1px dashed var(--paper-ink-mist);
+  border-bottom: 1px dashed var(--paper-ink-mist);
+  padding: 10px 0 12px;
+  margin: 0 0 14px;
+}
+body[data-skin="paper"] .ct-strip-header { margin-bottom: 6px; }
+body[data-skin="paper"] .ct-strip-title {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--paper-red);
+}
+body[data-skin="paper"] .ct-strip-count {
+  font-family: var(--paper-form);
+  background: transparent;
+  border: 1px solid var(--paper-ink-mist);
+  border-radius: 0;
+  color: var(--paper-ink-faint);
+  padding: 0 5px;
+}
+body[data-skin="paper"] .ct-card {
+  background: transparent;
+  border: 1.4px solid var(--paper-ink-mist);
+  border-radius: 0;
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .ct-card:hover {
+  border-color: var(--paper-ink-soft);
+}
+body[data-skin="paper"] .ct-card-kicker {
+  font-family: var(--paper-form);
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .ct-card-kicker-tag { color: var(--paper-red); }
+body[data-skin="paper"] .ct-card-name {
+  font-family: var(--paper-hand);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .ct-card-stats {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+}
+body[data-skin="paper"] .ct-card-pr { color: var(--paper-red); }
+
+/* ============================================================
+   SESSION-REVIEW SHEET — read-only "look back at today's workout"
+   ============================================================ */
+.session-review {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sr-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sr-title { margin: 0; font-size: 18px; }
+.sr-meta {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.sr-stats {
+  display: flex;
+  gap: 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 0;
+  margin: 2px 0 4px;
+}
+.sr-stat {
+  flex: 1;
+  text-align: center;
+  position: relative;
+}
+.sr-stat + .sr-stat::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 4px; bottom: 4px;
+  width: 1px;
+  background: var(--border);
+}
+.sr-stat-val {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+}
+.sr-stat-pr .sr-stat-val { color: var(--accent); }
+.sr-stat-label {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+.sr-ex-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+.sr-ex {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed var(--border);
+}
+.sr-ex:last-child { border-bottom: none; }
+.sr-ex-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+.sr-ex-sets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: 13px;
+  color: var(--text);
+}
+.sr-set-row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.sr-set-idx {
+  font-size: 11px;
+  color: var(--text-dim);
+  min-width: 14px;
+}
+.sr-set-val { color: var(--text); }
+.sr-set-rpe {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.sr-set-pr {
+  font-size: 10px;
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.sr-empty {
+  font-size: 13px;
+  color: var(--text-dim);
+  padding: 12px 0;
+  text-align: center;
+}
+.sr-notes {
+  padding-top: 4px;
+  border-top: 1px dashed var(--border);
+}
+.sr-notes-label {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.sr-note {
+  font-size: 12px;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.sr-note-block {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-right: 4px;
+}
+
+/* Paper-skin overrides for the review sheet. */
+body[data-skin="paper"] .sr-title {
+  font-family: var(--paper-hand);
+  color: var(--paper-ink);
+  font-size: 24px;
+}
+body[data-skin="paper"] .sr-meta {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .sr-stats {
+  border-top: 1px dashed var(--paper-ink-mist);
+  border-bottom: 1px dashed var(--paper-ink-mist);
+}
+body[data-skin="paper"] .sr-stat + .sr-stat::before { background: var(--paper-ink-mist); }
+body[data-skin="paper"] .sr-stat-val {
+  font-family: var(--paper-hand);
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .sr-stat-pr .sr-stat-val { color: var(--paper-red); }
+body[data-skin="paper"] .sr-stat-label {
+  font-family: var(--paper-form);
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .sr-ex { border-bottom: 1px dashed var(--paper-ink-mist); }
+body[data-skin="paper"] .sr-ex-name {
+  font-family: var(--paper-hand);
+  color: var(--paper-ink);
+  font-size: 17px;
+}
+body[data-skin="paper"] .sr-ex-sets {
+  font-family: var(--paper-hand);
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .sr-set-idx {
+  font-family: var(--paper-form);
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .sr-set-rpe {
+  font-family: var(--paper-form);
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .sr-set-pr {
+  font-family: var(--paper-form);
+  color: var(--paper-red);
+}
+

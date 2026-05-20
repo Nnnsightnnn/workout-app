@@ -2910,6 +2910,190 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     eq(w.location.hash, "", "hash cleared so refresh doesn't re-prompt");
   });
 
+  // ── COMPLETED-TODAY STRIP (15c-session-review.js) ──
+  // Fresh user with a controllable sessions[] — verify the strip
+  // surfaces today's sessions (and ONLY today's) on the day-picker.
+  function _resetUserForCtTests() {
+    w.localStorage.clear();
+    w.addUser("Kenny");
+    const u = w.userData();
+    u.sessions = [];
+    w.updateUser(_u => { _u.sessions = []; _u.draft = null; });
+    w.state.dayChosen = false;
+    w.state.workoutStartedAt = null;
+    w.state.adhocActive = false;
+  }
+  function _makeSession(id, finishedAt, opts) {
+    const o = opts || {};
+    return {
+      id: "s-" + id,
+      dayId: 1,
+      dayName: o.dayName || "Test Day",
+      startedAt: finishedAt - (o.duration || 1800) * 1000,
+      finishedAt,
+      duration: o.duration || 1800,
+      volume: o.volume != null ? o.volume : 5000,
+      prCount: o.prCount || 0,
+      sets: o.sets || [
+        { exId: "squat", exName: "Squat", setIdx: 1, weight: 100, reps: 5, rpe: 7, bodyweight: false, isPR: false },
+        { exId: "squat", exName: "Squat", setIdx: 2, weight: 100, reps: 5, rpe: 7, bodyweight: false, isPR: false }
+      ],
+      blockNotes: {}
+    };
+  }
+
+  t("ct-strip: getTodaysSessions returns empty when no sessions", () => {
+    _resetUserForCtTests();
+    const u = w.userData();
+    const todays = w.getTodaysSessions(u);
+    eq(todays.length, 0, "no sessions → empty");
+  });
+
+  t("ct-strip: 0 sessions today → buildCompletedTodayStrip returns null", () => {
+    _resetUserForCtTests();
+    const strip = w.buildCompletedTodayStrip();
+    eq(strip, null, "strip is null when no sessions today");
+  });
+
+  t("ct-strip: 1 session today → 1 card rendered", () => {
+    _resetUserForCtTests();
+    const now = Date.now();
+    w.updateUser(u => { u.sessions = [_makeSession("today1", now - 60 * 1000)]; });
+    const strip = w.buildCompletedTodayStrip();
+    assert(strip, "strip exists");
+    const cards = strip.querySelectorAll(".ct-card");
+    eq(cards.length, 1, "exactly 1 card");
+    assert(cards[0].dataset.sessionId === "s-today1", "card carries session id");
+    assert(strip.textContent.indexOf("Test Day") >= 0, "card shows day name");
+  });
+
+  t("ct-strip: 2 sessions today → 2 cards in chronological order", () => {
+    _resetUserForCtTests();
+    // Pin both timestamps to known same-day moments so the test doesn't flake
+    // depending on what time of day the test happens to run.
+    const morning = new Date(); morning.setHours(7, 0, 0, 0);
+    const evening = new Date(); evening.setHours(19, 0, 0, 0);
+    w.updateUser(u => {
+      u.sessions = [
+        _makeSession("evening", evening.getTime(), { dayName: "PM Workout" }),
+        _makeSession("morning", morning.getTime(), { dayName: "AM Workout" })
+      ];
+    });
+    const strip = w.buildCompletedTodayStrip();
+    const cards = strip.querySelectorAll(".ct-card");
+    eq(cards.length, 2, "two cards rendered");
+    // chronological order — earlier (morning) first
+    eq(cards[0].dataset.sessionId, "s-morning", "morning first");
+    eq(cards[1].dataset.sessionId, "s-evening", "evening second");
+    eq(strip.dataset.count, "2", "header count = 2");
+  });
+
+  t("ct-strip: yesterday's session is NOT shown", () => {
+    _resetUserForCtTests();
+    const now = Date.now();
+    // Force yesterday at noon (local) so DST/timezone math doesn't flip date
+    const y = new Date(now);
+    y.setDate(y.getDate() - 1);
+    y.setHours(12, 0, 0, 0);
+    w.updateUser(u => { u.sessions = [_makeSession("yesterday", y.getTime())]; });
+    const todays = w.getTodaysSessions(w.userData());
+    eq(todays.length, 0, "yesterday filtered out");
+    const strip = w.buildCompletedTodayStrip();
+    eq(strip, null, "no strip when only yesterday's session exists");
+  });
+
+  t("ct-strip: today + yesterday mixed → only today shown", () => {
+    _resetUserForCtTests();
+    const now = Date.now();
+    const y = new Date(now);
+    y.setDate(y.getDate() - 1);
+    y.setHours(12, 0, 0, 0);
+    w.updateUser(u => {
+      u.sessions = [
+        _makeSession("yesterday", y.getTime(), { dayName: "Old Workout" }),
+        _makeSession("today", now - 5 * 60 * 1000, { dayName: "New Workout" })
+      ];
+    });
+    const strip = w.buildCompletedTodayStrip();
+    assert(strip, "strip exists");
+    const cards = strip.querySelectorAll(".ct-card");
+    eq(cards.length, 1, "only today's session is on the strip");
+    assert(strip.textContent.indexOf("New Workout") >= 0, "today's name shown");
+    assert(strip.textContent.indexOf("Old Workout") < 0, "yesterday's name absent");
+  });
+
+  t("ct-strip: tapping a card opens the review sheet", () => {
+    _resetUserForCtTests();
+    const now = Date.now();
+    w.updateUser(u => { u.sessions = [_makeSession("tap", now - 60 * 1000, { dayName: "Tap Test" })]; });
+    const strip = w.buildCompletedTodayStrip();
+    const card = strip.querySelector(".ct-card");
+    // Sheet should be closed first
+    const sheetBg = w.document.getElementById("sheetBg");
+    sheetBg.classList.remove("active");
+    card.click();
+    assert(sheetBg.classList.contains("active"), "sheet opened after card click");
+    const sheetContent = w.document.getElementById("sheetContent");
+    assert(sheetContent.querySelector(".session-review"), "review sheet rendered");
+    assert(sheetContent.textContent.indexOf("Tap Test") >= 0, "review shows session name");
+    // Cleanup
+    sheetBg.classList.remove("active");
+  });
+
+  t("ct-strip: review sheet lists logged sets grouped by exercise", () => {
+    _resetUserForCtTests();
+    const now = Date.now();
+    w.updateUser(u => {
+      u.sessions = [_makeSession("group", now - 60 * 1000, {
+        sets: [
+          { exId: "squat", exName: "Back Squat", setIdx: 1, weight: 225, reps: 5, rpe: 8, bodyweight: false, isPR: true },
+          { exId: "squat", exName: "Back Squat", setIdx: 2, weight: 225, reps: 5, rpe: 8, bodyweight: false, isPR: false },
+          { exId: "pullup", exName: "Pullup",    setIdx: 1, weight: 0,   reps: 10, rpe: 7, bodyweight: true,  isPR: false }
+        ]
+      })]; });
+    w.openSessionReview("s-group");
+    const sheetContent = w.document.getElementById("sheetContent");
+    const exItems = sheetContent.querySelectorAll(".sr-ex");
+    eq(exItems.length, 2, "two exercise groups");
+    const txt = sheetContent.textContent;
+    assert(txt.indexOf("Back Squat") >= 0, "squat group present");
+    assert(txt.indexOf("Pullup") >= 0, "pullup group present");
+    assert(txt.indexOf("BW × 10") >= 0, "bodyweight rendered as BW × reps");
+    assert(txt.indexOf("PR") >= 0, "PR badge surfaces on the PR set");
+    w.document.getElementById("sheetBg").classList.remove("active");
+  });
+
+  t("ct-strip: review sheet 'Edit' button hands off to openSessionEditor", () => {
+    _resetUserForCtTests();
+    const now = Date.now();
+    w.updateUser(u => { u.sessions = [_makeSession("edit", now - 60 * 1000, { dayName: "Edit Handoff" })]; });
+    w.openSessionReview("s-edit");
+    const sheetContent = w.document.getElementById("sheetContent");
+    const editBtn = Array.from(sheetContent.querySelectorAll("button"))
+      .find(b => /edit this session/i.test(b.textContent));
+    assert(editBtn, "Edit button exists in review footer");
+    editBtn.click();
+    const editor = w.document.getElementById("sheetContent").querySelector(".session-editor");
+    assert(editor, "session editor sheet opened after Edit click");
+    w.document.getElementById("sheetBg").classList.remove("active");
+  });
+
+  t("ct-strip: renderDayPicker prepends strip when sessions exist today", () => {
+    _resetUserForCtTests();
+    const now = Date.now();
+    w.updateUser(u => { u.sessions = [_makeSession("picker", now - 60 * 1000, { dayName: "Picker Strip" })]; });
+    w.state.dayChosen = false;
+    // Ensure non-rest-day so the picker hits the normal branch
+    const u = w.userData();
+    w.updateUser(_u => { _u.weeklySchedule = [1,1,1,1,1,1,1]; });
+    w.renderWorkoutScreen();
+    const container = w.document.getElementById("blocksContainer");
+    const strip = container.querySelector(".completed-today-strip");
+    assert(strip, "strip appended to blocksContainer");
+    const cards = strip.querySelectorAll(".ct-card");
+    eq(cards.length, 1, "one card on the strip");
+  });
+
   console.log("\n===== RESULTS =====");
   let pass = 0, fail = 0;
   for (const [n, s, e] of results) {

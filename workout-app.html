@@ -9247,6 +9247,328 @@ body[data-skin="paper"] .rp-editor-suggestion-why {
   text-transform: uppercase;
 }
 
+/* ============================================================
+   COMPLETED-TODAY STRIP — same-day session review (15c-session-review.js)
+   Renders at the top of the day-picker after a workout is finished/exited.
+   ============================================================ */
+.completed-today-strip {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-soft, rgba(255,255,255,0.04));
+}
+.ct-strip-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.ct-strip-title {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  font-weight: 700;
+}
+.ct-strip-count {
+  font-size: 11px;
+  color: var(--text-dim);
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: var(--surface, rgba(255,255,255,0.05));
+}
+.ct-strip-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+}
+.ct-card {
+  flex: 0 0 auto;
+  min-width: 156px;
+  max-width: 220px;
+  text-align: left;
+  padding: 10px 12px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface, rgba(255,255,255,0.03));
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: transform 80ms ease, border-color 120ms ease;
+}
+.ct-card:hover { border-color: var(--accent); }
+.ct-card:active { transform: translateY(1px); }
+.ct-card-kicker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.ct-card-kicker-tag {
+  color: var(--accent);
+}
+.ct-card-name {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text);
+}
+.ct-card-stats {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.ct-card-sep { color: var(--text-faint); }
+.ct-card-pr {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+
+/* Paper-skin override — flat ruled-paper style, no card chrome. */
+body[data-skin="paper"] .completed-today-strip {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  border-top: 1px dashed var(--paper-ink-mist);
+  border-bottom: 1px dashed var(--paper-ink-mist);
+  padding: 10px 0 12px;
+  margin: 0 0 14px;
+}
+body[data-skin="paper"] .ct-strip-header { margin-bottom: 6px; }
+body[data-skin="paper"] .ct-strip-title {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--paper-red);
+}
+body[data-skin="paper"] .ct-strip-count {
+  font-family: var(--paper-form);
+  background: transparent;
+  border: 1px solid var(--paper-ink-mist);
+  border-radius: 0;
+  color: var(--paper-ink-faint);
+  padding: 0 5px;
+}
+body[data-skin="paper"] .ct-card {
+  background: transparent;
+  border: 1.4px solid var(--paper-ink-mist);
+  border-radius: 0;
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .ct-card:hover {
+  border-color: var(--paper-ink-soft);
+}
+body[data-skin="paper"] .ct-card-kicker {
+  font-family: var(--paper-form);
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .ct-card-kicker-tag { color: var(--paper-red); }
+body[data-skin="paper"] .ct-card-name {
+  font-family: var(--paper-hand);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .ct-card-stats {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+}
+body[data-skin="paper"] .ct-card-pr { color: var(--paper-red); }
+
+/* ============================================================
+   SESSION-REVIEW SHEET — read-only "look back at today's workout"
+   ============================================================ */
+.session-review {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sr-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sr-title { margin: 0; font-size: 18px; }
+.sr-meta {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.sr-stats {
+  display: flex;
+  gap: 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 0;
+  margin: 2px 0 4px;
+}
+.sr-stat {
+  flex: 1;
+  text-align: center;
+  position: relative;
+}
+.sr-stat + .sr-stat::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 4px; bottom: 4px;
+  width: 1px;
+  background: var(--border);
+}
+.sr-stat-val {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+}
+.sr-stat-pr .sr-stat-val { color: var(--accent); }
+.sr-stat-label {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+.sr-ex-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+.sr-ex {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed var(--border);
+}
+.sr-ex:last-child { border-bottom: none; }
+.sr-ex-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+.sr-ex-sets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: 13px;
+  color: var(--text);
+}
+.sr-set-row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.sr-set-idx {
+  font-size: 11px;
+  color: var(--text-dim);
+  min-width: 14px;
+}
+.sr-set-val { color: var(--text); }
+.sr-set-rpe {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.sr-set-pr {
+  font-size: 10px;
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.sr-empty {
+  font-size: 13px;
+  color: var(--text-dim);
+  padding: 12px 0;
+  text-align: center;
+}
+.sr-notes {
+  padding-top: 4px;
+  border-top: 1px dashed var(--border);
+}
+.sr-notes-label {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.sr-note {
+  font-size: 12px;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.sr-note-block {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-right: 4px;
+}
+
+/* Paper-skin overrides for the review sheet. */
+body[data-skin="paper"] .sr-title {
+  font-family: var(--paper-hand);
+  color: var(--paper-ink);
+  font-size: 24px;
+}
+body[data-skin="paper"] .sr-meta {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .sr-stats {
+  border-top: 1px dashed var(--paper-ink-mist);
+  border-bottom: 1px dashed var(--paper-ink-mist);
+}
+body[data-skin="paper"] .sr-stat + .sr-stat::before { background: var(--paper-ink-mist); }
+body[data-skin="paper"] .sr-stat-val {
+  font-family: var(--paper-hand);
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .sr-stat-pr .sr-stat-val { color: var(--paper-red); }
+body[data-skin="paper"] .sr-stat-label {
+  font-family: var(--paper-form);
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .sr-ex { border-bottom: 1px dashed var(--paper-ink-mist); }
+body[data-skin="paper"] .sr-ex-name {
+  font-family: var(--paper-hand);
+  color: var(--paper-ink);
+  font-size: 17px;
+}
+body[data-skin="paper"] .sr-ex-sets {
+  font-family: var(--paper-hand);
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .sr-set-idx {
+  font-family: var(--paper-form);
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .sr-set-rpe {
+  font-family: var(--paper-form);
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .sr-set-pr {
+  font-family: var(--paper-form);
+  color: var(--paper-red);
+}
+
 
 </style>
 </head>
@@ -11918,7 +12240,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 20;
-const APP_BUILD = "302c2322";
+const APP_BUILD = "e2a0bfde";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -14157,6 +14479,14 @@ function renderDayPicker() {
   const todayDow = new Date().getDay();
   const sched = (Array.isArray(u.weeklySchedule) && u.weeklySchedule.length === 7) ? u.weeklySchedule : null;
   const isRestToday = sched && sched[todayDow] == null;
+
+  // Same-day completed sessions strip — surfaces today's saved workouts so the
+  // user can review what they just finished. Renders before the rest-day card
+  // and the normal picker so it shows up on every day-picker variant.
+  if (typeof buildCompletedTodayStrip === "function") {
+    const _ctStrip = buildCompletedTodayStrip();
+    if (_ctStrip) container.appendChild(_ctStrip);
+  }
 
   if (isRestToday) {
     document.getElementById("dayName").textContent = "Rest Day";
@@ -19343,6 +19673,256 @@ function _showAddSetPicker() {
   });
 
   openSheet(wrap);
+}
+
+
+// ============================================================
+// SESSION REVIEW — same-day "Completed today" strip + read-only review sheet.
+// Surfaces finishWorkout() / exitWorkout() output on the day-picker so the user
+// can look back at a just-completed session without scrolling into history.
+// Tap a card → openSessionReview() (read-only). Edit → openSessionEditor() (15b).
+// ============================================================
+
+function _isSameLocalDay(ms, refMs) {
+  const a = new Date(ms);
+  const b = new Date(refMs);
+  return a.getFullYear() === b.getFullYear()
+      && a.getMonth() === b.getMonth()
+      && a.getDate() === b.getDate();
+}
+
+function getTodaysSessions(u) {
+  if (!u || !Array.isArray(u.sessions)) return [];
+  const now = Date.now();
+  return u.sessions
+    .filter(s => s && typeof s.finishedAt === "number" && _isSameLocalDay(s.finishedAt, now))
+    .slice()
+    .sort((a, b) => a.finishedAt - b.finishedAt);
+}
+
+function _formatClockTime(ms) {
+  const d = new Date(ms);
+  let h = d.getHours();
+  const m = d.getMinutes();
+  const ap = h >= 12 ? "PM" : "AM";
+  h = h % 12;
+  if (h === 0) h = 12;
+  return h + ":" + String(m).padStart(2, "0") + " " + ap;
+}
+
+// Build a single card for the strip. Returns a DOM element.
+function _buildCompletedTodayCard(session) {
+  const card = document.createElement("button");
+  card.type = "button";
+  card.className = "ct-card";
+  card.dataset.sessionId = session.id;
+
+  const sets = Array.isArray(session.sets) ? session.sets : [];
+  const setsCount = sets.length;
+  const vol = typeof session.volume === "number" ? session.volume : 0;
+  const dur = typeof session.duration === "number" ? session.duration : 0;
+  const volStr = vol > 0
+    ? (typeof formatVolume === "function" ? formatVolume(vol) : String(vol)) + " " + (state && state.unit ? state.unit : "lbs")
+    : "bw";
+  const durStr = typeof formatDuration === "function" ? formatDuration(dur) : (Math.round(dur/60) + "m");
+  const clockStr = _formatClockTime(session.finishedAt);
+  const name = session.dayName || ("Day " + (session.dayId || ""));
+  const prTag = session.prCount > 0
+    ? '<span class="ct-card-pr">' + session.prCount + ' PR' + (session.prCount > 1 ? 's' : '') + '</span>'
+    : '';
+
+  card.innerHTML =
+      '<div class="ct-card-kicker">'
+    +   '<span class="ct-card-kicker-time">' + escapeHtml(clockStr) + '</span>'
+    +   '<span class="ct-card-kicker-tag">done</span>'
+    + '</div>'
+    + '<div class="ct-card-name">' + escapeHtml(name) + '</div>'
+    + '<div class="ct-card-stats">'
+    +   '<span class="ct-card-stat">' + setsCount + ' sets</span>'
+    +   '<span class="ct-card-sep">·</span>'
+    +   '<span class="ct-card-stat">' + escapeHtml(volStr) + '</span>'
+    +   '<span class="ct-card-sep">·</span>'
+    +   '<span class="ct-card-stat">' + escapeHtml(durStr) + '</span>'
+    +   prTag
+    + '</div>';
+
+  card.addEventListener("click", () => {
+    openSessionReview(session.id);
+  });
+  return card;
+}
+
+// Build the full "Completed today" strip element. Returns null when no
+// sessions today (so the caller can skip appending it entirely).
+function buildCompletedTodayStrip() {
+  const u = (typeof userData === "function") ? userData() : null;
+  if (!u) return null;
+  const todays = getTodaysSessions(u);
+  if (!todays.length) return null;
+
+  const wrap = document.createElement("div");
+  wrap.className = "completed-today-strip";
+  wrap.dataset.count = String(todays.length);
+
+  const hdr = document.createElement("div");
+  hdr.className = "ct-strip-header";
+  hdr.innerHTML =
+      '<span class="ct-strip-title">Completed today</span>'
+    + '<span class="ct-strip-count">' + todays.length + '</span>';
+  wrap.appendChild(hdr);
+
+  const row = document.createElement("div");
+  row.className = "ct-strip-row";
+  todays.forEach(s => row.appendChild(_buildCompletedTodayCard(s)));
+  wrap.appendChild(row);
+
+  return wrap;
+}
+
+// ---- Read-only review sheet ----------------------------------
+
+function openSessionReview(sessionId) {
+  const u = (typeof userData === "function") ? userData() : null;
+  if (!u) return;
+  const session = (u.sessions || []).find(s => s && s.id === sessionId);
+  if (!session) {
+    if (typeof showToast === "function") showToast("Session not found");
+    return;
+  }
+  if (typeof openSheet !== "function") return;
+  openSheet(_buildSessionReviewContent(session));
+}
+
+// Group session.sets into [{ exId, exName, sets:[…] }] preserving order.
+function _groupSessionSets(sets) {
+  const order = [];
+  const map = {};
+  (sets || []).forEach(s => {
+    const key = s.exId || s.exName || "?";
+    if (!map[key]) {
+      map[key] = { exId: s.exId, exName: s.exName || s.exId || "—", sets: [] };
+      order.push(key);
+    }
+    map[key].sets.push(s);
+  });
+  return order.map(k => map[k]);
+}
+
+function _buildSessionReviewContent(session) {
+  const wrap = document.createElement("div");
+  wrap.className = "session-review";
+
+  const sets = Array.isArray(session.sets) ? session.sets : [];
+  const vol = typeof session.volume === "number" ? session.volume : 0;
+  const dur = typeof session.duration === "number" ? session.duration : 0;
+  const dateStr = new Date(session.finishedAt).toLocaleDateString(undefined,
+    { weekday: "long", month: "short", day: "numeric" });
+  const clockStr = _formatClockTime(session.finishedAt);
+  const unit = (state && state.unit) ? state.unit : "lbs";
+  const volStr = vol > 0
+    ? (typeof formatVolume === "function" ? formatVolume(vol) : String(vol)) + " " + unit
+    : "bodyweight";
+  const durStr = typeof formatDuration === "function" ? formatDuration(dur) : (Math.round(dur / 60) + "m");
+
+  // Header
+  const hdr = document.createElement("div");
+  hdr.className = "sr-header";
+  hdr.innerHTML =
+      '<div class="sr-header-row">'
+    +   '<h3 class="sr-title">' + escapeHtml(session.dayName || ("Day " + (session.dayId || ""))) + '</h3>'
+    +   '<button class="icon-btn sr-close-btn" type="button" title="Close" aria-label="Close">✕</button>'
+    + '</div>'
+    + '<div class="sr-meta">'
+    +   '<span class="sr-meta-item">' + escapeHtml(dateStr) + ' · ' + escapeHtml(clockStr) + '</span>'
+    + '</div>'
+    + '<div class="sr-stats">'
+    +   '<div class="sr-stat"><div class="sr-stat-val">' + sets.length + '</div><div class="sr-stat-label">sets</div></div>'
+    +   '<div class="sr-stat"><div class="sr-stat-val">' + escapeHtml(volStr) + '</div><div class="sr-stat-label">volume</div></div>'
+    +   '<div class="sr-stat"><div class="sr-stat-val">' + escapeHtml(durStr) + '</div><div class="sr-stat-label">duration</div></div>'
+    + (session.prCount > 0
+        ? '<div class="sr-stat sr-stat-pr"><div class="sr-stat-val">' + session.prCount + '</div><div class="sr-stat-label">PR' + (session.prCount > 1 ? 's' : '') + '</div></div>'
+        : '')
+    + '</div>';
+  wrap.appendChild(hdr);
+  const closeBtn = hdr.querySelector(".sr-close-btn");
+  if (closeBtn) closeBtn.addEventListener("click", () => { if (typeof closeSheet === "function") closeSheet(); });
+
+  // Sets grouped by exercise
+  const groups = _groupSessionSets(sets);
+  if (groups.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "sr-empty";
+    empty.textContent = "No sets logged.";
+    wrap.appendChild(empty);
+  } else {
+    const list = document.createElement("div");
+    list.className = "sr-ex-list";
+    groups.forEach(g => {
+      const ex = document.createElement("div");
+      ex.className = "sr-ex";
+      let html = '<div class="sr-ex-name">' + escapeHtml(g.exName) + '</div>';
+      html += '<div class="sr-ex-sets">';
+      g.sets.forEach((s, i) => {
+        const wLabel = s.bodyweight ? "BW" : String(s.weight || 0);
+        const r = String(s.reps || 0);
+        const rpe = (s.rpe != null) ? ' <span class="sr-set-rpe">@' + escapeHtml(String(s.rpe)) + '</span>' : '';
+        const pr = s.isPR ? ' <span class="sr-set-pr">PR</span>' : '';
+        html += '<div class="sr-set-row">'
+          + '<span class="sr-set-idx">' + (i + 1) + '.</span>'
+          + '<span class="sr-set-val">' + escapeHtml(wLabel) + ' × ' + escapeHtml(r) + '</span>'
+          + rpe
+          + pr
+          + '</div>';
+      });
+      html += '</div>';
+      ex.innerHTML = html;
+      list.appendChild(ex);
+    });
+    wrap.appendChild(list);
+  }
+
+  // Block notes if any
+  if (session.blockNotes && typeof session.blockNotes === "object") {
+    const keys = Object.keys(session.blockNotes);
+    if (keys.length) {
+      const notesWrap = document.createElement("div");
+      notesWrap.className = "sr-notes";
+      let nHtml = '<div class="sr-notes-label">Notes</div>';
+      keys.forEach(k => {
+        const n = session.blockNotes[k];
+        if (n && n.note) {
+          nHtml += '<div class="sr-note"><span class="sr-note-block">' + escapeHtml(n.name || k) + '</span> '
+            + escapeHtml(n.note) + '</div>';
+        }
+      });
+      notesWrap.innerHTML = nHtml;
+      wrap.appendChild(notesWrap);
+    }
+  }
+
+  // Footer
+  const footer = document.createElement("div");
+  footer.className = "sheet-actions sr-footer";
+
+  const doneBtn = document.createElement("button");
+  doneBtn.type = "button";
+  doneBtn.textContent = "Done";
+  doneBtn.onclick = () => { if (typeof closeSheet === "function") closeSheet(); };
+  footer.appendChild(doneBtn);
+
+  const editBtn = document.createElement("button");
+  editBtn.type = "button";
+  editBtn.className = "primary";
+  editBtn.textContent = "Edit this session";
+  editBtn.onclick = () => {
+    if (typeof openSessionEditor === "function") {
+      openSessionEditor(session);
+    }
+  };
+  footer.appendChild(editBtn);
+
+  wrap.appendChild(footer);
+  return wrap;
 }
 
 
@@ -25953,6 +26533,14 @@ function paperRenderDayPicker() {
   if (finishBtn) finishBtn.classList.remove("active");
 
   container.innerHTML = "";
+
+  // Same-day completed sessions strip — surfaces today's saved workouts so the
+  // user can review what they just finished. Renders before the rest-day card
+  // and the normal picker so it shows up on every day-picker variant.
+  if (typeof buildCompletedTodayStrip === "function") {
+    const _ctStrip = buildCompletedTodayStrip();
+    if (_ctStrip) container.appendChild(_ctStrip);
+  }
 
   // Rest-day branch
   const todayDow = new Date().getDay();
