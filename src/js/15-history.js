@@ -37,6 +37,16 @@ function renderHistory() {
   html += _buildRecentEntries(recent);
 
   root.innerHTML = html;
+
+  // Wire log-entry rows → open the session editor.
+  // Skip planned-future entries (no real sets yet).
+  root.querySelectorAll(".log-entry[data-session-id]").forEach(el => {
+    el.addEventListener("click", () => {
+      const id = el.dataset.sessionId;
+      const s = (userData()?.sessions || []).find(x => x.id === id);
+      if (s && typeof openSessionEditor === "function") openSessionEditor(s);
+    });
+  });
 }
 
 function _countRecentPRs(sessions, sinceMs) {
@@ -145,13 +155,18 @@ function _buildRecentEntries(recent) {
     const color = _sessionPrimaryColor(s);
     const prNote = s.prCount ? "PR \u00b7 " + s.prCount + " record" + (s.prCount > 1 ? "s" : "") : "\u2014";
     const isPr = s.prCount > 0;
-    html += '<div class="log-entry">';
+    const isPlanned = s.finishedAt > Date.now();
+    // Only entries with real recorded sets are tappable.
+    const tappable = !isPlanned;
+    const editedMark = s.editedAt ? '<span class="log-entry-edited" title="Edited">\u270e</span>' : '';
+    html += '<div class="log-entry' + (tappable ? ' log-entry-tappable' : '') + '"'
+         + (tappable ? ' data-session-id="' + s.id + '" role="button" tabindex="0"' : '') + '>';
     html += '<div class="log-entry-date">' + dateStr + '</div>';
     html += '<div class="log-entry-bar" style="background:' + (color || "var(--text-faint)") + ';"></div>';
     const adhocTag = s.isAdhoc ? '<span class="log-entry-adhoc-tag">ad-hoc</span>' : '';
-    const plannedTag = s.finishedAt > Date.now() ? '<span class="log-entry-adhoc-tag" style="background:var(--accent-dim,#2a2a3a);color:var(--accent);">planned</span>' : '';
-    html += '<div class="log-entry-info"><div class="name">' + (s.dayName || "Day " + s.dayId) + ' ' + adhocTag + plannedTag + '</div>';
-    html += '<div class="note' + (isPr ? " pr" : "") + '">' + prNote + '</div></div>';
+    const plannedTag = isPlanned ? '<span class="log-entry-adhoc-tag" style="background:var(--accent-dim,#2a2a3a);color:var(--accent);">planned</span>' : '';
+    html += '<div class="log-entry-info"><div class="name">' + (s.dayName || "Day " + s.dayId) + ' ' + adhocTag + plannedTag + editedMark + '</div>';
+    html += '<div class="note' + (isPr ? " pr" : "") + '">' + prNote + (tappable ? ' <span class="log-entry-cue">tap to edit \u2192</span>' : '') + '</div></div>';
     html += '<div class="log-entry-vol">' + (s.volume > 0 ? s.volume.toLocaleString() : "\u2014") + '</div>';
     html += '</div>';
   });

@@ -6316,6 +6316,277 @@ body[data-skin="paper"] .log-entry-info .name {
 }
 body[data-skin="paper"] .log-pr-e1rm.top { color: var(--paper-red); }
 
+/* Log entry — tappable affordance + edited badge */
+body[data-skin="paper"] .log-entry-tappable {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+body[data-skin="paper"] .log-entry-tappable:active {
+  background: var(--paper-marker-soft);
+}
+body[data-skin="paper"] .log-entry-cue {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--paper-ink-faint);
+  margin-left: 6px;
+  opacity: 0.7;
+}
+body[data-skin="paper"] .log-entry-edited {
+  color: var(--paper-red);
+  font-family: var(--paper-form);
+  font-size: 11px;
+  margin-left: 4px;
+  opacity: 0.85;
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * SESSION VIEW — full-page paper editor for past sessions
+ * ───────────────────────────────────────────────────────────── */
+/* Full-page promotion of the bottom-sheet container when the
+ * paper session editor is mounted. */
+body[data-skin="paper"] .sheet-bg.active:has(.sheet--paper-page) {
+  background: var(--paper-bg);
+}
+body[data-skin="paper"] .sheet--paper-page {
+  position: fixed;
+  inset: 0;
+  max-height: 100vh;
+  height: 100vh;
+  width: 100vw;
+  max-width: 100vw;
+  border-radius: 0;
+  margin: 0;
+  padding: 0;
+  background: var(--paper-bg);
+  border: none;
+  box-shadow: none;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  transform: none;
+}
+body[data-skin="paper"] .sheet--paper-page #sheetContent {
+  height: 100%;
+  padding: 0;
+}
+body[data-skin="paper"] .paper-session-view {
+  min-height: 100vh;
+  padding: 16px 18px 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .paper-session-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed rgba(40, 30, 15, 0.3);
+}
+body[data-skin="paper"] .paper-session-back,
+body[data-skin="paper"] .paper-session-close {
+  background: transparent;
+  border: none;
+  color: var(--paper-ink);
+  padding: 6px 8px;
+  cursor: pointer;
+}
+body[data-skin="paper"] .paper-session-breadcrumb {
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--paper-ink-faint);
+  text-transform: uppercase;
+}
+body[data-skin="paper"] .paper-session-headline {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+body[data-skin="paper"] .paper-session-date {
+  font-family: var(--paper-hand);
+  font-size: 28px;
+  color: var(--paper-ink);
+  line-height: 1.1;
+}
+body[data-skin="paper"] .paper-session-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .paper-session-time-edit {
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px dashed rgba(40, 30, 15, 0.4);
+  color: var(--paper-ink);
+  padding: 2px 8px;
+  cursor: pointer;
+}
+body[data-skin="paper"] .paper-session-datepicker {
+  font-family: var(--paper-form);
+  font-size: 12px;
+  background: transparent;
+  border: 1.4px solid var(--paper-ink);
+  color: var(--paper-ink);
+  padding: 4px 6px;
+  border-radius: 0;
+}
+body[data-skin="paper"] .paper-session-edited {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--paper-red);
+  margin-top: 2px;
+}
+body[data-skin="paper"] .paper-session-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+body[data-skin="paper"] .paper-session-ex-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+body[data-skin="paper"] .paper-session-ex-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px dotted rgba(40, 30, 15, 0.3);
+}
+body[data-skin="paper"] .paper-session-ex-left {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+body[data-skin="paper"] .paper-session-ex-no {
+  font-family: var(--paper-form);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .paper-session-ex-name {
+  font-family: var(--paper-hand);
+  font-size: 18px;
+  color: var(--paper-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body[data-skin="paper"] .paper-session-ex-target {
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--paper-ink-soft);
+  text-transform: uppercase;
+}
+body[data-skin="paper"] .paper-session-ex-addset {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: transparent;
+  border: none;
+  color: var(--paper-red);
+  cursor: pointer;
+  padding: 2px 6px;
+}
+body[data-skin="paper"] .paper-session-set-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 4px;
+}
+body[data-skin="paper"] .paper-session-set-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px;
+  min-height: 44px;
+  border-bottom: 1px dotted rgba(40, 30, 15, 0.18);
+}
+body[data-skin="paper"] .paper-session-set-row .paper-set-weight,
+body[data-skin="paper"] .paper-session-set-row .paper-set-reps,
+body[data-skin="paper"] .paper-session-set-row .paper-set-rpe-val {
+  font-family: var(--paper-hand);
+  color: var(--paper-ink);
+  font-size: 16px;
+  padding: 2px 6px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: var(--paper-marker-soft);
+}
+body[data-skin="paper"] .paper-session-set-row .paper-set-weight:active,
+body[data-skin="paper"] .paper-session-set-row .paper-set-reps:active,
+body[data-skin="paper"] .paper-session-set-row .paper-set-rpe-val:active {
+  background: var(--paper-marker-soft);
+}
+body[data-skin="paper"] .paper-session-edited-mark {
+  color: var(--paper-red);
+  font-family: var(--paper-form);
+  font-size: 11px;
+  margin-left: 4px;
+}
+body[data-skin="paper"] .paper-session-set-delete {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: var(--paper-ink-faint);
+  font-size: 20px;
+  line-height: 1;
+  padding: 0 8px;
+  cursor: pointer;
+}
+body[data-skin="paper"] .paper-session-set-delete:active {
+  color: var(--paper-red);
+}
+body[data-skin="paper"] .paper-session-footer {
+  position: sticky;
+  bottom: 0;
+  background: var(--paper-bg);
+  padding: 12px 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px dashed rgba(40, 30, 15, 0.3);
+  margin-top: auto;
+}
+body[data-skin="paper"] .paper-session-revert {
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: transparent;
+  border: none;
+  color: var(--paper-red);
+  cursor: pointer;
+  padding: 4px 8px;
+}
+body[data-skin="paper"] .paper-session-delete {
+  border-color: var(--paper-red) !important;
+  color: var(--paper-red) !important;
+  margin-left: auto;
+}
+body[data-skin="paper"] .paper-session-done {
+  min-width: 110px;
+}
+
 /* Body screen — paper metric tiles. */
 body[data-skin="paper"] .body-mcard {
   background: rgba(255, 255, 255, 0.12) !important;
@@ -8979,6 +9250,168 @@ body[data-skin="paper"] .paper-action-log[disabled] {
 }
 body[data-skin="paper"] .paper-action-log span {
   font-weight: 700;
+}
+
+/* ================================================================= */
+/* VELVETY FOCUS MODE — pressure press, ink bloom, margin glow, quiet */
+/* action strip. All restrained: 60-280ms transitions, subtle glow.   */
+/* ================================================================= */
+
+/* ---- Pressure Press — weighted compress + spring rebound ---- */
+body[data-skin="paper"] .is-pressing {
+  transform: scale(0.96);
+  transition: transform 60ms linear;
+}
+body[data-skin="paper"] .is-releasing {
+  animation: paperPressRelease 180ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes paperPressRelease {
+  0% { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
+/* Log button keeps its baseline rotation through the press cycle. */
+body[data-skin="paper"] .paper-action-log.is-pressing {
+  transform: rotate(-1.5deg) scale(0.96) translate(1px, 2px);
+  box-shadow: 1px 2px 0 rgba(40, 30, 15, 0.25);
+  transition: transform 60ms linear, box-shadow 60ms linear;
+}
+body[data-skin="paper"] .paper-action-log.is-releasing {
+  animation: paperLogRelease 180ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes paperLogRelease {
+  0% { transform: rotate(-1.5deg) scale(0.96) translate(1px, 2px); }
+  100% { transform: rotate(-1.5deg) scale(1) translate(0, 0); }
+}
+
+/* ---- Margin Glow — breathing band on active set row ---- */
+body[data-skin="paper"] .paper-focus-active-set {
+  position: relative;
+  animation: paperBreathe 1.6s ease-in-out infinite alternate;
+  box-shadow: inset 3px 0 0 var(--paper-marker);
+  padding-left: 4px;
+  margin-left: -4px;
+}
+@keyframes paperBreathe {
+  0%   { background-color: rgba(244, 211, 58, 0.00); }
+  100% { background-color: rgba(244, 211, 58, 0.22); }
+}
+
+/* While sweeping (just-logged), pause the breathing and run a L→R wash. */
+body[data-skin="paper"] .paper-focus-active-set.is-sweeping {
+  animation: none;
+  background-color: rgba(244, 211, 58, 0.18);
+}
+body[data-skin="paper"] .paper-focus-active-set.is-sweeping::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    var(--paper-marker) 50%,
+    transparent 100%);
+  transform: translateX(-100%);
+  animation: paperSweep 320ms linear forwards;
+  pointer-events: none;
+  z-index: 0;
+  /* clip the sweep gradient to row bounds without affecting the bloom. */
+  clip-path: inset(0);
+}
+@keyframes paperSweep {
+  to { transform: translateX(100%); }
+}
+/* Persistent "you did this" trace after the sweep. */
+body[data-skin="paper"] .paper-focus-active-set.is-logged {
+  animation: none;
+  background-color: rgba(244, 211, 58, 0.16);
+  box-shadow: inset 3px 0 0 rgba(244, 211, 58, 0.7);
+}
+
+/* ---- Ink Bloom — radial marker wash emanating from the row ---- */
+body[data-skin="paper"] .paper-ink-bloom {
+  position: absolute;
+  inset: -8px;
+  pointer-events: none;
+  background: radial-gradient(ellipse 55% 70% at center,
+    var(--paper-marker) 0%,
+    rgba(244, 211, 58, 0.5) 38%,
+    transparent 72%);
+  opacity: 0;
+  transform: scale(0.2);
+  animation: paperBloom 280ms ease-out forwards;
+  mix-blend-mode: multiply;
+  z-index: 0;
+  border-radius: 50%;
+  filter: blur(0.5px);
+}
+@keyframes paperBloom {
+  0%   { opacity: 0;    transform: scale(0.2); }
+  35%  { opacity: 0.55; }
+  100% { opacity: 0;    transform: scale(1.4); }
+}
+
+/* ---- Strikethrough draw — animate the wavy ink stroke L→R ---- */
+body[data-skin="paper"] .paper-strike.is-animating svg path {
+  stroke-dasharray: 120;
+  stroke-dashoffset: 120;
+  animation: paperStrikeDraw 240ms ease-out 40ms forwards;
+}
+@keyframes paperStrikeDraw {
+  to { stroke-dashoffset: 0; }
+}
+
+/* Make the set-row a positioning context for bloom + sweep overlays. */
+body[data-skin="paper"] .paper-focus-view .paper-set-row {
+  position: relative;
+}
+/* Keep value spans above the sweep gradient. */
+body[data-skin="paper"] .paper-focus-active-set > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---- Quiet Action Strip — drop borders on Rest/Swap, dotted under Weight ---- */
+body[data-skin="paper"] .paper-action-bar {
+  border-top: 1px dotted var(--paper-ink-mist);
+}
+body[data-skin="paper"] .paper-action-rest,
+body[data-skin="paper"] .paper-action-swap {
+  border: none;
+  background: transparent;
+  padding: 8px 6px;
+}
+body[data-skin="paper"] .paper-action-weight {
+  border: none;
+  background: transparent;
+  border-bottom: 1.2px dotted var(--paper-ink);
+  padding-bottom: 4px;
+}
+body[data-skin="paper"] .paper-action-edit-label {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  margin-bottom: 6px;
+  opacity: 0.7;
+}
+body[data-skin="paper"] .pa-label-target {
+  letter-spacing: 0.14em;
+}
+
+/* Reduced-motion: kill the animations, keep state visible. */
+@media (prefers-reduced-motion: reduce) {
+  body[data-skin="paper"] .is-pressing,
+  body[data-skin="paper"] .is-releasing,
+  body[data-skin="paper"] .paper-action-log.is-pressing,
+  body[data-skin="paper"] .paper-action-log.is-releasing,
+  body[data-skin="paper"] .paper-focus-active-set,
+  body[data-skin="paper"] .paper-focus-active-set.is-sweeping,
+  body[data-skin="paper"] .paper-focus-active-set.is-sweeping::after,
+  body[data-skin="paper"] .paper-ink-bloom,
+  body[data-skin="paper"] .paper-strike.is-animating svg path {
+    animation: none !important;
+    transition: none !important;
+  }
+  body[data-skin="paper"] .paper-focus-active-set {
+    background-color: rgba(244, 211, 58, 0.16);
+  }
 }
 
 /* ================================================================= */

@@ -1749,45 +1749,29 @@ function dismissInlineEditor() {
   document.querySelectorAll(".inline-edit-backdrop, .inline-edit-popover").forEach(el => el.remove());
 }
 
-function openInlineEditor(anchorEl, field, block, ex, bi, ei, setIdx, bw) {
+// Generic stepper+pills popover. Reused by openInlineEditor (program-day
+// draft) and openSessionInlineEditor (past-session set editing).
+// opts: { curVal, step, label, unitLabel, commonVals, allowNegative, onChange(v) }
+function openValuePopover(anchorEl, opts) {
   dismissInlineEditor();
+  let curVal = opts.curVal;
+  const step = opts.step;
+  const unitLabel = opts.unitLabel || "";
+  const commonVals = opts.commonVals || [];
+  const allowNegative = !!opts.allowNegative;
 
-  const lib = LIB_BY_ID[ex.exId] || ex;
-  const last = getLastSetsFor(ex.exId || ex.name);
-  const lastSet = last[setIdx] || last[last.length - 1];
-  const key = inputKey(block.id, ei, setIdx, field);
-
-  let curVal, step, label, unitLabel, commonVals;
-  if (field === "w") {
-    curVal = getInput(key, lastSet?.weight ?? ex.defaultWeight ?? 0);
-    step = state.unit === "lbs" ? 5 : 2.5;
-    label = `Weight (${state.unit})`;
-    unitLabel = state.unit;
-    commonVals = state.unit === "lbs" ? [45, 95, 135, 185, 225, 275, 315] : [20, 40, 60, 80, 100, 120, 140];
-  } else {
-    curVal = getInput(key, lastSet?.reps ?? ex.reps);
-    step = ex.isTime ? 5 : ex.isDistance ? 10 : 1;
-    label = ex.isTime ? "Time (sec)" : ex.isDistance ? "Distance (m)" : "Reps";
-    unitLabel = ex.isTime ? "s" : ex.isDistance ? "m" : "reps";
-    commonVals = ex.isTime ? [15, 30, 45, 60, 90, 120] : ex.isDistance ? [50, 100, 200, 400, 800, 1000] : [1, 3, 5, 8, 10, 12, 15, 20];
-  }
-
-  // Backdrop
   const backdrop = document.createElement("div");
   backdrop.className = "inline-edit-backdrop";
   backdrop.addEventListener("click", dismissInlineEditor);
   backdrop.addEventListener("touchend", (e) => { e.preventDefault(); dismissInlineEditor(); });
 
-  // Popover
   const pop = document.createElement("div");
   pop.className = "inline-edit-popover";
 
-  // Label
   const lbl = document.createElement("div");
   lbl.className = "inline-edit-label";
-  lbl.textContent = label;
+  lbl.textContent = opts.label || "";
 
-  // Stepper row
   const row = document.createElement("div");
   row.className = "inline-edit-stepper-row";
 
@@ -1803,28 +1787,20 @@ function openInlineEditor(anchorEl, field, block, ex, bi, ei, setIdx, bw) {
   plus.className = "inline-edit-stepper";
   plus.textContent = "+";
 
-  // Quick pills
   const pills = document.createElement("div");
   pills.className = "inline-edit-pills";
 
   function updateVal(newVal) {
-    curVal = newVal;
+    curVal = allowNegative ? newVal : Math.max(0, newVal);
     valDisplay.innerHTML = `${curVal}<small>${unitLabel}</small>`;
-    saveInput(key, curVal);
-    // Update chip text in-place
-    if (field === "w") {
-      anchorEl.textContent = curVal;
-    } else {
-      const rl = ex.isTime ? "s" : ex.isDistance ? "m" : "reps";
-      anchorEl.textContent = curVal + " " + rl;
-    }
     pills.querySelectorAll(".inline-edit-pill").forEach(p =>
       p.classList.toggle("active", parseFloat(p.textContent) === curVal)
     );
+    if (typeof opts.onChange === "function") opts.onChange(curVal);
     if (navigator.vibrate) navigator.vibrate(10);
   }
 
-  minus.onclick = () => updateVal(Math.max(0, curVal - step));
+  minus.onclick = () => updateVal(curVal - step);
   plus.onclick = () => updateVal(curVal + step);
 
   commonVals.forEach(v => {
@@ -1845,7 +1821,6 @@ function openInlineEditor(anchorEl, field, block, ex, bi, ei, setIdx, bw) {
   document.body.appendChild(backdrop);
   document.body.appendChild(pop);
 
-  // Position popover near the anchor
   const rect = anchorEl.getBoundingClientRect();
   const popW = pop.offsetWidth;
   const popH = pop.offsetHeight;
@@ -1857,6 +1832,41 @@ function openInlineEditor(anchorEl, field, block, ex, bi, ei, setIdx, bw) {
   pop.style.top = top + "px";
 
   requestAnimationFrame(() => pop.classList.add("active"));
+}
+
+function openInlineEditor(anchorEl, field, block, ex, bi, ei, setIdx, bw) {
+  const lib = LIB_BY_ID[ex.exId] || ex;
+  const last = getLastSetsFor(ex.exId || ex.name);
+  const lastSet = last[setIdx] || last[last.length - 1];
+  const key = inputKey(block.id, ei, setIdx, field);
+
+  let curVal, step, label, unitLabel, commonVals;
+  if (field === "w") {
+    curVal = getInput(key, lastSet?.weight ?? ex.defaultWeight ?? 0);
+    step = state.unit === "lbs" ? 5 : 2.5;
+    label = `Weight (${state.unit})`;
+    unitLabel = state.unit;
+    commonVals = state.unit === "lbs" ? [45, 95, 135, 185, 225, 275, 315] : [20, 40, 60, 80, 100, 120, 140];
+  } else {
+    curVal = getInput(key, lastSet?.reps ?? ex.reps);
+    step = ex.isTime ? 5 : ex.isDistance ? 10 : 1;
+    label = ex.isTime ? "Time (sec)" : ex.isDistance ? "Distance (m)" : "Reps";
+    unitLabel = ex.isTime ? "s" : ex.isDistance ? "m" : "reps";
+    commonVals = ex.isTime ? [15, 30, 45, 60, 90, 120] : ex.isDistance ? [50, 100, 200, 400, 800, 1000] : [1, 3, 5, 8, 10, 12, 15, 20];
+  }
+
+  openValuePopover(anchorEl, {
+    curVal, step, label, unitLabel, commonVals,
+    onChange(v) {
+      saveInput(key, v);
+      if (field === "w") {
+        anchorEl.textContent = v;
+      } else {
+        const rl = ex.isTime ? "s" : ex.isDistance ? "m" : "reps";
+        anchorEl.textContent = v + " " + rl;
+      }
+    }
+  });
 }
 
 // ============================================================

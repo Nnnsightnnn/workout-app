@@ -3073,8 +3073,10 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
       .find(b => /edit this session/i.test(b.textContent));
     assert(editBtn, "Edit button exists in review footer");
     editBtn.click();
-    const editor = w.document.getElementById("sheetContent").querySelector(".session-editor");
-    assert(editor, "session editor sheet opened after Edit click");
+    // Paper skin (unconditional) → paper editor; legacy fallback → .session-editor.
+    const editor = w.document.getElementById("sheetContent")
+      .querySelector(".paper-session-view, .session-editor");
+    assert(editor, "session editor opened after Edit click");
     w.document.getElementById("sheetBg").classList.remove("active");
   });
 

@@ -148,7 +148,12 @@ let _editState = null; // { editing, originalSession }
 
 function openSessionEditor(session) {
   _editState = { editing: deepClone(session), originalSession: session };
-  _showSessionEditorSheet();
+  if (typeof paperOpenSessionEditor === "function"
+      && typeof isPaperSkin === "function" && isPaperSkin()) {
+    paperOpenSessionEditor(session);
+  } else {
+    _showSessionEditorSheet();
+  }
 }
 
 function _showSessionEditorSheet() {
