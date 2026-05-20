@@ -263,6 +263,15 @@ function initWorkoutScreen() {
       }
       return;
     }
+    // If a workout is actually in progress (timer running OR user has logged
+    // any input), guard the home button with an exit confirm so users can't
+    // get stuck mid-workout with no way out.
+    const inProgress = state.workoutStartedAt != null
+      || (typeof hasAnyInput === "function" && hasAnyInput());
+    if (inProgress) {
+      openExitWorkoutSheet();
+      return;
+    }
     state.dayChosen = false;
     state.previewDateMs = null;
     state.restOverride = false;
@@ -354,6 +363,11 @@ function init() {
 
   state.userId = s.currentUserId;
   state.currentDayId = determineDefaultDay();
+  // Re-apply paper skin now that state.userId is set — the earlier call at
+  // boot ran before currentUserId was bound, so userData() returned null and
+  // u.preferences.{bgColor,textColor} were never read. Without this second
+  // call, the Appearance picker writes survive in storage but never paint.
+  if (typeof applyPaperSkin === "function") applyPaperSkin();
 
   // On rest days, surface the rest card on launch even if a draft exists
   // (e.g. paused workout). The draft is preserved — user can reach it via

@@ -2061,6 +2061,136 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     assert(!w.document.body.hasAttribute("data-paper-mode"), "data-paper-mode cleared when default");
   });
 
+  // ─── Regression tests for the "Appearance settings don't persist on reload" bug ───
+  // Root cause: init() called applyPaperSkin() before state.userId was set, so
+  // userData() returned null and the user's bgColor/textColor prefs were
+  // ignored. These tests simulate that boot sequence and verify the second
+  // applyPaperSkin() call (added after state.userId is bound) paints the user's
+  // saved appearance.
+
+  t("appearance persistence: bgColor=navy survives a simulated reload", () => {
+    w.localStorage.clear();
+    const u = w.addUser("ReloadKenny");
+    w.updateUser(usr => { usr.preferences = { bgColor: "navy", textColor: "auto" }; });
+    // Simulate "reload": tear down DOM-side overrides and the in-memory userId
+    // exactly as a page refresh would, then re-run the boot sequence.
+    w.document.body.style.removeProperty("--paper-bg");
+    w.document.body.style.removeProperty("--paper-bg-deep");
+    w.document.body.removeAttribute("data-paper-mode");
+    w.state.userId = null;
+    // 1. First applyPaperSkin runs while state.userId is null (matches init()
+    //    line 327). With no user, this must not clobber writes in storage.
+    w.applyPaperSkin();
+    const s = w.loadStore();
+    eq(s.users[0].preferences.bgColor, "navy", "writes survived in storage");
+    // 2. After init() binds state.userId and calls applyPaperSkin() a second
+    //    time, the navy bg should actually paint.
+    w.state.userId = u.id;
+    w.applyPaperSkin();
+    const inlineBg = w.document.body.style.getPropertyValue("--paper-bg");
+    assert(inlineBg && inlineBg.trim() !== "", "navy --paper-bg painted after reload");
+    eq(w.document.body.getAttribute("data-paper-mode"), "dark", "dark mode painted after reload");
+  });
+
+  t("appearance persistence: textColor=light survives a simulated reload", () => {
+    w.localStorage.clear();
+    const u = w.addUser("LightTextKenny");
+    w.updateUser(usr => { usr.preferences = { bgColor: null, textColor: "light" }; });
+    w.document.body.removeAttribute("data-paper-mode");
+    w.state.userId = null;
+    w.applyPaperSkin();
+    w.state.userId = u.id;
+    w.applyPaperSkin();
+    eq(w.document.body.getAttribute("data-paper-mode"), "dark", "textColor=light still forces dark mode after reload");
+    const s = w.loadStore();
+    eq(s.users[0].preferences.textColor, "light", "textColor survived in storage");
+  });
+
+  t("appearance persistence: defaults stay defaults after a reload", () => {
+    w.localStorage.clear();
+    const u = w.addUser("DefaultKenny");
+    // Don't touch preferences — they should be the migration/defensive defaults.
+    w.document.body.style.removeProperty("--paper-bg");
+    w.document.body.removeAttribute("data-paper-mode");
+    w.state.userId = null;
+    w.applyPaperSkin();
+    w.state.userId = u.id;
+    w.applyPaperSkin();
+    eq(w.document.body.style.getPropertyValue("--paper-bg"), "", "no inline --paper-bg for default prefs");
+    assert(!w.document.body.hasAttribute("data-paper-mode"), "no data-paper-mode for default prefs");
+  });
+
+  // ─── Regression tests for the "no exit-workout button" bug ───
+  // Nick was stuck mid-workout with no visible affordance to bail out.
+  // exitWorkout() clears the draft and resets in-flight state so the home
+  // button can dump out cleanly without auto-resuming next time.
+
+  t("exit workout: exitWorkout clears draft + resets in-flight state", () => {
+    w.localStorage.clear();
+    const u = w.addUser("ExitKenny");
+    w.state.currentDayId = 1;
+    w.state.dayChosen = true;
+    // Begin a workout: ensureDraft + workoutStartedAt + focus view.
+    w.ensureDraft();
+    w.state.workoutStartedAt = Date.now();
+    w.state.workoutView = "focus";
+    w.state.focusBlockIdx = 0;
+    w.state.focusExIdx = 0;
+    w.saveInput("test|0|0|status", "done"); // log an input so hasAnyInput() is true
+    assert(w.getDraft() != null, "draft exists before exit");
+    eq(w.hasAnyInput(), true, "draft has inputs before exit");
+
+    w.exitWorkout();
+
+    eq(w.userData().draft, null, "draft cleared from storage");
+    eq(w.state.workoutStartedAt, null, "workoutStartedAt cleared");
+    eq(w.state.workoutView, "chapters", "view reset to chapters");
+    eq(w.state.focusBlockIdx, null, "focusBlockIdx cleared");
+    eq(w.state.dayChosen, false, "dayChosen cleared so day picker shows on re-entry");
+  });
+
+  t("exit workout: re-entering the workout screen does NOT auto-resume", () => {
+    w.localStorage.clear();
+    const u = w.addUser("NoAutoResumeKenny");
+    w.state.currentDayId = 1;
+    w.state.dayChosen = true;
+    w.ensureDraft();
+    w.state.workoutStartedAt = Date.now();
+    w.saveInput("test|0|0|status", "done");
+    w.exitWorkout();
+    // Simulate re-entry: render the workout screen again. The day picker
+    // branch should fire because draft is null AND dayChosen is false.
+    w.renderWorkoutScreen();
+    eq(w.getDraft(), null, "no draft after re-entry");
+    eq(w.state.workoutStartedAt, null, "workout timer still stopped");
+    eq(w.state.dayChosen, false, "still on day-picker / chapters, not auto-resumed");
+  });
+
+  t("exit workout: openExitWorkoutSheet wires Keep going and Exit buttons", () => {
+    w.localStorage.clear();
+    const u = w.addUser("SheetKenny");
+    w.state.currentDayId = 1;
+    w.state.dayChosen = true;
+    w.ensureDraft();
+    w.state.workoutStartedAt = Date.now();
+    w.saveInput("test|0|0|status", "done");
+
+    w.openExitWorkoutSheet();
+    const cancelBtn = w.document.getElementById("exitWorkoutCancel");
+    const confirmBtn = w.document.getElementById("exitWorkoutConfirm");
+    assert(cancelBtn, "Keep-going button present in sheet");
+    assert(confirmBtn, "Exit-workout button present in sheet");
+    // Default action (Keep going) must NOT destroy the session.
+    cancelBtn.click();
+    assert(w.getDraft() != null, "draft survives Keep-going tap");
+    eq(w.state.workoutStartedAt != null, true, "workout still active after Keep-going");
+    // Re-open the sheet and confirm exit.
+    w.openExitWorkoutSheet();
+    w.document.getElementById("exitWorkoutConfirm").click();
+    eq(w.userData().draft, null, "draft cleared after Exit-workout tap");
+    eq(w.state.workoutStartedAt, null, "workout stopped after Exit-workout tap");
+  });
+
   // ============================================================
   // SHARE / IMPORT WORKOUT
   // ============================================================

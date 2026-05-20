@@ -176,6 +176,53 @@ function handleFinishButton() {
   finishWorkout();
 }
 
+// Exit an in-progress workout without finishing it. Clears the draft so the
+// user doesn't auto-resume next time they land on this day, stops timers,
+// and returns to the chapters overview.
+function exitWorkout() {
+  // Ad-hoc sessions have their own cancel path (and a different draft shape).
+  if (state.adhocActive) {
+    if (typeof cancelAdhocWorkout === "function") cancelAdhocWorkout();
+    return;
+  }
+  updateUser(u => { u.draft = null; });
+  if (typeof stopSessionTimer === "function") stopSessionTimer();
+  if (typeof hideHeaderRest === "function") hideHeaderRest();
+  state.workoutStartedAt = null;
+  state.workoutView = "chapters";
+  state.focusBlockIdx = null;
+  state.focusExIdx = 0;
+  state.dayChosen = false;
+  state.trimmedBlocks = null;
+  if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
+  if (typeof showToast === "function") showToast("Workout exited", "");
+}
+
+// Bottom-sheet confirm before exiting a workout in progress. Default action
+// (the green stamp) is "Keep going" so an accidental tap on Home doesn't
+// destroy a session.
+function openExitWorkoutSheet() {
+  const html = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <h3 style="margin:0;">Exit workout?</h3>
+      <button class="icon-btn" onclick="closeSheet()" title="Close">✕</button>
+    </div>
+    <p style="color:var(--text-dim); font-size:13px; line-height:1.5; margin-bottom:10px;">
+      Your unfinished sets won't be saved. You can start fresh anytime.
+    </p>
+    <div class="sheet-actions">
+      <button class="danger" id="exitWorkoutConfirm">Exit workout</button>
+      <button class="primary" id="exitWorkoutCancel">Keep going</button>
+    </div>
+  `;
+  openSheet(html);
+  document.getElementById("exitWorkoutCancel").onclick = () => closeSheet();
+  document.getElementById("exitWorkoutConfirm").onclick = () => {
+    closeSheet();
+    exitWorkout();
+  };
+}
+
 function finishWorkout() {
   // Ad-hoc sessions have their own finish flow
   if (state.adhocActive) { finishAdhocWorkout(); return; }

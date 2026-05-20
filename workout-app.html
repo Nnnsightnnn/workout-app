@@ -12117,7 +12117,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 20;
-const APP_BUILD = "775bf7de";
+const APP_BUILD = "50ebe918";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -18280,6 +18280,53 @@ function handleFinishButton() {
   finishWorkout();
 }
 
+// Exit an in-progress workout without finishing it. Clears the draft so the
+// user doesn't auto-resume next time they land on this day, stops timers,
+// and returns to the chapters overview.
+function exitWorkout() {
+  // Ad-hoc sessions have their own cancel path (and a different draft shape).
+  if (state.adhocActive) {
+    if (typeof cancelAdhocWorkout === "function") cancelAdhocWorkout();
+    return;
+  }
+  updateUser(u => { u.draft = null; });
+  if (typeof stopSessionTimer === "function") stopSessionTimer();
+  if (typeof hideHeaderRest === "function") hideHeaderRest();
+  state.workoutStartedAt = null;
+  state.workoutView = "chapters";
+  state.focusBlockIdx = null;
+  state.focusExIdx = 0;
+  state.dayChosen = false;
+  state.trimmedBlocks = null;
+  if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
+  if (typeof showToast === "function") showToast("Workout exited", "");
+}
+
+// Bottom-sheet confirm before exiting a workout in progress. Default action
+// (the green stamp) is "Keep going" so an accidental tap on Home doesn't
+// destroy a session.
+function openExitWorkoutSheet() {
+  const html = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <h3 style="margin:0;">Exit workout?</h3>
+      <button class="icon-btn" onclick="closeSheet()" title="Close">✕</button>
+    </div>
+    <p style="color:var(--text-dim); font-size:13px; line-height:1.5; margin-bottom:10px;">
+      Your unfinished sets won't be saved. You can start fresh anytime.
+    </p>
+    <div class="sheet-actions">
+      <button class="danger" id="exitWorkoutConfirm">Exit workout</button>
+      <button class="primary" id="exitWorkoutCancel">Keep going</button>
+    </div>
+  `;
+  openSheet(html);
+  document.getElementById("exitWorkoutCancel").onclick = () => closeSheet();
+  document.getElementById("exitWorkoutConfirm").onclick = () => {
+    closeSheet();
+    exitWorkout();
+  };
+}
+
 function finishWorkout() {
   // Ad-hoc sessions have their own finish flow
   if (state.adhocActive) { finishAdhocWorkout(); return; }
@@ -21503,6 +21550,15 @@ function initWorkoutScreen() {
       }
       return;
     }
+    // If a workout is actually in progress (timer running OR user has logged
+    // any input), guard the home button with an exit confirm so users can't
+    // get stuck mid-workout with no way out.
+    const inProgress = state.workoutStartedAt != null
+      || (typeof hasAnyInput === "function" && hasAnyInput());
+    if (inProgress) {
+      openExitWorkoutSheet();
+      return;
+    }
     state.dayChosen = false;
     state.previewDateMs = null;
     state.restOverride = false;
@@ -21594,6 +21650,11 @@ function init() {
 
   state.userId = s.currentUserId;
   state.currentDayId = determineDefaultDay();
+  // Re-apply paper skin now that state.userId is set — the earlier call at
+  // boot ran before currentUserId was bound, so userData() returned null and
+  // u.preferences.{bgColor,textColor} were never read. Without this second
+  // call, the Appearance picker writes survive in storage but never paint.
+  if (typeof applyPaperSkin === "function") applyPaperSkin();
 
   // On rest days, surface the rest card on launch even if a draft exists
   // (e.g. paused workout). The draft is preserved — user can reach it via
