@@ -696,13 +696,15 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone) {
   const unit = isKg ? "kg" : "lb";
   const step = isKg ? 2.5 : 5;
 
-  // EDITING label
+  // Quiet label — the breathing active-set row above narrates context;
+  // here we only echo "set n of total" so the bar stays informative but quiet.
   const lbl = document.createElement("div");
   lbl.className = "paper-action-edit-label";
   if (allDone) {
-    lbl.innerHTML = `<span class="pa-label-pre">EDITING &rarr;</span> <span class="pa-label-target">${escapeHtml(block.name || "")} &middot; ALL DONE</span>`;
+    lbl.innerHTML = `<span class="pa-label-target">all done</span>`;
   } else {
-    lbl.innerHTML = `<span class="pa-label-pre">EDITING &rarr;</span> <span class="pa-label-target">${escapeHtml(ex.name || "")} &middot; Set ${activeSetIdx + 1}</span>`;
+    const totalSets = (ex.sets || 3);
+    lbl.innerHTML = `<span class="pa-label-target">set ${activeSetIdx + 1} of ${totalSets}</span>`;
   }
   bar.appendChild(lbl);
 
@@ -734,6 +736,7 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone) {
     if (typeof openRestSheet === "function") openRestSheet();
     if (navigator.vibrate) navigator.vibrate(10);
   });
+  if (typeof paperWirePress === "function") paperWirePress(restBtn);
   row.appendChild(restBtn);
 
   // WEIGHT stepper (skip for bodyweight)
@@ -766,6 +769,10 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone) {
     };
     minus.addEventListener("click", (e) => { e.stopPropagation(); apply(-step); });
     plus.addEventListener("click", (e) => { e.stopPropagation(); apply(+step); });
+    if (typeof paperWirePress === "function") {
+      paperWirePress(minus);
+      paperWirePress(plus);
+    }
   }
   row.appendChild(wWrap);
 
@@ -789,6 +796,7 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone) {
       openSidebar(cat, state.focusBlockIdx, activeExIdx);
     }
   });
+  if (typeof paperWirePress === "function") paperWirePress(swapBtn);
   row.appendChild(swapBtn);
 
   // LOG SET — primary stamp
@@ -804,13 +812,28 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone) {
   `;
   logBtn.addEventListener("click", (e) => {
     e.stopPropagation();
-    if (allDone) return;
+    if (allDone || logBtn.disabled) return;
+
+    // Hero moment: bloom from the active row before data + rerender.
+    const activeRow = document.querySelector(".paper-focus-active-set");
+    if (activeRow && typeof paperInkBloom === "function") {
+      paperInkBloom(activeRow);
+    }
+
     const statusKey = inputKey(block.id, activeExIdx, activeSetIdx, "status");
     if (typeof saveInput === "function") saveInput(statusKey, "done");
     if (typeof showHeaderRest === "function") showHeaderRest(restSec);
-    if (navigator.vibrate) navigator.vibrate(15);
-    if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
+
+    // Vibration synced with bottom of button compress (~50ms in), not tap start.
+    setTimeout(() => { if (navigator.vibrate) navigator.vibrate(15); }, 50);
+
+    // Defer rerender until bloom + strike-draw envelope completes (~320ms).
+    logBtn.disabled = true;
+    setTimeout(() => {
+      if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
+    }, 320);
   });
+  if (typeof paperWirePress === "function") paperWirePress(logBtn);
   row.appendChild(logBtn);
 
   bar.appendChild(row);
@@ -902,6 +925,7 @@ function paperRenderFocusView(container, day) {
     state.focusExIdx = 0;
     if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
   });
+  if (typeof paperWirePress === "function") paperWirePress(prevChev);
   titleRow.appendChild(prevChev);
 
   const title = document.createElement("div");
@@ -942,6 +966,7 @@ function paperRenderFocusView(container, day) {
     state.focusExIdx = 0;
     if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
   });
+  if (typeof paperWirePress === "function") paperWirePress(nextChev);
   titleRow.appendChild(nextChev);
 
   wrap.appendChild(titleRow);
@@ -961,6 +986,7 @@ function paperRenderFocusView(container, day) {
     if (typeof openRestSheet === "function") openRestSheet();
     if (navigator.vibrate) navigator.vibrate(10);
   });
+  if (typeof paperWirePress === "function") paperWirePress(restLine);
   wrap.appendChild(restLine);
 
   // ── EXERCISE LIST ──
@@ -1044,7 +1070,15 @@ function paperRenderFocusView(container, day) {
     }
 
     if (!ex.isWarmup) {
-      exWrap.appendChild(paperRenderSetsTable(block, ex, bi, ei));
+      const setsTable = paperRenderSetsTable(block, ex, bi, ei);
+      // Margin Glow: tag the currently-active set row with a breathing band.
+      if (ei === active.exIdx && !active.allDone) {
+        const activeRow = setsTable.querySelector(
+          `.paper-set-row[data-set-idx="${active.setIdx}"]`
+        );
+        if (activeRow) activeRow.classList.add("paper-focus-active-set");
+      }
+      exWrap.appendChild(setsTable);
     } else {
       const w = document.createElement("button");
       w.className = "paper-warmup-done";

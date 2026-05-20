@@ -87,9 +87,11 @@ function paperCheckboxSvg(checked, ink, size) {
 }
 
 // Wobbly strikethrough wrapper. Returns HTML string.
-function paperStrikeWrap(html, ink) {
+// opts.animate: if true, tag the wrapper so CSS animates the path drawing.
+function paperStrikeWrap(html, ink, opts) {
   ink = ink || 'currentColor';
-  return `<span class="paper-strike" style="position:relative;display:inline-block;">
+  const animClass = (opts && opts.animate) ? ' is-animating' : '';
+  return `<span class="paper-strike${animClass}" style="position:relative;display:inline-block;">
     <span style="opacity:0.55;">${html}</span>
     <svg style="position:absolute;left:-2px;right:-2px;top:52%;width:calc(100% + 4px);height:8px;pointer-events:none;"
       viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true">
@@ -98,6 +100,60 @@ function paperStrikeWrap(html, ink) {
         style="filter:url(#paper-roughen);"/>
     </svg>
   </span>`;
+}
+
+// Weighted compress + spring rebound for buttons. Idempotent.
+function paperWirePress(el) {
+  if (!el || el._paperPressWired) return;
+  el._paperPressWired = true;
+  let releaseTimer = null;
+  const down = () => {
+    if (releaseTimer) { clearTimeout(releaseTimer); releaseTimer = null; }
+    el.classList.remove('is-releasing');
+    el.classList.add('is-pressing');
+  };
+  const up = () => {
+    if (!el.classList.contains('is-pressing')) return;
+    el.classList.remove('is-pressing');
+    el.classList.add('is-releasing');
+    releaseTimer = setTimeout(() => {
+      el.classList.remove('is-releasing');
+      releaseTimer = null;
+    }, 200);
+  };
+  el.addEventListener('pointerdown', down);
+  el.addEventListener('pointerup', up);
+  el.addEventListener('pointercancel', up);
+  el.addEventListener('pointerleave', up);
+}
+
+// Hero "you logged a set" reveal — yellow marker bloom radiating from the row
+// center, plus a left-to-right sweep. The strikethrough draw is wired via
+// paperStrikeWrap({animate:true}) injected into the row's value spans.
+function paperInkBloom(rowEl) {
+  if (!rowEl) return;
+  if (typeof getComputedStyle === "function") {
+    const pos = getComputedStyle(rowEl).position;
+    if (pos === "static") rowEl.style.position = "relative";
+  }
+  const bloom = document.createElement('div');
+  bloom.className = 'paper-ink-bloom';
+  rowEl.appendChild(bloom);
+  rowEl.classList.add('is-sweeping');
+
+  // Inject animated strikethrough overlays on the value spans, so the
+  // wavy ink draws itself L→R rather than appearing instantly on rerender.
+  const ink = (typeof paperInkColor === "function") ? paperInkColor() : "#1e3a72";
+  rowEl.querySelectorAll('[data-field="w"], [data-field="r"], [data-field="p"]').forEach(span => {
+    if (span.querySelector('.paper-strike')) return;
+    span.innerHTML = paperStrikeWrap(span.innerHTML, ink, { animate: true });
+  });
+
+  setTimeout(() => {
+    if (bloom.parentNode) bloom.remove();
+    rowEl.classList.remove('is-sweeping');
+    rowEl.classList.add('is-logged');
+  }, 320);
 }
 
 // Rubber-stamp pill (e.g. "PR", "DONE", "All-time"). Default = red ink.
@@ -576,6 +632,8 @@ try {
     window.PAPER_HAND_MAP = PAPER_HAND_MAP;
     window.paperCheckboxSvg = paperCheckboxSvg;
     window.paperStrikeWrap = paperStrikeWrap;
+    window.paperWirePress = paperWirePress;
+    window.paperInkBloom = paperInkBloom;
     window.paperStamp = paperStamp;
     window.paperMarginNote = paperMarginNote;
     window.paperTape = paperTape;
