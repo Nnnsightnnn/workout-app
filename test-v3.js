@@ -2317,6 +2317,124 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     eq(got, expected, "canonical spec example matches verbatim");
   });
 
+  t("share: parseShareText round-trips the canonical example", () => {
+    // The text format IS the wire format for buddies who only have the
+    // readable block (no #share= URL). The parser must reconstruct enough
+    // of the day to start an ad-hoc session.
+    const canonical = [
+      "🏋️ Full Body — Squat Focus",
+      "Back Squat · Accumulation",
+      "",
+      "A. Warm-Up",
+      "──────────",
+      "1. Bike Erg — 2×60s @ bodyweight",
+      "   5 min easy",
+      "2. World's Greatest Stretch — 2×5 @ bodyweight",
+      "3. Scap Push-Up — 2×10 @ bodyweight",
+      "4. Cossack Squat — 2×5 @ bodyweight",
+      "",
+      "B. Squat",
+      "────────",
+      "1. Back Squat — 5×8 @ 135 lbs",
+      "   rest 2:00 · tempo 2-0-1-0",
+      "   Moderate load.",
+      "",
+      "C. Row + Shoulders",
+      "──────────────────",
+      "1. Gorilla Row — 4×12 @ 35 lbs/side",
+      "   rest 1:00 · tempo 2-0-1-0",
+      "2. Face Pull — 4×15 @ 30 lbs",
+      "   rest 45s · tempo 2-1-1-0"
+    ].join("\n");
+
+    const parsed = w.parseShareText(canonical);
+    assert(parsed, "parser returned a day object");
+    eq(parsed.v, 1, "schema version stamped");
+    eq(parsed.name, "Full Body — Squat Focus", "title preserved");
+    eq(parsed.sub, "Back Squat · Accumulation", "subtitle preserved");
+    eq(parsed.blocks.length, 3, "three blocks parsed");
+
+    const warmup = parsed.blocks[0];
+    eq(warmup.name, "Warm-Up", "block A name");
+    eq(warmup.exercises.length, 4, "warm-up has 4 exercises");
+    eq(warmup.exercises[0].name, "Bike Erg", "first warmup name");
+    eq(warmup.exercises[0].sets, 2, "bike erg sets");
+    eq(warmup.exercises[0].reps, 60, "bike erg reps");
+    eq(warmup.exercises[0].isTime, true, "bike erg flagged isTime");
+    eq(warmup.exercises[0].bodyweight, true, "bike erg bodyweight");
+    eq(warmup.exercises[0].notes, "5 min easy", "bike erg note captured");
+
+    const squat = parsed.blocks[1];
+    eq(squat.name, "Squat", "block B name");
+    eq(squat.exercises[0].name, "Back Squat", "main lift name");
+    eq(squat.exercises[0].defaultWeight, 135, "back squat weight");
+    eq(squat.exercises[0].rest, 120, "rest 2:00 → 120s");
+    eq(squat.exercises[0].tempo, "2-0-1-0", "tempo captured");
+    eq(squat.exercises[0].notes, "Moderate load.", "notes captured");
+
+    const row = parsed.blocks[2];
+    eq(row.exercises[0].perSide, true, "gorilla row /side flagged");
+    eq(row.exercises[1].rest, 45, "rest 45s → 45");
+  });
+
+  t("share: parseShareText handles missing weight (— sentinel)", () => {
+    const text = [
+      "🏋️ Mystery",
+      "",
+      "A. Block",
+      "────────",
+      "1. Mystery Lift — 3×8 @ —"
+    ].join("\n");
+    const parsed = w.parseShareText(text);
+    assert(parsed, "parsed despite missing load");
+    const ex = parsed.blocks[0].exercises[0];
+    assert(!("defaultWeight" in ex), "no defaultWeight set when missing");
+    assert(!ex.bodyweight, "not silently treated as bodyweight");
+  });
+
+  t("share: parseShareText resolves exId via library name match", () => {
+    const text = [
+      "🏋️ Test",
+      "",
+      "A. Strength",
+      "───────────",
+      "1. Back Squat — 5×5 @ 225 lbs"
+    ].join("\n");
+    const parsed = w.parseShareText(text);
+    const ex = parsed.blocks[0].exercises[0];
+    eq(ex.exId, "backsquat", "exId resolved to library entry");
+    assert(Array.isArray(ex.muscles) && ex.muscles.length > 0, "muscles populated from library");
+  });
+
+  t("share: parseShareInput accepts the readable text format", () => {
+    // End-to-end: someone pastes ONLY the readable text (no #share= URL).
+    // The importer must return ok:true so the confirm sheet can open.
+    const text = w.formatWorkoutAsText(_shareSampleDay, { unit: "lbs" });
+    const parsed = w.parseShareInput(text);
+    eq(parsed.ok, true, "parser accepted text format");
+    eq(parsed.data.name, "Pull Day", "name survived text round-trip");
+    eq(parsed.data.blocks.length, 2, "block count preserved");
+    eq(parsed.data.blocks[0].exercises[0].name, "Weighted Pullups", "first exercise name preserved");
+  });
+
+  t("share: parseShareInput prefers URL when combined paste has both", () => {
+    // buildCombinedShareText emits text + divider + URL. When both are
+    // present we want the URL (lossless) — text would round-trip into a
+    // slightly lossy reconstruction. The combined paste should yield the
+    // ORIGINAL exId, not a name-resolved one.
+    const combined = w.buildCombinedShareText(_shareSampleDay, { unit: "lbs" });
+    const parsed = w.parseShareInput(combined);
+    eq(parsed.ok, true, "combined paste parsed");
+    eq(parsed.data.blocks[0].exercises[0].exId, "pullup",
+       "URL path wins — original exId preserved (text path would resolve from name)");
+  });
+
+  t("share: parseShareInput rejects garbage that isn't text or URL", () => {
+    const r = w.parseShareInput("hi there how are you");
+    eq(r.ok, false, "garbage rejected");
+    eq(r.reason, "not_a_share", "diagnosed as not_a_share");
+  });
+
   t("share: buildCombinedShareText appends divider + import URL", () => {
     // jsdom location.origin is something like http://localhost — buildShareUrl
     // will still produce a valid URL with #share=<token>.

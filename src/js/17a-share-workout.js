@@ -182,13 +182,190 @@ function buildShareUrl(day) {
 // "I pasted half a URL" from "the payload is corrupted" from "this isn't a
 // share link at all."
 const SHARE_PARSE_REASONS = {
-  empty: "Paste a share link or code first.",
+  empty: "Paste a share link, code, or workout text first.",
   url_missing_payload: "Share link is missing the workout data. Copy the FULL URL — everything after #share= is required.",
-  not_a_share: "That doesn't look like a share link. Paste the full URL your friend sent.",
+  not_a_share: "That doesn't look like a share link or workout. Paste the full URL or the readable workout text your friend sent.",
   bad_base64: "Share code is corrupted. Try copying the link again.",
   bad_json: "Share data is corrupted. Try copying the link again.",
-  bad_shape: "Share link is missing workout data."
+  bad_shape: "Share link is missing workout data.",
+  bad_text: "Couldn't read the workout text. Make sure you copied the whole block (title + every exercise line)."
 };
+
+// ----- plain-text parsing (inverse of formatWorkoutAsText) ------------------
+// A buddy may paste the readable share text instead of the #share=… URL —
+// e.g. the message got line-truncated, or it was relayed by someone who only
+// has the text. The parser accepts that format and produces the same shape
+// as _decodeShareToken so the rest of the import flow doesn't care which
+// path the input arrived on.
+
+function _parseRestStringToSec(tok) {
+  if (!tok) return null;
+  const t = tok.trim();
+  let m;
+  if ((m = t.match(/^(\d+):(\d{1,2})$/))) return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+  if ((m = t.match(/^(\d+)\s*s$/i))) return parseInt(m[1], 10);
+  if ((m = t.match(/^(\d+)\s*m$/i))) return parseInt(m[1], 10) * 60;
+  if ((m = t.match(/^(\d+)$/))) return parseInt(m[1], 10);
+  return null;
+}
+
+function _findLibByName(name) {
+  if (!name || typeof LIBRARY === "undefined" || !Array.isArray(LIBRARY)) return null;
+  const target = name.toLowerCase().trim();
+  for (let i = 0; i < LIBRARY.length; i++) {
+    if (LIBRARY[i].name && LIBRARY[i].name.toLowerCase() === target) return LIBRARY[i];
+  }
+  return null;
+}
+
+// Cheap detector: does this string look like the readable share format?
+// Used as a gate before we attempt the heavier line-by-line parse so a
+// "hi there" paste falls through to the existing not_a_share diagnostic.
+function _looksLikeShareText(raw) {
+  if (!raw || typeof raw !== "string") return false;
+  // Need a block header line (e.g. "A. Warm-Up") AND an exercise line with
+  // "N×M" sets×reps notation. Both must be present on their own lines.
+  const hasBlock = /(^|\n)\s*[A-Z]\.\s+\S/.test(raw);
+  const hasExercise = /(^|\n)\s*\d+\.\s+.+?[×xX]\s*\d/.test(raw);
+  return hasBlock && hasExercise;
+}
+
+// Parse the readable share text into the same shape that _decodeShareToken
+// produces ({ v, name, sub, blocks: [...] }). Returns null on failure — the
+// caller maps that to the "bad_text" reason. Lenient on dashes (— or -),
+// times (45s, 2:00, 1m), per-side suffix, and bodyweight literals.
+function parseShareText(raw) {
+  if (!_looksLikeShareText(raw)) return null;
+
+  // The combined share blob may have a "📲 Import in K&N Lifts:" + URL
+  // footer. Strip everything from the divider down so the parser only sees
+  // the readable workout body.
+  let text = raw.replace(/\r\n/g, "\n");
+  const dividerIdx = text.indexOf("─────");
+  if (dividerIdx >= 0 && /📲|#share=/i.test(text.slice(dividerIdx))) {
+    text = text.slice(0, dividerIdx);
+  }
+
+  const lines = text.split("\n");
+  let i = 0;
+
+  // Skip leading blanks.
+  while (i < lines.length && !lines[i].trim()) i++;
+  if (i >= lines.length) return null;
+
+  // Title — strip optional 🏋️ prefix.
+  let title = lines[i++].trim().replace(/^🏋️?\s*/u, "").trim();
+  if (!title) return null;
+
+  // Subtitle — only consume the next non-empty line if it isn't a block
+  // header, exercise row, or divider (i.e. it really is descriptive text).
+  let sub = "";
+  while (i < lines.length && !lines[i].trim()) i++;
+  if (i < lines.length) {
+    const peek = lines[i].trim();
+    const isBlock = /^[A-Z]\.\s+\S/.test(peek);
+    const isExercise = /^\d+\.\s+\S/.test(peek);
+    const isDivider = /^[─\-=]{3,}$/.test(peek);
+    if (!isBlock && !isExercise && !isDivider) {
+      sub = peek;
+      i++;
+    }
+  }
+
+  const blocks = [];
+  let block = null;
+  let ex = null;
+
+  for (; i < lines.length; i++) {
+    const rawLine = lines[i];
+    const line = rawLine.trim();
+    if (!line) { ex = null; continue; }
+
+    if (/^[─\-=]{3,}$/.test(line)) continue;
+
+    let m;
+    if ((m = line.match(/^[A-Z]\.\s+(.+)$/))) {
+      block = { blockType: null, type: null, name: m[1].trim(), exercises: [] };
+      blocks.push(block);
+      ex = null;
+      continue;
+    }
+
+    // Exercise: "1. Back Squat — 5×8 @ 135 lbs/side"
+    //           "3. Scap Push-Up — 2×10 @ bodyweight"
+    //           "1. Bike Erg — 2×60s @ bodyweight"
+    //           "1. Mystery Lift — 3×8 @ —"
+    m = line.match(/^\d+\.\s+(.+?)\s+[—\-]\s+(\d+)\s*[×xX]\s*(\S+?)(?:\s+@\s+(.+))?$/);
+    if (m && block) {
+      const exName = m[1].trim();
+      const setsN = parseInt(m[2], 10);
+      const repsTok = m[3];
+      const weightTok = (m[4] || "").trim();
+
+      ex = { name: exName, sets: setsN };
+
+      if (/^\d+s$/i.test(repsTok)) {
+        ex.isTime = true;
+        ex.reps = parseInt(repsTok, 10);
+      } else if (/^\d+m$/i.test(repsTok)) {
+        ex.isDistance = true;
+        ex.reps = parseInt(repsTok, 10);
+      } else {
+        ex.reps = parseInt(repsTok, 10) || 0;
+      }
+
+      if (!weightTok || weightTok === "—" || weightTok === "-") {
+        // Missing-load sentinel — leave defaultWeight unset; adapter falls
+        // back to library default.
+      } else if (/^bodyweight$/i.test(weightTok)) {
+        ex.bodyweight = true;
+      } else {
+        const wMatch = weightTok.match(/^(\d+(?:\.\d+)?)\s*(lbs|kg)?(\s*\/\s*side)?$/i);
+        if (wMatch) {
+          ex.defaultWeight = parseFloat(wMatch[1]);
+          if (wMatch[3]) ex.perSide = true;
+        }
+      }
+
+      const lib = _findLibByName(exName);
+      if (lib) {
+        ex.exId = lib.id;
+        if (lib.muscles) ex.muscles = lib.muscles.slice();
+      }
+
+      block.exercises.push(ex);
+      continue;
+    }
+
+    // Indented sub-line — rest/tempo metadata or notes — attaches to the
+    // most recent exercise.
+    if (ex && /^(rest|tempo)\b/i.test(line)) {
+      line.split(/\s*[·•]\s*/).forEach(part => {
+        const rm = part.match(/^rest\s+(.+)$/i);
+        const tm = part.match(/^tempo\s+(.+)$/i);
+        if (rm) {
+          const sec = _parseRestStringToSec(rm[1]);
+          if (sec != null) ex.rest = sec;
+        } else if (tm) {
+          ex.tempo = tm[1].trim();
+        }
+      });
+      continue;
+    }
+
+    // Anything else indented under an exercise = note line.
+    if (ex) {
+      ex.notes = ex.notes ? (ex.notes + "\n" + line) : line;
+    }
+  }
+
+  if (!blocks.length) return null;
+  let totalEx = 0;
+  blocks.forEach(b => { totalEx += b.exercises.length; });
+  if (!totalEx) return null;
+
+  return { v: SHARE_SCHEMA, name: title, sub: sub, blocks: blocks };
+}
 
 function _decodeShareToken(enc) {
   let json;
@@ -212,15 +389,28 @@ function parseShareInput(input) {
   const cleaned = input
     .replace(/\s+/g, "")
     .replace(/^[<("'\[]+|[>)"'\]]+$/g, "");
+
+  // 1) Try to extract a #share=<token> (or its percent-encoded form) from
+  //    the whitespace-stripped paste. This handles line-wrapped URLs and
+  //    combined "text + URL" share blobs — when both are present, the URL
+  //    wins because it's lossless.
+  if (cleaned) {
+    const m = cleaned.match(/(?:#|%23)share=([A-Za-z0-9_\-]+)/i);
+    if (m) return _decodeShareToken(m[1]);
+  }
+
+  // 2) Plain-text workout (readable share format). Run on the RAW input
+  //    because the parser needs line breaks. A friend who only has the text
+  //    block (no URL) can paste it directly and we'll reconstruct the day.
+  if (_looksLikeShareText(input)) {
+    const data = parseShareText(input);
+    if (data) return { ok: true, data: data };
+    return { ok: false, reason: "bad_text" };
+  }
+
   if (!cleaned) return { ok: false, reason: "empty" };
 
-  // 1) Try to extract a #share=<token> (or its percent-encoded form).
-  //    The [A-Za-z0-9_-]+ class stops at the first non-base64url byte, so
-  //    trailing punctuation, query strings, or appended text are trimmed.
-  const m = cleaned.match(/(?:#|%23)share=([A-Za-z0-9_\-]+)/i);
-  if (m) return _decodeShareToken(m[1]);
-
-  // 2) URL-shaped input that didn't yield a token. Either the payload is
+  // 3) URL-shaped input that didn't yield a token. Either the payload is
   //    missing (#share alone, #share= empty, or non-base64 garbage after =)
   //    or it isn't a share link at all.
   const looksLikeUrl = /^(https?:|\/\/)/i.test(cleaned) ||
@@ -232,7 +422,7 @@ function parseShareInput(input) {
     return { ok: false, reason: "not_a_share" };
   }
 
-  // 3) Raw-token fallback: caller pasted just the encoded payload (no URL).
+  // 4) Raw-token fallback: caller pasted just the encoded payload (no URL).
   //    Be conservative — require a meaningful run of base64url chars so a
   //    stray "hi there" doesn't get mis-decoded into a generic parse error.
   //    Real workout payloads are hundreds of base64url chars; 20 is well
@@ -437,9 +627,9 @@ function openImportWorkoutSheet() {
       <button class="icon-btn" onclick="closeSheet()" title="Close">✕</button>
     </div>
     <p style="color:var(--text-dim); font-size:12px; margin-bottom:8px;">
-      Paste a share link or code from a friend. Their workout runs as a one-off — your program stays untouched.
+      Paste a share link, code, or the readable workout text from a friend. Their workout runs as a one-off — your program stays untouched.
     </p>
-    <textarea id="shareImportInput" placeholder="Paste link or code…" autocomplete="off" style="width:100%;min-height:120px;background:var(--bg-elev);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px;font-family:var(--font-mono,monospace);font-size:12px;"></textarea>
+    <textarea id="shareImportInput" placeholder="Paste link, code, or workout text…" autocomplete="off" style="width:100%;min-height:140px;background:var(--bg-elev);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px;font-family:var(--font-mono,monospace);font-size:12px;"></textarea>
     <div class="sheet-actions">
       <button id="shareImportCancel">Cancel</button>
       <button class="primary" id="shareImportNext">Next</button>
@@ -540,6 +730,7 @@ try {
     window.buildShareUrl = buildShareUrl;
     window.decodeSharedDay = decodeSharedDay;
     window.parseShareInput = parseShareInput;
+    window.parseShareText = parseShareText;
     window.SHARE_PARSE_REASONS = SHARE_PARSE_REASONS;
     window.SHARE_IMPORT_LABEL = SHARE_IMPORT_LABEL;
     window.SHARE_DIVIDER = SHARE_DIVIDER;
