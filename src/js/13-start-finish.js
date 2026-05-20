@@ -176,43 +176,50 @@ function handleFinishButton() {
   finishWorkout();
 }
 
-// Exit an in-progress workout without finishing it. Clears the draft so the
-// user doesn't auto-resume next time they land on this day, stops timers,
-// and returns to the chapters overview.
+// Exit an in-progress workout, saving whatever the user logged so far. Routes
+// through the canonical finishWorkout() with autoCompleteUntouched=false so
+// untouched sets aren't fabricated into history — only sets the user actually
+// marked done (or partially logged) land in the session record. PR detection,
+// RP mesocycle bookkeeping, and draft-clearing all run via the same path.
 function exitWorkout() {
   // Ad-hoc sessions have their own cancel path (and a different draft shape).
   if (state.adhocActive) {
     if (typeof cancelAdhocWorkout === "function") cancelAdhocWorkout();
     return;
   }
-  updateUser(u => { u.draft = null; });
-  if (typeof stopSessionTimer === "function") stopSessionTimer();
-  if (typeof hideHeaderRest === "function") hideHeaderRest();
-  state.workoutStartedAt = null;
-  state.workoutView = "chapters";
-  state.focusBlockIdx = null;
-  state.focusExIdx = 0;
+  const hasDraft = typeof getDraft === "function" && getDraft();
+  if (hasDraft) {
+    finishWorkout({ autoCompleteUntouched: false });
+  } else {
+    if (typeof stopSessionTimer === "function") stopSessionTimer();
+    if (typeof hideHeaderRest === "function") hideHeaderRest();
+    state.workoutStartedAt = null;
+    state.workoutView = "chapters";
+    state.focusBlockIdx = null;
+    state.focusExIdx = 0;
+    state.trimmedBlocks = null;
+  }
+  // Land on the day-picker / chapters on re-entry — finishWorkout() doesn't
+  // touch dayChosen, so reset it here regardless of which branch ran.
   state.dayChosen = false;
-  state.trimmedBlocks = null;
   if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
-  if (typeof showToast === "function") showToast("Workout exited", "");
 }
 
-// Bottom-sheet confirm before exiting a workout in progress. Default action
-// (the green stamp) is "Keep going" so an accidental tap on Home doesn't
-// destroy a session.
+// Bottom-sheet confirm before ending a workout in progress. "Save and end"
+// is the primary action — exiting saves whatever the user logged through the
+// canonical finishWorkout() path. "Keep going" stays in the session.
 function openExitWorkoutSheet() {
   const html = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-      <h3 style="margin:0;">Exit workout?</h3>
+      <h3 style="margin:0;">End workout?</h3>
       <button class="icon-btn" onclick="closeSheet()" title="Close">✕</button>
     </div>
     <p style="color:var(--text-dim); font-size:13px; line-height:1.5; margin-bottom:10px;">
-      Your unfinished sets won't be saved. You can start fresh anytime.
+      We'll save what you logged so far.
     </p>
     <div class="sheet-actions">
-      <button class="danger" id="exitWorkoutConfirm">Exit workout</button>
-      <button class="primary" id="exitWorkoutCancel">Keep going</button>
+      <button class="primary" id="exitWorkoutConfirm">Save and end</button>
+      <button class="secondary" id="exitWorkoutCancel">Keep going</button>
     </div>
   `;
   openSheet(html);
@@ -223,7 +230,13 @@ function openExitWorkoutSheet() {
   };
 }
 
-function finishWorkout() {
+// opts.autoCompleteUntouched (default true): fill in defaults for sets the
+// user never touched. The normal end-of-workout finish wants this — most
+// people tap a few checkboxes and rely on the "completed-as-prescribed"
+// fill-in. The exit-mid-workout path passes false so untouched sets are
+// dropped instead of fabricated.
+function finishWorkout(opts) {
+  const autoCompleteUntouched = !opts || opts.autoCompleteUntouched !== false;
   // Ad-hoc sessions have their own finish flow
   if (state.adhocActive) { finishAdhocWorkout(); return; }
   const draft = getDraft();
@@ -239,7 +252,11 @@ function finishWorkout() {
   const day = getCurrentDay();
   const inputs = draft.inputs;
 
-  // Auto-complete: fill in defaults for any sets the user didn't touch
+  // Fill defaults for any set the user marked done but didn't enter values
+  // for. In normal-finish mode, also promote untouched sets to "done" so the
+  // session reflects "completed as prescribed." In exit mode we skip that
+  // promotion — untouched sets fall through to the build-sets loop and are
+  // dropped by the `r == null` guard.
   day.blocks.forEach(block => {
     block.exercises.forEach((ex, ei) => {
       if (ex.isWarmup) return;
@@ -247,7 +264,10 @@ function finishWorkout() {
       for (let i = 0; i < ex.sets; i++) {
         const sKey = inputKey(block.id, ei, i, "status");
         if (inputs[sKey] === "skipped") continue;
-        if (!inputs[sKey]) inputs[sKey] = "done";
+        if (!inputs[sKey]) {
+          if (!autoCompleteUntouched) continue;
+          inputs[sKey] = "done";
+        }
         const lastSet = last[i] || last[last.length - 1];
         const rkey = inputKey(block.id, ei, i, "r");
         if (inputs[rkey] == null) inputs[rkey] = lastSet?.reps ?? ex.reps;
@@ -374,6 +394,7 @@ function finishWorkout() {
 
   const hasSuperset = day.blocks.some(b => b.exercises.filter(e => !e.isWarmup).length > 1);
   const completeLabel = hasSuperset ? "Superset Complete" : "Sets Complete";
+  const exitMode = !autoCompleteUntouched;
 
   state.trimmedBlocks = null;
   state.workoutView = "chapters";
@@ -399,21 +420,34 @@ function finishWorkout() {
         showToast("Program complete! Check settings to restart or switch.", "pr");
       }
       renderWorkoutScreen();
-      const msg2 = prCount > 0
-        ? `🏆 ${completeLabel}! ${sets.length} sets, ${prCount} PR${prCount>1?'s':''}!`
-        : `✓ ${completeLabel}! ${sets.length} sets in ${formatDuration(duration)}`;
-      setTimeout(() => showToast(msg2, prCount > 0 ? "pr" : "success"), 1500);
+      const msg2 = exitMode
+        ? _exitToast(sets.length)
+        : (prCount > 0
+            ? `🏆 ${completeLabel}! ${sets.length} sets, ${prCount} PR${prCount>1?'s':''}!`
+            : `✓ ${completeLabel}! ${sets.length} sets in ${formatDuration(duration)}`);
+      setTimeout(() => showToast(msg2, (!exitMode && prCount > 0) ? "pr" : "success"), 1500);
       return;
     }
   }
 
-  // Move to next day in rotation (within same week)
-  const nextDay = (day.id % userData().program.length) + 1;
-  state.currentDayId = nextDay;
+  // Move to next day in rotation (within same week). On exit we stay on the
+  // current day so the user can pick up where they left off — the saved
+  // session is in history, but the rotation pointer hasn't moved.
+  if (!exitMode) {
+    const nextDay = (day.id % userData().program.length) + 1;
+    state.currentDayId = nextDay;
+  }
   renderWorkoutScreen();
 
-  const msg = prCount > 0
-    ? `🏆 ${completeLabel}! ${sets.length} sets, ${prCount} PR${prCount>1?'s':''}!`
-    : `✓ ${completeLabel}! ${sets.length} sets in ${formatDuration(duration)}`;
-  showToast(msg, prCount > 0 ? "pr" : "success");
+  const msg = exitMode
+    ? _exitToast(sets.length)
+    : (prCount > 0
+        ? `🏆 ${completeLabel}! ${sets.length} sets, ${prCount} PR${prCount>1?'s':''}!`
+        : `✓ ${completeLabel}! ${sets.length} sets in ${formatDuration(duration)}`);
+  showToast(msg, (!exitMode && prCount > 0) ? "pr" : "success");
+}
+
+function _exitToast(n) {
+  if (n === 0) return "Workout exited — nothing to save";
+  return `✓ Saved ${n} set${n > 1 ? "s" : ""} from your workout`;
 }

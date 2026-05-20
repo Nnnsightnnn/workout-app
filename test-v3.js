@@ -2120,10 +2120,11 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     assert(!w.document.body.hasAttribute("data-paper-mode"), "no data-paper-mode for default prefs");
   });
 
-  // ─── Regression tests for the "no exit-workout button" bug ───
+  // ─── Regression tests for the exit-workout flow ───
   // Nick was stuck mid-workout with no visible affordance to bail out.
-  // exitWorkout() clears the draft and resets in-flight state so the home
-  // button can dump out cleanly without auto-resuming next time.
+  // exitWorkout() routes through finishWorkout() so the partial session is
+  // saved to history (logged sets only, no fabricated defaults) and the user
+  // doesn't auto-resume next time they land on this day.
 
   t("exit workout: exitWorkout clears draft + resets in-flight state", () => {
     w.localStorage.clear();
@@ -2166,7 +2167,7 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     eq(w.state.dayChosen, false, "still on day-picker / chapters, not auto-resumed");
   });
 
-  t("exit workout: openExitWorkoutSheet wires Keep going and Exit buttons", () => {
+  t("exit workout: openExitWorkoutSheet wires Keep going and Save-and-end buttons", () => {
     w.localStorage.clear();
     const u = w.addUser("SheetKenny");
     w.state.currentDayId = 1;
@@ -2179,16 +2180,61 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     const cancelBtn = w.document.getElementById("exitWorkoutCancel");
     const confirmBtn = w.document.getElementById("exitWorkoutConfirm");
     assert(cancelBtn, "Keep-going button present in sheet");
-    assert(confirmBtn, "Exit-workout button present in sheet");
-    // Default action (Keep going) must NOT destroy the session.
+    assert(confirmBtn, "Save-and-end button present in sheet");
+    eq(cancelBtn.textContent.trim(), "Keep going", "secondary button reads 'Keep going'");
+    eq(confirmBtn.textContent.trim(), "Save and end", "primary button reads 'Save and end'");
+    // Keep going must NOT destroy the session.
     cancelBtn.click();
     assert(w.getDraft() != null, "draft survives Keep-going tap");
     eq(w.state.workoutStartedAt != null, true, "workout still active after Keep-going");
-    // Re-open the sheet and confirm exit.
+    // Re-open the sheet and confirm save-and-end.
     w.openExitWorkoutSheet();
     w.document.getElementById("exitWorkoutConfirm").click();
-    eq(w.userData().draft, null, "draft cleared after Exit-workout tap");
-    eq(w.state.workoutStartedAt, null, "workout stopped after Exit-workout tap");
+    eq(w.userData().draft, null, "draft cleared after Save-and-end tap");
+    eq(w.state.workoutStartedAt, null, "workout stopped after Save-and-end tap");
+  });
+
+  // The real bug Kenny reported: exiting mid-workout used to throw away the
+  // session. After this fix, only-touched sets land in history while untouched
+  // sets are dropped (no fabricated "done at prescribed reps" inflation).
+  t("exit workout: logged sets are saved to history, untouched sets are dropped", () => {
+    w.localStorage.clear();
+    w.addUser("SaveOnExitKenny");
+    w.state.currentDayId = 1;
+    w.state.dayChosen = true;
+    w.ensureDraft();
+    w.state.workoutStartedAt = Date.now() - 60_000;
+
+    const day = w.getCurrentDay();
+    assert(day && day.blocks && day.blocks.length > 0, "day has blocks");
+    const block = day.blocks.find(b => b.exercises.some(e => !e.isWarmup));
+    assert(block, "found a non-warmup block");
+    const ei = block.exercises.findIndex(e => !e.isWarmup);
+    const ex = block.exercises[ei];
+
+    // Log set 0 explicitly. Leave sets 1..N-1 untouched.
+    const sKey = w.inputKey(block.id, ei, 0, "status");
+    const wKey = w.inputKey(block.id, ei, 0, "w");
+    const rKey = w.inputKey(block.id, ei, 0, "r");
+    const pKey = w.inputKey(block.id, ei, 0, "p");
+    w.saveInput(sKey, "done");
+    w.saveInput(wKey, 137);
+    w.saveInput(rKey, 6);
+    w.saveInput(pKey, 8);
+
+    const sessionsBefore = w.userData().sessions.length;
+    w.exitWorkout();
+    const sessions = w.userData().sessions;
+    eq(sessions.length, sessionsBefore + 1, "session appended to history on exit");
+
+    const saved = sessions[sessions.length - 1];
+    eq(saved.dayId, day.id, "session points at the exited day");
+    const myExSets = saved.sets.filter(s => s.exId === (ex.exId || ex.name));
+    eq(myExSets.length, 1, "only the explicitly-logged set was saved (untouched sets not fabricated)");
+    eq(myExSets[0].weight, ex.bodyweight ? 0 : 137, "set weight preserved");
+    eq(myExSets[0].reps, 6, "set reps preserved");
+    eq(myExSets[0].rpe, 8, "set RPE preserved");
+    eq(w.userData().draft, null, "draft cleared after exit-save");
   });
 
   // ============================================================
