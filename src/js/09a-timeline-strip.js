@@ -662,6 +662,10 @@ function openPlanAdhoc(dateMs) {
 }
 
 function openLogSets(dateMs, day) {
+  if (typeof paperOpenLogSets === "function"
+      && typeof isPaperSkin === "function" && isPaperSkin()) {
+    return paperOpenLogSets(dateMs, day);
+  }
   const u = userData();
   const d = new Date(dateMs);
   const dateStr = d.toLocaleDateString(undefined, { weekday:"short", month:"short", day:"numeric" });

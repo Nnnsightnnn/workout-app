@@ -1,3 +1,4 @@
+<!-- built by nnnsightnnn — signal from noise -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6799,6 +6800,131 @@ body[data-skin="paper"] .paper-session-done {
   min-width: 110px;
 }
 
+/* PAPER LOG SETS — retroactive "log a past day" modal (09b-paper-log-sets.js).
+   One row per exercise: name + target spec, then Nx weight × reps + RPE pills.
+   Flat notebook lines — no card chrome. */
+body[data-skin="paper"] .paper-log-modal {
+  display: flex;
+  flex-direction: column;
+}
+body[data-skin="paper"] .paper-log-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 0 12px;
+}
+body[data-skin="paper"] .paper-log-ex {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 10px;
+  border-bottom: 1px dotted rgba(40, 30, 15, 0.18);
+}
+body[data-skin="paper"] .paper-log-ex-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+body[data-skin="paper"] .paper-log-ex-left {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+body[data-skin="paper"] .paper-log-ex-no {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--paper-ink-faint);
+  flex-shrink: 0;
+}
+body[data-skin="paper"] .paper-log-ex-name {
+  font-family: var(--paper-hand);
+  font-size: 18px;
+  color: var(--paper-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body[data-skin="paper"] .paper-log-ex-target {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--paper-ink-soft);
+  flex-shrink: 0;
+}
+body[data-skin="paper"] .paper-log-ex-fields {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-left: 22px;
+}
+body[data-skin="paper"] .paper-log-label,
+body[data-skin="paper"] .paper-log-x {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] input.paper-log-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px dotted var(--paper-ink-mist);
+  border-radius: 0;
+  font-family: var(--paper-hand);
+  font-size: 18px;
+  color: var(--paper-ink);
+  padding: 2px 2px;
+  min-width: 48px;
+  width: 56px;
+  text-align: center;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+body[data-skin="paper"] input.paper-log-input::-webkit-inner-spin-button,
+body[data-skin="paper"] input.paper-log-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+body[data-skin="paper"] input.paper-log-input:focus {
+  outline: none;
+  background: var(--paper-marker-soft);
+  border-bottom-color: var(--paper-ink);
+}
+body[data-skin="paper"] .paper-log-rpe-lbl {
+  margin-left: auto;
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .paper-log-rpe-pills {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+body[data-skin="paper"] .paper-log-rpe-pill {
+  background: transparent;
+  border: 1.4px solid var(--paper-ink);
+  border-radius: 0;
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--paper-ink);
+  min-width: 26px;
+  padding: 4px 6px;
+  cursor: pointer;
+  box-shadow: none;
+}
+body[data-skin="paper"] .paper-log-rpe-pill.selected {
+  background: var(--paper-marker-soft);
+  border-color: var(--paper-red);
+  color: var(--paper-ink);
+}
+
 /* Body screen — paper metric tiles. */
 body[data-skin="paper"] .body-mcard {
   background: rgba(255, 255, 255, 0.12) !important;
@@ -10202,6 +10328,45 @@ body[data-skin="paper"] .sr-set-pr {
 }
 
 
+
+/* nnnsightnnn brand credit */
+.nnn-credit{display:flex;justify-content:center;padding:22px 16px;
+  font:500 13px/1 ui-monospace,"JetBrains Mono",Menlo,monospace}
+.nnn-credit a{display:inline-flex;align-items:center;gap:7px;
+  color:#8B8C97;text-decoration:none}
+.nnn-credit a:hover{color:#FAFAF8}
+.nnn-credit strong{color:#FAFAF8;font-weight:700}
+
+/* Paper-skin: render the credit as a typewritten colophon in ink */
+body[data-skin="paper"] .nnn-credit{
+  margin-top: 18px;
+  padding: 18px 16px 26px;
+  border-top: 1px dashed var(--paper-ink-mist);
+  font-family: var(--paper-form);
+  font-weight: 400;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+body[data-skin="paper"] .nnn-credit a{
+  gap: 9px;
+  color: var(--paper-ink-faint);
+  transition: color 120ms ease;
+}
+body[data-skin="paper"] .nnn-credit a:hover,
+body[data-skin="paper"] .nnn-credit a:focus-visible{
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .nnn-credit strong{
+  color: var(--paper-ink);
+  font-weight: 400;
+  letter-spacing: 0.20em;
+}
+body[data-skin="paper"] .nnn-credit svg{
+  width: 18px;
+  height: 18px;
+}
+
 </style>
 </head>
 <body>
@@ -10434,6 +10599,13 @@ body[data-skin="paper"] .sr-set-pr {
     <p style="color: var(--text-faint); font-size: 11px; margin-top: 6px; line-height:1.5;">
       Learn how the app works, what it does, and why it's different.
     </p>
+
+    <footer class="nnn-credit">
+      <a href="https://github.com/nnnsightnnn" target="_blank" rel="noopener noreferrer">
+        <svg width="16" height="16" viewBox="0 0 200 200" aria-hidden="true"><line x1="45.8" y1="54" x2="154.2" y2="54" stroke="currentColor" stroke-opacity="0.45" stroke-width="15" stroke-linecap="round"/><line x1="22.5" y1="77" x2="177.5" y2="77" stroke="currentColor" stroke-opacity="0.70" stroke-width="15" stroke-linecap="round"/><line x1="16" y1="100" x2="66" y2="100" stroke="currentColor" stroke-width="15" stroke-linecap="round"/><line x1="134" y1="100" x2="184" y2="100" stroke="currentColor" stroke-width="15" stroke-linecap="round"/><line x1="22.5" y1="123" x2="177.5" y2="123" stroke="currentColor" stroke-opacity="0.70" stroke-width="15" stroke-linecap="round"/><line x1="45.8" y1="146" x2="154.2" y2="146" stroke="currentColor" stroke-opacity="0.45" stroke-width="15" stroke-linecap="round"/><circle cx="100" cy="100" r="20" fill="currentColor"/></svg>
+        <span>developed by&nbsp;<strong>nnnsightnnn</strong></span>
+      </a>
+    </footer>
   </section>
 </main>
 
@@ -12872,7 +13044,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 20;
-const APP_BUILD = "3331d479";
+const APP_BUILD = "e979ecb2";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -14529,6 +14701,10 @@ function openPlanAdhoc(dateMs) {
 }
 
 function openLogSets(dateMs, day) {
+  if (typeof paperOpenLogSets === "function"
+      && typeof isPaperSkin === "function" && isPaperSkin()) {
+    return paperOpenLogSets(dateMs, day);
+  }
   const u = userData();
   const d = new Date(dateMs);
   const dateStr = d.toLocaleDateString(undefined, { weekday:"short", month:"short", day:"numeric" });
@@ -14772,6 +14948,199 @@ function renderStampCard() {
   }
 
   el.appendChild(card);
+}
+
+
+// ============================================================
+// PAPER LOG SETS — retroactive "log a past day" modal
+// ============================================================
+// Mirrors the chunky openLogSets() in 09a but emits paper-* DOM
+// so the modal matches the notepad aesthetic when paper skin is
+// active. Same session-save semantics: noon-on-target-date,
+// manual:true, recomputeAllIsPR, refresh timeline + history.
+
+function paperOpenLogSets(dateMs, day) {
+  const d = new Date(dateMs);
+  const dateStr = d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+
+  const wrap = document.createElement("div");
+  wrap.className = "paper-log-modal";
+
+  // Top bar
+  const top = document.createElement("div");
+  top.className = "paper-session-topbar";
+  top.innerHTML = `
+    <div class="paper-session-breadcrumb">§ Log workout</div>
+    <button class="paper-session-close" aria-label="Close">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round"
+           style="filter:url(#paper-roughen);">
+        <path d="M6 6 L18 18 M18 6 L6 18"/>
+      </svg>
+    </button>
+  `;
+  top.querySelector(".paper-session-close").addEventListener("click", () => closeSheet());
+  wrap.appendChild(top);
+
+  // Headline
+  const head = document.createElement("div");
+  head.className = "paper-session-headline";
+  head.innerHTML = `
+    <div class="paper-session-date">${escapeHtml(day.name || "Workout")}</div>
+    <div class="paper-session-meta">
+      <span>${escapeHtml(dateStr)}</span>
+      <span>${escapeHtml(day.sub || "")}</span>
+    </div>
+  `;
+  wrap.appendChild(head);
+
+  // Body — one row per non-warmup exercise
+  const body = document.createElement("div");
+  body.className = "paper-log-body";
+
+  const exRows = []; // [{ ex, row, exEntry: { rpe } }]
+  let letterIdx = 0;
+
+  (day.blocks || []).forEach(block => {
+    (block.exercises || []).forEach(ex => {
+      if (ex.isWarmup) return;
+      const lastSets = (typeof getLastSetsFor === "function") ? getLastSetsFor(ex.exId || ex.name) : [];
+      const lastSet = lastSets[0];
+      const defW = lastSet ? lastSet.weight : (ex.defaultWeight || 0);
+      const defR = lastSet ? lastSet.reps   : (ex.reps || 8);
+      const letter = String.fromCharCode(65 + letterIdx);
+      letterIdx++;
+
+      const exEntry = { ex, sets: ex.sets, rpe: null };
+
+      const exEl = document.createElement("div");
+      exEl.className = "paper-log-ex";
+
+      const targetSpec = `${ex.sets} &times; ${ex.reps != null ? ex.reps : "?"}`;
+      const weightFieldHtml = ex.bodyweight
+        ? ""
+        : `<input type="number" class="paper-log-input" data-field="w" value="${defW}" min="0" inputmode="decimal">
+           <span class="paper-log-x">&times;</span>`;
+
+      exEl.innerHTML = `
+        <div class="paper-log-ex-head">
+          <div class="paper-log-ex-left">
+            <span class="paper-log-ex-no">${letter})</span>
+            <span class="paper-log-ex-name">${escapeHtml(ex.name)}</span>
+          </div>
+          <div class="paper-log-ex-target">${targetSpec}</div>
+        </div>
+        <div class="paper-log-ex-fields">
+          <span class="paper-log-label">${ex.sets} sets</span>
+          ${weightFieldHtml}
+          <input type="number" class="paper-log-input" data-field="r" value="${defR}" min="0" inputmode="numeric">
+          <span class="paper-log-rpe-lbl">RPE</span>
+          <div class="paper-log-rpe-pills"></div>
+        </div>
+      `;
+
+      const pillsEl = exEl.querySelector(".paper-log-rpe-pills");
+      [null, 6, 7, 8, 9, 10].forEach(val => {
+        const pill = document.createElement("button");
+        pill.type = "button";
+        pill.className = "paper-log-rpe-pill";
+        pill.textContent = val === null ? "—" : String(val);
+        pill.dataset.rpe = val === null ? "" : String(val);
+        pill.title = val === null ? "Skip RPE" : "RPE " + val;
+        pill.addEventListener("click", () => {
+          exEntry.rpe = val;
+          pillsEl.querySelectorAll(".paper-log-rpe-pill").forEach(p => p.classList.remove("selected"));
+          pill.classList.add("selected");
+        });
+        pillsEl.appendChild(pill);
+      });
+
+      body.appendChild(exEl);
+      exRows.push({ ex, row: exEl, exEntry });
+    });
+  });
+
+  wrap.appendChild(body);
+
+  // Footer actions
+  const actions = document.createElement("div");
+  actions.className = "sheet-actions";
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.textContent = "Cancel";
+  cancelBtn.addEventListener("click", () => closeSheet());
+  actions.appendChild(cancelBtn);
+
+  const saveBtn = document.createElement("button");
+  saveBtn.className = "primary";
+  saveBtn.textContent = "Save workout";
+  saveBtn.addEventListener("click", () => {
+    const sets = [];
+    exRows.forEach(({ ex, row, exEntry }) => {
+      const wInput = row.querySelector('[data-field="w"]');
+      const rInput = row.querySelector('[data-field="r"]');
+      const w = wInput ? (parseFloat(wInput.value) || 0) : 0;
+      const r = rInput ? (parseFloat(rInput.value) || 0) : 0;
+      if (r === 0) return;
+      for (let i = 0; i < ex.sets; i++) {
+        sets.push({
+          exId: ex.exId || ex.name,
+          exName: ex.name,
+          muscles: ex.muscles || [],
+          setIdx: i + 1,
+          weight: ex.bodyweight ? 0 : w,
+          reps: r,
+          rpe: exEntry.rpe,
+          bodyweight: !!ex.bodyweight,
+          isPR: false
+        });
+      }
+    });
+
+    if (sets.length === 0) {
+      if (!confirm("No sets with reps logged. Save an empty session?")) return;
+    }
+
+    const volume = sets.reduce((a, s) => a + (s.bodyweight ? 0 : s.weight * s.reps), 0);
+    const noon = new Date(dateMs);
+    noon.setHours(12, 0, 0, 0);
+    const finishedAt = noon.getTime();
+    const isAdhoc = day.id === "adhoc";
+
+    const session = {
+      id: "s-" + Date.now(),
+      dayId: day.id,
+      dayName: day.name,
+      startedAt: finishedAt - 3600000,
+      finishedAt,
+      duration: 3600,
+      sets, volume,
+      prCount: 0,
+      manual: true,
+      isAdhoc: isAdhoc || undefined
+    };
+
+    updateUser(u => {
+      u.sessions.push(session);
+      u.sessions.sort((a, b) => a.finishedAt - b.finishedAt);
+      if (u.sessions.length > 365) u.sessions = u.sessions.slice(-365);
+    });
+
+    if (typeof recomputeAllIsPR === "function") recomputeAllIsPR();
+    closeSheet();
+    if (typeof renderTimelineStrip === "function") renderTimelineStrip();
+    if (typeof renderHistory === "function") renderHistory();
+    showToast("Workout logged", "success");
+  });
+  actions.appendChild(saveBtn);
+
+  wrap.appendChild(actions);
+
+  openSheet(wrap);
+}
+
+if (typeof window !== "undefined") {
+  window.paperOpenLogSets = paperOpenLogSets;
 }
 
 
@@ -22814,6 +23183,7 @@ function executeSidebarSwap(libEx, bi, ei) {
   closeSidebar();
 }
 
+// built by nnnsightnnn — signal from noise
 // ============================================================
 // INIT
 // ============================================================

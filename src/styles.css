@@ -6587,6 +6587,131 @@ body[data-skin="paper"] .paper-session-done {
   min-width: 110px;
 }
 
+/* PAPER LOG SETS — retroactive "log a past day" modal (09b-paper-log-sets.js).
+   One row per exercise: name + target spec, then Nx weight × reps + RPE pills.
+   Flat notebook lines — no card chrome. */
+body[data-skin="paper"] .paper-log-modal {
+  display: flex;
+  flex-direction: column;
+}
+body[data-skin="paper"] .paper-log-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 0 12px;
+}
+body[data-skin="paper"] .paper-log-ex {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 10px;
+  border-bottom: 1px dotted rgba(40, 30, 15, 0.18);
+}
+body[data-skin="paper"] .paper-log-ex-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+body[data-skin="paper"] .paper-log-ex-left {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+body[data-skin="paper"] .paper-log-ex-no {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--paper-ink-faint);
+  flex-shrink: 0;
+}
+body[data-skin="paper"] .paper-log-ex-name {
+  font-family: var(--paper-hand);
+  font-size: 18px;
+  color: var(--paper-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body[data-skin="paper"] .paper-log-ex-target {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--paper-ink-soft);
+  flex-shrink: 0;
+}
+body[data-skin="paper"] .paper-log-ex-fields {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-left: 22px;
+}
+body[data-skin="paper"] .paper-log-label,
+body[data-skin="paper"] .paper-log-x {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] input.paper-log-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px dotted var(--paper-ink-mist);
+  border-radius: 0;
+  font-family: var(--paper-hand);
+  font-size: 18px;
+  color: var(--paper-ink);
+  padding: 2px 2px;
+  min-width: 48px;
+  width: 56px;
+  text-align: center;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+body[data-skin="paper"] input.paper-log-input::-webkit-inner-spin-button,
+body[data-skin="paper"] input.paper-log-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+body[data-skin="paper"] input.paper-log-input:focus {
+  outline: none;
+  background: var(--paper-marker-soft);
+  border-bottom-color: var(--paper-ink);
+}
+body[data-skin="paper"] .paper-log-rpe-lbl {
+  margin-left: auto;
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .paper-log-rpe-pills {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+body[data-skin="paper"] .paper-log-rpe-pill {
+  background: transparent;
+  border: 1.4px solid var(--paper-ink);
+  border-radius: 0;
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--paper-ink);
+  min-width: 26px;
+  padding: 4px 6px;
+  cursor: pointer;
+  box-shadow: none;
+}
+body[data-skin="paper"] .paper-log-rpe-pill.selected {
+  background: var(--paper-marker-soft);
+  border-color: var(--paper-red);
+  color: var(--paper-ink);
+}
+
 /* Body screen — paper metric tiles. */
 body[data-skin="paper"] .body-mcard {
   background: rgba(255, 255, 255, 0.12) !important;
@@ -9998,3 +10123,33 @@ body[data-skin="paper"] .sr-set-pr {
   color:#8B8C97;text-decoration:none}
 .nnn-credit a:hover{color:#FAFAF8}
 .nnn-credit strong{color:#FAFAF8;font-weight:700}
+
+/* Paper-skin: render the credit as a typewritten colophon in ink */
+body[data-skin="paper"] .nnn-credit{
+  margin-top: 18px;
+  padding: 18px 16px 26px;
+  border-top: 1px dashed var(--paper-ink-mist);
+  font-family: var(--paper-form);
+  font-weight: 400;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+body[data-skin="paper"] .nnn-credit a{
+  gap: 9px;
+  color: var(--paper-ink-faint);
+  transition: color 120ms ease;
+}
+body[data-skin="paper"] .nnn-credit a:hover,
+body[data-skin="paper"] .nnn-credit a:focus-visible{
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .nnn-credit strong{
+  color: var(--paper-ink);
+  font-weight: 400;
+  letter-spacing: 0.20em;
+}
+body[data-skin="paper"] .nnn-credit svg{
+  width: 18px;
+  height: 18px;
+}
