@@ -3291,8 +3291,15 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     const disk = JSON.parse(JSON.stringify(live));
     disk._schemaVersion = (live._schemaVersion || 0) + 5;
     w.localStorage.setItem("kn-lifts-v3", JSON.stringify(disk));
-    // Try to save the older in-memory copy
-    w.saveStore(live);
+    // The guard logs console.error by design — mute it for this test so the
+    // deliberate error doesn't get captured by the harness's error tracker.
+    const origErr = w.console.error;
+    w.console.error = function() {};
+    try {
+      w.saveStore(live);
+    } finally {
+      w.console.error = origErr;
+    }
     const after = JSON.parse(w.localStorage.getItem("kn-lifts-v3"));
     eq(after._schemaVersion, disk._schemaVersion, "newer on-disk schema preserved");
   });
