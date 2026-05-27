@@ -8125,61 +8125,137 @@ body[data-skin="paper"] .adhoc-paper-finish {
   align-self: center;
 }
 
-/* PAPER BOTTOM NAV — cream-deep bar with torn-edge top, 5 tabs,    */
-/* hand-drawn squiggle under the active tab. Stay pinned to the     */
-/* viewport bottom (default nav.bottom uses position:fixed).        */
-body[data-skin="paper"] nav.bottom {
+/* PAPER NAV — bottom tab bar is replaced by a paper-tab handle in the      */
+/* top-right of the header that opens a paper menu sheet. The bottom band   */
+/* is freed for the workout action bar.                                     */
+body[data-skin="paper"] nav.bottom { display: none !important; }
+body[data-skin="paper"] main { padding-bottom: 24px; }
+
+/* Top-right menu handle — folded-corner paper tab. */
+body[data-skin="paper"] .paper-menu-handle {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 1px;
+  margin-left: 8px;
+  padding: 6px 10px 6px 14px;
   background: var(--paper-bg-deep);
-  border-top: 1.4px solid rgba(40, 30, 15, 0.35);
-  padding: 10px 14px calc(env(safe-area-inset-bottom, 12px) + 12px);
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  border: 1.4px solid var(--paper-ink);
+  border-radius: 0;
+  color: var(--paper-ink);
+  cursor: pointer;
+  position: relative;
+  font-family: var(--paper-form);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  box-shadow: 1.5px 2px 0 rgba(40, 30, 15, 0.22);
+  transform: rotate(-1deg);
+  transition: transform 80ms ease, box-shadow 80ms ease;
 }
-/* Reserve scroll-bottom room so the last block isn't hidden by the */
-/* fixed paper-nav bar.                                             */
-body[data-skin="paper"] main {
-  padding-bottom: 120px;
+body[data-skin="paper"] .paper-menu-handle:active {
+  transform: rotate(-1deg) translate(1px, 1px);
+  box-shadow: 0.5px 1px 0 rgba(40, 30, 15, 0.22);
 }
-body[data-skin="paper"] nav.bottom .paper-torn-edge {
+/* Folded-corner accent — small clipped triangle at the top-left of the tab. */
+body[data-skin="paper"] .paper-menu-handle::before {
+  content: "";
   position: absolute;
-  left: 0; right: 0; top: -8px;
-  width: 100%; height: 10px;
+  top: -1px; left: -1px;
+  width: 12px; height: 12px;
+  background: var(--paper-bg);
+  border-right: 1.4px solid var(--paper-ink);
+  border-bottom: 1.4px solid var(--paper-ink);
+  clip-path: polygon(0 0, 100% 100%, 0 100%);
 }
-body[data-skin="paper"] .paper-nav-tabs {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  flex: 1;
-  max-width: 700px;
-  margin: 0 auto;
+body[data-skin="paper"] .paper-menu-handle-label {
+  font-size: 9px;
+  color: var(--paper-ink-faint);
+  line-height: 1;
 }
-body[data-skin="paper"] .paper-nav-tab {
+body[data-skin="paper"] .paper-menu-handle-screen {
+  font-family: var(--paper-hand);
+  font-size: 14px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--paper-ink);
+  line-height: 1.05;
+  margin-top: 1px;
+}
+body[data-skin="paper"] .paper-menu-handle-screen:empty { display: none; }
+
+/* Non-paper skins keep the bottom nav and shouldn't show the handle. */
+body:not([data-skin="paper"]) .paper-menu-handle { display: none !important; }
+
+/* Paper menu sheet — handwritten destinations list with squiggle. */
+body[data-skin="paper"] .paper-menu-sheet {
   display: flex;
   flex-direction: column;
+  gap: 14px;
+  padding: 4px 4px 8px;
+}
+body[data-skin="paper"] .paper-menu-sheet-head {
+  display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 4px 6px;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px dotted var(--paper-ink-mist);
+}
+body[data-skin="paper"] .paper-menu-sheet-kicker {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .paper-menu-sheet-close {
   background: transparent;
   border: none;
+  color: var(--paper-ink-faint);
+  font-size: 22px;
+  line-height: 1;
   cursor: pointer;
+  padding: 4px 8px;
+  font-family: var(--paper-form);
+}
+body[data-skin="paper"] .paper-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+body[data-skin="paper"] .paper-menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px 6px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px dotted var(--paper-ink-mist);
   color: var(--paper-ink-faint);
   font-family: var(--paper-hand);
-  font-size: 16px;
+  font-size: 26px;
   font-weight: 400;
+  cursor: pointer;
+  text-align: left;
   position: relative;
 }
-body[data-skin="paper"] .paper-nav-tab.active {
+body[data-skin="paper"] .paper-menu-item:last-child { border-bottom: none; }
+body[data-skin="paper"] .paper-menu-item.active {
   color: var(--paper-ink);
   font-weight: 700;
 }
-body[data-skin="paper"] .paper-nav-tab .paper-nav-squiggle {
-  margin-top: -2px;
+body[data-skin="paper"] .paper-menu-item-squiggle {
   opacity: 0;
-  height: 6px;
+  height: 8px;
+  margin-left: -2px;
+  margin-top: -4px;
 }
-body[data-skin="paper"] .paper-nav-tab.active .paper-nav-squiggle {
+body[data-skin="paper"] .paper-menu-item.active .paper-menu-item-squiggle {
   opacity: 1;
+}
+body[data-skin="paper"] .paper-menu-item:active {
+  background: var(--paper-marker-soft);
 }
 
 /* Hide the legacy timeline strip's chunky chrome — it produces a   */
@@ -8564,6 +8640,129 @@ body[data-skin="paper"] .paper-link-btn {
   text-decoration: underline wavy;
   text-decoration-color: var(--paper-ink-mist);
   text-underline-offset: 4px;
+}
+body[data-skin="paper"] .paper-link-btn-danger {
+  color: var(--paper-red);
+}
+body[data-skin="paper"] .paper-stamp-btn-sm {
+  font-size: 10px;
+  padding: 6px 12px;
+}
+
+/* ============================================================ */
+/* PAPER PROGRAMS LIBRARY (v21)                                 */
+/* ============================================================ */
+body[data-skin="paper"] .paper-library {
+  /* Use the existing settings-block container; library-list is the only
+     new structural element. */
+}
+body[data-skin="paper"] .paper-library-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 12px;
+}
+body[data-skin="paper"] .paper-library-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px dotted var(--paper-ink-mist);
+  min-height: 44px;
+}
+body[data-skin="paper"] .paper-library-row:last-child {
+  border-bottom: none;
+}
+body[data-skin="paper"] .paper-library-bullet {
+  font-family: var(--paper-hand);
+  font-size: 20px;
+  line-height: 1;
+  color: var(--paper-ink);
+  flex: 0 0 16px;
+  padding-top: 2px;
+}
+body[data-skin="paper"] .paper-library-row.active .paper-library-bullet {
+  color: var(--paper-red);
+}
+body[data-skin="paper"] .paper-library-body {
+  flex: 1;
+  min-width: 0;
+}
+body[data-skin="paper"] .paper-library-name {
+  font-family: var(--paper-hand);
+  font-size: 19px;
+  color: var(--paper-ink);
+  letter-spacing: 0.01em;
+}
+body[data-skin="paper"] .paper-library-tag {
+  font-family: var(--paper-form);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--paper-red);
+  margin-left: 6px;
+}
+body[data-skin="paper"] .paper-library-meta {
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--paper-ink-faint);
+  text-transform: lowercase;
+  margin-top: 2px;
+}
+body[data-skin="paper"] .paper-library-actions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  align-items: center;
+}
+body[data-skin="paper"] .paper-library-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+body[data-skin="paper"] .paper-switcher-row {
+  cursor: pointer;
+}
+body[data-skin="paper"] .paper-switcher-row:hover {
+  background: var(--paper-marker-soft);
+}
+
+/* Header chip — handwritten program name in the day-bar */
+body[data-skin="paper"] .paper-program-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  padding: 6px 0 6px 0;
+  margin-top: 4px;
+  cursor: pointer;
+  font-family: var(--paper-hand);
+  font-size: 14px;
+  color: var(--paper-ink-soft);
+  letter-spacing: 0.02em;
+  min-height: 30px;
+}
+body[data-skin="paper"] .paper-program-chip .paper-chip-name {
+  text-decoration: underline wavy;
+  text-decoration-color: var(--paper-ink-mist);
+  text-underline-offset: 3px;
+}
+body[data-skin="paper"] .paper-program-chip .paper-chip-meta {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .paper-program-chip .paper-chip-arrow {
+  font-size: 11px;
+  color: var(--paper-ink-faint);
 }
 
 /* ============================================================ */
@@ -9475,6 +9674,11 @@ body[data-skin="paper"] .paper-action-bar {
   border-top: 1.4px solid rgba(40, 30, 15, 0.4);
   padding: 10px 12px calc(20px + env(safe-area-inset-bottom, 0px));
   z-index: 8;
+}
+/* Chapters/overview hosts the sticky action bar too; reserve bottom space so
+   the last "+ add set" row isn't covered by the bar. */
+body[data-skin="paper"] .paper-chapters-view:has(> .paper-action-bar) {
+  padding-bottom: 24px;
 }
 body[data-skin="paper"] .paper-action-edit-label {
   display: flex;
@@ -10429,6 +10633,10 @@ body[data-skin="paper"] .nnn-credit svg{
     <span class="user-chip-name" id="userChipName">User</span>
     <span class="user-chip-caret">▾</span>
   </button>
+  <button class="paper-menu-handle" id="paperMenuBtn" aria-label="Open menu" type="button" style="display:none;">
+    <span class="paper-menu-handle-label">menu</span>
+    <span class="paper-menu-handle-screen" id="paperMenuActiveLabel"></span>
+  </button>
 </header>
 
 <main>
@@ -10439,6 +10647,7 @@ body[data-skin="paper"] .nnn-credit svg{
       <div class="info">
         <div class="name" id="dayName">Max Effort Lower</div>
         <div class="sub" id="daySub">ME Lower + Upper Accessory</div>
+        <button class="paper-program-chip" id="headerProgramChip" type="button" style="display:none;" aria-label="Switch program"></button>
       </div>
       <button class="icon-btn" id="homeDayBtn" title="Home">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
@@ -12767,20 +12976,30 @@ function newUserRecord(name, templateId, totalWeeks, daysPerWeek) {
   const seedSchedule = (typeof buildDefaultWeeklySchedule === "function")
     ? buildDefaultWeeklySchedule({ program: generated || [], daysPerWeek: dpw })
     : null;
+  const entryId = (typeof genProgramId === "function")
+    ? genProgramId()
+    : ("p_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7));
+  const initialEntry = {
+    id: entryId,
+    displayName: tpl.name,
+    templateId: tpl.id,
+    program: generated || [],
+    daysPerWeek: dpw,
+    totalWeeks: tw,
+    currentWeek: 1,
+    programStartDate: Date.now(),
+    weeklySchedule: seedSchedule,
+    lastDoneDayId: null,
+    draft: null,
+    rp: null
+  };
   return {
     id: genId(),
     name: String(name || "User").trim().slice(0, 40) || "User",
-    templateId: tpl.id,
-    program: generated || [],
+    programs: [initialEntry],
+    activeProgramId: entryId,
     sessions: [],
     measurements: [],
-    draft: null,
-    lastDoneDayId: null,
-    programStartDate: Date.now(),
-    weeklySchedule: seedSchedule,
-    currentWeek: 1,
-    totalWeeks: tw,
-    daysPerWeek: dpw,
     pinnedLifts: [],
     manualPRs: [],
     firstWorkoutCompleted: false,
@@ -12870,42 +13089,56 @@ function loadStore() {
     s.users.forEach(u => {
       if (!u.id) u.id = genId();
       if (!u.name) u.name = "User";
-      if (!u.program) u.program = [];
       if (!u.sessions) u.sessions = [];
-      if (u.draft === undefined) u.draft = null;
-      if (u.draft && u.draft.pausedAt === undefined) u.draft.pausedAt = null;
-      if (u.lastDoneDayId === undefined) u.lastDoneDayId = null;
       if (!u.measurements) u.measurements = [];
-      if (!u.templateId) u.templateId = "conjugate5";
-      if (u.programStartDate === undefined) u.programStartDate = null;
-      if (u.weeklySchedule === undefined) u.weeklySchedule = null;
-      if (u.currentWeek === undefined) u.currentWeek = 1;
-      if (u.totalWeeks === undefined) u.totalWeeks = null;
-      if (u.daysPerWeek === undefined) u.daysPerWeek = null;
-      // Defensive default for u.rp (added in v9)
-      if (!u.rp) {
-        u.rp = {
-          enabled: false,
-          rpeCalibrationCompletedAt: null,
-          rpeCalibrationMethod: null,
-          coldStartAnchors: {},
-          lastDeloadRecommendedAt: null,
-          dismissedDeloadForWeek: null
-        };
-      }
-      // Defensive defaults for v10: mesocycle container + volume landmarks
-      if (!u.rp.volumeLandmarks) u.rp.volumeLandmarks = null; // seeded by migration; null means not yet set
-      if (!Array.isArray(u.rp.mesocycles)) u.rp.mesocycles = [];
-      if (u.rp.currentMesocycleId === undefined) u.rp.currentMesocycleId = null;
-      // Stamp blockType on all program blocks (default "strength"; v10 migration handles existing data,
-      // this defensive default catches blocks created by resolveWeekProgram on new users)
-      (u.program || []).forEach(day => {
-        (day.blocks || []).forEach(block => {
-          if (!block.blockType) {
-            block.blockType = (block.type === "warmup") ? "warmup" : "strength";
-          }
+
+      // v21: per-program fields live in u.programs[] / u.activeProgramId.
+      // Defensive fallback if a record is somehow stuck mid-migration.
+      if (!Array.isArray(u.programs)) u.programs = [];
+      if (u.activeProgramId === undefined) u.activeProgramId = null;
+      if (!u.activeProgramId && u.programs.length) u.activeProgramId = u.programs[0].id;
+
+      u.programs.forEach(p => {
+        if (!p.id) p.id = "p_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7);
+        if (!p.displayName) p.displayName = "Program";
+        if (!p.templateId) p.templateId = "conjugate5";
+        if (!Array.isArray(p.program)) p.program = [];
+        if (p.daysPerWeek === undefined) p.daysPerWeek = null;
+        if (p.totalWeeks === undefined) p.totalWeeks = null;
+        if (p.currentWeek === undefined) p.currentWeek = 1;
+        if (p.programStartDate === undefined) p.programStartDate = null;
+        if (p.weeklySchedule === undefined) p.weeklySchedule = null;
+        if (p.lastDoneDayId === undefined) p.lastDoneDayId = null;
+        if (p.draft === undefined) p.draft = null;
+        if (p.draft && p.draft.pausedAt === undefined) p.draft.pausedAt = null;
+        if (p.rp === undefined) p.rp = null;
+        if (p.templateId === "rp-hypertrophy" && !p.rp) {
+          p.rp = {
+            enabled: false,
+            rpeCalibrationCompletedAt: null,
+            rpeCalibrationMethod: null,
+            coldStartAnchors: {},
+            lastDeloadRecommendedAt: null,
+            dismissedDeloadForWeek: null,
+            volumeLandmarks: null,
+            mesocycles: [],
+            currentMesocycleId: null
+          };
+        }
+        if (p.rp) {
+          if (!p.rp.volumeLandmarks) p.rp.volumeLandmarks = null;
+          if (!Array.isArray(p.rp.mesocycles)) p.rp.mesocycles = [];
+          if (p.rp.currentMesocycleId === undefined) p.rp.currentMesocycleId = null;
+        }
+        (p.program || []).forEach(day => {
+          (day.blocks || []).forEach(block => {
+            if (!block.blockType) {
+              block.blockType = (block.type === "warmup") ? "warmup" : "strength";
+            }
+          });
         });
       });
+
       // Defensive default for v13: manual PRs and pinned lifts
       if (!Array.isArray(u.manualPRs)) u.manualPRs = [];
       if (!Array.isArray(u.pinnedLifts)) u.pinnedLifts = [];
@@ -12944,6 +13177,25 @@ function loadStore() {
 }
 function saveStore(s) {
   try {
+    // Stale-tab guard (v21): if another tab has already migrated the store to
+    // a newer schema, refuse to overwrite it with our in-memory copy — that
+    // would silently regress fields the newer tab added. Surface a reload
+    // prompt instead.
+    try {
+      const onDisk = localStorage.getItem(STORAGE_KEY);
+      if (onDisk) {
+        const parsed = JSON.parse(onDisk);
+        const diskVer = typeof parsed._schemaVersion === "number" ? parsed._schemaVersion : 0;
+        const memVer  = typeof s._schemaVersion === "number" ? s._schemaVersion : 0;
+        if (diskVer > memVer) {
+          console.error("KN Lifts: stale tab (mem v" + memVer + " < disk v" + diskVer + ") — refused to overwrite newer data.");
+          if (typeof showToast === "function") {
+            showToast("App was updated in another tab — reload to continue", "error");
+          }
+          return;
+        }
+      }
+    } catch (_) { /* if parse fails, fall through and let save proceed */ }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
   } catch (e) {
     console.error("KN Lifts: failed to save data:", e);
@@ -12972,19 +13224,24 @@ function addUser(name, templateId) {
     u.physiquePriority = s.onboarding.physiquePriority;
   }
 
-  // Initialize u.rp (newUserRecord doesn't create it; loadStore defensive defaults only apply on read)
-  if (!u.rp) {
-    u.rp = {
-      enabled: false,
-      rpeCalibrationCompletedAt: null,
-      rpeCalibrationMethod: null,
-      coldStartAnchors: {},
-      lastDeloadRecommendedAt: null,
-      dismissedDeloadForWeek: null,
-      volumeLandmarks: null,
-      mesocycles: [],
-      currentMesocycleId: null
-    };
+  // Active program entry exists via newUserRecord; RP state attaches to it.
+  const activeEntry = u.programs.find(p => p.id === u.activeProgramId);
+  function ensureEntryRp(e) {
+    if (!e) return null;
+    if (!e.rp) {
+      e.rp = {
+        enabled: false,
+        rpeCalibrationCompletedAt: null,
+        rpeCalibrationMethod: null,
+        coldStartAnchors: {},
+        lastDeloadRecommendedAt: null,
+        dismissedDeloadForWeek: null,
+        volumeLandmarks: null,
+        mesocycles: [],
+        currentMesocycleId: null
+      };
+    }
+    return e.rp;
   }
 
   // Propagate body weight from onboarding
@@ -12998,10 +13255,13 @@ function addUser(name, templateId) {
 
   // Propagate smart suggestions preference from onboarding
   if (s.onboarding && s.onboarding.smartSuggestions === "yes") {
-    u.rp.enabled = true;
-    if (s.onboarding.rpeCalibration && s.onboarding.rpeCalibration.completedAt) {
-      u.rp.rpeCalibrationCompletedAt = s.onboarding.rpeCalibration.completedAt;
-      u.rp.rpeCalibrationMethod = "onboarding";
+    const rp = ensureEntryRp(activeEntry);
+    if (rp) {
+      rp.enabled = true;
+      if (s.onboarding.rpeCalibration && s.onboarding.rpeCalibration.completedAt) {
+        rp.rpeCalibrationCompletedAt = s.onboarding.rpeCalibration.completedAt;
+        rp.rpeCalibrationMethod = "onboarding";
+      }
     }
   }
 
@@ -13077,8 +13337,8 @@ function switchUser(id) {
 // ============================================================
 // VERSION
 // ============================================================
-const APP_VERSION = 20;
-const APP_BUILD = "52e863bf";
+const APP_VERSION = 21;
+const APP_BUILD = "98d898c7";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -13441,6 +13701,57 @@ const MIGRATIONS = [
       });
       return store;
     }
+  },
+  {
+    version: 21,
+    description: "Collapse single active-program slot into u.programs[] library + u.activeProgramId",
+    migrate(store) {
+      (store.users || []).forEach(u => {
+        if (Array.isArray(u.programs) && u.activeProgramId) return; // already migrated (defensive)
+
+        const tpl = (typeof PROGRAM_TEMPLATES !== "undefined")
+          ? PROGRAM_TEMPLATES.find(t => t.id === u.templateId) : null;
+        const fallbackName = (u.templateId === "custom") ? "My Program" : (u.templateId || "Program");
+        const displayName = tpl ? tpl.name : fallbackName;
+
+        const entry = {
+          id: "p_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7),
+          displayName,
+          templateId: u.templateId || "custom",
+          program: Array.isArray(u.program) ? u.program : [],
+          daysPerWeek: u.daysPerWeek || null,
+          totalWeeks: (u.totalWeeks === undefined) ? null : u.totalWeeks,
+          currentWeek: u.currentWeek || 1,
+          programStartDate: u.programStartDate || Date.now(),
+          weeklySchedule: (u.weeklySchedule === undefined) ? null : u.weeklySchedule,
+          lastDoneDayId: (u.lastDoneDayId === undefined) ? null : u.lastDoneDayId,
+          draft: (u.draft === undefined) ? null : u.draft,
+          rp: u.rp || null
+        };
+
+        u.programs = [entry];
+        u.activeProgramId = entry.id;
+
+        // Stamp existing sessions with the migrated program id so future
+        // per-program history filtering doesn't need another migration.
+        (u.sessions || []).forEach(s => {
+          if (s.programId === undefined) s.programId = entry.id;
+        });
+
+        // Remove the moved fields from the top-level user record.
+        delete u.templateId;
+        delete u.program;
+        delete u.daysPerWeek;
+        delete u.totalWeeks;
+        delete u.currentWeek;
+        delete u.programStartDate;
+        delete u.weeklySchedule;
+        delete u.lastDoneDayId;
+        delete u.draft;
+        delete u.rp;
+      });
+      return store;
+    }
   }
 ];
 
@@ -13580,7 +13891,14 @@ function validateImportData(data) {
     data.users.forEach((u, i) => {
       if (!u.id) errors.push("User " + i + " missing id");
       if (!u.name) errors.push("User " + i + " missing name");
-      if (!Array.isArray(u.program)) errors.push("User " + i + " missing program");
+      // v21 backups: programs[] is the library. Older backups still carry the
+      // legacy top-level u.program — migrateImportedData wraps those, so accept
+      // either shape here.
+      const hasNewLibrary = Array.isArray(u.programs);
+      const hasLegacyProgram = Array.isArray(u.program);
+      if (!hasNewLibrary && !hasLegacyProgram) {
+        errors.push("User " + i + " missing programs");
+      }
       if (!Array.isArray(u.sessions)) errors.push("User " + i + " missing sessions");
     });
   }
@@ -13697,78 +14015,198 @@ function importData() {
 
 
 // ============================================================
+// ACTIVE PROGRAM ACCESSORS
+// Single point of truth for "current program". After v21, per-user
+// data has u.programs[] + u.activeProgramId; all per-program fields
+// (templateId, program, currentWeek, draft, rp, …) live inside an
+// entry of u.programs, not at the top of u.
+// ============================================================
+
+function genProgramId() {
+  return "p_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7);
+}
+
+function activeProgram() {
+  const u = userData();
+  if (!u) return null;
+  if (!Array.isArray(u.programs) || !u.activeProgramId) return null;
+  return u.programs.find(p => p.id === u.activeProgramId) || null;
+}
+
+// Use inside updateUser(u => {...}) callbacks where you already have the user object.
+function activeProgramOf(u) {
+  if (!u || !Array.isArray(u.programs) || !u.activeProgramId) return null;
+  return u.programs.find(p => p.id === u.activeProgramId) || null;
+}
+
+function updateActiveProgram(fn) {
+  updateUser(u => {
+    if (!Array.isArray(u.programs) || !u.activeProgramId) return;
+    const p = u.programs.find(x => x.id === u.activeProgramId);
+    if (p) fn(p, u);
+  });
+}
+
+// Case-insensitive uniqueness on displayName. Returns the input name
+// unchanged if free, otherwise appends " (2)", " (3)", … until free.
+function uniquifyDisplayName(name, existing) {
+  const base = String(name || "Program").trim() || "Program";
+  const taken = new Set((existing || []).map(p => String(p.displayName || "").trim().toLowerCase()));
+  if (!taken.has(base.toLowerCase())) return base;
+  for (let i = 2; i < 1000; i++) {
+    const candidate = base + " (" + i + ")";
+    if (!taken.has(candidate.toLowerCase())) return candidate;
+  }
+  return base + " (" + Date.now().toString(36) + ")";
+}
+
+// Build a ProgramEntry shell. Caller fills program/days/weeks/etc.
+function makeProgramEntry(partial) {
+  const e = partial || {};
+  return {
+    id: e.id || genProgramId(),
+    displayName: e.displayName || "Program",
+    templateId: e.templateId || "custom",
+    program: e.program || [],
+    daysPerWeek: e.daysPerWeek || null,
+    totalWeeks: (e.totalWeeks === undefined) ? null : e.totalWeeks,
+    currentWeek: e.currentWeek || 1,
+    programStartDate: e.programStartDate || Date.now(),
+    weeklySchedule: (e.weeklySchedule === undefined) ? null : e.weeklySchedule,
+    lastDoneDayId: (e.lastDoneDayId === undefined) ? null : e.lastDoneDayId,
+    draft: (e.draft === undefined) ? null : e.draft,
+    rp: e.rp || null
+  };
+}
+
+// Adds entry to u.programs, optionally activating. Returns the entry id.
+// opts: { activate: boolean }
+function addProgramEntry(entry, opts) {
+  const activate = !opts || opts.activate !== false; // default true
+  let newId = null;
+  updateUser(u => {
+    if (!Array.isArray(u.programs)) u.programs = [];
+    const e = makeProgramEntry(entry);
+    e.displayName = uniquifyDisplayName(e.displayName, u.programs);
+    u.programs.push(e);
+    newId = e.id;
+    if (activate) u.activeProgramId = e.id;
+  });
+  return newId;
+}
+
+// Sets activeProgramId, resets transient session UI state. Returns true if changed.
+function switchActiveProgram(programId) {
+  let changed = false;
+  updateUser(u => {
+    if (!Array.isArray(u.programs)) return;
+    if (!u.programs.some(p => p.id === programId)) return;
+    if (u.activeProgramId === programId) return;
+    u.activeProgramId = programId;
+    changed = true;
+  });
+  if (changed) {
+    if (typeof stopSessionTimer === "function") stopSessionTimer();
+    state.workoutStartedAt = null;
+    state.currentDayId = 1;
+    state.dayChosen = false;
+  }
+  return changed;
+}
+
+// Removes an entry from u.programs. Refuses if it's the only entry or
+// if it's currently active (caller must switch away first).
+// Returns { ok: boolean, reason?: string }.
+function removeProgramEntry(programId) {
+  let result = { ok: false, reason: "unknown" };
+  updateUser(u => {
+    if (!Array.isArray(u.programs)) { result = { ok: false, reason: "no-library" }; return; }
+    if (u.programs.length <= 1) { result = { ok: false, reason: "last-program" }; return; }
+    if (u.activeProgramId === programId) { result = { ok: false, reason: "active" }; return; }
+    const idx = u.programs.findIndex(p => p.id === programId);
+    if (idx < 0) { result = { ok: false, reason: "not-found" }; return; }
+    u.programs.splice(idx, 1);
+    result = { ok: true };
+  });
+  return result;
+}
+
+
+// ============================================================
 // DAY ROTATION LOGIC
 // ============================================================
 function determineDefaultDay() {
-  const u = userData();
-  if (!u) return 1;
+  const p = activeProgram();
+  if (!p) return 1;
   // If draft exists, show that day
-  if (u.draft) return u.draft.dayId;
+  if (p.draft) return p.draft.dayId;
   // If today is mapped to a program day in the weekly schedule, prefer that
-  if (Array.isArray(u.weeklySchedule) && u.weeklySchedule.length === 7) {
-    const todaysId = u.weeklySchedule[new Date().getDay()];
-    if (todaysId != null && u.program.find(d => d.id === todaysId)) {
+  if (Array.isArray(p.weeklySchedule) && p.weeklySchedule.length === 7) {
+    const todaysId = p.weeklySchedule[new Date().getDay()];
+    if (todaysId != null && p.program.find(d => d.id === todaysId)) {
       return todaysId;
     }
   }
   // Else next in rotation
-  const last = u.lastDoneDayId;
+  const last = p.lastDoneDayId;
   if (last == null) return 1;
-  return (last % u.program.length) + 1;
+  return (last % p.program.length) + 1;
 }
 
 function getCurrentDay() {
-  const u = userData();
-  if (!u) return null;
-  return u.program.find(d => d.id === state.currentDayId);
+  const p = activeProgram();
+  if (!p) return null;
+  return p.program.find(d => d.id === state.currentDayId);
 }
 
 // Check if week needs to roll over and regenerate program
 function checkWeekRollover() {
   const u = userData();
-  if (!u || !u.totalWeeks || !u.currentWeek) return;
+  const p = activeProgram();
+  if (!u || !p || !p.totalWeeks || !p.currentWeek) return;
   // Don't roll over if there's a draft in progress
-  if (u.draft) return;
+  if (p.draft) return;
   // Check if all days this week are done
-  var daysInProgram = u.program.length;
+  var daysInProgram = p.program.length;
   var weekSessions = (u.sessions || []).filter(function(s) {
-    return s.programWeek === u.currentWeek;
+    return s.programWeek === p.currentWeek && (!s.programId || s.programId === p.id);
   });
   var uniqueDays = new Set(weekSessions.map(function(s) { return s.dayId; }));
-  if (uniqueDays.size >= daysInProgram && u.currentWeek < u.totalWeeks) {
+  if (uniqueDays.size >= daysInProgram && p.currentWeek < p.totalWeeks) {
     advanceWeek();
   }
 }
 
 function advanceWeek() {
-  var u = userData();
-  if (!u) return;
-  var nextWeek = Math.min((u.currentWeek || 1) + 1, (u.totalWeeks || 12) + 1);
-  updateUser(function(usr) {
-    usr.currentWeek = nextWeek;
-    usr.lastDoneDayId = null;
-    usr.draft = null;
-    var generated = resolveWeekProgram(usr.templateId, nextWeek, usr.totalWeeks, usr.daysPerWeek);
-    if (generated) usr.program = preserveCustomDays(usr.program, generated);
+  var p = activeProgram();
+  if (!p) return;
+  var nextWeek = Math.min((p.currentWeek || 1) + 1, (p.totalWeeks || 12) + 1);
+  updateActiveProgram(function(entry) {
+    entry.currentWeek = nextWeek;
+    entry.lastDoneDayId = null;
+    entry.draft = null;
+    var generated = resolveWeekProgram(entry.templateId, nextWeek, entry.totalWeeks, entry.daysPerWeek);
+    if (generated) entry.program = preserveCustomDays(entry.program, generated);
   });
   state.currentDayId = 1;
   state.dayChosen = false;
 }
 
 function goBackWeek() {
-  var u = userData();
-  if (!u || !u.currentWeek || u.currentWeek <= 1) return;
-  var prevWeek = u.currentWeek - 1;
-  updateUser(function(usr) {
-    usr.currentWeek = prevWeek;
-    usr.lastDoneDayId = null;
-    usr.draft = null;
-    var generated = resolveWeekProgram(usr.templateId, prevWeek, usr.totalWeeks, usr.daysPerWeek);
-    if (generated) usr.program = preserveCustomDays(usr.program, generated);
+  var p = activeProgram();
+  if (!p || !p.currentWeek || p.currentWeek <= 1) return;
+  var prevWeek = p.currentWeek - 1;
+  updateActiveProgram(function(entry) {
+    entry.currentWeek = prevWeek;
+    entry.lastDoneDayId = null;
+    entry.draft = null;
+    var generated = resolveWeekProgram(entry.templateId, prevWeek, entry.totalWeeks, entry.daysPerWeek);
+    if (generated) entry.program = preserveCustomDays(entry.program, generated);
   });
   state.currentDayId = 1;
   state.dayChosen = false;
 }
+
 
 // ============================================================
 // GENERATED PROGRAMS — dynamic, not static
@@ -13790,15 +14228,15 @@ var PROGRAM_GLUTES = resolveWeekProgram("glutes2", 1, 10, 2) || [];
 // INPUT DRAFT MANAGEMENT
 // ============================================================
 function getDraft() {
-  const u = userData();
-  if (!u || !u.draft || u.draft.dayId !== state.currentDayId) return null;
-  return u.draft;
+  const p = activeProgram();
+  if (!p || !p.draft || p.draft.dayId !== state.currentDayId) return null;
+  return p.draft;
 }
 
 function ensureDraft() {
-  updateUser(u => {
-    if (!u.draft || u.draft.dayId !== state.currentDayId) {
-      u.draft = { dayId: state.currentDayId, startedAt: Date.now(), inputs: {}, pausedAt: null };
+  updateActiveProgram(entry => {
+    if (!entry.draft || entry.draft.dayId !== state.currentDayId) {
+      entry.draft = { dayId: state.currentDayId, startedAt: Date.now(), inputs: {}, pausedAt: null };
     }
   });
 }
@@ -13807,14 +14245,16 @@ function saveInput(key, value) {
   const s = loadStore();
   const user = s.users.find(u => u.id === state.userId);
   if (!user) return;
-  if (!user.draft || user.draft.dayId !== state.currentDayId) {
-    user.draft = { dayId: state.currentDayId, startedAt: Date.now(), inputs: {}, pausedAt: null };
+  const entry = activeProgramOf(user);
+  if (!entry) return;
+  if (!entry.draft || entry.draft.dayId !== state.currentDayId) {
+    entry.draft = { dayId: state.currentDayId, startedAt: Date.now(), inputs: {}, pausedAt: null };
     if (state.autoTimer) {
-      state.workoutStartedAt = user.draft.startedAt;
+      state.workoutStartedAt = entry.draft.startedAt;
       startSessionTimer();
     }
   }
-  user.draft.inputs[key] = value;
+  entry.draft.inputs[key] = value;
   saveStore(s);
   updateFinishButton();
   updateProgress();
@@ -13979,8 +14419,8 @@ function triggerCelebration() {
 // PROGRAM EDITING
 // ============================================================
 function mutateDay(fn) {
-  updateUser(u => {
-    const day = u.program.find(d => d.id === state.currentDayId);
+  updateActiveProgram(entry => {
+    const day = entry.program.find(d => d.id === state.currentDayId);
     if (day) fn(day);
   });
 }
@@ -13996,11 +14436,11 @@ function preserveCustomDays(oldProgram, newProgram) {
 
 // Add a new blank custom training day to the user's program.
 function addTrainingDay() {
-  var u = userData();
-  if (!u) return;
-  var nextId = u.program.length + 1;
+  var p = activeProgram();
+  if (!p) return;
+  var nextId = p.program.length + 1;
   // Ensure unique day id (skip any already used)
-  var usedIds = new Set(u.program.map(function(d) { return d.id; }));
+  var usedIds = new Set(p.program.map(function(d) { return d.id; }));
   while (usedIds.has(nextId)) nextId++;
   var newDay = {
     id: nextId,
@@ -14009,9 +14449,9 @@ function addTrainingDay() {
     blocks: [],
     isCustom: true
   };
-  updateUser(function(usr) {
-    usr.program.push(newDay);
-    usr.daysPerWeek = usr.program.length;
+  updateActiveProgram(function(entry) {
+    entry.program.push(newDay);
+    entry.daysPerWeek = entry.program.length;
   });
   // Switch to the new day and open customize mode
   state.currentDayId = nextId;
@@ -14026,12 +14466,16 @@ function addTrainingDay() {
 
 function resetCurrentDay() {
   if (!confirm("Reset this day to the generated default? Your custom edits will be lost.")) return;
-  const u = userData();
+  const p = activeProgram();
+  if (!p) return;
   // Regenerate from periodization engine for current week
-  const generated = resolveWeekProgram(u.templateId, u.currentWeek || 1, u.totalWeeks || 10, u.daysPerWeek);
+  const generated = resolveWeekProgram(p.templateId, p.currentWeek || 1, p.totalWeeks || 10, p.daysPerWeek);
   const defDay = generated ? generated.find(d => d.id === state.currentDayId) : null;
   if (!defDay) { showToast("Day not found"); return; }
-  updateUser(u => { u.program[u.program.findIndex(d => d.id === state.currentDayId)] = defDay; });
+  updateActiveProgram(entry => {
+    const idx = entry.program.findIndex(d => d.id === state.currentDayId);
+    if (idx >= 0) entry.program[idx] = defDay;
+  });
   renderWorkoutScreen();
   showToast("Day reset", "success");
 }
@@ -14040,11 +14484,13 @@ function resetAllProgram() {
   if (!confirm("Reset every user's program to their current week default? Session history is kept.")) return;
   const s = loadStore();
   s.users.forEach(u => {
-    const generated = resolveWeekProgram(u.templateId, u.currentWeek || 1, u.totalWeeks || 10, u.daysPerWeek);
-    if (generated) {
-      u.program = preserveCustomDays(u.program, generated);
-    }
-    u.lastDoneDayId = null;
+    (u.programs || []).forEach(entry => {
+      const generated = resolveWeekProgram(entry.templateId, entry.currentWeek || 1, entry.totalWeeks || 10, entry.daysPerWeek);
+      if (generated) {
+        entry.program = preserveCustomDays(entry.program, generated);
+      }
+      entry.lastDoneDayId = null;
+    });
   });
   saveStore(s);
   renderWorkoutScreen();
@@ -14053,23 +14499,24 @@ function resetAllProgram() {
 
 // Remove a custom day from the program. Only custom (user-added) days can be removed.
 function removeTrainingDay(dayId) {
-  var u = userData();
-  if (!u) return;
-  var day = u.program.find(function(d) { return d.id === dayId; });
+  var p = activeProgram();
+  if (!p) return;
+  var day = p.program.find(function(d) { return d.id === dayId; });
   if (!day || !day.isCustom) { showToast("Only custom days can be removed"); return; }
   if (!confirm("Remove " + day.name + "? This cannot be undone.")) return;
-  updateUser(function(usr) {
-    usr.program = usr.program.filter(function(d) { return d.id !== dayId; });
-    usr.daysPerWeek = usr.program.length;
+  updateActiveProgram(function(entry) {
+    entry.program = entry.program.filter(function(d) { return d.id !== dayId; });
+    entry.daysPerWeek = entry.program.length;
     // If we removed the current day, switch to day 1
     if (state.currentDayId === dayId) {
-      state.currentDayId = usr.program.length > 0 ? usr.program[0].id : 1;
+      state.currentDayId = entry.program.length > 0 ? entry.program[0].id : 1;
     }
   });
   state.dayChosen = true;
   renderWorkoutScreen();
   showToast("Day removed", "success");
 }
+
 
 // ============================================================
 // TIMELINE STRIP — Journey Map calendar + program phase tracking
@@ -14118,7 +14565,9 @@ function getCurrentPhase(tpl, weekNum) {
 
 function getTemplateForUser(u) {
   if (!u) return null;
-  return PROGRAM_TEMPLATES.find(t => t.id === u.templateId) || null;
+  const entry = activeProgramOf(u);
+  if (!entry) return null;
+  return PROGRAM_TEMPLATES.find(t => t.id === entry.templateId) || null;
 }
 
 function getDayPrimaryColor(session) {
@@ -14151,6 +14600,8 @@ function renderTimelineStrip() {
   if (!container) return;
   const u = userData();
   if (!u) { container.innerHTML = ""; container.style.display = "none"; return; }
+  const entry = activeProgramOf(u);
+  if (!entry) { container.innerHTML = ""; container.style.display = "none"; return; }
 
   container.style.display = "";
   container.innerHTML = "";
@@ -14168,11 +14619,11 @@ function renderTimelineStrip() {
   }
 
   // Streak (training-frequency-aware)
-  const { count: streak, atRisk: streakAtRisk } = getTrainingStreak(sessions, u.daysPerWeek);
+  const { count: streak, atRisk: streakAtRisk } = getTrainingStreak(sessions, entry.daysPerWeek);
 
   // Phase info — prefer user's workout-count-based week, fall back to date-based
-  const weekNum = u.currentWeek || getProgramWeek(u.programStartDate);
-  const dynamicPhases = getPhasesForTemplate(u.templateId, u.totalWeeks);
+  const weekNum = entry.currentWeek || getProgramWeek(entry.programStartDate);
+  const dynamicPhases = getPhasesForTemplate(entry.templateId, entry.totalWeeks);
   const phase = dynamicPhases ? phaseForWeek(dynamicPhases, weekNum) : getCurrentPhase(tpl, weekNum);
 
   // Top row: streak + forge counter + phase label
@@ -14187,7 +14638,7 @@ function renderTimelineStrip() {
     infoRow.appendChild(streakEl);
   }
 
-  var displayTotalWeeks = u.totalWeeks || (tpl && tpl.totalWeeks);
+  var displayTotalWeeks = entry.totalWeeks || (tpl && tpl.totalWeeks);
   if (displayTotalWeeks && weekNum) {
     const phaseEl = document.createElement("div");
     phaseEl.className = "tl-phase";
@@ -14214,7 +14665,7 @@ function renderTimelineStrip() {
     const isToday = dateMs === todayMs;
     const isPast = dateMs < todayMs;
     const session = getSessionForDate(sessions, dateMs);
-    const scheduled = !isPast && !isToday && isScheduledDay(u.weeklySchedule, dateMs);
+    const scheduled = !isPast && !isToday && isScheduledDay(entry.weeklySchedule, dateMs);
     const color = session ? getDayPrimaryColor(session) : null;
 
     pill.className = "tl-pill" +
@@ -14243,16 +14694,16 @@ function renderTimelineStrip() {
       pill.classList.remove("future");
       const dow = d.getDay();
       let scheduledDayId = null;
-      if (Array.isArray(u.weeklySchedule) && u.weeklySchedule.length === 7) {
-        scheduledDayId = u.weeklySchedule[dow];
-      } else if (typeof _laTrainingPattern === "function" && u.daysPerWeek) {
-        const pattern = _laTrainingPattern(u.daysPerWeek);
+      if (Array.isArray(entry.weeklySchedule) && entry.weeklySchedule.length === 7) {
+        scheduledDayId = entry.weeklySchedule[dow];
+      } else if (typeof _laTrainingPattern === "function" && entry.daysPerWeek) {
+        const pattern = _laTrainingPattern(entry.daysPerWeek);
         const dayIdx = pattern.indexOf(dow);
-        if (dayIdx !== -1 && dayIdx < u.program.length) {
-          scheduledDayId = u.program[dayIdx].id;
+        if (dayIdx !== -1 && dayIdx < entry.program.length) {
+          scheduledDayId = entry.program[dayIdx].id;
         }
       }
-      if (scheduledDayId != null && u.program.find(d => d.id === scheduledDayId)) {
+      if (scheduledDayId != null && entry.program.find(d => d.id === scheduledDayId)) {
         pill.classList.add("scheduled");
       }
       pill.onclick = () => openPlanWorkout(dateMs);
@@ -14405,6 +14856,8 @@ function undoDeleteSession() {
 function openAddWorkout(dateMs) {
   const u = userData();
   if (!u) return;
+  const entry = activeProgramOf(u);
+  if (!entry) return;
   const d = new Date(dateMs);
   const dateStr = d.toLocaleDateString(undefined, { weekday:"long", month:"short", day:"numeric" });
 
@@ -14417,7 +14870,7 @@ function openAddWorkout(dateMs) {
 
   // Day selection cards
   const next = determineDefaultDay();
-  u.program.forEach(day => {
+  entry.program.forEach(day => {
     const btn = document.createElement("button");
     btn.className = "sheet-item";
     const nextTag = day.id === next ? ' <span style="color:var(--accent);font-size:10px;font-weight:800;">NEXT</span>' : "";
@@ -14434,6 +14887,8 @@ function openAddWorkout(dateMs) {
 function openPlanWorkout(dateMs) {
   const u = userData();
   if (!u) return;
+  const entry = activeProgramOf(u);
+  if (!entry) return;
   const d = new Date(dateMs);
   const dateStr = d.toLocaleDateString(undefined, { weekday:"long", month:"short", day:"numeric" });
   const dow = d.getDay();
@@ -14442,9 +14897,9 @@ function openPlanWorkout(dateMs) {
   const todayStart = new Date(); todayStart.setHours(0,0,0,0);
   const isToday = dateMs === todayStart.getTime();
 
-  const sched = (Array.isArray(u.weeklySchedule) && u.weeklySchedule.length === 7) ? u.weeklySchedule : null;
+  const sched = (Array.isArray(entry.weeklySchedule) && entry.weeklySchedule.length === 7) ? entry.weeklySchedule : null;
   const scheduledDayId = sched ? sched[dow] : null;
-  const scheduledDay = scheduledDayId != null ? u.program.find(dd => dd.id === scheduledDayId) : null;
+  const scheduledDay = scheduledDayId != null ? entry.program.find(dd => dd.id === scheduledDayId) : null;
   const isRest = sched && scheduledDayId == null;
 
   const wrap = document.createElement("div");
@@ -14481,7 +14936,7 @@ function openPlanWorkout(dateMs) {
   }
 
   const next = determineDefaultDay();
-  u.program.forEach(day => {
+  entry.program.forEach(day => {
     const btn = document.createElement("button");
     btn.className = "sheet-item" + (day.id === scheduledDayId ? " current" : "");
     const tag = day.id === scheduledDayId
@@ -14899,16 +15354,17 @@ function renderStampCard() {
   if (!el) return;
   const u = userData();
   if (!u) { el.style.display = "none"; return; }
+  const entry = activeProgramOf(u);
 
   el.style.display = "";
   el.innerHTML = "";
 
   const sessions = u.sessions || [];
-  const target = u.program ? u.program.length : (u.daysPerWeek || 4);
+  const target = (entry && entry.program) ? entry.program.length : ((entry && entry.daysPerWeek) || 4);
   let completed = 0;
 
-  if (u.currentWeek) {
-    const weekSessions = sessions.filter(s => s.programWeek === u.currentWeek);
+  if (entry && entry.currentWeek) {
+    const weekSessions = sessions.filter(s => s.programWeek === entry.currentWeek);
     completed = new Set(weekSessions.map(s => s.dayId)).size;
   } else {
     const weekAgo = Date.now() - 7 * 86400000;
@@ -15246,8 +15702,8 @@ const CD_COMBOS = [
   [8, 20, 28],  // figure-4, downward dog, neck stretch
 ];
 function getCooldownExercises(dayId) {
-  var u = (typeof userData === "function") ? userData() : null;
-  var day = (u && u.program) ? u.program.find(function(d) { return d.id === dayId; }) : null;
+  var p = (typeof activeProgram === "function") ? activeProgram() : null;
+  var day = (p && p.program) ? p.program.find(function(d) { return d.id === dayId; }) : null;
   var overrides = (day && day.cooldownOverrides) || {};
   var idx = ((dayId || 1) - 1) % CD_COMBOS.length;
   return CD_COMBOS[idx].map(function(i, ci) {
@@ -15327,6 +15783,7 @@ function openCooldownSwapSheet(ci) {
 
 function renderWorkoutScreen() {
   state._rpPromptShownThisRender = false; // reset per-render prompt gate (§6)
+  if (typeof renderHeaderProgramChip === "function") renderHeaderProgramChip();
   const container = document.getElementById("blocksContainer");
   const u = userData();
 
@@ -15341,6 +15798,7 @@ function renderWorkoutScreen() {
     updateFinishButton();
     return;
   }
+  const entry = activeProgramOf(u);
 
   // Ad-hoc mode: delegate to its own renderer
   if (state.adhocActive) {
@@ -15355,8 +15813,8 @@ function renderWorkoutScreen() {
   // and reachable via Switch Day or "Train anyway".
   {
     const _todayDow = new Date().getDay();
-    const _isRestToday = Array.isArray(u.weeklySchedule)
-      && u.weeklySchedule.length === 7 && u.weeklySchedule[_todayDow] == null;
+    const _isRestToday = entry && Array.isArray(entry.weeklySchedule)
+      && entry.weeklySchedule.length === 7 && entry.weeklySchedule[_todayDow] == null;
     if (_isRestToday && !state.dayChosen && !state.workoutStartedAt
         && !state.restOverride && !state.previewDateMs) {
       renderTimelineStrip();
@@ -15380,10 +15838,10 @@ function renderWorkoutScreen() {
   document.getElementById("dayName").textContent = day.name;
   // Show week/phase in sub
   var weekLabel = "";
-  if (u.totalWeeks && u.currentWeek) {
-    var phases = getPhasesForTemplate(u.templateId, u.totalWeeks);
-    var phase = phases ? phaseForWeek(phases, u.currentWeek) : null;
-    weekLabel = "Wk " + u.currentWeek + "/" + u.totalWeeks;
+  if (entry && entry.totalWeeks && entry.currentWeek) {
+    var phases = getPhasesForTemplate(entry.templateId, entry.totalWeeks);
+    var phase = phases ? phaseForWeek(phases, entry.currentWeek) : null;
+    weekLabel = "Wk " + entry.currentWeek + "/" + entry.totalWeeks;
     if (phase) weekLabel += " · " + phase.name;
     weekLabel += " · ";
   }
@@ -15415,7 +15873,7 @@ function renderWorkoutScreen() {
       // Clear any unstarted draft created by switching days so the rest card returns
       const draft = getDraft();
       if (draft && !state.workoutStartedAt) {
-        updateUser(usr => { usr.draft = null; });
+        updateActiveProgram(entry => { entry.draft = null; });
       }
       renderWorkoutScreen();
     };
@@ -15495,11 +15953,13 @@ function renderDayPicker() {
   const container = document.getElementById("blocksContainer");
   const u = userData();
   if (!u) return;
+  const entry = activeProgramOf(u);
+  if (!entry) return;
 
-  const tpl = PROGRAM_TEMPLATES.find(t => t.id === u.templateId) || PROGRAM_TEMPLATES[0];
+  const tpl = PROGRAM_TEMPLATES.find(t => t.id === entry.templateId) || PROGRAM_TEMPLATES[0];
   document.getElementById("dayBadge").textContent = "⊞";
   document.getElementById("dayName").textContent = "Today's Workout";
-  document.getElementById("daySub").textContent = tpl.name + (u.totalWeeks ? " · Week " + (u.currentWeek || 1) + " of " + u.totalWeeks : "");
+  document.getElementById("daySub").textContent = tpl.name + (entry.totalWeeks ? " · Week " + (entry.currentWeek || 1) + " of " + entry.totalWeeks : "");
 
   // Hide start/finish buttons
   document.getElementById("headerStartBtn").classList.remove("active");
@@ -15509,7 +15969,7 @@ function renderDayPicker() {
 
   // Rest-day check: if today's weeklySchedule slot is explicitly null, show a rest card
   const todayDow = new Date().getDay();
-  const sched = (Array.isArray(u.weeklySchedule) && u.weeklySchedule.length === 7) ? u.weeklySchedule : null;
+  const sched = (Array.isArray(entry.weeklySchedule) && entry.weeklySchedule.length === 7) ? entry.weeklySchedule : null;
   const isRestToday = sched && sched[todayDow] == null;
 
   // Same-day completed sessions strip — surfaces today's saved workouts so the
@@ -15556,7 +16016,7 @@ function renderDayPicker() {
   }
 
   const next = determineDefaultDay();
-  const nextDay = u.program.find(d => d.id === next) || u.program[0];
+  const nextDay = entry.program.find(d => d.id === next) || entry.program[0];
   const picker = document.createElement("div");
   picker.className = "day-picker";
 
@@ -15633,7 +16093,7 @@ function renderDayPicker() {
   picker.appendChild(buildDayCard(nextDay, true));
 
   // "Other workouts" toggle for remaining days
-  const others = u.program.filter(d => d.id !== nextDay.id);
+  const others = entry.program.filter(d => d.id !== nextDay.id);
   if (others.length) {
     const toggle = document.createElement("button");
     toggle.className = "day-picker-toggle";
@@ -15706,10 +16166,10 @@ function _wireTimeBudgetCard(card, day, breakdown) {
         e.stopPropagation();
         if (btn.dataset.action === "adjusted" && lastBudget) {
           // Apply adjustments to the real program
-          const u = userData();
-          const dayIdx = u.program.findIndex(dd => dd.id === day.id);
+          const p = activeProgram();
+          const dayIdx = p ? p.program.findIndex(dd => dd.id === day.id) : -1;
           if (dayIdx >= 0) {
-            updateUser(usr => { usr.program[dayIdx] = lastBudget.adjustedDay; });
+            updateActiveProgram(entry => { entry.program[dayIdx] = lastBudget.adjustedDay; });
           }
         }
         state.currentDayId = day.id;
@@ -16067,10 +16527,10 @@ function renderCooldownPreviewForDay(dayId) {
 
 function _buildRpBlockMeta(block) {
   if (block.blockType !== "rp-hypertrophy") return null;
-  // Pull meso context for the current user
-  const u = (typeof userData === "function") ? userData() : null;
-  if (!u || !u.rp) return null;
-  const meso = (typeof getActiveMesocycle === "function") ? getActiveMesocycle(u) : null;
+  // Pull meso context for the active program
+  const p = (typeof activeProgram === "function") ? activeProgram() : null;
+  if (!p || !p.rp) return null;
+  const meso = (typeof getActiveMesocycle === "function") ? getActiveMesocycle(p) : null;
   if (!meso) return null;
 
   const week = meso.currentWeek;
@@ -16690,8 +17150,8 @@ function openSetEditor(block, ex, bi, ei, setIdx, bw) {
     let weightDefault = lastSet?.weight ?? ex.defaultWeight ?? 0;
     let rpSuggestion  = null;
     if (typeof suggestedWeight === "function") {
-      const u = userData();
-      if (u && u.rp && u.rp.enabled && !bw) {
+      const p = activeProgram();
+      if (p && p.rp && p.rp.enabled && !bw) {
         const draft = getDraft();
         const targetRIR = (draft && draft.targetRIR != null) ? draft.targetRIR : 2;
         rpSuggestion = suggestedWeight(ex.exId, ex.reps, targetRIR);
@@ -17062,6 +17522,28 @@ function renderChaptersView(container, day) {
     });
     if (typeof renderCooldownBlock === "function") {
       // Cool-down still renders its own block — leave default for now
+    }
+    // Day-wide action bar — mirrors focus view, tracks first not-done set
+    // across the entire day. Only shown during an active workout.
+    if (state.workoutStartedAt
+        && typeof paperFindDayActiveSet === "function"
+        && typeof paperBuildActionBar === "function") {
+      const active = paperFindDayActiveSet(day);
+      const activeBlock = day.blocks[active.bi] || day.blocks[0];
+      wrap.appendChild(paperBuildActionBar(
+        day, activeBlock, active.exIdx, active.setIdx, active.allDone, active.bi
+      ));
+      if (!active.allDone) {
+        // requestAnimationFrame: wait for DOM insertion before highlighting.
+        requestAnimationFrame(() => {
+          const row = wrap.querySelector(
+            `.paper-block[data-bi="${active.bi}"] ` +
+            `.paper-exercise[data-ei="${active.exIdx}"] ` +
+            `.paper-set-row[data-set-idx="${active.setIdx}"]`
+          );
+          if (row) row.classList.add("paper-focus-active-set");
+        });
+      }
     }
     container.appendChild(wrap);
     return;
@@ -18273,7 +18755,8 @@ function injectLinearProgressionHint(wrap, ex, block, ei) {
   if (!u) return;
   // Defer to the RP engine when the user has opted into it (avoids
   // duplicate suggestions stacked on top of each other).
-  if (u.rp && u.rp.enabled) return;
+  const _ap = activeProgramOf(u);
+  if (_ap && _ap.rp && _ap.rp.enabled) return;
 
   const exId = (ex && (ex.exId || ex.name)) || null;
   if (!exId) return;
@@ -18349,12 +18832,14 @@ function closeSheet() {
 function openDayPicker() {
   const u = userData();
   if (!u) return;
+  const entry = activeProgramOf(u);
+  if (!entry) return;
   const wrap = document.createElement("div");
   wrap.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><h3 style="margin:0;">Switch Day</h3><button class="icon-btn" onclick="closeSheet()" title="Close">✕</button></div>`;
 
   const todayDow = new Date().getDay();
   const dowName = (typeof _DOW_LABELS_LONG !== "undefined") ? _DOW_LABELS_LONG[todayDow] : "today";
-  const sched = (Array.isArray(u.weeklySchedule) && u.weeklySchedule.length === 7) ? u.weeklySchedule : null;
+  const sched = (Array.isArray(entry.weeklySchedule) && entry.weeklySchedule.length === 7) ? entry.weeklySchedule : null;
   const scheduledDayId = sched ? sched[todayDow] : null;
   const isRestToday = sched && scheduledDayId == null;
 
@@ -18365,8 +18850,8 @@ function openDayPicker() {
     : "Your next in rotation is highlighted.";
   wrap.appendChild(subline);
 
-  const next = (u.lastDoneDayId == null) ? 1 : (u.lastDoneDayId % u.program.length) + 1;
-  u.program.forEach(d => {
+  const next = (entry.lastDoneDayId == null) ? 1 : (entry.lastDoneDayId % entry.program.length) + 1;
+  entry.program.forEach(d => {
     const btn = document.createElement("button");
     btn.className = "sheet-item" + (d.id === state.currentDayId ? " current" : "");
     const isScheduled = scheduledDayId === d.id;
@@ -18457,6 +18942,8 @@ function openDayPicker() {
 function openTrainAnywayPicker() {
   const u = userData();
   if (!u) return;
+  const entry = activeProgramOf(u);
+  if (!entry) return;
   const wrap = document.createElement("div");
   wrap.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><h3 style="margin:0;">Train anyway</h3><button class="icon-btn" onclick="closeSheet()" title="Close">\u2715</button></div>`;
 
@@ -18465,8 +18952,8 @@ function openTrainAnywayPicker() {
   subline.textContent = "Today is a rest day \u2014 pick a session to run.";
   wrap.appendChild(subline);
 
-  const next = (u.lastDoneDayId == null) ? 1 : (u.lastDoneDayId % u.program.length) + 1;
-  u.program.forEach(d => {
+  const next = (entry.lastDoneDayId == null) ? 1 : (entry.lastDoneDayId % entry.program.length) + 1;
+  entry.program.forEach(d => {
     const btn = document.createElement("button");
     btn.className = "sheet-item" + (d.id === state.currentDayId ? " current" : "");
     const tags = [];
@@ -18499,14 +18986,21 @@ function openTrainAnywayPicker() {
 const _DOW_LABELS_LONG = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const _DOW_LABELS_SHORT = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
-// Ensures u.weeklySchedule is a 7-element array, seeding from default pattern if missing.
-function ensureWeeklySchedule(u) {
-  if (!Array.isArray(u.weeklySchedule) || u.weeklySchedule.length !== 7) {
-    u.weeklySchedule = (typeof buildDefaultWeeklySchedule === "function")
-      ? buildDefaultWeeklySchedule(u)
+// Ensures entry.weeklySchedule is a 7-element array, seeding from default
+// pattern if missing. Accepts either an active program entry (post-v21) or
+// — for migration use — anything with .program/.daysPerWeek/.weeklySchedule.
+function ensureWeeklySchedule(entryOrUser) {
+  // If a user record is passed by mistake, route to the active entry.
+  if (entryOrUser && Array.isArray(entryOrUser.programs) && entryOrUser.activeProgramId) {
+    const e = entryOrUser.programs.find(p => p.id === entryOrUser.activeProgramId);
+    if (e) entryOrUser = e;
+  }
+  if (!Array.isArray(entryOrUser.weeklySchedule) || entryOrUser.weeklySchedule.length !== 7) {
+    entryOrUser.weeklySchedule = (typeof buildDefaultWeeklySchedule === "function")
+      ? buildDefaultWeeklySchedule(entryOrUser)
       : [null, null, null, null, null, null, null];
   }
-  return u.weeklySchedule;
+  return entryOrUser.weeklySchedule;
 }
 
 // Find which dow currently holds a given dayId, or -1 if none.
@@ -18542,14 +19036,16 @@ function openWeeklyScheduleEditor() {
 
   function rerender() {
     const u2 = userData();
-    const sched = ensureWeeklySchedule(u2);
+    const entry2 = activeProgramOf(u2);
+    if (!entry2) return;
+    const sched = ensureWeeklySchedule(entry2);
     list.innerHTML = "";
 
     for (let dow = 0; dow < 7; dow++) {
       const row = document.createElement("button");
       row.className = "sheet-item";
       const assignedId = sched[dow];
-      const day = assignedId != null ? u2.program.find(d => d.id === assignedId) : null;
+      const day = assignedId != null ? entry2.program.find(d => d.id === assignedId) : null;
       const isToday = dow === new Date().getDay();
       const todayBadge = isToday ? '<span class="meta" style="color:var(--accent);">today</span>' : '';
       const label = day
@@ -18571,6 +19067,8 @@ function openWeeklyScheduleEditor() {
 function openAssignDayPicker(dow, onDone) {
   const u = userData();
   if (!u) return;
+  const entry = activeProgramOf(u);
+  if (!entry) return;
 
   const wrap = document.createElement("div");
   wrap.innerHTML = `
@@ -18584,7 +19082,7 @@ function openAssignDayPicker(dow, onDone) {
   // Rest option
   const restBtn = document.createElement("button");
   restBtn.className = "sheet-item";
-  const sched = ensureWeeklySchedule(u);
+  const sched = ensureWeeklySchedule(entry);
   if (sched[dow] == null) restBtn.classList.add("current");
   restBtn.innerHTML = `<span class="icon">—</span><span>Rest day</span>`;
   restBtn.onclick = () => {
@@ -18599,7 +19097,7 @@ function openAssignDayPicker(dow, onDone) {
   };
   wrap.appendChild(restBtn);
 
-  u.program.forEach(d => {
+  entry.program.forEach(d => {
     const btn = document.createElement("button");
     btn.className = "sheet-item" + (sched[dow] === d.id ? " current" : "");
     const otherDow = _dowOfDayId(sched, d.id);
@@ -19319,9 +19817,9 @@ function startFirstWorkout() {
   if (estMin > 20) {
     const budget = computeTimeBudget(day, 20);
     if (budget.adjustments.length > 0 && budget.adjustedDay) {
-      updateUser(u => {
-        const dayIdx = u.program.findIndex(d => d.id === day.id);
-        if (dayIdx >= 0) u.program[dayIdx] = budget.adjustedDay;
+      updateActiveProgram(entry => {
+        const dayIdx = entry.program.findIndex(d => d.id === day.id);
+        if (dayIdx >= 0) entry.program[dayIdx] = budget.adjustedDay;
       });
     }
   }
@@ -19623,10 +20121,11 @@ function finishWorkout(opts) {
   const volume = sets.reduce((a, s) => a + s.weight * s.reps, 0);
   const prCount = sets.filter(s => s.isPR).length;
   const uForWeek = userData();
+  const entryForWeek = activeProgramOf(uForWeek);
 
   // Stamp mesocycle context if user is on an rp-hypertrophy program with an active meso
-  const activeMeso = (typeof getActiveMesocycle === "function" && uForWeek)
-    ? getActiveMesocycle(uForWeek) : null;
+  const activeMeso = (typeof getActiveMesocycle === "function" && entryForWeek)
+    ? getActiveMesocycle(entryForWeek) : null;
   const hasRpBlocks = day.blocks.some(b => b.blockType === "rp-hypertrophy");
 
   const session = {
@@ -19637,7 +20136,8 @@ function finishWorkout(opts) {
     finishedAt: Date.now(),
     duration, sets, volume, prCount,
     blockNotes,
-    programWeek: uForWeek ? uForWeek.currentWeek || null : null,
+    programId: uForWeek ? uForWeek.activeProgramId || null : null,
+    programWeek: entryForWeek ? entryForWeek.currentWeek || null : null,
     feedback: {},
     // Mesocycle context — null for non-RP sessions
     mesocycleId: (activeMeso && hasRpBlocks) ? activeMeso.id : null,
@@ -19646,16 +20146,19 @@ function finishWorkout(opts) {
 
   updateUser(u => {
     u.sessions.push(session);
-    u.draft = null;
-    u.lastDoneDayId = day.id;
     if (!u.firstWorkoutCompleted) u.firstWorkoutCompleted = true;
-    // Increment RP completedSessionsByWeek for isMicrocycleBoundary detection
-    if (hasRpBlocks && activeMeso && session.mesoWeek) {
-      const meso = getMesocycle(u, activeMeso.id);
-      if (meso) {
-        if (!meso.completedSessionsByWeek) meso.completedSessionsByWeek = {};
-        meso.completedSessionsByWeek[session.mesoWeek] =
-          (meso.completedSessionsByWeek[session.mesoWeek] || 0) + 1;
+    const entry = activeProgramOf(u);
+    if (entry) {
+      entry.draft = null;
+      entry.lastDoneDayId = day.id;
+      // Increment RP completedSessionsByWeek for isMicrocycleBoundary detection
+      if (hasRpBlocks && activeMeso && session.mesoWeek) {
+        const meso = getMesocycle(entry, activeMeso.id);
+        if (meso) {
+          if (!meso.completedSessionsByWeek) meso.completedSessionsByWeek = {};
+          meso.completedSessionsByWeek[session.mesoWeek] =
+            (meso.completedSessionsByWeek[session.mesoWeek] || 0) + 1;
+        }
       }
     }
   });
@@ -19681,13 +20184,14 @@ function finishWorkout(opts) {
   // RP programs advance after feedback capture via captureSessionFeedback →
   // isMicrocycleBoundary → _rpAdvanceMesocycleWeek; skip regular advance here.
   const uAfter = userData();
-  if (uAfter && uAfter.totalWeeks && uAfter.currentWeek && uAfter.templateId !== "rp-hypertrophy") {
-    const weekSessions = uAfter.sessions.filter(s => s.programWeek === uAfter.currentWeek);
+  const entryAfter = activeProgramOf(uAfter);
+  if (entryAfter && entryAfter.totalWeeks && entryAfter.currentWeek && entryAfter.templateId !== "rp-hypertrophy") {
+    const weekSessions = uAfter.sessions.filter(s => s.programWeek === entryAfter.currentWeek && (!s.programId || s.programId === entryAfter.id));
     const uniqueDays = new Set(weekSessions.map(s => s.dayId));
-    if (uniqueDays.size >= uAfter.program.length && uAfter.currentWeek <= uAfter.totalWeeks) {
-      if (uAfter.currentWeek < uAfter.totalWeeks) {
+    if (uniqueDays.size >= entryAfter.program.length && entryAfter.currentWeek <= entryAfter.totalWeeks) {
+      if (entryAfter.currentWeek < entryAfter.totalWeeks) {
         advanceWeek();
-        showToast("Week " + (uAfter.currentWeek + 1) + " unlocked! New exercises loaded.", "success");
+        showToast("Week " + (entryAfter.currentWeek + 1) + " unlocked! New exercises loaded.", "success");
       } else {
         // Program complete
         showToast("Program complete! Check settings to restart or switch.", "pr");
@@ -19707,7 +20211,8 @@ function finishWorkout(opts) {
   // current day so the user can pick up where they left off — the saved
   // session is in history, but the rotation pointer hasn't moved.
   if (!exitMode) {
-    const nextDay = (day.id % userData().program.length) + 1;
+    const _ap = activeProgram();
+    const nextDay = _ap ? (day.id % _ap.program.length) + 1 : day.id;
     state.currentDayId = nextDay;
   }
   renderWorkoutScreen();
@@ -19770,7 +20275,7 @@ function pauseSessionTimer() {
   if (state.sessionIntervalId) clearInterval(state.sessionIntervalId);
   state.sessionIntervalId = null;
   stopPaceTicker();
-  updateUser(u => { if (u.draft) u.draft.pausedAt = Date.now(); });
+  updateActiveProgram(entry => { if (entry.draft) entry.draft.pausedAt = Date.now(); });
   const el = document.getElementById("sessionPill");
   el.classList.add("paused");
 }
@@ -19779,10 +20284,10 @@ function resumeSessionTimer() {
   const draft = getDraft();
   if (!draft || !draft.pausedAt) return;
   const pausedFor = Date.now() - draft.pausedAt;
-  updateUser(u => {
-    if (!u.draft) return;
-    u.draft.startedAt += pausedFor;
-    u.draft.pausedAt = null;
+  updateActiveProgram(entry => {
+    if (!entry.draft) return;
+    entry.draft.startedAt += pausedFor;
+    entry.draft.pausedAt = null;
   });
   state.workoutStartedAt = getDraft().startedAt;
   document.getElementById("sessionPill").classList.remove("paused");
@@ -20088,7 +20593,8 @@ function renderHistory() {
   let html = "";
 
   // ── Stats trio ──
-  const { count: streak } = getTrainingStreak(sessions, u.daysPerWeek);
+  const _apHist = (typeof activeProgram === "function") ? activeProgram() : null;
+  const { count: streak } = getTrainingStreak(sessions, _apHist ? _apHist.daysPerWeek : null);
   const prCount = _countRecentPRs(sessions, thirtyAgo);
   html += '<div class="log-stats">';
   html += `<div class="log-stat-card"><div class="log-label">Sessions</div><div class="log-val">${sessions.length}</div><div class="log-sub">${recent30d.length} / 30d</div></div>`;
@@ -23260,8 +23766,16 @@ function drawSparkline() {}
 
 
 // ============================================================
-// PROGRAM PICKER
+// PROGRAM PICKER + LIBRARY (v21)
 // ============================================================
+// v21: u.programs[] is the library, u.activeProgramId points at the
+// currently-running program. Settings now renders a library card with
+// Set Active / Add / Rename / Archive / Delete actions instead of a
+// single-program tile. The Add flow reuses openProgramPicker() +
+// openDurationPicker() — applyProgramSwitch creates a NEW library
+// entry (auto-naming "Program (2)" on template collision) and sets
+// it active.
+
 var _previewCache = {};
 
 function generateSamplePreview(templateId, daysPerWeek, totalWeeks) {
@@ -23292,8 +23806,8 @@ function renderSamplePreview(container, templateId, daysPerWeek, totalWeeks) {
     hdr.style.cssText = "padding:8px 0 4px;";
     hdr.innerHTML = '<div style="font-size:16px;font-weight:700;">' + day.name + '</div>'
       + '<div style="color:var(--text-dim);font-size:12px;">' + (day.sub || '') + '</div>'
-      + '<div style="font-size:12px;margin-top:4px;">\u23F1 ~' + breakdown.totalMin + ' min'
-      + ' <span style="color:var(--text-dim);">\u00b7 WU ' + Math.round(breakdown.warmupSec / 60) + 'm \u00b7 Work ' + Math.round(breakdown.workingSec / 60) + 'm \u00b7 CD ' + Math.round(breakdown.cooldownSec / 60) + 'm</span></div>';
+      + '<div style="font-size:12px;margin-top:4px;">⏱ ~' + breakdown.totalMin + ' min'
+      + ' <span style="color:var(--text-dim);">· WU ' + Math.round(breakdown.warmupSec / 60) + 'm · Work ' + Math.round(breakdown.workingSec / 60) + 'm · CD ' + Math.round(breakdown.cooldownSec / 60) + 'm</span></div>';
     dayContent.appendChild(hdr);
 
     day.blocks.forEach(function(block, bi) {
@@ -23321,38 +23835,253 @@ function renderSamplePreview(container, templateId, daysPerWeek, totalWeeks) {
   container.appendChild(dayContent);
   renderDay(0);
 }
+
+// --- Programs library card (Settings) ------------------------------
+// Replaces the single-program tile. Shows every entry in u.programs[]
+// (non-archived) plus an Add Program CTA and a View Archived link.
 function renderProgramPicker() {
   const el = document.getElementById("programContent");
   if (!el) return;
   const u = userData();
-  if (!u) { el.innerHTML = ''; return; }
-  const tpl = PROGRAM_TEMPLATES.find(t => t.id === u.templateId) || PROGRAM_TEMPLATES[0];
-  const weekInfo = u.totalWeeks ? `Week ${u.currentWeek || 1} of ${u.totalWeeks}` : "";
-  const phases = getPhasesForTemplate(u.templateId, u.totalWeeks);
-  const phase = phases ? phaseForWeek(phases, u.currentWeek || 1) : null;
-  const metaParts = [];
-  if (weekInfo) metaParts.push(`<span class="paper-settings-meta-item">${weekInfo}</span>`);
-  if (phase) metaParts.push(`<span class="paper-settings-meta-item" style="color:${phase.color};">${phase.name}</span>`);
-  const metaHtml = metaParts.length
-    ? `<div class="paper-settings-meta">${metaParts.join('<span class="paper-settings-meta-dot">·</span>')}</div>`
-    : "";
-  el.innerHTML = `
-    <div class="paper-settings-block">
-      <div class="paper-settings-title">${tpl.name}</div>
-      <div class="paper-settings-sub">${tpl.description}</div>
-      ${metaHtml}
-      <div class="paper-settings-actions">
-        <button class="paper-stamp-btn" onclick="openProgramPicker()">Change Program</button>
-        ${u.totalWeeks ? '<button class="paper-link-btn" onclick="openWeekControl()">Week ▾</button>' : ''}
+  if (!u || !Array.isArray(u.programs) || !u.programs.length) {
+    el.innerHTML = `
+      <div class="paper-settings-block">
+        <div class="paper-settings-title">No programs yet</div>
+        <div class="paper-settings-actions">
+          <button class="paper-stamp-btn" onclick="openProgramPicker()">+ Add Program</button>
+        </div>
       </div>
-    </div>
-  `;
+    `;
+    return;
+  }
+
+  const active = (u.programs.find(p => p.id === u.activeProgramId)) || null;
+  const visible = u.programs.filter(p => !p.archivedAt);
+  const archivedCount = u.programs.length - visible.length;
+
+  let html = '<div class="paper-settings-block paper-library">';
+  html += '<div class="paper-settings-title">Programs</div>';
+  html += '<div class="paper-settings-sub">Switch active program · add others to your library.</div>';
+  html += '<div class="paper-library-list">';
+
+  visible.forEach(entry => {
+    const isActive = active && entry.id === active.id;
+    const tpl = PROGRAM_TEMPLATES.find(t => t.id === entry.templateId);
+    const weekInfo = entry.totalWeeks ? `Week ${entry.currentWeek || 1} of ${entry.totalWeeks}` : "";
+    const phases = getPhasesForTemplate(entry.templateId, entry.totalWeeks);
+    const phase = phases ? phaseForWeek(phases, entry.currentWeek || 1) : null;
+    const subParts = [];
+    if (weekInfo) subParts.push(weekInfo);
+    if (phase) subParts.push(`<span style="color:${phase.color};font-weight:700;">${phase.name}</span>`);
+    if (tpl && tpl.description && !weekInfo) subParts.push(tpl.description);
+    const sub = subParts.join(' <span class="paper-settings-meta-dot">·</span> ');
+
+    html += `<div class="paper-library-row${isActive ? ' active' : ''}" data-pid="${entry.id}">`;
+    html += `  <div class="paper-library-bullet" aria-hidden="true">${isActive ? '●' : '○'}</div>`;
+    html += `  <div class="paper-library-body">`;
+    html += `    <div class="paper-library-name">${escapeHtmlMaybe(entry.displayName || (tpl && tpl.name) || 'Program')}${isActive ? ' <span class="paper-library-tag">active</span>' : ''}</div>`;
+    if (sub) html += `    <div class="paper-library-meta">${sub}</div>`;
+    html += `    <div class="paper-library-actions">`;
+    if (!isActive) {
+      html += `      <button class="paper-stamp-btn paper-stamp-btn-sm" data-act="set-active">Set active</button>`;
+    } else if (entry.totalWeeks) {
+      html += `      <button class="paper-link-btn" data-act="week">Week ▾</button>`;
+    }
+    html += `      <button class="paper-link-btn" data-act="rename">Rename</button>`;
+    if (entry.weeklySchedule) {
+      html += `      <button class="paper-link-btn" data-act="schedule">Schedule</button>`;
+    }
+    if (!isActive) {
+      html += `      <button class="paper-link-btn" data-act="archive">Archive</button>`;
+      if (u.programs.length > 1) {
+        html += `      <button class="paper-link-btn paper-link-btn-danger" data-act="delete">Delete</button>`;
+      }
+    }
+    html += `    </div>`;
+    html += `  </div>`;
+    html += `</div>`;
+  });
+
+  html += '</div>';
+
+  html += '<div class="paper-library-footer">';
+  html += '  <button class="paper-stamp-btn" onclick="openProgramPicker()">+ Add Program</button>';
+  if (archivedCount > 0) {
+    html += `  <button class="paper-link-btn" onclick="openArchivedPrograms()">View archived (${archivedCount})</button>`;
+  }
+  html += '</div>';
+
+  html += '</div>';
+
+  el.innerHTML = html;
+
+  // Wire row actions
+  el.querySelectorAll(".paper-library-row").forEach(row => {
+    const pid = row.dataset.pid;
+    row.querySelectorAll("[data-act]").forEach(btn => {
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        const act = btn.dataset.act;
+        if (act === "set-active") setActiveProgramFromLibrary(pid);
+        else if (act === "rename") renameLibraryProgram(pid);
+        else if (act === "archive") archiveLibraryProgram(pid);
+        else if (act === "delete") deleteLibraryProgram(pid);
+        else if (act === "week") openWeekControl();
+        else if (act === "schedule") {
+          if (typeof openWeeklyScheduleEditor === "function") openWeeklyScheduleEditor();
+        }
+      });
+    });
+  });
 }
 
+// Minimal HTML escape fallback. Most rendering paths already supply one,
+// so this only fires if no global escapeHtml is defined.
+function escapeHtmlMaybe(s) {
+  if (typeof escapeHtml === "function") return escapeHtml(s);
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+function setActiveProgramFromLibrary(programId) {
+  const u = userData();
+  if (!u) return;
+  if (u.activeProgramId === programId) return;
+  const active = (u.programs || []).find(p => p.id === u.activeProgramId);
+  if (active && active.draft) {
+    if (!confirm("You have a workout in progress on " + (active.displayName || "the current program") + ". Switching will pause it — you can resume by switching back. Continue?")) {
+      return;
+    }
+  }
+  switchActiveProgram(programId);
+  stopSessionTimer();
+  state.workoutStartedAt = null;
+  state.currentDayId = (typeof determineDefaultDay === "function") ? determineDefaultDay() : 1;
+  state.dayChosen = false;
+  renderProgramPicker();
+  renderWorkoutScreen();
+  const u2 = userData();
+  const switched = u2 && u2.programs.find(p => p.id === programId);
+  showToast("Now active: " + (switched ? switched.displayName : "program"), "success");
+}
+
+function renameLibraryProgram(programId) {
+  const u = userData();
+  const entry = u && u.programs.find(p => p.id === programId);
+  if (!entry) return;
+  const next = prompt("Rename program:", entry.displayName || "");
+  if (next == null) return;
+  const trimmed = String(next).trim();
+  if (!trimmed) return;
+  if (trimmed === entry.displayName) return;
+  updateUser(usr => {
+    const e = usr.programs.find(p => p.id === programId);
+    if (!e) return;
+    const others = usr.programs.filter(p => p.id !== programId);
+    e.displayName = uniquifyDisplayName(trimmed, others);
+  });
+  renderProgramPicker();
+  showToast("Renamed", "success");
+}
+
+function archiveLibraryProgram(programId) {
+  const u = userData();
+  const entry = u && u.programs.find(p => p.id === programId);
+  if (!entry) return;
+  if (u.activeProgramId === programId) {
+    showToast("Switch to another program before archiving");
+    return;
+  }
+  updateUser(usr => {
+    const e = usr.programs.find(p => p.id === programId);
+    if (!e) return;
+    e.archivedAt = Date.now();
+  });
+  renderProgramPicker();
+  showToast("Archived " + (entry.displayName || "program"), "success");
+}
+
+function deleteLibraryProgram(programId) {
+  const u = userData();
+  const entry = u && u.programs.find(p => p.id === programId);
+  if (!entry) return;
+  if (!confirm("Delete \"" + (entry.displayName || "program") + "\"? Session history is kept (stamped with this program's id). This cannot be undone.")) return;
+  const result = removeProgramEntry(programId);
+  if (!result.ok) {
+    showToast("Cannot delete: " + (result.reason || "unknown"));
+    return;
+  }
+  renderProgramPicker();
+  showToast("Deleted", "success");
+}
+
+function openArchivedPrograms() {
+  const u = userData();
+  if (!u) return;
+  const archived = (u.programs || []).filter(p => p.archivedAt);
+  const wrap = document.createElement("div");
+  let html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><h3 style="margin:0;">Archived programs</h3><button class="icon-btn" onclick="closeSheet()" title="Close">✕</button></div>';
+  if (!archived.length) {
+    html += '<p style="color:var(--text-dim);font-size:13px;">Nothing archived yet.</p>';
+  } else {
+    html += '<div class="paper-library-list">';
+    archived.forEach(entry => {
+      const tpl = PROGRAM_TEMPLATES.find(t => t.id === entry.templateId);
+      const dateStr = new Date(entry.archivedAt).toLocaleDateString();
+      html += '<div class="paper-library-row" data-pid="' + entry.id + '">';
+      html += '  <div class="paper-library-bullet" aria-hidden="true">○</div>';
+      html += '  <div class="paper-library-body">';
+      html += '    <div class="paper-library-name">' + escapeHtmlMaybe(entry.displayName || (tpl && tpl.name) || "Program") + '</div>';
+      html += '    <div class="paper-library-meta">Archived ' + dateStr + '</div>';
+      html += '    <div class="paper-library-actions">';
+      html += '      <button class="paper-link-btn" data-act="restore">Restore</button>';
+      if (u.programs.length > 1) {
+        html += '      <button class="paper-link-btn paper-link-btn-danger" data-act="delete">Delete</button>';
+      }
+      html += '    </div>';
+      html += '  </div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+  wrap.innerHTML = html;
+  wrap.querySelectorAll(".paper-library-row").forEach(row => {
+    const pid = row.dataset.pid;
+    row.querySelectorAll("[data-act]").forEach(btn => {
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        const act = btn.dataset.act;
+        if (act === "restore") {
+          updateUser(usr => {
+            const e2 = usr.programs.find(p => p.id === pid);
+            if (e2) e2.archivedAt = null;
+          });
+          closeSheet();
+          renderProgramPicker();
+          showToast("Restored", "success");
+        } else if (act === "delete") {
+          if (!confirm("Permanently delete this archived program?")) return;
+          const result = removeProgramEntry(pid);
+          if (!result.ok) { showToast("Cannot delete: " + result.reason); return; }
+          closeSheet();
+          renderProgramPicker();
+          showToast("Deleted", "success");
+        }
+      });
+    });
+  });
+  openSheet(wrap);
+}
+
+// --- Add Program flow (template chooser + duration picker) ----------
+// Unchanged shell — applyProgramSwitch is the one that's different:
+// it now appends to the library instead of overwriting.
 function openProgramPicker() {
   const u = userData();
-  const current = u ? u.templateId : "conjugate5";
-  let html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><h3 style="margin:0;">Choose Program</h3><button class="icon-btn" onclick="closeSheet()" title="Close">✕</button></div><p style="color:var(--text-dim);font-size:12px;margin-bottom:12px;">Switching replaces your current program. Session history is kept.</p>';
+  const ap = (typeof activeProgram === "function") ? activeProgram() : null;
+  const current = ap ? ap.templateId : "conjugate5";
+  let html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><h3 style="margin:0;">Add Program</h3><button class="icon-btn" onclick="closeSheet()" title="Close">✕</button></div><p style="color:var(--text-dim);font-size:12px;margin-bottom:12px;">Pick a template. We\'ll add it to your library and make it active. Existing programs stay put — their week and history are preserved.</p>';
   html += '<button class="sheet-item" onclick="closeSheet();openFullGlossary();" style="margin-bottom:12px;"><span class="icon">?</span><span>Glossary — What do these terms mean?</span></button>';
   html += '<div class="tpl-option custom-builder-tile" onclick="closeSheet();openProgramBuilder()">' +
     '<div class="tpl-head"><div class="tpl-badge">+</div><div class="tpl-name">Build Your Own</div></div>' +
@@ -23374,10 +24103,9 @@ function openProgramPicker() {
 }
 
 function openDurationPicker(templateId) {
-  const u = userData();
-  if (u && u.templateId === templateId) { closeSheet(); return; }
-  if (u && u.draft) {
-    if (!confirm("You have a workout in progress. Switching programs will discard it. Continue?")) return;
+  const ap = (typeof activeProgram === "function") ? activeProgram() : null;
+  if (ap && ap.draft) {
+    if (!confirm("You have a workout in progress on " + (ap.displayName || "your active program") + ". Adding a new program will pause it. Continue?")) return;
   }
 
   const tpl = PROGRAM_TEMPLATES.find(t => t.id === templateId);
@@ -23404,7 +24132,7 @@ function openDurationPicker(templateId) {
     const btn = document.createElement("button");
     btn.className = "schedule-day-btn" + (d === selectedDays ? " selected" : "");
     btn.dataset.day = d;
-    btn.textContent = d + "d" + (d === tplNativeDays ? " \u2605" : "");
+    btn.textContent = d + "d" + (d === tplNativeDays ? " ★" : "");
     btn.style.cssText = "flex:1;padding:10px;font-size:14px;font-weight:700;";
     btn.onclick = function() {
       selectedDays = d;
@@ -23418,7 +24146,6 @@ function openDurationPicker(templateId) {
   }
   wrap.appendChild(dayBtnGrid);
 
-  // Weeks selector
   const weeksLabel = document.createElement("p");
   weeksLabel.style.cssText = "font-weight:700;font-size:14px;margin-bottom:8px;";
   weeksLabel.textContent = "How many weeks?";
@@ -23441,7 +24168,7 @@ function openDurationPicker(templateId) {
     if (phases && previewEl) {
       previewEl.innerHTML = phases.map(p =>
         `<span style="color:${p.color};font-weight:600;">${p.name}</span> <span style="color:var(--text-dim);font-size:11px;">(${p.weeks.length}wk)</span>`
-      ).join(" \u2192 ");
+      ).join(" → ");
     }
     btnGrid.querySelectorAll("button").forEach(b => {
       b.classList.toggle("selected", parseInt(b.dataset.wk) === selectedWeeks);
@@ -23464,7 +24191,6 @@ function openDurationPicker(templateId) {
   wrap.appendChild(previewEl);
   updatePreview();
 
-  // Sample workout preview toggle
   var previewOpen = false;
   const previewToggle = document.createElement("button");
   previewToggle.className = "schedule-day-btn";
@@ -23494,7 +24220,7 @@ function openDurationPicker(templateId) {
   const startBtn = document.createElement("button");
   startBtn.className = "primary";
   function updateStartBtn() {
-    startBtn.textContent = "Start " + selectedDays + "d \u00d7 " + selectedWeeks + "wk Program";
+    startBtn.textContent = "Add " + selectedDays + "d × " + selectedWeeks + "wk Program";
   }
   updateStartBtn();
   startBtn.onclick = function() {
@@ -23507,47 +24233,60 @@ function openDurationPicker(templateId) {
   openSheet(wrap);
 }
 
+// v21: append a new program entry to the library + set it active.
+// Auto-name on template collision ("Conjugate Strength" → "Conjugate Strength (2)").
+// RP hypertrophy entries start without an rp container — startMesocycle will
+// build one on first run.
 function applyProgramSwitch(tpl, totalWeeks, daysPerWeek) {
   const tw = totalWeeks || 10;
   const dpw = daysPerWeek || tpl.daysPerWeek;
-  const generated = resolveWeekProgram(tpl.id, 1, tw, dpw);
-  updateUser(u => {
-    u.templateId = tpl.id;
-    u.program = generated || [];
-    u.draft = null;
-    u.lastDoneDayId = null;
-    u.programStartDate = Date.now();
-    u.daysPerWeek = dpw;
-    u.weeklySchedule = (typeof buildDefaultWeeklySchedule === "function")
-      ? buildDefaultWeeklySchedule(u)
-      : null;
-    u.currentWeek = 1;
-    u.totalWeeks = tw;
-    // Auto-enable RP engine when switching to rp-hypertrophy
-    if (tpl.id === "rp-hypertrophy") {
-      u.rp.enabled = true;
-    }
+  const generated = resolveWeekProgram(tpl.id, 1, tw, dpw) || [];
+  const weekly = (typeof buildDefaultWeeklySchedule === "function")
+    ? buildDefaultWeeklySchedule({ program: generated, daysPerWeek: dpw }) : null;
+
+  const entry = makeProgramEntry({
+    displayName: tpl.name,
+    templateId: tpl.id,
+    program: generated,
+    daysPerWeek: dpw,
+    totalWeeks: tw,
+    currentWeek: 1,
+    programStartDate: Date.now(),
+    weeklySchedule: weekly,
+    lastDoneDayId: null,
+    draft: null,
+    rp: null
   });
+
+  const newId = addProgramEntry(entry, { activate: true });
+
+  // For RP hypertrophy, kick off the first mesocycle now (mirrors prior behavior)
+  if (tpl.id === "rp-hypertrophy" && typeof startMesocycle === "function") {
+    startMesocycle({ lengthWeeks: tw, daysPerWeek: dpw });
+  }
+
   stopSessionTimer();
   state.workoutStartedAt = null;
-  state.currentDayId = 1;
+  state.currentDayId = (typeof determineDefaultDay === "function") ? determineDefaultDay() : 1;
   state.dayChosen = false;
   closeSheet();
   renderProgramPicker();
   renderWorkoutScreen();
-  showToast("Started " + dpw + "d × " + tw + "wk " + tpl.name, "success");
+  const u = userData();
+  const added = u && u.programs.find(p => p.id === newId);
+  showToast("Added " + (added ? added.displayName : tpl.name), "success");
 }
 
-// Manual week controls
+// Manual week controls — operates on the active program
 function openWeekControl() {
-  const u = userData();
-  if (!u) return;
-  const phases = getPhasesForTemplate(u.templateId, u.totalWeeks);
-  const phase = phases ? phaseForWeek(phases, u.currentWeek || 1) : null;
+  const ap = (typeof activeProgram === "function") ? activeProgram() : null;
+  if (!ap) return;
+  const phases = getPhasesForTemplate(ap.templateId, ap.totalWeeks);
+  const phase = phases ? phaseForWeek(phases, ap.currentWeek || 1) : null;
 
   const wrap = document.createElement("div");
   wrap.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><h3 style="margin:0;">Week ${u.currentWeek || 1} of ${u.totalWeeks || "?"}</h3><button class="icon-btn" onclick="closeSheet()" title="Close">✕</button></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><h3 style="margin:0;">Week ${ap.currentWeek || 1} of ${ap.totalWeeks || "?"}</h3><button class="icon-btn" onclick="closeSheet()" title="Close">✕</button></div>
     ${phase ? `<div style="color:${phase.color};font-weight:700;font-size:14px;margin-bottom:8px;">${phase.name}</div>
     <div style="color:var(--text-dim);font-size:12px;margin-bottom:12px;">${phase.description || ""}</div>` : ""}
   `;
@@ -23555,18 +24294,18 @@ function openWeekControl() {
   const actions = document.createElement("div");
   actions.style.cssText = "display:flex;flex-direction:column;gap:8px;";
 
-  if (u.currentWeek > 1) {
+  if (ap.currentWeek > 1) {
     const backBtn = document.createElement("button");
     backBtn.className = "sheet-item";
-    backBtn.innerHTML = '<span class="icon">←</span><span>Previous Week (Week ' + (u.currentWeek - 1) + ')</span>';
+    backBtn.innerHTML = '<span class="icon">←</span><span>Previous Week (Week ' + (ap.currentWeek - 1) + ')</span>';
     backBtn.onclick = function() { goBackWeek(); closeSheet(); renderProgramPicker(); renderWorkoutScreen(); };
     actions.appendChild(backBtn);
   }
 
-  if (u.currentWeek < (u.totalWeeks || 12)) {
+  if (ap.currentWeek < (ap.totalWeeks || 12)) {
     const fwdBtn = document.createElement("button");
     fwdBtn.className = "sheet-item";
-    fwdBtn.innerHTML = '<span class="icon">→</span><span>Skip to Week ' + (u.currentWeek + 1) + '</span>';
+    fwdBtn.innerHTML = '<span class="icon">→</span><span>Skip to Week ' + (ap.currentWeek + 1) + '</span>';
     fwdBtn.onclick = function() { advanceWeek(); closeSheet(); renderProgramPicker(); renderWorkoutScreen(); };
     actions.appendChild(fwdBtn);
   }
@@ -23576,13 +24315,13 @@ function openWeekControl() {
   restartBtn.innerHTML = '<span class="icon">↺</span><span>Restart Program (Week 1)</span>';
   restartBtn.onclick = function() {
     if (!confirm("Restart from Week 1? Session history is kept.")) return;
-    updateUser(function(usr) {
-      usr.currentWeek = 1;
-      usr.lastDoneDayId = null;
-      usr.draft = null;
-      usr.programStartDate = Date.now();
-      var gen = resolveWeekProgram(usr.templateId, 1, usr.totalWeeks, usr.daysPerWeek);
-      if (gen) usr.program = gen;
+    updateActiveProgram(function(entry) {
+      entry.currentWeek = 1;
+      entry.lastDoneDayId = null;
+      entry.draft = null;
+      entry.programStartDate = Date.now();
+      var gen = resolveWeekProgram(entry.templateId, 1, entry.totalWeeks, entry.daysPerWeek);
+      if (gen) entry.program = gen;
     });
     state.currentDayId = 1;
     state.dayChosen = false;
@@ -23594,6 +24333,64 @@ function openWeekControl() {
   actions.appendChild(restartBtn);
 
   wrap.appendChild(actions);
+  openSheet(wrap);
+}
+
+// --- Header chip + switcher sheet (v21) ----------------------------
+// Tiny chip in the day-bar that reads "Conjugate · W3D2 ▾". Tapping
+// opens a compact switcher (Set-Active only — Add/Archive/Delete live
+// in Settings). Re-rendered by renderWorkoutScreen() each time.
+function renderHeaderProgramChip() {
+  const chip = document.getElementById("headerProgramChip");
+  if (!chip) return;
+  const u = userData();
+  const ap = (typeof activeProgram === "function") ? activeProgram() : null;
+  if (!u || !ap || !Array.isArray(u.programs) || u.programs.filter(p => !p.archivedAt).length < 2) {
+    chip.style.display = "none";
+    chip.innerHTML = "";
+    return;
+  }
+  const name = ap.displayName || "Program";
+  const wk = ap.currentWeek || 1;
+  const dayId = (state && state.currentDayId) || 1;
+  chip.style.display = "";
+  chip.innerHTML = `<span class="paper-chip-name">${escapeHtmlMaybe(name)}</span><span class="paper-chip-meta">W${wk}D${dayId}</span><span class="paper-chip-arrow">▾</span>`;
+  chip.onclick = openProgramSwitcher;
+}
+
+function openProgramSwitcher() {
+  const u = userData();
+  if (!u || !Array.isArray(u.programs)) return;
+  const active = u.programs.find(p => p.id === u.activeProgramId);
+  const visible = u.programs.filter(p => !p.archivedAt);
+  const wrap = document.createElement("div");
+  let html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><h3 style="margin:0;">Switch program</h3><button class="icon-btn" onclick="closeSheet()" title="Close">✕</button></div>';
+  html += '<p style="color:var(--text-dim);font-size:12px;margin-bottom:12px;">Each program keeps its own week, draft, and schedule.</p>';
+  html += '<div class="paper-library-list">';
+  visible.forEach(entry => {
+    const isActive = active && entry.id === active.id;
+    const tpl = PROGRAM_TEMPLATES.find(t => t.id === entry.templateId);
+    const sub = (entry.totalWeeks ? "Week " + (entry.currentWeek || 1) + " of " + entry.totalWeeks : (tpl ? tpl.description : ""));
+    html += '<div class="paper-library-row paper-switcher-row' + (isActive ? ' active' : '') + '" data-pid="' + entry.id + '">';
+    html += '  <div class="paper-library-bullet" aria-hidden="true">' + (isActive ? '●' : '○') + '</div>';
+    html += '  <div class="paper-library-body">';
+    html += '    <div class="paper-library-name">' + escapeHtmlMaybe(entry.displayName || (tpl && tpl.name) || "Program") + (isActive ? ' <span class="paper-library-tag">active</span>' : '') + '</div>';
+    if (sub) html += '    <div class="paper-library-meta">' + escapeHtmlMaybe(sub) + '</div>';
+    html += '  </div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  html += '<div class="paper-library-footer">';
+  html += '  <button class="paper-link-btn" onclick="closeSheet();showScreen(\'settings\');">Manage in Settings →</button>';
+  html += '</div>';
+  wrap.innerHTML = html;
+  wrap.querySelectorAll(".paper-switcher-row").forEach(row => {
+    row.addEventListener("click", () => {
+      const pid = row.dataset.pid;
+      closeSheet();
+      setActiveProgramFromLibrary(pid);
+    });
+  });
   openSheet(wrap);
 }
 
@@ -24166,9 +24963,10 @@ function init() {
   // (e.g. paused workout). The draft is preserved — user can reach it via
   // Switch Day or the rest card's "Train anyway" button.
   const _u = userData();
+  const _ap = (typeof activeProgram === "function") ? activeProgram() : null;
   const _todayDow = new Date().getDay();
-  const _isRestToday = _u && Array.isArray(_u.weeklySchedule)
-    && _u.weeklySchedule.length === 7 && _u.weeklySchedule[_todayDow] == null;
+  const _isRestToday = _ap && Array.isArray(_ap.weeklySchedule)
+    && _ap.weeklySchedule.length === 7 && _ap.weeklySchedule[_todayDow] == null;
 
   // Restore draft — if draft exists, skip picker and go straight to workout
   const draft = !_isRestToday ? getDraft() : null;
@@ -25132,14 +25930,15 @@ var _laSelectedDate = null;
 // --- Entry point ---
 function openLookAhead() {
   var u = userData();
-  if (!u || !u.program || !u.program.length) {
+  var ap = (typeof activeProgram === "function") ? activeProgram() : null;
+  if (!u || !ap || !ap.program || !ap.program.length) {
     showToast("No program loaded");
     return;
   }
-  _laWeek = u.currentWeek || 1;
-  _laDays = _laResolveDays(u, _laWeek);
-  _laPhase = _laPhaseForWeek(u, _laWeek);
-  _laAllPhases = _laGetAllPhases(u);
+  _laWeek = ap.currentWeek || 1;
+  _laDays = _laResolveDays(ap, _laWeek);
+  _laPhase = _laPhaseForWeek(ap, _laWeek);
+  _laAllPhases = _laGetAllPhases(ap);
   _laView = "week";
   _laDetailDay = null;
   // Calendar defaults to current month
@@ -25147,7 +25946,7 @@ function openLookAhead() {
   _laCalYear = now.getFullYear();
   _laCalMonth = now.getMonth();
   _laSessionMap = _buildLaSessionMap(u);
-  _laProjectionMap = _buildLaProjectionMap(u);
+  _laProjectionMap = _buildLaProjectionMap(ap);
   _laSelectedDate = null;
   _renderLookAheadContent();
 }
@@ -25173,10 +25972,11 @@ function _renderLookAheadContent() {
 
 // --- Shared header with mode toggle ---
 function _buildLaHeader(container) {
-  var u = userData();
+  var ap = (typeof activeProgram === "function") ? activeProgram() : null;
   var tplName = "";
-  var tpl = PROGRAM_TEMPLATES.find(function(t) { return t.id === u.templateId; });
+  var tpl = ap ? PROGRAM_TEMPLATES.find(function(t) { return t.id === ap.templateId; }) : null;
   if (tpl) tplName = tpl.name;
+  if (!tplName && ap) tplName = ap.displayName || "";
 
   var hdr = document.createElement("div");
   hdr.className = "la-header";
@@ -25233,8 +26033,8 @@ function _buildLaHeader(container) {
 // LIST VIEW (decluttered)
 // ============================================================
 function _renderLaWeekView(container) {
-  var u = userData();
-  var totalWeeks = u.totalWeeks || 1;
+  var ap = (typeof activeProgram === "function") ? activeProgram() : null;
+  var totalWeeks = (ap && ap.totalWeeks) || 1;
 
   _buildLaHeader(container);
 
@@ -25280,7 +26080,7 @@ function _renderLaWeekView(container) {
   container.appendChild(nav);
 
   // Custom program note
-  if (u.templateId === "custom" && _laWeek !== (u.currentWeek || 1)) {
+  if (ap && ap.templateId === "custom" && _laWeek !== (ap.currentWeek || 1)) {
     var note = document.createElement("div");
     note.className = "la-custom-note";
     note.textContent = "Custom programs repeat the same pattern each week.";
@@ -25288,7 +26088,7 @@ function _renderLaWeekView(container) {
   }
 
   // Program complete note
-  if (u.currentWeek && u.totalWeeks && u.currentWeek > u.totalWeeks) {
+  if (ap && ap.currentWeek && ap.totalWeeks && ap.currentWeek > ap.totalWeeks) {
     var completeNote = document.createElement("div");
     completeNote.className = "la-custom-note";
     completeNote.textContent = "Program complete! Start a new program or continue repeating.";
@@ -25302,6 +26102,7 @@ function _renderLaWeekView(container) {
     empty.textContent = "No workout data for this week.";
     container.appendChild(empty);
   } else {
+    var u = userData();
     var completedIds = _laGetCompletedDayIds(u, _laWeek);
     _laDays.forEach(function(day, i) {
       var card = _buildLaDayCard(day, _laWeek, u, completedIds);
@@ -25567,8 +26368,8 @@ function _renderLaCalDateDetail(container) {
 
   // Projected (planned) workout
   if (projection) {
-    var u = userData();
-    var days = _laResolveDays(u, projection.weekNum);
+    var ap = (typeof activeProgram === "function") ? activeProgram() : null;
+    var days = _laResolveDays(ap, projection.weekNum);
     var day = days && days[projection.dayIdx] ? days[projection.dayIdx] : null;
 
     if (day) {
@@ -25701,11 +26502,12 @@ function _renderLaDayDetail(container) {
 
 function _getDayStatus(day, weekNum, u, completedIds) {
   if (!completedIds) completedIds = _laGetCompletedDayIds(u, weekNum);
-  var currentWeek = u.currentWeek || 1;
+  var entry = activeProgramOf(u);
+  var currentWeek = (entry && entry.currentWeek) || 1;
   if (weekNum < currentWeek) return completedIds.has(day.id) ? "done" : "upcoming";
   if (weekNum > currentWeek) return "upcoming";
   if (completedIds.has(day.id)) return "done";
-  if (u.draft && u.draft.dayId === day.id) return "in-progress";
+  if (entry && entry.draft && entry.draft.dayId === day.id) return "in-progress";
   if (day.id === determineDefaultDay()) return "today";
   return "upcoming";
 }
@@ -25841,35 +26643,38 @@ function _getSessionDotColor(session) {
 
 // Week navigation (read-only, no state mutation)
 function _laGoToWeek(weekNum) {
-  var u = userData();
-  var totalWeeks = u.totalWeeks || 1;
+  var ap = (typeof activeProgram === "function") ? activeProgram() : null;
+  if (!ap) return;
+  var totalWeeks = ap.totalWeeks || 1;
   weekNum = Math.max(1, Math.min(weekNum, totalWeeks));
   if (weekNum === _laWeek) return;
   _laWeek = weekNum;
-  _laDays = _laResolveDays(u, weekNum);
-  _laPhase = _laPhaseForWeek(u, weekNum);
+  _laDays = _laResolveDays(ap, weekNum);
+  _laPhase = _laPhaseForWeek(ap, weekNum);
   _laView = "week";
   _laDetailDay = null;
   _renderLookAheadContent();
 }
 
-function _laResolveDays(u, weekNum) {
-  if (weekNum === (u.currentWeek || 1)) return u.program;
-  if (u.templateId === "custom") return u.program;
-  var result = resolveWeekProgram(u.templateId, weekNum, u.totalWeeks, u.daysPerWeek);
-  return result || u.program;
+// `entry` is the active program entry (post-v21 shape: program/templateId/etc.).
+function _laResolveDays(entry, weekNum) {
+  if (!entry) return [];
+  if (weekNum === (entry.currentWeek || 1)) return entry.program;
+  if (entry.templateId === "custom") return entry.program;
+  var result = resolveWeekProgram(entry.templateId, weekNum, entry.totalWeeks, entry.daysPerWeek);
+  return result || entry.program;
 }
 
-function _laPhaseForWeek(u, weekNum) {
-  if (!u.templateId || u.templateId === "custom") return null;
-  var phases = getPhasesForTemplate(u.templateId, u.totalWeeks);
+function _laPhaseForWeek(entry, weekNum) {
+  if (!entry || !entry.templateId || entry.templateId === "custom") return null;
+  var phases = getPhasesForTemplate(entry.templateId, entry.totalWeeks);
   if (!phases) return null;
   return phaseForWeek(phases, weekNum);
 }
 
-function _laGetAllPhases(u) {
-  if (!u.templateId || u.templateId === "custom") return null;
-  return getPhasesForTemplate(u.templateId, u.totalWeeks);
+function _laGetAllPhases(entry) {
+  if (!entry || !entry.templateId || entry.templateId === "custom") return null;
+  return getPhasesForTemplate(entry.templateId, entry.totalWeeks);
 }
 
 // ============================================================
@@ -25890,13 +26695,13 @@ function _laTrainingPattern(daysPerWeek) {
   return patterns[daysPerWeek] || patterns[3];
 }
 
-function _laProgramStartSunday(u) {
+function _laProgramStartSunday(entry) {
   var start;
-  if (u.programStartDate) {
-    start = new Date(u.programStartDate);
+  if (entry && entry.programStartDate) {
+    start = new Date(entry.programStartDate);
   } else {
     // Infer: current week is W, so week 1 started (W-1)*7 days ago
-    var weeksBack = (u.currentWeek || 1) - 1;
+    var weeksBack = ((entry && entry.currentWeek) || 1) - 1;
     start = new Date();
     start.setDate(start.getDate() - weeksBack * 7);
   }
@@ -25906,18 +26711,18 @@ function _laProgramStartSunday(u) {
   return start;
 }
 
-function _buildLaProjectionMap(u) {
+function _buildLaProjectionMap(entry) {
   var map = {};
-  if (!u.totalWeeks || !u.daysPerWeek) return map;
+  if (!entry || !entry.totalWeeks || !entry.daysPerWeek) return map;
 
-  var startSunday = _laProgramStartSunday(u);
-  var pattern = _laTrainingPattern(u.daysPerWeek);
+  var startSunday = _laProgramStartSunday(entry);
+  var pattern = _laTrainingPattern(entry.daysPerWeek);
 
-  for (var w = 1; w <= u.totalWeeks; w++) {
+  for (var w = 1; w <= entry.totalWeeks; w++) {
     var weekStart = new Date(startSunday);
     weekStart.setDate(weekStart.getDate() + (w - 1) * 7);
 
-    for (var i = 0; i < pattern.length && i < u.daysPerWeek; i++) {
+    for (var i = 0; i < pattern.length && i < entry.daysPerWeek; i++) {
       var date = new Date(weekStart);
       date.setDate(date.getDate() + pattern[i]);
       var key = _laDateStr(date.getFullYear(), date.getMonth(), date.getDate());
@@ -26598,17 +27403,34 @@ function _obFinish() {
         }
       }
 
-      // Smart suggestions → rp.enabled
-      if (_obAnswers.smartSuggestions === "yes") {
-        u.rp.enabled = true;
-        if (_obAnswers.rpeCalibration && _obAnswers.rpeCalibration.completedAt) {
-          u.rp.rpeCalibrationCompletedAt = _obAnswers.rpeCalibration.completedAt;
-          u.rp.rpeCalibrationMethod = "onboarding";
-        }
-      } else if (_obAnswers.smartSuggestions === "no") {
-        u.rp.enabled = false;
-      }
     });
+    // Smart suggestions → active program's rp.enabled
+    if (_obAnswers.smartSuggestions === "yes" || _obAnswers.smartSuggestions === "no") {
+      updateActiveProgram(p => {
+        if (!p.rp) {
+          p.rp = {
+            enabled: false,
+            rpeCalibrationCompletedAt: null,
+            rpeCalibrationMethod: null,
+            coldStartAnchors: {},
+            lastDeloadRecommendedAt: null,
+            dismissedDeloadForWeek: null,
+            volumeLandmarks: null,
+            mesocycles: [],
+            currentMesocycleId: null
+          };
+        }
+        if (_obAnswers.smartSuggestions === "yes") {
+          p.rp.enabled = true;
+          if (_obAnswers.rpeCalibration && _obAnswers.rpeCalibration.completedAt) {
+            p.rp.rpeCalibrationCompletedAt = _obAnswers.rpeCalibration.completedAt;
+            p.rp.rpeCalibrationMethod = "onboarding";
+          }
+        } else {
+          p.rp.enabled = false;
+        }
+      });
+    }
   }
 
   if (_obIsRedo) {
@@ -26727,7 +27549,8 @@ function _renderObHandoffRedo(onb) {
   const reasonsHtml = reasons.map(function(r, i) { return '<li style="--ob-card-i:' + i + '">' + r + '</li>'; }).join("");
 
   const u = userData();
-  const currentTplId = u ? u.templateId : null;
+  const _ap = activeProgramOf(u);
+  const currentTplId = _ap ? _ap.templateId : null;
   const isDifferent = currentTplId && currentTplId !== onb.recommendedTemplate;
 
   let actionHtml;
@@ -27352,8 +28175,9 @@ function renderPaperKicker() {
     return;
   }
   const u = (typeof userData === 'function') ? userData() : null;
-  const wk = (u && u.currentWeek)  ? u.currentWeek : 1;
-  const tot = (u && u.totalWeeks)  ? u.totalWeeks  : 16;
+  const ap = (typeof activeProgram === 'function') ? activeProgram() : null;
+  const wk = (ap && ap.currentWeek)  ? ap.currentWeek : 1;
+  const tot = (ap && ap.totalWeeks)  ? ap.totalWeeks  : 16;
   // Page number = total session count + 1 (current day index).
   const pg = (u && Array.isArray(u.sessions)) ? (u.sessions.length + 1) : 1;
   const pgStr = String(pg).padStart(3, '0');
@@ -28599,51 +29423,103 @@ function escapeHtml(s) {
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
-// Replace the bottom nav DOM with the design's PaperNav: cream-deep bar
-// with torn-edge top, 5 tabs (Timer · Lift · Log · PRs · Body), squiggle
-// underline on the active tab. Preserves the existing data-screen wiring.
+// Paper-skin nav surface — replaces the fixed bottom tab bar with a paper-tab
+// handle in the top-right of the header. Tapping the handle opens a paper
+// menu sheet listing the same destinations. Frees the bottom band entirely
+// so the workout action bar can own it without stacking chrome.
+const PAPER_NAV_TABS = [
+  { id: "timer",    label: "Timer",    screen: null,       onClick: "openStandaloneTimer()" },
+  { id: "workout",  label: "Lift",     screen: "workout"  },
+  { id: "history",  label: "Log",      screen: "history"  },
+  { id: "prs",      label: "PRs",      screen: "prs"      },
+  { id: "body",     label: "Body",     screen: "body"     },
+  { id: "settings", label: "Settings", screen: "settings" },
+];
+
 function paperRebuildBottomNav() {
-  const nav = document.querySelector("nav.bottom");
-  if (!nav || nav.dataset.paperBuilt === "1") return;
-  // Determine current active tab from the existing buttons (which screen has .active class on its section)
-  const tabs = [
-    { id: "timer",    label: "Timer",    screen: null,       onClick: "openStandaloneTimer()" },
-    { id: "workout",  label: "Lift",     screen: "workout"  },
-    { id: "history",  label: "Log",      screen: "history"  },
-    { id: "prs",      label: "PRs",      screen: "prs"      },
-    { id: "body",     label: "Body",     screen: "body"     },
-    { id: "settings", label: "Settings", screen: "settings" },
-  ];
-  const inkColor = paperInkColor();
-  nav.innerHTML = `
-    ${paperTornEdge("top", PAPER.creamDeep)}
-    <div class="paper-nav-tabs">
-      ${tabs.map(t => `
-        <button class="paper-nav-tab" ${t.screen ? `data-screen="${t.screen}"` : ""}
-                ${t.onClick ? `onclick="${t.onClick}"` : ""}>
-          <span class="paper-nav-label">${t.label}</span>
-          <svg class="paper-nav-squiggle" width="44" height="6" viewBox="0 0 44 6" aria-hidden="true">
-            <path d="M2 4 Q 12 1, 22 3 T 42 2.5" fill="none"
-              stroke="${inkColor}" stroke-width="2" stroke-linecap="round"
-              style="filter:url(#paper-roughen);"/>
-          </svg>
-        </button>
-      `).join("")}
-    </div>
-  `;
-  nav.dataset.paperBuilt = "1";
-  // initNav() in 20-toast-nav.js wires data-screen buttons on subsequent calls
-  if (typeof initNav === "function") initNav();
+  // Bottom nav itself is hidden via CSS under paper skin. Wire the top-right
+  // menu handle to open the paper menu sheet. Idempotent.
+  const handle = document.getElementById("paperMenuBtn");
+  if (!handle) return;
+  handle.style.display = "";
+  if (handle.dataset.paperBuilt === "1") return;
+  handle.addEventListener("click", (e) => {
+    e.stopPropagation();
+    paperOpenNavMenu();
+    if (navigator.vibrate) navigator.vibrate(8);
+  });
+  handle.dataset.paperBuilt = "1";
 }
 
-// Update which paper-nav tab is highlighted as active.
-function paperUpdateActiveNavTab(screenId) {
-  const nav = document.querySelector("nav.bottom");
-  if (!nav) return;
-  nav.querySelectorAll(".paper-nav-tab").forEach(btn => {
-    const id = btn.dataset.screen;
-    btn.classList.toggle("active", id === screenId);
+function paperOpenNavMenu() {
+  if (typeof openSheet !== "function") return;
+  const inkColor = (typeof paperInkColor === "function") ? paperInkColor() : "#1e3a72";
+  const activeScreen = document.querySelector(".screen.active");
+  const activeId = activeScreen ? activeScreen.id.replace(/^screen-/, "") : "workout";
+  const items = PAPER_NAV_TABS.map(t => {
+    const isActive = t.screen === activeId;
+    const dataAttrs = t.screen
+      ? `data-paper-menu-screen="${t.screen}"`
+      : `data-paper-menu-action="${t.id}"`;
+    return `
+      <button class="paper-menu-item${isActive ? " active" : ""}" ${dataAttrs} type="button">
+        <span class="paper-menu-item-label">${t.label}</span>
+        <svg class="paper-menu-item-squiggle" width="80" height="8" viewBox="0 0 80 8" aria-hidden="true">
+          <path d="M2 5 Q 16 1, 30 4 T 60 3 T 78 4" fill="none"
+            stroke="${inkColor}" stroke-width="2" stroke-linecap="round"
+            style="filter:url(#paper-roughen);"/>
+        </svg>
+      </button>
+    `;
+  }).join("");
+
+  const wrap = document.createElement("div");
+  wrap.className = "paper-menu-sheet";
+  wrap.innerHTML = `
+    <div class="paper-menu-sheet-head">
+      <span class="paper-menu-sheet-kicker">go to &mdash;</span>
+      <button class="paper-menu-sheet-close" type="button" aria-label="Close menu">&times;</button>
+    </div>
+    <div class="paper-menu-list">${items}</div>
+  `;
+  openSheet(wrap);
+
+  wrap.querySelector(".paper-menu-sheet-close")
+      .addEventListener("click", () => closeSheet());
+
+  wrap.querySelectorAll(".paper-menu-item").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const screen = btn.dataset.paperMenuScreen;
+      const action = btn.dataset.paperMenuAction;
+      closeSheet();
+      if (screen && typeof showScreen === "function") {
+        showScreen(screen);
+      } else if (action === "timer" && typeof openStandaloneTimer === "function") {
+        openStandaloneTimer();
+      }
+      if (navigator.vibrate) navigator.vibrate(10);
+    });
   });
+}
+
+// Update the active-screen breadcrumb on the menu handle.
+function paperUpdateActiveNavTab(screenId) {
+  const handle = document.getElementById("paperMenuBtn");
+  if (handle) {
+    const lbl = document.getElementById("paperMenuActiveLabel");
+    const match = PAPER_NAV_TABS.find(t => t.screen === screenId);
+    if (lbl) lbl.textContent = match ? match.label : "";
+    handle.dataset.activeScreen = screenId || "";
+  }
+  // Legacy paper-bottom-nav tabs (kept as no-op for safety if any path
+  // re-renders into the old DOM).
+  const nav = document.querySelector("nav.bottom");
+  if (nav) {
+    nav.querySelectorAll(".paper-nav-tab").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.screen === screenId);
+    });
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -28658,17 +29534,18 @@ function paperUpdateActiveNavTab(screenId) {
 function paperRenderDayPicker() {
   const container = document.getElementById("blocksContainer");
   const u = (typeof userData === "function") ? userData() : null;
-  if (!container || !u) return;
+  const ap = (typeof activeProgram === "function") ? activeProgram() : null;
+  if (!container || !u || !ap) return;
 
   const tpl = (typeof PROGRAM_TEMPLATES !== "undefined")
-    ? (PROGRAM_TEMPLATES.find(t => t.id === u.templateId) || PROGRAM_TEMPLATES[0])
+    ? (PROGRAM_TEMPLATES.find(t => t.id === ap.templateId) || PROGRAM_TEMPLATES[0])
     : null;
 
   const dayNameEl = document.getElementById("dayName");
   const daySubEl = document.getElementById("daySub");
   if (dayNameEl) dayNameEl.textContent = "Today's Workout";
   if (daySubEl) {
-    daySubEl.textContent = (tpl ? tpl.name : "") + (u.totalWeeks ? " · Week " + (u.currentWeek || 1) + " of " + u.totalWeeks : "");
+    daySubEl.textContent = (tpl ? tpl.name : ap.displayName || "") + (ap.totalWeeks ? " · Week " + (ap.currentWeek || 1) + " of " + ap.totalWeeks : "");
   }
 
   const startBtn = document.getElementById("headerStartBtn");
@@ -28688,7 +29565,7 @@ function paperRenderDayPicker() {
 
   // Rest-day branch
   const todayDow = new Date().getDay();
-  const sched = (Array.isArray(u.weeklySchedule) && u.weeklySchedule.length === 7) ? u.weeklySchedule : null;
+  const sched = (Array.isArray(ap.weeklySchedule) && ap.weeklySchedule.length === 7) ? ap.weeklySchedule : null;
   const isRestToday = sched && sched[todayDow] == null;
 
   if (isRestToday) {
@@ -28729,14 +29606,16 @@ function paperRenderDayPicker() {
   }
 
   // Normal branch — hero day + others
-  const nextId = (typeof determineDefaultDay === "function") ? determineDefaultDay() : (u.program[0] && u.program[0].id);
-  const nextDay = u.program.find(d => d.id === nextId) || u.program[0];
+  const days = ap.program || [];
+  const nextId = (typeof determineDefaultDay === "function") ? determineDefaultDay() : (days[0] && days[0].id);
+  const nextDay = days.find(d => d.id === nextId) || days[0];
+  if (!nextDay) return;
   const picker = document.createElement("div");
   picker.className = "paper-day-picker";
 
   picker.appendChild(paperBuildDayCard(nextDay, true));
 
-  const others = u.program.filter(d => d.id !== nextDay.id);
+  const others = days.filter(d => d.id !== nextDay.id);
   if (others.length) {
     const toggle = document.createElement("button");
     toggle.className = "paper-day-picker-toggle";
@@ -28885,7 +29764,29 @@ function paperFindNextBlockIdx(day, bi, dir) {
   return null;
 }
 
-function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone) {
+// Day-wide active set finder — first not-done, non-warmup set across all blocks.
+// Used by the chapters/overview action bar so logging follows the workout's
+// next-to-do set, regardless of where the user has scrolled.
+function paperFindDayActiveSet(day) {
+  if (!day || !day.blocks) return { bi: 0, exIdx: 0, setIdx: 0, allDone: true };
+  for (let bi = 0; bi < day.blocks.length; bi++) {
+    const block = day.blocks[bi];
+    if (!block || !block.exercises) continue;
+    for (let ei = 0; ei < block.exercises.length; ei++) {
+      const ex = block.exercises[ei];
+      if (ex.isWarmup) continue;
+      const nSets = ex.sets || 3;
+      for (let si = 0; si < nSets; si++) {
+        const st = (typeof getInput === "function")
+          ? getInput(inputKey(block.id, ei, si, "status"), null) : null;
+        if (st !== "done") return { bi, exIdx: ei, setIdx: si, allDone: false };
+      }
+    }
+  }
+  return { bi: 0, exIdx: 0, setIdx: 0, allDone: true };
+}
+
+function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi) {
   const bar = document.createElement("div");
   bar.className = "paper-action-bar";
 
@@ -28993,7 +29894,8 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone) {
     if (typeof openSidebar === "function") {
       const libEx = (typeof LIB_BY_ID !== "undefined") ? LIB_BY_ID[ex.exId] : null;
       const cat = libEx ? libEx.cat : (block.type === "warmup" ? "Warmup" : null);
-      openSidebar(cat, state.focusBlockIdx, activeExIdx);
+      const swapBi = (bi != null) ? bi : state.focusBlockIdx;
+      openSidebar(cat, swapBi, activeExIdx);
     }
   });
   if (typeof paperWirePress === "function") paperWirePress(swapBtn);
@@ -29318,7 +30220,7 @@ function paperRenderFocusView(container, day) {
   wrap.appendChild(swipeHint);
 
   // ── ACTION BAR ──
-  wrap.appendChild(paperBuildActionBar(day, block, active.exIdx, active.setIdx, active.allDone));
+  wrap.appendChild(paperBuildActionBar(day, block, active.exIdx, active.setIdx, active.allDone, bi));
 
   container.appendChild(wrap);
 }
@@ -29335,6 +30237,8 @@ if (typeof window !== "undefined") {
   window.paperRenderFocusView = paperRenderFocusView;
   window.paperBuildActionBar = paperBuildActionBar;
   window.paperFindActiveSet = paperFindActiveSet;
+  window.paperFindDayActiveSet = paperFindDayActiveSet;
+  window.paperOpenNavMenu = paperOpenNavMenu;
 }
 
 
@@ -29843,9 +30747,9 @@ let _builderEqFilter = new Set();
 let _builderMuscleFilter = new Set();
 
 function openProgramBuilder() {
-  const u = userData();
-  if (u && u.draft) {
-    if (!confirm("You have a workout in progress. Building a new program will discard it. Continue?")) return;
+  const ap = (typeof activeProgram === "function") ? activeProgram() : null;
+  if (ap && ap.draft) {
+    if (!confirm("You have a workout in progress on " + (ap.displayName || "your active program") + ". Building a new program will switch away. Continue?")) return;
   }
   _builderState = { name: "My Program", daysPerWeek: 3, totalWeeks: 10, days: [] };
   _builderStep = 1;
@@ -30346,23 +31250,29 @@ function _refreshBuilderResults() {
 }
 
 // ---------- Save ----------
+// v21: always add a NEW library entry (don't overwrite the active program).
+// Consistent with the library mental model — built programs accumulate.
 function saveCustomProgram() {
   const b = _builderState;
-  updateUser(u => {
-    u.templateId = "custom";
-    u.program = b.days.map(d => ({ id: d.id, name: d.name, sub: "", blocks: d.blocks }));
-    u.daysPerWeek = b.daysPerWeek;
-    u.totalWeeks = b.totalWeeks;
-    u.currentWeek = 1;
-    u.programStartDate = Date.now();
-    u.weeklySchedule = null;
-    u.draft = null;
-    u.lastDoneDayId = null;
+  const days = b.days.map(d => ({ id: d.id, name: d.name, sub: "", blocks: d.blocks }));
+  const entry = makeProgramEntry({
+    displayName: (b.name || "My Program").trim() || "My Program",
+    templateId: "custom",
+    program: days,
+    daysPerWeek: b.daysPerWeek,
+    totalWeeks: b.totalWeeks,
+    currentWeek: 1,
+    programStartDate: Date.now(),
+    weeklySchedule: null,
+    lastDoneDayId: null,
+    draft: null,
+    rp: null
   });
-  // Mirror applyProgramSwitch() side effects (19-program-picker.js)
+  addProgramEntry(entry, { activate: true });
+
   if (typeof stopSessionTimer === "function") stopSessionTimer();
   state.workoutStartedAt = null;
-  state.currentDayId = 1;
+  state.currentDayId = (typeof determineDefaultDay === "function") ? determineDefaultDay() : 1;
   state.dayChosen = false;
   _builderState = null;
   _builderStep = 1;
@@ -30542,6 +31452,18 @@ const RP_RECENCY_SESSIONS = 3;
 const RP_RECENCY_WEIGHTS = [0.5, 0.3, 0.2];               // most recent first
 const RP_HIGH_CONFIDENCE_WINDOW_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 
+// v21: u.rp moved into the active program entry (u.programs[...].rp).
+// Accepts either a user record (looks up the active program) or a
+// program entry directly. Returns the rp container or null.
+function _rpOf(uOrP) {
+  if (!uOrP) return null;
+  if (Array.isArray(uOrP.programs)) {
+    const ap = uOrP.programs.find(p => p.id === uOrP.activeProgramId);
+    return ap ? (ap.rp || null) : null;
+  }
+  return uOrP.rp || null;
+}
+
 // ---- Bodyweight lookup ----------------------------------------
 
 // Returns null when no measurements exist (caller shows bodyweight prompt).
@@ -30688,7 +31610,8 @@ function rpRoundWeight(exId, w) {
 function suggestedWeight(exId, targetReps, targetRIR, opts) {
   opts = opts || {};
   const u = userData();
-  if (!u || !u.rp || !u.rp.enabled) {
+  const rp = _rpOf(u);
+  if (!u || !rp || !rp.enabled) {
     return { weight: null, confidence: null, reason: "disabled" };
   }
 
@@ -30700,7 +31623,7 @@ function suggestedWeight(exId, targetReps, targetRIR, opts) {
   const now = opts.now || Date.now();
 
   // RPE calibration must fire once before suggestions start (§6 row 2)
-  if (!u.rp.rpeCalibrationCompletedAt) {
+  if (!rp.rpeCalibrationCompletedAt) {
     return { weight: null, confidence: null, reason: "needs-rpe-calibration" };
   }
 
@@ -30719,7 +31642,7 @@ function suggestedWeight(exId, targetReps, targetRIR, opts) {
 
   if (est.confidence === "cold-start") {
     // Check for a user-provided cold-start anchor (§3.8)
-    let anchor = u.rp.coldStartAnchors && u.rp.coldStartAnchors[exId];
+    let anchor = rp.coldStartAnchors && rp.coldStartAnchors[exId];
     // Pure-BW (load == bodyweight, no added weight): auto-anchor with
     // library defaults — there's nothing for the user to enter.
     if (!anchor && isBw && !(lib.defaultWeight || 0)) {
@@ -30806,9 +31729,10 @@ function buildRpPromptEl(type, ex) {
     saveBtn.className = "rp-prompt-save";
     saveBtn.textContent = "Got it — start tracking";
     saveBtn.onclick = () => {
-      updateUser(u => {
-        u.rp.rpeCalibrationCompletedAt = Date.now();
-        u.rp.rpeCalibrationMethod = "self-reported";
+      updateActiveProgram(p => {
+        if (!p.rp) p.rp = { enabled: true };
+        p.rp.rpeCalibrationCompletedAt = Date.now();
+        p.rp.rpeCalibrationMethod = "self-reported";
       });
       rpDismissPromptType("rpe-calibration", null);
       renderWorkoutScreen();
@@ -30918,9 +31842,10 @@ function buildRpPromptEl(type, ex) {
         if (!w || w <= 0) wInput.focus(); else rInput.focus();
         return;
       }
-      updateUser(u => {
-        if (!u.rp.coldStartAnchors) u.rp.coldStartAnchors = {};
-        u.rp.coldStartAnchors[exId] = { weight: w, reps: r, dateMs: Date.now() };
+      updateActiveProgram(p => {
+        if (!p.rp) p.rp = { enabled: true };
+        if (!p.rp.coldStartAnchors) p.rp.coldStartAnchors = {};
+        p.rp.coldStartAnchors[exId] = { weight: w, reps: r, dateMs: Date.now() };
       });
       rpDismissPromptType("cold-start", exId);
       renderWorkoutScreen();
@@ -30983,7 +31908,8 @@ function buildRpSuggestionChip(suggestion, unitStr) {
 // Called from renderSetsTable. Mutates wrap in place.
 // _rpShownThisRender is a render-pass flag to enforce one prompt per view (§6).
 function injectRpHint(wrap, ex, u) {
-  if (!u || !u.rp || !u.rp.enabled) return;
+  const rp = _rpOf(u);
+  if (!u || !rp || !rp.enabled) return;
   const exId = ex ? (ex.exId || ex.name) : null;
   if (!exId) return;
   const lib = LIB_BY_ID[exId];
@@ -31094,18 +32020,23 @@ function _rpMusclesForDayType(dayType) {
 
 // --- Helpers -------------------------------------------------------
 
-function getActiveMesocycle(u) {
-  if (!u || !u.rp || !u.rp.currentMesocycleId) return null;
-  return (u.rp.mesocycles || []).find(m => m.id === u.rp.currentMesocycleId) || null;
+// Accepts either a user record or a program entry. Returns the currently
+// active mesocycle (the one tied to the active program's rp), or null.
+function getActiveMesocycle(uOrP) {
+  const rp = _rpOf(uOrP);
+  if (!rp || !rp.currentMesocycleId) return null;
+  return (rp.mesocycles || []).find(m => m.id === rp.currentMesocycleId) || null;
 }
 
-function getMesocycle(u, mesoId) {
-  return (u && u.rp && u.rp.mesocycles || []).find(m => m.id === mesoId) || null;
+function getMesocycle(uOrP, mesoId) {
+  const rp = _rpOf(uOrP);
+  return (rp && rp.mesocycles || []).find(m => m.id === mesoId) || null;
 }
 
 // Effective MEV/MAV/MRV for a muscle: user override > RP_VOLUME_LANDMARKS default.
-function rpLandmarks(u, muscle) {
-  const ul = u && u.rp && u.rp.volumeLandmarks;
+function rpLandmarks(uOrP, muscle) {
+  const rp = _rpOf(uOrP);
+  const ul = rp && rp.volumeLandmarks;
   if (ul && ul[muscle]) return ul[muscle];
   return RP_VOLUME_LANDMARKS[muscle] || { mev: 0, mav: 0, mrv: 0 };
 }
@@ -31124,12 +32055,63 @@ function startMesocycle(opts) {
 
   let newMeso;
   updateUser(u => {
+    if (!Array.isArray(u.programs)) u.programs = [];
+
+    // Find or create the rp-hypertrophy library entry. Prefer the active
+    // program if it's already rp-hypertrophy (typical Add Program flow that
+    // just ran); otherwise find the first rp-hypertrophy entry, otherwise
+    // create a fresh one and activate it.
+    let entry = u.programs.find(p => p.id === u.activeProgramId && p.templateId === "rp-hypertrophy");
+    if (!entry) entry = u.programs.find(p => p.templateId === "rp-hypertrophy" && !p.archivedAt);
+    if (!entry) {
+      const tpl = (typeof PROGRAM_TEMPLATES !== "undefined")
+        ? PROGRAM_TEMPLATES.find(t => t.id === "rp-hypertrophy") : null;
+      const name = (typeof uniquifyDisplayName === "function")
+        ? uniquifyDisplayName(tpl ? tpl.name : "RP Hypertrophy", u.programs)
+        : (tpl ? tpl.name : "RP Hypertrophy");
+      entry = {
+        id: (typeof genProgramId === "function")
+          ? genProgramId()
+          : ("p_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7)),
+        displayName: name,
+        templateId: "rp-hypertrophy",
+        program: [],
+        daysPerWeek: opts.daysPerWeek || (tpl && tpl.daysPerWeek) || 4,
+        totalWeeks: lw,
+        currentWeek: 1,
+        programStartDate: Date.now(),
+        weeklySchedule: null,
+        lastDoneDayId: null,
+        draft: null,
+        rp: null
+      };
+      u.programs.push(entry);
+    }
+    u.activeProgramId = entry.id;
+
+    // Ensure rp container on the entry.
+    if (!entry.rp) {
+      entry.rp = {
+        enabled: true,
+        rpeCalibrationCompletedAt: null,
+        rpeCalibrationMethod: null,
+        coldStartAnchors: {},
+        lastDeloadRecommendedAt: null,
+        dismissedDeloadForWeek: null,
+        volumeLandmarks: null,
+        mesocycles: [],
+        currentMesocycleId: null
+      };
+    } else {
+      entry.rp.enabled = true;
+    }
+
     // Close active mesocycle if any
-    const active = getActiveMesocycle(u);
+    const active = getActiveMesocycle(entry);
     if (active) active.finishedAt = Date.now();
 
     // Build exercise selection pool
-    const daysPerWeek = dpw || u.daysPerWeek || 4;
+    const daysPerWeek = dpw || entry.daysPerWeek || 4;
     const prevSelection = active ? active.exerciseSelection : {};
     const selection = opts.resensitize
       ? chooseNewExercises(prevSelection, daysPerWeek)
@@ -31138,11 +32120,10 @@ function startMesocycle(opts) {
     // Seed perMuscleVolume at MEV for week 1
     const perMuscleVolume = {};
     Object.keys(RP_VOLUME_LANDMARKS).forEach(muscle => {
-      const lm = rpLandmarks(u, muscle);
+      const lm = rpLandmarks(entry, muscle);
       if (lm.mev > 0 || lm.mav > 0) {
         const startSets = Math.max(lm.mev, 0);
         perMuscleVolume[muscle] = [{ week: 1, plannedSets: startSets, completedSets: null }];
-        // Pre-fill null slots for remaining weeks
         for (let w = 2; w <= lw; w++) {
           perMuscleVolume[muscle].push({ week: w, plannedSets: null, completedSets: null });
         }
@@ -31165,15 +32146,22 @@ function startMesocycle(opts) {
       flagsForNextMeso: {}
     };
 
-    if (!u.rp.mesocycles) u.rp.mesocycles = [];
-    u.rp.mesocycles.push(newMeso);
-    u.rp.currentMesocycleId = id;
+    if (!entry.rp.mesocycles) entry.rp.mesocycles = [];
+    entry.rp.mesocycles.push(newMeso);
+    entry.rp.currentMesocycleId = id;
 
     // Generate week 1 program (preserve user-added custom days)
-    var rpWeek1 = generateRpWeek(newMeso, 1, u);
-    u.program = (typeof preserveCustomDays === "function") ? preserveCustomDays(u.program, rpWeek1) : rpWeek1;
-    u.currentWeek = 1;
-    u.templateId = "rp-hypertrophy";
+    const rpWeek1 = generateRpWeek(newMeso, 1, entry);
+    entry.program = (typeof preserveCustomDays === "function")
+      ? preserveCustomDays(entry.program, rpWeek1) : rpWeek1;
+    entry.currentWeek = 1;
+    entry.daysPerWeek = daysPerWeek;
+    entry.totalWeeks = lw;
+    if (!entry.weeklySchedule || entry.weeklySchedule.length !== 7) {
+      entry.weeklySchedule = (typeof buildDefaultWeeklySchedule === "function")
+        ? buildDefaultWeeklySchedule({ program: entry.program, daysPerWeek })
+        : null;
+    }
   });
   return newMeso;
 }
@@ -31501,18 +32489,20 @@ function _rpAdvanceMesocycleWeek(mesoId) {
   // Compute adjustments from current read-only snapshot
   const adjustments = adjustVolumeFromFeedback(u, meso);
 
-  updateUser(uMut => {
-    const m = getMesocycle(uMut, mesoId);
+  updateActiveProgram(entry => {
+    const m = getMesocycle(entry, mesoId);
     if (!m) return;
-    applyVolumeAdjustments(m, weekNum, adjustments, uMut);
-    checkResensitizationFlags(uMut, m);
+    applyVolumeAdjustments(m, weekNum, adjustments, entry);
+    checkResensitizationFlags(entry, m);
     if (nextWeek > m.lengthWeeks) {
       m.finishedAt = Date.now();
-      uMut.rp.currentMesocycleId = null;
+      if (entry.rp) entry.rp.currentMesocycleId = null;
     } else {
       m.currentWeek = nextWeek;
-      var rpGenerated = generateRpWeek(m, nextWeek, uMut);
-      uMut.program = (typeof preserveCustomDays === "function") ? preserveCustomDays(uMut.program, rpGenerated) : rpGenerated;
+      const rpGenerated = generateRpWeek(m, nextWeek, entry);
+      entry.program = (typeof preserveCustomDays === "function")
+        ? preserveCustomDays(entry.program, rpGenerated) : rpGenerated;
+      entry.currentWeek = nextWeek;
     }
   });
 
@@ -31528,7 +32518,14 @@ function _rpAdvanceMesocycleWeek(mesoId) {
 function recomputeMesocycleState(mesocycleId) {
   if (!mesocycleId) return;
   updateUser(u => {
-    const meso = getMesocycle(u, mesocycleId);
+    // Walk every program entry to find the meso (it may live on a non-active
+    // library entry if the user has multiple programs).
+    let meso = null;
+    (u.programs || []).forEach(entry => {
+      if (meso) return;
+      const m = (entry.rp && entry.rp.mesocycles || []).find(x => x.id === mesocycleId);
+      if (m) meso = m;
+    });
     if (!meso) return;
 
     // Reset all completedSets to 0 before recount

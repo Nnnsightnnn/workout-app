@@ -668,17 +668,34 @@ function _obFinish() {
         }
       }
 
-      // Smart suggestions → rp.enabled
-      if (_obAnswers.smartSuggestions === "yes") {
-        u.rp.enabled = true;
-        if (_obAnswers.rpeCalibration && _obAnswers.rpeCalibration.completedAt) {
-          u.rp.rpeCalibrationCompletedAt = _obAnswers.rpeCalibration.completedAt;
-          u.rp.rpeCalibrationMethod = "onboarding";
-        }
-      } else if (_obAnswers.smartSuggestions === "no") {
-        u.rp.enabled = false;
-      }
     });
+    // Smart suggestions → active program's rp.enabled
+    if (_obAnswers.smartSuggestions === "yes" || _obAnswers.smartSuggestions === "no") {
+      updateActiveProgram(p => {
+        if (!p.rp) {
+          p.rp = {
+            enabled: false,
+            rpeCalibrationCompletedAt: null,
+            rpeCalibrationMethod: null,
+            coldStartAnchors: {},
+            lastDeloadRecommendedAt: null,
+            dismissedDeloadForWeek: null,
+            volumeLandmarks: null,
+            mesocycles: [],
+            currentMesocycleId: null
+          };
+        }
+        if (_obAnswers.smartSuggestions === "yes") {
+          p.rp.enabled = true;
+          if (_obAnswers.rpeCalibration && _obAnswers.rpeCalibration.completedAt) {
+            p.rp.rpeCalibrationCompletedAt = _obAnswers.rpeCalibration.completedAt;
+            p.rp.rpeCalibrationMethod = "onboarding";
+          }
+        } else {
+          p.rp.enabled = false;
+        }
+      });
+    }
   }
 
   if (_obIsRedo) {
@@ -797,7 +814,8 @@ function _renderObHandoffRedo(onb) {
   const reasonsHtml = reasons.map(function(r, i) { return '<li style="--ob-card-i:' + i + '">' + r + '</li>'; }).join("");
 
   const u = userData();
-  const currentTplId = u ? u.templateId : null;
+  const _ap = activeProgramOf(u);
+  const currentTplId = _ap ? _ap.templateId : null;
   const isDifferent = currentTplId && currentTplId !== onb.recommendedTemplate;
 
   let actionHtml;

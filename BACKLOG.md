@@ -31,10 +31,20 @@ Delegation prompts with full context live in **TASKS.md** (say "do #N" to execut
 
 ---
 
+## Option B follow-ups (v21 — Program Library)
+
+The v21 migration replaced the single-active-slot per-user with `u.programs[]` + `u.activeProgramId`. Library entries can be templates with different params, custom builds, or RP mesocycles, and switching between them is non-destructive. v1 deferred these:
+
+- **Per-program history filtering UI.** Sessions are tagged with `session.programId` already (planted in v21 migration + `finishWorkout`), but no UI surfaces it yet. Add a filter chip on the history screen so a user can see "Conjugate only" or "Filly4 only" sessions.
+- **Edit an existing custom program in place.** Today the builder always appends a new entry (decision #2). Add an "edit" affordance from the library row that re-opens the builder seeded with the existing entry's days/blocks/exercises.
+- **Rename undo / delete undo.** Library rename + delete fire immediately. A soft-undo toast (5s) would prevent fat-finger losses.
+- **Recompute meso state across non-active programs.** `recomputeMesocycleState` walks every entry now, but multi-RP-program users might hit edge cases when sessions belong to an archived entry. Worth checking once anyone actually carries two RP programs.
+
 ## Closed
 
 - ~~Day-of-week selector~~ — already implemented (onboarding step 6, `selectedDays`)
 - ~~Auto-fill previous weights~~ — already implemented (`getLastSetsFor()` pre-fills inputs)
+- ~~Two-program structure (supplemental on off-days)~~ — addressed (broader than asked): v21 ships a full **program library** (`u.programs[]` + `u.activeProgramId`). Each program keeps its own week, day rotation, draft, schedule, and RP state. Switching between them in Settings (or the header chip when ≥2 are present) is non-destructive. See `src/js/06d-active-program.js` for the accessor layer.
 
 ---
 

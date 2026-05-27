@@ -69,8 +69,8 @@ const CD_COMBOS = [
   [8, 20, 28],  // figure-4, downward dog, neck stretch
 ];
 function getCooldownExercises(dayId) {
-  var u = (typeof userData === "function") ? userData() : null;
-  var day = (u && u.program) ? u.program.find(function(d) { return d.id === dayId; }) : null;
+  var p = (typeof activeProgram === "function") ? activeProgram() : null;
+  var day = (p && p.program) ? p.program.find(function(d) { return d.id === dayId; }) : null;
   var overrides = (day && day.cooldownOverrides) || {};
   var idx = ((dayId || 1) - 1) % CD_COMBOS.length;
   return CD_COMBOS[idx].map(function(i, ci) {
@@ -150,6 +150,7 @@ function openCooldownSwapSheet(ci) {
 
 function renderWorkoutScreen() {
   state._rpPromptShownThisRender = false; // reset per-render prompt gate (§6)
+  if (typeof renderHeaderProgramChip === "function") renderHeaderProgramChip();
   const container = document.getElementById("blocksContainer");
   const u = userData();
 
@@ -164,6 +165,7 @@ function renderWorkoutScreen() {
     updateFinishButton();
     return;
   }
+  const entry = activeProgramOf(u);
 
   // Ad-hoc mode: delegate to its own renderer
   if (state.adhocActive) {
@@ -178,8 +180,8 @@ function renderWorkoutScreen() {
   // and reachable via Switch Day or "Train anyway".
   {
     const _todayDow = new Date().getDay();
-    const _isRestToday = Array.isArray(u.weeklySchedule)
-      && u.weeklySchedule.length === 7 && u.weeklySchedule[_todayDow] == null;
+    const _isRestToday = entry && Array.isArray(entry.weeklySchedule)
+      && entry.weeklySchedule.length === 7 && entry.weeklySchedule[_todayDow] == null;
     if (_isRestToday && !state.dayChosen && !state.workoutStartedAt
         && !state.restOverride && !state.previewDateMs) {
       renderTimelineStrip();
@@ -203,10 +205,10 @@ function renderWorkoutScreen() {
   document.getElementById("dayName").textContent = day.name;
   // Show week/phase in sub
   var weekLabel = "";
-  if (u.totalWeeks && u.currentWeek) {
-    var phases = getPhasesForTemplate(u.templateId, u.totalWeeks);
-    var phase = phases ? phaseForWeek(phases, u.currentWeek) : null;
-    weekLabel = "Wk " + u.currentWeek + "/" + u.totalWeeks;
+  if (entry && entry.totalWeeks && entry.currentWeek) {
+    var phases = getPhasesForTemplate(entry.templateId, entry.totalWeeks);
+    var phase = phases ? phaseForWeek(phases, entry.currentWeek) : null;
+    weekLabel = "Wk " + entry.currentWeek + "/" + entry.totalWeeks;
     if (phase) weekLabel += " · " + phase.name;
     weekLabel += " · ";
   }
@@ -238,7 +240,7 @@ function renderWorkoutScreen() {
       // Clear any unstarted draft created by switching days so the rest card returns
       const draft = getDraft();
       if (draft && !state.workoutStartedAt) {
-        updateUser(usr => { usr.draft = null; });
+        updateActiveProgram(entry => { entry.draft = null; });
       }
       renderWorkoutScreen();
     };
@@ -318,11 +320,13 @@ function renderDayPicker() {
   const container = document.getElementById("blocksContainer");
   const u = userData();
   if (!u) return;
+  const entry = activeProgramOf(u);
+  if (!entry) return;
 
-  const tpl = PROGRAM_TEMPLATES.find(t => t.id === u.templateId) || PROGRAM_TEMPLATES[0];
+  const tpl = PROGRAM_TEMPLATES.find(t => t.id === entry.templateId) || PROGRAM_TEMPLATES[0];
   document.getElementById("dayBadge").textContent = "⊞";
   document.getElementById("dayName").textContent = "Today's Workout";
-  document.getElementById("daySub").textContent = tpl.name + (u.totalWeeks ? " · Week " + (u.currentWeek || 1) + " of " + u.totalWeeks : "");
+  document.getElementById("daySub").textContent = tpl.name + (entry.totalWeeks ? " · Week " + (entry.currentWeek || 1) + " of " + entry.totalWeeks : "");
 
   // Hide start/finish buttons
   document.getElementById("headerStartBtn").classList.remove("active");
@@ -332,7 +336,7 @@ function renderDayPicker() {
 
   // Rest-day check: if today's weeklySchedule slot is explicitly null, show a rest card
   const todayDow = new Date().getDay();
-  const sched = (Array.isArray(u.weeklySchedule) && u.weeklySchedule.length === 7) ? u.weeklySchedule : null;
+  const sched = (Array.isArray(entry.weeklySchedule) && entry.weeklySchedule.length === 7) ? entry.weeklySchedule : null;
   const isRestToday = sched && sched[todayDow] == null;
 
   // Same-day completed sessions strip — surfaces today's saved workouts so the
@@ -379,7 +383,7 @@ function renderDayPicker() {
   }
 
   const next = determineDefaultDay();
-  const nextDay = u.program.find(d => d.id === next) || u.program[0];
+  const nextDay = entry.program.find(d => d.id === next) || entry.program[0];
   const picker = document.createElement("div");
   picker.className = "day-picker";
 
@@ -456,7 +460,7 @@ function renderDayPicker() {
   picker.appendChild(buildDayCard(nextDay, true));
 
   // "Other workouts" toggle for remaining days
-  const others = u.program.filter(d => d.id !== nextDay.id);
+  const others = entry.program.filter(d => d.id !== nextDay.id);
   if (others.length) {
     const toggle = document.createElement("button");
     toggle.className = "day-picker-toggle";
@@ -529,10 +533,10 @@ function _wireTimeBudgetCard(card, day, breakdown) {
         e.stopPropagation();
         if (btn.dataset.action === "adjusted" && lastBudget) {
           // Apply adjustments to the real program
-          const u = userData();
-          const dayIdx = u.program.findIndex(dd => dd.id === day.id);
+          const p = activeProgram();
+          const dayIdx = p ? p.program.findIndex(dd => dd.id === day.id) : -1;
           if (dayIdx >= 0) {
-            updateUser(usr => { usr.program[dayIdx] = lastBudget.adjustedDay; });
+            updateActiveProgram(entry => { entry.program[dayIdx] = lastBudget.adjustedDay; });
           }
         }
         state.currentDayId = day.id;
@@ -890,10 +894,10 @@ function renderCooldownPreviewForDay(dayId) {
 
 function _buildRpBlockMeta(block) {
   if (block.blockType !== "rp-hypertrophy") return null;
-  // Pull meso context for the current user
-  const u = (typeof userData === "function") ? userData() : null;
-  if (!u || !u.rp) return null;
-  const meso = (typeof getActiveMesocycle === "function") ? getActiveMesocycle(u) : null;
+  // Pull meso context for the active program
+  const p = (typeof activeProgram === "function") ? activeProgram() : null;
+  if (!p || !p.rp) return null;
+  const meso = (typeof getActiveMesocycle === "function") ? getActiveMesocycle(p) : null;
   if (!meso) return null;
 
   const week = meso.currentWeek;
@@ -1513,8 +1517,8 @@ function openSetEditor(block, ex, bi, ei, setIdx, bw) {
     let weightDefault = lastSet?.weight ?? ex.defaultWeight ?? 0;
     let rpSuggestion  = null;
     if (typeof suggestedWeight === "function") {
-      const u = userData();
-      if (u && u.rp && u.rp.enabled && !bw) {
+      const p = activeProgram();
+      if (p && p.rp && p.rp.enabled && !bw) {
         const draft = getDraft();
         const targetRIR = (draft && draft.targetRIR != null) ? draft.targetRIR : 2;
         rpSuggestion = suggestedWeight(ex.exId, ex.reps, targetRIR);
@@ -1885,6 +1889,28 @@ function renderChaptersView(container, day) {
     });
     if (typeof renderCooldownBlock === "function") {
       // Cool-down still renders its own block — leave default for now
+    }
+    // Day-wide action bar — mirrors focus view, tracks first not-done set
+    // across the entire day. Only shown during an active workout.
+    if (state.workoutStartedAt
+        && typeof paperFindDayActiveSet === "function"
+        && typeof paperBuildActionBar === "function") {
+      const active = paperFindDayActiveSet(day);
+      const activeBlock = day.blocks[active.bi] || day.blocks[0];
+      wrap.appendChild(paperBuildActionBar(
+        day, activeBlock, active.exIdx, active.setIdx, active.allDone, active.bi
+      ));
+      if (!active.allDone) {
+        // requestAnimationFrame: wait for DOM insertion before highlighting.
+        requestAnimationFrame(() => {
+          const row = wrap.querySelector(
+            `.paper-block[data-bi="${active.bi}"] ` +
+            `.paper-exercise[data-ei="${active.exIdx}"] ` +
+            `.paper-set-row[data-set-idx="${active.setIdx}"]`
+          );
+          if (row) row.classList.add("paper-focus-active-set");
+        });
+      }
     }
     container.appendChild(wrap);
     return;

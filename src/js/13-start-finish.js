@@ -42,9 +42,9 @@ function startFirstWorkout() {
   if (estMin > 20) {
     const budget = computeTimeBudget(day, 20);
     if (budget.adjustments.length > 0 && budget.adjustedDay) {
-      updateUser(u => {
-        const dayIdx = u.program.findIndex(d => d.id === day.id);
-        if (dayIdx >= 0) u.program[dayIdx] = budget.adjustedDay;
+      updateActiveProgram(entry => {
+        const dayIdx = entry.program.findIndex(d => d.id === day.id);
+        if (dayIdx >= 0) entry.program[dayIdx] = budget.adjustedDay;
       });
     }
   }
@@ -346,10 +346,11 @@ function finishWorkout(opts) {
   const volume = sets.reduce((a, s) => a + s.weight * s.reps, 0);
   const prCount = sets.filter(s => s.isPR).length;
   const uForWeek = userData();
+  const entryForWeek = activeProgramOf(uForWeek);
 
   // Stamp mesocycle context if user is on an rp-hypertrophy program with an active meso
-  const activeMeso = (typeof getActiveMesocycle === "function" && uForWeek)
-    ? getActiveMesocycle(uForWeek) : null;
+  const activeMeso = (typeof getActiveMesocycle === "function" && entryForWeek)
+    ? getActiveMesocycle(entryForWeek) : null;
   const hasRpBlocks = day.blocks.some(b => b.blockType === "rp-hypertrophy");
 
   const session = {
@@ -360,7 +361,8 @@ function finishWorkout(opts) {
     finishedAt: Date.now(),
     duration, sets, volume, prCount,
     blockNotes,
-    programWeek: uForWeek ? uForWeek.currentWeek || null : null,
+    programId: uForWeek ? uForWeek.activeProgramId || null : null,
+    programWeek: entryForWeek ? entryForWeek.currentWeek || null : null,
     feedback: {},
     // Mesocycle context — null for non-RP sessions
     mesocycleId: (activeMeso && hasRpBlocks) ? activeMeso.id : null,
@@ -369,16 +371,19 @@ function finishWorkout(opts) {
 
   updateUser(u => {
     u.sessions.push(session);
-    u.draft = null;
-    u.lastDoneDayId = day.id;
     if (!u.firstWorkoutCompleted) u.firstWorkoutCompleted = true;
-    // Increment RP completedSessionsByWeek for isMicrocycleBoundary detection
-    if (hasRpBlocks && activeMeso && session.mesoWeek) {
-      const meso = getMesocycle(u, activeMeso.id);
-      if (meso) {
-        if (!meso.completedSessionsByWeek) meso.completedSessionsByWeek = {};
-        meso.completedSessionsByWeek[session.mesoWeek] =
-          (meso.completedSessionsByWeek[session.mesoWeek] || 0) + 1;
+    const entry = activeProgramOf(u);
+    if (entry) {
+      entry.draft = null;
+      entry.lastDoneDayId = day.id;
+      // Increment RP completedSessionsByWeek for isMicrocycleBoundary detection
+      if (hasRpBlocks && activeMeso && session.mesoWeek) {
+        const meso = getMesocycle(entry, activeMeso.id);
+        if (meso) {
+          if (!meso.completedSessionsByWeek) meso.completedSessionsByWeek = {};
+          meso.completedSessionsByWeek[session.mesoWeek] =
+            (meso.completedSessionsByWeek[session.mesoWeek] || 0) + 1;
+        }
       }
     }
   });
@@ -404,13 +409,14 @@ function finishWorkout(opts) {
   // RP programs advance after feedback capture via captureSessionFeedback →
   // isMicrocycleBoundary → _rpAdvanceMesocycleWeek; skip regular advance here.
   const uAfter = userData();
-  if (uAfter && uAfter.totalWeeks && uAfter.currentWeek && uAfter.templateId !== "rp-hypertrophy") {
-    const weekSessions = uAfter.sessions.filter(s => s.programWeek === uAfter.currentWeek);
+  const entryAfter = activeProgramOf(uAfter);
+  if (entryAfter && entryAfter.totalWeeks && entryAfter.currentWeek && entryAfter.templateId !== "rp-hypertrophy") {
+    const weekSessions = uAfter.sessions.filter(s => s.programWeek === entryAfter.currentWeek && (!s.programId || s.programId === entryAfter.id));
     const uniqueDays = new Set(weekSessions.map(s => s.dayId));
-    if (uniqueDays.size >= uAfter.program.length && uAfter.currentWeek <= uAfter.totalWeeks) {
-      if (uAfter.currentWeek < uAfter.totalWeeks) {
+    if (uniqueDays.size >= entryAfter.program.length && entryAfter.currentWeek <= entryAfter.totalWeeks) {
+      if (entryAfter.currentWeek < entryAfter.totalWeeks) {
         advanceWeek();
-        showToast("Week " + (uAfter.currentWeek + 1) + " unlocked! New exercises loaded.", "success");
+        showToast("Week " + (entryAfter.currentWeek + 1) + " unlocked! New exercises loaded.", "success");
       } else {
         // Program complete
         showToast("Program complete! Check settings to restart or switch.", "pr");
@@ -430,7 +436,8 @@ function finishWorkout(opts) {
   // current day so the user can pick up where they left off — the saved
   // session is in history, but the rotation pointer hasn't moved.
   if (!exitMode) {
-    const nextDay = (day.id % userData().program.length) + 1;
+    const _ap = activeProgram();
+    const nextDay = _ap ? (day.id % _ap.program.length) + 1 : day.id;
     state.currentDayId = nextDay;
   }
   renderWorkoutScreen();

@@ -399,51 +399,103 @@ function escapeHtml(s) {
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
-// Replace the bottom nav DOM with the design's PaperNav: cream-deep bar
-// with torn-edge top, 5 tabs (Timer · Lift · Log · PRs · Body), squiggle
-// underline on the active tab. Preserves the existing data-screen wiring.
+// Paper-skin nav surface — replaces the fixed bottom tab bar with a paper-tab
+// handle in the top-right of the header. Tapping the handle opens a paper
+// menu sheet listing the same destinations. Frees the bottom band entirely
+// so the workout action bar can own it without stacking chrome.
+const PAPER_NAV_TABS = [
+  { id: "timer",    label: "Timer",    screen: null,       onClick: "openStandaloneTimer()" },
+  { id: "workout",  label: "Lift",     screen: "workout"  },
+  { id: "history",  label: "Log",      screen: "history"  },
+  { id: "prs",      label: "PRs",      screen: "prs"      },
+  { id: "body",     label: "Body",     screen: "body"     },
+  { id: "settings", label: "Settings", screen: "settings" },
+];
+
 function paperRebuildBottomNav() {
-  const nav = document.querySelector("nav.bottom");
-  if (!nav || nav.dataset.paperBuilt === "1") return;
-  // Determine current active tab from the existing buttons (which screen has .active class on its section)
-  const tabs = [
-    { id: "timer",    label: "Timer",    screen: null,       onClick: "openStandaloneTimer()" },
-    { id: "workout",  label: "Lift",     screen: "workout"  },
-    { id: "history",  label: "Log",      screen: "history"  },
-    { id: "prs",      label: "PRs",      screen: "prs"      },
-    { id: "body",     label: "Body",     screen: "body"     },
-    { id: "settings", label: "Settings", screen: "settings" },
-  ];
-  const inkColor = paperInkColor();
-  nav.innerHTML = `
-    ${paperTornEdge("top", PAPER.creamDeep)}
-    <div class="paper-nav-tabs">
-      ${tabs.map(t => `
-        <button class="paper-nav-tab" ${t.screen ? `data-screen="${t.screen}"` : ""}
-                ${t.onClick ? `onclick="${t.onClick}"` : ""}>
-          <span class="paper-nav-label">${t.label}</span>
-          <svg class="paper-nav-squiggle" width="44" height="6" viewBox="0 0 44 6" aria-hidden="true">
-            <path d="M2 4 Q 12 1, 22 3 T 42 2.5" fill="none"
-              stroke="${inkColor}" stroke-width="2" stroke-linecap="round"
-              style="filter:url(#paper-roughen);"/>
-          </svg>
-        </button>
-      `).join("")}
-    </div>
-  `;
-  nav.dataset.paperBuilt = "1";
-  // initNav() in 20-toast-nav.js wires data-screen buttons on subsequent calls
-  if (typeof initNav === "function") initNav();
+  // Bottom nav itself is hidden via CSS under paper skin. Wire the top-right
+  // menu handle to open the paper menu sheet. Idempotent.
+  const handle = document.getElementById("paperMenuBtn");
+  if (!handle) return;
+  handle.style.display = "";
+  if (handle.dataset.paperBuilt === "1") return;
+  handle.addEventListener("click", (e) => {
+    e.stopPropagation();
+    paperOpenNavMenu();
+    if (navigator.vibrate) navigator.vibrate(8);
+  });
+  handle.dataset.paperBuilt = "1";
 }
 
-// Update which paper-nav tab is highlighted as active.
-function paperUpdateActiveNavTab(screenId) {
-  const nav = document.querySelector("nav.bottom");
-  if (!nav) return;
-  nav.querySelectorAll(".paper-nav-tab").forEach(btn => {
-    const id = btn.dataset.screen;
-    btn.classList.toggle("active", id === screenId);
+function paperOpenNavMenu() {
+  if (typeof openSheet !== "function") return;
+  const inkColor = (typeof paperInkColor === "function") ? paperInkColor() : "#1e3a72";
+  const activeScreen = document.querySelector(".screen.active");
+  const activeId = activeScreen ? activeScreen.id.replace(/^screen-/, "") : "workout";
+  const items = PAPER_NAV_TABS.map(t => {
+    const isActive = t.screen === activeId;
+    const dataAttrs = t.screen
+      ? `data-paper-menu-screen="${t.screen}"`
+      : `data-paper-menu-action="${t.id}"`;
+    return `
+      <button class="paper-menu-item${isActive ? " active" : ""}" ${dataAttrs} type="button">
+        <span class="paper-menu-item-label">${t.label}</span>
+        <svg class="paper-menu-item-squiggle" width="80" height="8" viewBox="0 0 80 8" aria-hidden="true">
+          <path d="M2 5 Q 16 1, 30 4 T 60 3 T 78 4" fill="none"
+            stroke="${inkColor}" stroke-width="2" stroke-linecap="round"
+            style="filter:url(#paper-roughen);"/>
+        </svg>
+      </button>
+    `;
+  }).join("");
+
+  const wrap = document.createElement("div");
+  wrap.className = "paper-menu-sheet";
+  wrap.innerHTML = `
+    <div class="paper-menu-sheet-head">
+      <span class="paper-menu-sheet-kicker">go to &mdash;</span>
+      <button class="paper-menu-sheet-close" type="button" aria-label="Close menu">&times;</button>
+    </div>
+    <div class="paper-menu-list">${items}</div>
+  `;
+  openSheet(wrap);
+
+  wrap.querySelector(".paper-menu-sheet-close")
+      .addEventListener("click", () => closeSheet());
+
+  wrap.querySelectorAll(".paper-menu-item").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const screen = btn.dataset.paperMenuScreen;
+      const action = btn.dataset.paperMenuAction;
+      closeSheet();
+      if (screen && typeof showScreen === "function") {
+        showScreen(screen);
+      } else if (action === "timer" && typeof openStandaloneTimer === "function") {
+        openStandaloneTimer();
+      }
+      if (navigator.vibrate) navigator.vibrate(10);
+    });
   });
+}
+
+// Update the active-screen breadcrumb on the menu handle.
+function paperUpdateActiveNavTab(screenId) {
+  const handle = document.getElementById("paperMenuBtn");
+  if (handle) {
+    const lbl = document.getElementById("paperMenuActiveLabel");
+    const match = PAPER_NAV_TABS.find(t => t.screen === screenId);
+    if (lbl) lbl.textContent = match ? match.label : "";
+    handle.dataset.activeScreen = screenId || "";
+  }
+  // Legacy paper-bottom-nav tabs (kept as no-op for safety if any path
+  // re-renders into the old DOM).
+  const nav = document.querySelector("nav.bottom");
+  if (nav) {
+    nav.querySelectorAll(".paper-nav-tab").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.screen === screenId);
+    });
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -458,17 +510,18 @@ function paperUpdateActiveNavTab(screenId) {
 function paperRenderDayPicker() {
   const container = document.getElementById("blocksContainer");
   const u = (typeof userData === "function") ? userData() : null;
-  if (!container || !u) return;
+  const ap = (typeof activeProgram === "function") ? activeProgram() : null;
+  if (!container || !u || !ap) return;
 
   const tpl = (typeof PROGRAM_TEMPLATES !== "undefined")
-    ? (PROGRAM_TEMPLATES.find(t => t.id === u.templateId) || PROGRAM_TEMPLATES[0])
+    ? (PROGRAM_TEMPLATES.find(t => t.id === ap.templateId) || PROGRAM_TEMPLATES[0])
     : null;
 
   const dayNameEl = document.getElementById("dayName");
   const daySubEl = document.getElementById("daySub");
   if (dayNameEl) dayNameEl.textContent = "Today's Workout";
   if (daySubEl) {
-    daySubEl.textContent = (tpl ? tpl.name : "") + (u.totalWeeks ? " · Week " + (u.currentWeek || 1) + " of " + u.totalWeeks : "");
+    daySubEl.textContent = (tpl ? tpl.name : ap.displayName || "") + (ap.totalWeeks ? " · Week " + (ap.currentWeek || 1) + " of " + ap.totalWeeks : "");
   }
 
   const startBtn = document.getElementById("headerStartBtn");
@@ -488,7 +541,7 @@ function paperRenderDayPicker() {
 
   // Rest-day branch
   const todayDow = new Date().getDay();
-  const sched = (Array.isArray(u.weeklySchedule) && u.weeklySchedule.length === 7) ? u.weeklySchedule : null;
+  const sched = (Array.isArray(ap.weeklySchedule) && ap.weeklySchedule.length === 7) ? ap.weeklySchedule : null;
   const isRestToday = sched && sched[todayDow] == null;
 
   if (isRestToday) {
@@ -529,14 +582,16 @@ function paperRenderDayPicker() {
   }
 
   // Normal branch — hero day + others
-  const nextId = (typeof determineDefaultDay === "function") ? determineDefaultDay() : (u.program[0] && u.program[0].id);
-  const nextDay = u.program.find(d => d.id === nextId) || u.program[0];
+  const days = ap.program || [];
+  const nextId = (typeof determineDefaultDay === "function") ? determineDefaultDay() : (days[0] && days[0].id);
+  const nextDay = days.find(d => d.id === nextId) || days[0];
+  if (!nextDay) return;
   const picker = document.createElement("div");
   picker.className = "paper-day-picker";
 
   picker.appendChild(paperBuildDayCard(nextDay, true));
 
-  const others = u.program.filter(d => d.id !== nextDay.id);
+  const others = days.filter(d => d.id !== nextDay.id);
   if (others.length) {
     const toggle = document.createElement("button");
     toggle.className = "paper-day-picker-toggle";
@@ -685,7 +740,29 @@ function paperFindNextBlockIdx(day, bi, dir) {
   return null;
 }
 
-function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone) {
+// Day-wide active set finder — first not-done, non-warmup set across all blocks.
+// Used by the chapters/overview action bar so logging follows the workout's
+// next-to-do set, regardless of where the user has scrolled.
+function paperFindDayActiveSet(day) {
+  if (!day || !day.blocks) return { bi: 0, exIdx: 0, setIdx: 0, allDone: true };
+  for (let bi = 0; bi < day.blocks.length; bi++) {
+    const block = day.blocks[bi];
+    if (!block || !block.exercises) continue;
+    for (let ei = 0; ei < block.exercises.length; ei++) {
+      const ex = block.exercises[ei];
+      if (ex.isWarmup) continue;
+      const nSets = ex.sets || 3;
+      for (let si = 0; si < nSets; si++) {
+        const st = (typeof getInput === "function")
+          ? getInput(inputKey(block.id, ei, si, "status"), null) : null;
+        if (st !== "done") return { bi, exIdx: ei, setIdx: si, allDone: false };
+      }
+    }
+  }
+  return { bi: 0, exIdx: 0, setIdx: 0, allDone: true };
+}
+
+function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi) {
   const bar = document.createElement("div");
   bar.className = "paper-action-bar";
 
@@ -793,7 +870,8 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone) {
     if (typeof openSidebar === "function") {
       const libEx = (typeof LIB_BY_ID !== "undefined") ? LIB_BY_ID[ex.exId] : null;
       const cat = libEx ? libEx.cat : (block.type === "warmup" ? "Warmup" : null);
-      openSidebar(cat, state.focusBlockIdx, activeExIdx);
+      const swapBi = (bi != null) ? bi : state.focusBlockIdx;
+      openSidebar(cat, swapBi, activeExIdx);
     }
   });
   if (typeof paperWirePress === "function") paperWirePress(swapBtn);
@@ -1118,7 +1196,7 @@ function paperRenderFocusView(container, day) {
   wrap.appendChild(swipeHint);
 
   // ── ACTION BAR ──
-  wrap.appendChild(paperBuildActionBar(day, block, active.exIdx, active.setIdx, active.allDone));
+  wrap.appendChild(paperBuildActionBar(day, block, active.exIdx, active.setIdx, active.allDone, bi));
 
   container.appendChild(wrap);
 }
@@ -1135,4 +1213,6 @@ if (typeof window !== "undefined") {
   window.paperRenderFocusView = paperRenderFocusView;
   window.paperBuildActionBar = paperBuildActionBar;
   window.paperFindActiveSet = paperFindActiveSet;
+  window.paperFindDayActiveSet = paperFindDayActiveSet;
+  window.paperOpenNavMenu = paperOpenNavMenu;
 }

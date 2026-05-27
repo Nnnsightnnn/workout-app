@@ -42,7 +42,7 @@ function pauseSessionTimer() {
   if (state.sessionIntervalId) clearInterval(state.sessionIntervalId);
   state.sessionIntervalId = null;
   stopPaceTicker();
-  updateUser(u => { if (u.draft) u.draft.pausedAt = Date.now(); });
+  updateActiveProgram(entry => { if (entry.draft) entry.draft.pausedAt = Date.now(); });
   const el = document.getElementById("sessionPill");
   el.classList.add("paused");
 }
@@ -51,10 +51,10 @@ function resumeSessionTimer() {
   const draft = getDraft();
   if (!draft || !draft.pausedAt) return;
   const pausedFor = Date.now() - draft.pausedAt;
-  updateUser(u => {
-    if (!u.draft) return;
-    u.draft.startedAt += pausedFor;
-    u.draft.pausedAt = null;
+  updateActiveProgram(entry => {
+    if (!entry.draft) return;
+    entry.draft.startedAt += pausedFor;
+    entry.draft.pausedAt = null;
   });
   state.workoutStartedAt = getDraft().startedAt;
   document.getElementById("sessionPill").classList.remove("paused");

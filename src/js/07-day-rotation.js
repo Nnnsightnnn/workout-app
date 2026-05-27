@@ -2,71 +2,72 @@
 // DAY ROTATION LOGIC
 // ============================================================
 function determineDefaultDay() {
-  const u = userData();
-  if (!u) return 1;
+  const p = activeProgram();
+  if (!p) return 1;
   // If draft exists, show that day
-  if (u.draft) return u.draft.dayId;
+  if (p.draft) return p.draft.dayId;
   // If today is mapped to a program day in the weekly schedule, prefer that
-  if (Array.isArray(u.weeklySchedule) && u.weeklySchedule.length === 7) {
-    const todaysId = u.weeklySchedule[new Date().getDay()];
-    if (todaysId != null && u.program.find(d => d.id === todaysId)) {
+  if (Array.isArray(p.weeklySchedule) && p.weeklySchedule.length === 7) {
+    const todaysId = p.weeklySchedule[new Date().getDay()];
+    if (todaysId != null && p.program.find(d => d.id === todaysId)) {
       return todaysId;
     }
   }
   // Else next in rotation
-  const last = u.lastDoneDayId;
+  const last = p.lastDoneDayId;
   if (last == null) return 1;
-  return (last % u.program.length) + 1;
+  return (last % p.program.length) + 1;
 }
 
 function getCurrentDay() {
-  const u = userData();
-  if (!u) return null;
-  return u.program.find(d => d.id === state.currentDayId);
+  const p = activeProgram();
+  if (!p) return null;
+  return p.program.find(d => d.id === state.currentDayId);
 }
 
 // Check if week needs to roll over and regenerate program
 function checkWeekRollover() {
   const u = userData();
-  if (!u || !u.totalWeeks || !u.currentWeek) return;
+  const p = activeProgram();
+  if (!u || !p || !p.totalWeeks || !p.currentWeek) return;
   // Don't roll over if there's a draft in progress
-  if (u.draft) return;
+  if (p.draft) return;
   // Check if all days this week are done
-  var daysInProgram = u.program.length;
+  var daysInProgram = p.program.length;
   var weekSessions = (u.sessions || []).filter(function(s) {
-    return s.programWeek === u.currentWeek;
+    return s.programWeek === p.currentWeek && (!s.programId || s.programId === p.id);
   });
   var uniqueDays = new Set(weekSessions.map(function(s) { return s.dayId; }));
-  if (uniqueDays.size >= daysInProgram && u.currentWeek < u.totalWeeks) {
+  if (uniqueDays.size >= daysInProgram && p.currentWeek < p.totalWeeks) {
     advanceWeek();
   }
 }
 
 function advanceWeek() {
-  var u = userData();
-  if (!u) return;
-  var nextWeek = Math.min((u.currentWeek || 1) + 1, (u.totalWeeks || 12) + 1);
-  updateUser(function(usr) {
-    usr.currentWeek = nextWeek;
-    usr.lastDoneDayId = null;
-    usr.draft = null;
-    var generated = resolveWeekProgram(usr.templateId, nextWeek, usr.totalWeeks, usr.daysPerWeek);
-    if (generated) usr.program = preserveCustomDays(usr.program, generated);
+  var p = activeProgram();
+  if (!p) return;
+  var nextWeek = Math.min((p.currentWeek || 1) + 1, (p.totalWeeks || 12) + 1);
+  updateActiveProgram(function(entry) {
+    entry.currentWeek = nextWeek;
+    entry.lastDoneDayId = null;
+    entry.draft = null;
+    var generated = resolveWeekProgram(entry.templateId, nextWeek, entry.totalWeeks, entry.daysPerWeek);
+    if (generated) entry.program = preserveCustomDays(entry.program, generated);
   });
   state.currentDayId = 1;
   state.dayChosen = false;
 }
 
 function goBackWeek() {
-  var u = userData();
-  if (!u || !u.currentWeek || u.currentWeek <= 1) return;
-  var prevWeek = u.currentWeek - 1;
-  updateUser(function(usr) {
-    usr.currentWeek = prevWeek;
-    usr.lastDoneDayId = null;
-    usr.draft = null;
-    var generated = resolveWeekProgram(usr.templateId, prevWeek, usr.totalWeeks, usr.daysPerWeek);
-    if (generated) usr.program = preserveCustomDays(usr.program, generated);
+  var p = activeProgram();
+  if (!p || !p.currentWeek || p.currentWeek <= 1) return;
+  var prevWeek = p.currentWeek - 1;
+  updateActiveProgram(function(entry) {
+    entry.currentWeek = prevWeek;
+    entry.lastDoneDayId = null;
+    entry.draft = null;
+    var generated = resolveWeekProgram(entry.templateId, prevWeek, entry.totalWeeks, entry.daysPerWeek);
+    if (generated) entry.program = preserveCustomDays(entry.program, generated);
   });
   state.currentDayId = 1;
   state.dayChosen = false;

@@ -17,12 +17,14 @@ function closeSheet() {
 function openDayPicker() {
   const u = userData();
   if (!u) return;
+  const entry = activeProgramOf(u);
+  if (!entry) return;
   const wrap = document.createElement("div");
   wrap.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><h3 style="margin:0;">Switch Day</h3><button class="icon-btn" onclick="closeSheet()" title="Close">✕</button></div>`;
 
   const todayDow = new Date().getDay();
   const dowName = (typeof _DOW_LABELS_LONG !== "undefined") ? _DOW_LABELS_LONG[todayDow] : "today";
-  const sched = (Array.isArray(u.weeklySchedule) && u.weeklySchedule.length === 7) ? u.weeklySchedule : null;
+  const sched = (Array.isArray(entry.weeklySchedule) && entry.weeklySchedule.length === 7) ? entry.weeklySchedule : null;
   const scheduledDayId = sched ? sched[todayDow] : null;
   const isRestToday = sched && scheduledDayId == null;
 
@@ -33,8 +35,8 @@ function openDayPicker() {
     : "Your next in rotation is highlighted.";
   wrap.appendChild(subline);
 
-  const next = (u.lastDoneDayId == null) ? 1 : (u.lastDoneDayId % u.program.length) + 1;
-  u.program.forEach(d => {
+  const next = (entry.lastDoneDayId == null) ? 1 : (entry.lastDoneDayId % entry.program.length) + 1;
+  entry.program.forEach(d => {
     const btn = document.createElement("button");
     btn.className = "sheet-item" + (d.id === state.currentDayId ? " current" : "");
     const isScheduled = scheduledDayId === d.id;
@@ -125,6 +127,8 @@ function openDayPicker() {
 function openTrainAnywayPicker() {
   const u = userData();
   if (!u) return;
+  const entry = activeProgramOf(u);
+  if (!entry) return;
   const wrap = document.createElement("div");
   wrap.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><h3 style="margin:0;">Train anyway</h3><button class="icon-btn" onclick="closeSheet()" title="Close">\u2715</button></div>`;
 
@@ -133,8 +137,8 @@ function openTrainAnywayPicker() {
   subline.textContent = "Today is a rest day \u2014 pick a session to run.";
   wrap.appendChild(subline);
 
-  const next = (u.lastDoneDayId == null) ? 1 : (u.lastDoneDayId % u.program.length) + 1;
-  u.program.forEach(d => {
+  const next = (entry.lastDoneDayId == null) ? 1 : (entry.lastDoneDayId % entry.program.length) + 1;
+  entry.program.forEach(d => {
     const btn = document.createElement("button");
     btn.className = "sheet-item" + (d.id === state.currentDayId ? " current" : "");
     const tags = [];
@@ -167,14 +171,21 @@ function openTrainAnywayPicker() {
 const _DOW_LABELS_LONG = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const _DOW_LABELS_SHORT = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
-// Ensures u.weeklySchedule is a 7-element array, seeding from default pattern if missing.
-function ensureWeeklySchedule(u) {
-  if (!Array.isArray(u.weeklySchedule) || u.weeklySchedule.length !== 7) {
-    u.weeklySchedule = (typeof buildDefaultWeeklySchedule === "function")
-      ? buildDefaultWeeklySchedule(u)
+// Ensures entry.weeklySchedule is a 7-element array, seeding from default
+// pattern if missing. Accepts either an active program entry (post-v21) or
+// — for migration use — anything with .program/.daysPerWeek/.weeklySchedule.
+function ensureWeeklySchedule(entryOrUser) {
+  // If a user record is passed by mistake, route to the active entry.
+  if (entryOrUser && Array.isArray(entryOrUser.programs) && entryOrUser.activeProgramId) {
+    const e = entryOrUser.programs.find(p => p.id === entryOrUser.activeProgramId);
+    if (e) entryOrUser = e;
+  }
+  if (!Array.isArray(entryOrUser.weeklySchedule) || entryOrUser.weeklySchedule.length !== 7) {
+    entryOrUser.weeklySchedule = (typeof buildDefaultWeeklySchedule === "function")
+      ? buildDefaultWeeklySchedule(entryOrUser)
       : [null, null, null, null, null, null, null];
   }
-  return u.weeklySchedule;
+  return entryOrUser.weeklySchedule;
 }
 
 // Find which dow currently holds a given dayId, or -1 if none.
@@ -210,14 +221,16 @@ function openWeeklyScheduleEditor() {
 
   function rerender() {
     const u2 = userData();
-    const sched = ensureWeeklySchedule(u2);
+    const entry2 = activeProgramOf(u2);
+    if (!entry2) return;
+    const sched = ensureWeeklySchedule(entry2);
     list.innerHTML = "";
 
     for (let dow = 0; dow < 7; dow++) {
       const row = document.createElement("button");
       row.className = "sheet-item";
       const assignedId = sched[dow];
-      const day = assignedId != null ? u2.program.find(d => d.id === assignedId) : null;
+      const day = assignedId != null ? entry2.program.find(d => d.id === assignedId) : null;
       const isToday = dow === new Date().getDay();
       const todayBadge = isToday ? '<span class="meta" style="color:var(--accent);">today</span>' : '';
       const label = day
@@ -239,6 +252,8 @@ function openWeeklyScheduleEditor() {
 function openAssignDayPicker(dow, onDone) {
   const u = userData();
   if (!u) return;
+  const entry = activeProgramOf(u);
+  if (!entry) return;
 
   const wrap = document.createElement("div");
   wrap.innerHTML = `
@@ -252,7 +267,7 @@ function openAssignDayPicker(dow, onDone) {
   // Rest option
   const restBtn = document.createElement("button");
   restBtn.className = "sheet-item";
-  const sched = ensureWeeklySchedule(u);
+  const sched = ensureWeeklySchedule(entry);
   if (sched[dow] == null) restBtn.classList.add("current");
   restBtn.innerHTML = `<span class="icon">—</span><span>Rest day</span>`;
   restBtn.onclick = () => {
@@ -267,7 +282,7 @@ function openAssignDayPicker(dow, onDone) {
   };
   wrap.appendChild(restBtn);
 
-  u.program.forEach(d => {
+  entry.program.forEach(d => {
     const btn = document.createElement("button");
     btn.className = "sheet-item" + (sched[dow] === d.id ? " current" : "");
     const otherDow = _dowOfDayId(sched, d.id);

@@ -20,7 +20,8 @@ function renderHistory() {
   let html = "";
 
   // ── Stats trio ──
-  const { count: streak } = getTrainingStreak(sessions, u.daysPerWeek);
+  const _apHist = (typeof activeProgram === "function") ? activeProgram() : null;
+  const { count: streak } = getTrainingStreak(sessions, _apHist ? _apHist.daysPerWeek : null);
   const prCount = _countRecentPRs(sessions, thirtyAgo);
   html += '<div class="log-stats">';
   html += `<div class="log-stat-card"><div class="log-label">Sessions</div><div class="log-val">${sessions.length}</div><div class="log-sub">${recent30d.length} / 30d</div></div>`;

@@ -45,7 +45,9 @@ function getCurrentPhase(tpl, weekNum) {
 
 function getTemplateForUser(u) {
   if (!u) return null;
-  return PROGRAM_TEMPLATES.find(t => t.id === u.templateId) || null;
+  const entry = activeProgramOf(u);
+  if (!entry) return null;
+  return PROGRAM_TEMPLATES.find(t => t.id === entry.templateId) || null;
 }
 
 function getDayPrimaryColor(session) {
@@ -78,6 +80,8 @@ function renderTimelineStrip() {
   if (!container) return;
   const u = userData();
   if (!u) { container.innerHTML = ""; container.style.display = "none"; return; }
+  const entry = activeProgramOf(u);
+  if (!entry) { container.innerHTML = ""; container.style.display = "none"; return; }
 
   container.style.display = "";
   container.innerHTML = "";
@@ -95,11 +99,11 @@ function renderTimelineStrip() {
   }
 
   // Streak (training-frequency-aware)
-  const { count: streak, atRisk: streakAtRisk } = getTrainingStreak(sessions, u.daysPerWeek);
+  const { count: streak, atRisk: streakAtRisk } = getTrainingStreak(sessions, entry.daysPerWeek);
 
   // Phase info — prefer user's workout-count-based week, fall back to date-based
-  const weekNum = u.currentWeek || getProgramWeek(u.programStartDate);
-  const dynamicPhases = getPhasesForTemplate(u.templateId, u.totalWeeks);
+  const weekNum = entry.currentWeek || getProgramWeek(entry.programStartDate);
+  const dynamicPhases = getPhasesForTemplate(entry.templateId, entry.totalWeeks);
   const phase = dynamicPhases ? phaseForWeek(dynamicPhases, weekNum) : getCurrentPhase(tpl, weekNum);
 
   // Top row: streak + forge counter + phase label
@@ -114,7 +118,7 @@ function renderTimelineStrip() {
     infoRow.appendChild(streakEl);
   }
 
-  var displayTotalWeeks = u.totalWeeks || (tpl && tpl.totalWeeks);
+  var displayTotalWeeks = entry.totalWeeks || (tpl && tpl.totalWeeks);
   if (displayTotalWeeks && weekNum) {
     const phaseEl = document.createElement("div");
     phaseEl.className = "tl-phase";
@@ -141,7 +145,7 @@ function renderTimelineStrip() {
     const isToday = dateMs === todayMs;
     const isPast = dateMs < todayMs;
     const session = getSessionForDate(sessions, dateMs);
-    const scheduled = !isPast && !isToday && isScheduledDay(u.weeklySchedule, dateMs);
+    const scheduled = !isPast && !isToday && isScheduledDay(entry.weeklySchedule, dateMs);
     const color = session ? getDayPrimaryColor(session) : null;
 
     pill.className = "tl-pill" +
@@ -170,16 +174,16 @@ function renderTimelineStrip() {
       pill.classList.remove("future");
       const dow = d.getDay();
       let scheduledDayId = null;
-      if (Array.isArray(u.weeklySchedule) && u.weeklySchedule.length === 7) {
-        scheduledDayId = u.weeklySchedule[dow];
-      } else if (typeof _laTrainingPattern === "function" && u.daysPerWeek) {
-        const pattern = _laTrainingPattern(u.daysPerWeek);
+      if (Array.isArray(entry.weeklySchedule) && entry.weeklySchedule.length === 7) {
+        scheduledDayId = entry.weeklySchedule[dow];
+      } else if (typeof _laTrainingPattern === "function" && entry.daysPerWeek) {
+        const pattern = _laTrainingPattern(entry.daysPerWeek);
         const dayIdx = pattern.indexOf(dow);
-        if (dayIdx !== -1 && dayIdx < u.program.length) {
-          scheduledDayId = u.program[dayIdx].id;
+        if (dayIdx !== -1 && dayIdx < entry.program.length) {
+          scheduledDayId = entry.program[dayIdx].id;
         }
       }
-      if (scheduledDayId != null && u.program.find(d => d.id === scheduledDayId)) {
+      if (scheduledDayId != null && entry.program.find(d => d.id === scheduledDayId)) {
         pill.classList.add("scheduled");
       }
       pill.onclick = () => openPlanWorkout(dateMs);
@@ -332,6 +336,8 @@ function undoDeleteSession() {
 function openAddWorkout(dateMs) {
   const u = userData();
   if (!u) return;
+  const entry = activeProgramOf(u);
+  if (!entry) return;
   const d = new Date(dateMs);
   const dateStr = d.toLocaleDateString(undefined, { weekday:"long", month:"short", day:"numeric" });
 
@@ -344,7 +350,7 @@ function openAddWorkout(dateMs) {
 
   // Day selection cards
   const next = determineDefaultDay();
-  u.program.forEach(day => {
+  entry.program.forEach(day => {
     const btn = document.createElement("button");
     btn.className = "sheet-item";
     const nextTag = day.id === next ? ' <span style="color:var(--accent);font-size:10px;font-weight:800;">NEXT</span>' : "";
@@ -361,6 +367,8 @@ function openAddWorkout(dateMs) {
 function openPlanWorkout(dateMs) {
   const u = userData();
   if (!u) return;
+  const entry = activeProgramOf(u);
+  if (!entry) return;
   const d = new Date(dateMs);
   const dateStr = d.toLocaleDateString(undefined, { weekday:"long", month:"short", day:"numeric" });
   const dow = d.getDay();
@@ -369,9 +377,9 @@ function openPlanWorkout(dateMs) {
   const todayStart = new Date(); todayStart.setHours(0,0,0,0);
   const isToday = dateMs === todayStart.getTime();
 
-  const sched = (Array.isArray(u.weeklySchedule) && u.weeklySchedule.length === 7) ? u.weeklySchedule : null;
+  const sched = (Array.isArray(entry.weeklySchedule) && entry.weeklySchedule.length === 7) ? entry.weeklySchedule : null;
   const scheduledDayId = sched ? sched[dow] : null;
-  const scheduledDay = scheduledDayId != null ? u.program.find(dd => dd.id === scheduledDayId) : null;
+  const scheduledDay = scheduledDayId != null ? entry.program.find(dd => dd.id === scheduledDayId) : null;
   const isRest = sched && scheduledDayId == null;
 
   const wrap = document.createElement("div");
@@ -408,7 +416,7 @@ function openPlanWorkout(dateMs) {
   }
 
   const next = determineDefaultDay();
-  u.program.forEach(day => {
+  entry.program.forEach(day => {
     const btn = document.createElement("button");
     btn.className = "sheet-item" + (day.id === scheduledDayId ? " current" : "");
     const tag = day.id === scheduledDayId
@@ -826,16 +834,17 @@ function renderStampCard() {
   if (!el) return;
   const u = userData();
   if (!u) { el.style.display = "none"; return; }
+  const entry = activeProgramOf(u);
 
   el.style.display = "";
   el.innerHTML = "";
 
   const sessions = u.sessions || [];
-  const target = u.program ? u.program.length : (u.daysPerWeek || 4);
+  const target = (entry && entry.program) ? entry.program.length : ((entry && entry.daysPerWeek) || 4);
   let completed = 0;
 
-  if (u.currentWeek) {
-    const weekSessions = sessions.filter(s => s.programWeek === u.currentWeek);
+  if (entry && entry.currentWeek) {
+    const weekSessions = sessions.filter(s => s.programWeek === entry.currentWeek);
     completed = new Set(weekSessions.map(s => s.dayId)).size;
   } else {
     const weekAgo = Date.now() - 7 * 86400000;

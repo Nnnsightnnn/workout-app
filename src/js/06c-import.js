@@ -23,7 +23,14 @@ function validateImportData(data) {
     data.users.forEach((u, i) => {
       if (!u.id) errors.push("User " + i + " missing id");
       if (!u.name) errors.push("User " + i + " missing name");
-      if (!Array.isArray(u.program)) errors.push("User " + i + " missing program");
+      // v21 backups: programs[] is the library. Older backups still carry the
+      // legacy top-level u.program — migrateImportedData wraps those, so accept
+      // either shape here.
+      const hasNewLibrary = Array.isArray(u.programs);
+      const hasLegacyProgram = Array.isArray(u.program);
+      if (!hasNewLibrary && !hasLegacyProgram) {
+        errors.push("User " + i + " missing programs");
+      }
       if (!Array.isArray(u.sessions)) errors.push("User " + i + " missing sessions");
     });
   }

@@ -357,6 +357,57 @@ const MIGRATIONS = [
       });
       return store;
     }
+  },
+  {
+    version: 21,
+    description: "Collapse single active-program slot into u.programs[] library + u.activeProgramId",
+    migrate(store) {
+      (store.users || []).forEach(u => {
+        if (Array.isArray(u.programs) && u.activeProgramId) return; // already migrated (defensive)
+
+        const tpl = (typeof PROGRAM_TEMPLATES !== "undefined")
+          ? PROGRAM_TEMPLATES.find(t => t.id === u.templateId) : null;
+        const fallbackName = (u.templateId === "custom") ? "My Program" : (u.templateId || "Program");
+        const displayName = tpl ? tpl.name : fallbackName;
+
+        const entry = {
+          id: "p_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7),
+          displayName,
+          templateId: u.templateId || "custom",
+          program: Array.isArray(u.program) ? u.program : [],
+          daysPerWeek: u.daysPerWeek || null,
+          totalWeeks: (u.totalWeeks === undefined) ? null : u.totalWeeks,
+          currentWeek: u.currentWeek || 1,
+          programStartDate: u.programStartDate || Date.now(),
+          weeklySchedule: (u.weeklySchedule === undefined) ? null : u.weeklySchedule,
+          lastDoneDayId: (u.lastDoneDayId === undefined) ? null : u.lastDoneDayId,
+          draft: (u.draft === undefined) ? null : u.draft,
+          rp: u.rp || null
+        };
+
+        u.programs = [entry];
+        u.activeProgramId = entry.id;
+
+        // Stamp existing sessions with the migrated program id so future
+        // per-program history filtering doesn't need another migration.
+        (u.sessions || []).forEach(s => {
+          if (s.programId === undefined) s.programId = entry.id;
+        });
+
+        // Remove the moved fields from the top-level user record.
+        delete u.templateId;
+        delete u.program;
+        delete u.daysPerWeek;
+        delete u.totalWeeks;
+        delete u.currentWeek;
+        delete u.programStartDate;
+        delete u.weeklySchedule;
+        delete u.lastDoneDayId;
+        delete u.draft;
+        delete u.rp;
+      });
+      return store;
+    }
   }
 ];
 

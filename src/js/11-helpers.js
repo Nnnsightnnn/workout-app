@@ -39,7 +39,8 @@ function injectLinearProgressionHint(wrap, ex, block, ei) {
   if (!u) return;
   // Defer to the RP engine when the user has opted into it (avoids
   // duplicate suggestions stacked on top of each other).
-  if (u.rp && u.rp.enabled) return;
+  const _ap = activeProgramOf(u);
+  if (_ap && _ap.rp && _ap.rp.enabled) return;
 
   const exId = (ex && (ex.exId || ex.name)) || null;
   if (!exId) return;

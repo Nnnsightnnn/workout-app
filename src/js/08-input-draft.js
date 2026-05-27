@@ -2,15 +2,15 @@
 // INPUT DRAFT MANAGEMENT
 // ============================================================
 function getDraft() {
-  const u = userData();
-  if (!u || !u.draft || u.draft.dayId !== state.currentDayId) return null;
-  return u.draft;
+  const p = activeProgram();
+  if (!p || !p.draft || p.draft.dayId !== state.currentDayId) return null;
+  return p.draft;
 }
 
 function ensureDraft() {
-  updateUser(u => {
-    if (!u.draft || u.draft.dayId !== state.currentDayId) {
-      u.draft = { dayId: state.currentDayId, startedAt: Date.now(), inputs: {}, pausedAt: null };
+  updateActiveProgram(entry => {
+    if (!entry.draft || entry.draft.dayId !== state.currentDayId) {
+      entry.draft = { dayId: state.currentDayId, startedAt: Date.now(), inputs: {}, pausedAt: null };
     }
   });
 }
@@ -19,14 +19,16 @@ function saveInput(key, value) {
   const s = loadStore();
   const user = s.users.find(u => u.id === state.userId);
   if (!user) return;
-  if (!user.draft || user.draft.dayId !== state.currentDayId) {
-    user.draft = { dayId: state.currentDayId, startedAt: Date.now(), inputs: {}, pausedAt: null };
+  const entry = activeProgramOf(user);
+  if (!entry) return;
+  if (!entry.draft || entry.draft.dayId !== state.currentDayId) {
+    entry.draft = { dayId: state.currentDayId, startedAt: Date.now(), inputs: {}, pausedAt: null };
     if (state.autoTimer) {
-      state.workoutStartedAt = user.draft.startedAt;
+      state.workoutStartedAt = entry.draft.startedAt;
       startSessionTimer();
     }
   }
-  user.draft.inputs[key] = value;
+  entry.draft.inputs[key] = value;
   saveStore(s);
   updateFinishButton();
   updateProgress();

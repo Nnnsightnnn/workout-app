@@ -7912,61 +7912,137 @@ body[data-skin="paper"] .adhoc-paper-finish {
   align-self: center;
 }
 
-/* PAPER BOTTOM NAV — cream-deep bar with torn-edge top, 5 tabs,    */
-/* hand-drawn squiggle under the active tab. Stay pinned to the     */
-/* viewport bottom (default nav.bottom uses position:fixed).        */
-body[data-skin="paper"] nav.bottom {
+/* PAPER NAV — bottom tab bar is replaced by a paper-tab handle in the      */
+/* top-right of the header that opens a paper menu sheet. The bottom band   */
+/* is freed for the workout action bar.                                     */
+body[data-skin="paper"] nav.bottom { display: none !important; }
+body[data-skin="paper"] main { padding-bottom: 24px; }
+
+/* Top-right menu handle — folded-corner paper tab. */
+body[data-skin="paper"] .paper-menu-handle {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 1px;
+  margin-left: 8px;
+  padding: 6px 10px 6px 14px;
   background: var(--paper-bg-deep);
-  border-top: 1.4px solid rgba(40, 30, 15, 0.35);
-  padding: 10px 14px calc(env(safe-area-inset-bottom, 12px) + 12px);
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  border: 1.4px solid var(--paper-ink);
+  border-radius: 0;
+  color: var(--paper-ink);
+  cursor: pointer;
+  position: relative;
+  font-family: var(--paper-form);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  box-shadow: 1.5px 2px 0 rgba(40, 30, 15, 0.22);
+  transform: rotate(-1deg);
+  transition: transform 80ms ease, box-shadow 80ms ease;
 }
-/* Reserve scroll-bottom room so the last block isn't hidden by the */
-/* fixed paper-nav bar.                                             */
-body[data-skin="paper"] main {
-  padding-bottom: 120px;
+body[data-skin="paper"] .paper-menu-handle:active {
+  transform: rotate(-1deg) translate(1px, 1px);
+  box-shadow: 0.5px 1px 0 rgba(40, 30, 15, 0.22);
 }
-body[data-skin="paper"] nav.bottom .paper-torn-edge {
+/* Folded-corner accent — small clipped triangle at the top-left of the tab. */
+body[data-skin="paper"] .paper-menu-handle::before {
+  content: "";
   position: absolute;
-  left: 0; right: 0; top: -8px;
-  width: 100%; height: 10px;
+  top: -1px; left: -1px;
+  width: 12px; height: 12px;
+  background: var(--paper-bg);
+  border-right: 1.4px solid var(--paper-ink);
+  border-bottom: 1.4px solid var(--paper-ink);
+  clip-path: polygon(0 0, 100% 100%, 0 100%);
 }
-body[data-skin="paper"] .paper-nav-tabs {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  flex: 1;
-  max-width: 700px;
-  margin: 0 auto;
+body[data-skin="paper"] .paper-menu-handle-label {
+  font-size: 9px;
+  color: var(--paper-ink-faint);
+  line-height: 1;
 }
-body[data-skin="paper"] .paper-nav-tab {
+body[data-skin="paper"] .paper-menu-handle-screen {
+  font-family: var(--paper-hand);
+  font-size: 14px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--paper-ink);
+  line-height: 1.05;
+  margin-top: 1px;
+}
+body[data-skin="paper"] .paper-menu-handle-screen:empty { display: none; }
+
+/* Non-paper skins keep the bottom nav and shouldn't show the handle. */
+body:not([data-skin="paper"]) .paper-menu-handle { display: none !important; }
+
+/* Paper menu sheet — handwritten destinations list with squiggle. */
+body[data-skin="paper"] .paper-menu-sheet {
   display: flex;
   flex-direction: column;
+  gap: 14px;
+  padding: 4px 4px 8px;
+}
+body[data-skin="paper"] .paper-menu-sheet-head {
+  display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 4px 6px;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px dotted var(--paper-ink-mist);
+}
+body[data-skin="paper"] .paper-menu-sheet-kicker {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .paper-menu-sheet-close {
   background: transparent;
   border: none;
+  color: var(--paper-ink-faint);
+  font-size: 22px;
+  line-height: 1;
   cursor: pointer;
+  padding: 4px 8px;
+  font-family: var(--paper-form);
+}
+body[data-skin="paper"] .paper-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+body[data-skin="paper"] .paper-menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px 6px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px dotted var(--paper-ink-mist);
   color: var(--paper-ink-faint);
   font-family: var(--paper-hand);
-  font-size: 16px;
+  font-size: 26px;
   font-weight: 400;
+  cursor: pointer;
+  text-align: left;
   position: relative;
 }
-body[data-skin="paper"] .paper-nav-tab.active {
+body[data-skin="paper"] .paper-menu-item:last-child { border-bottom: none; }
+body[data-skin="paper"] .paper-menu-item.active {
   color: var(--paper-ink);
   font-weight: 700;
 }
-body[data-skin="paper"] .paper-nav-tab .paper-nav-squiggle {
-  margin-top: -2px;
+body[data-skin="paper"] .paper-menu-item-squiggle {
   opacity: 0;
-  height: 6px;
+  height: 8px;
+  margin-left: -2px;
+  margin-top: -4px;
 }
-body[data-skin="paper"] .paper-nav-tab.active .paper-nav-squiggle {
+body[data-skin="paper"] .paper-menu-item.active .paper-menu-item-squiggle {
   opacity: 1;
+}
+body[data-skin="paper"] .paper-menu-item:active {
+  background: var(--paper-marker-soft);
 }
 
 /* Hide the legacy timeline strip's chunky chrome — it produces a   */
@@ -8351,6 +8427,129 @@ body[data-skin="paper"] .paper-link-btn {
   text-decoration: underline wavy;
   text-decoration-color: var(--paper-ink-mist);
   text-underline-offset: 4px;
+}
+body[data-skin="paper"] .paper-link-btn-danger {
+  color: var(--paper-red);
+}
+body[data-skin="paper"] .paper-stamp-btn-sm {
+  font-size: 10px;
+  padding: 6px 12px;
+}
+
+/* ============================================================ */
+/* PAPER PROGRAMS LIBRARY (v21)                                 */
+/* ============================================================ */
+body[data-skin="paper"] .paper-library {
+  /* Use the existing settings-block container; library-list is the only
+     new structural element. */
+}
+body[data-skin="paper"] .paper-library-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 12px;
+}
+body[data-skin="paper"] .paper-library-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px dotted var(--paper-ink-mist);
+  min-height: 44px;
+}
+body[data-skin="paper"] .paper-library-row:last-child {
+  border-bottom: none;
+}
+body[data-skin="paper"] .paper-library-bullet {
+  font-family: var(--paper-hand);
+  font-size: 20px;
+  line-height: 1;
+  color: var(--paper-ink);
+  flex: 0 0 16px;
+  padding-top: 2px;
+}
+body[data-skin="paper"] .paper-library-row.active .paper-library-bullet {
+  color: var(--paper-red);
+}
+body[data-skin="paper"] .paper-library-body {
+  flex: 1;
+  min-width: 0;
+}
+body[data-skin="paper"] .paper-library-name {
+  font-family: var(--paper-hand);
+  font-size: 19px;
+  color: var(--paper-ink);
+  letter-spacing: 0.01em;
+}
+body[data-skin="paper"] .paper-library-tag {
+  font-family: var(--paper-form);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--paper-red);
+  margin-left: 6px;
+}
+body[data-skin="paper"] .paper-library-meta {
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--paper-ink-faint);
+  text-transform: lowercase;
+  margin-top: 2px;
+}
+body[data-skin="paper"] .paper-library-actions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  align-items: center;
+}
+body[data-skin="paper"] .paper-library-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+body[data-skin="paper"] .paper-switcher-row {
+  cursor: pointer;
+}
+body[data-skin="paper"] .paper-switcher-row:hover {
+  background: var(--paper-marker-soft);
+}
+
+/* Header chip — handwritten program name in the day-bar */
+body[data-skin="paper"] .paper-program-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  padding: 6px 0 6px 0;
+  margin-top: 4px;
+  cursor: pointer;
+  font-family: var(--paper-hand);
+  font-size: 14px;
+  color: var(--paper-ink-soft);
+  letter-spacing: 0.02em;
+  min-height: 30px;
+}
+body[data-skin="paper"] .paper-program-chip .paper-chip-name {
+  text-decoration: underline wavy;
+  text-decoration-color: var(--paper-ink-mist);
+  text-underline-offset: 3px;
+}
+body[data-skin="paper"] .paper-program-chip .paper-chip-meta {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .paper-program-chip .paper-chip-arrow {
+  font-size: 11px;
+  color: var(--paper-ink-faint);
 }
 
 /* ============================================================ */
@@ -9262,6 +9461,11 @@ body[data-skin="paper"] .paper-action-bar {
   border-top: 1.4px solid rgba(40, 30, 15, 0.4);
   padding: 10px 12px calc(20px + env(safe-area-inset-bottom, 0px));
   z-index: 8;
+}
+/* Chapters/overview hosts the sticky action bar too; reserve bottom space so
+   the last "+ add set" row isn't covered by the bar. */
+body[data-skin="paper"] .paper-chapters-view:has(> .paper-action-bar) {
+  padding-bottom: 24px;
 }
 body[data-skin="paper"] .paper-action-edit-label {
   display: flex;

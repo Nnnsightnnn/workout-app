@@ -7,6 +7,18 @@ const RP_RECENCY_SESSIONS = 3;
 const RP_RECENCY_WEIGHTS = [0.5, 0.3, 0.2];               // most recent first
 const RP_HIGH_CONFIDENCE_WINDOW_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 
+// v21: u.rp moved into the active program entry (u.programs[...].rp).
+// Accepts either a user record (looks up the active program) or a
+// program entry directly. Returns the rp container or null.
+function _rpOf(uOrP) {
+  if (!uOrP) return null;
+  if (Array.isArray(uOrP.programs)) {
+    const ap = uOrP.programs.find(p => p.id === uOrP.activeProgramId);
+    return ap ? (ap.rp || null) : null;
+  }
+  return uOrP.rp || null;
+}
+
 // ---- Bodyweight lookup ----------------------------------------
 
 // Returns null when no measurements exist (caller shows bodyweight prompt).
@@ -153,7 +165,8 @@ function rpRoundWeight(exId, w) {
 function suggestedWeight(exId, targetReps, targetRIR, opts) {
   opts = opts || {};
   const u = userData();
-  if (!u || !u.rp || !u.rp.enabled) {
+  const rp = _rpOf(u);
+  if (!u || !rp || !rp.enabled) {
     return { weight: null, confidence: null, reason: "disabled" };
   }
 
@@ -165,7 +178,7 @@ function suggestedWeight(exId, targetReps, targetRIR, opts) {
   const now = opts.now || Date.now();
 
   // RPE calibration must fire once before suggestions start (§6 row 2)
-  if (!u.rp.rpeCalibrationCompletedAt) {
+  if (!rp.rpeCalibrationCompletedAt) {
     return { weight: null, confidence: null, reason: "needs-rpe-calibration" };
   }
 
@@ -184,7 +197,7 @@ function suggestedWeight(exId, targetReps, targetRIR, opts) {
 
   if (est.confidence === "cold-start") {
     // Check for a user-provided cold-start anchor (§3.8)
-    let anchor = u.rp.coldStartAnchors && u.rp.coldStartAnchors[exId];
+    let anchor = rp.coldStartAnchors && rp.coldStartAnchors[exId];
     // Pure-BW (load == bodyweight, no added weight): auto-anchor with
     // library defaults — there's nothing for the user to enter.
     if (!anchor && isBw && !(lib.defaultWeight || 0)) {
@@ -271,9 +284,10 @@ function buildRpPromptEl(type, ex) {
     saveBtn.className = "rp-prompt-save";
     saveBtn.textContent = "Got it — start tracking";
     saveBtn.onclick = () => {
-      updateUser(u => {
-        u.rp.rpeCalibrationCompletedAt = Date.now();
-        u.rp.rpeCalibrationMethod = "self-reported";
+      updateActiveProgram(p => {
+        if (!p.rp) p.rp = { enabled: true };
+        p.rp.rpeCalibrationCompletedAt = Date.now();
+        p.rp.rpeCalibrationMethod = "self-reported";
       });
       rpDismissPromptType("rpe-calibration", null);
       renderWorkoutScreen();
@@ -383,9 +397,10 @@ function buildRpPromptEl(type, ex) {
         if (!w || w <= 0) wInput.focus(); else rInput.focus();
         return;
       }
-      updateUser(u => {
-        if (!u.rp.coldStartAnchors) u.rp.coldStartAnchors = {};
-        u.rp.coldStartAnchors[exId] = { weight: w, reps: r, dateMs: Date.now() };
+      updateActiveProgram(p => {
+        if (!p.rp) p.rp = { enabled: true };
+        if (!p.rp.coldStartAnchors) p.rp.coldStartAnchors = {};
+        p.rp.coldStartAnchors[exId] = { weight: w, reps: r, dateMs: Date.now() };
       });
       rpDismissPromptType("cold-start", exId);
       renderWorkoutScreen();
@@ -448,7 +463,8 @@ function buildRpSuggestionChip(suggestion, unitStr) {
 // Called from renderSetsTable. Mutates wrap in place.
 // _rpShownThisRender is a render-pass flag to enforce one prompt per view (§6).
 function injectRpHint(wrap, ex, u) {
-  if (!u || !u.rp || !u.rp.enabled) return;
+  const rp = _rpOf(u);
+  if (!u || !rp || !rp.enabled) return;
   const exId = ex ? (ex.exId || ex.name) : null;
   if (!exId) return;
   const lib = LIB_BY_ID[exId];
@@ -559,18 +575,23 @@ function _rpMusclesForDayType(dayType) {
 
 // --- Helpers -------------------------------------------------------
 
-function getActiveMesocycle(u) {
-  if (!u || !u.rp || !u.rp.currentMesocycleId) return null;
-  return (u.rp.mesocycles || []).find(m => m.id === u.rp.currentMesocycleId) || null;
+// Accepts either a user record or a program entry. Returns the currently
+// active mesocycle (the one tied to the active program's rp), or null.
+function getActiveMesocycle(uOrP) {
+  const rp = _rpOf(uOrP);
+  if (!rp || !rp.currentMesocycleId) return null;
+  return (rp.mesocycles || []).find(m => m.id === rp.currentMesocycleId) || null;
 }
 
-function getMesocycle(u, mesoId) {
-  return (u && u.rp && u.rp.mesocycles || []).find(m => m.id === mesoId) || null;
+function getMesocycle(uOrP, mesoId) {
+  const rp = _rpOf(uOrP);
+  return (rp && rp.mesocycles || []).find(m => m.id === mesoId) || null;
 }
 
 // Effective MEV/MAV/MRV for a muscle: user override > RP_VOLUME_LANDMARKS default.
-function rpLandmarks(u, muscle) {
-  const ul = u && u.rp && u.rp.volumeLandmarks;
+function rpLandmarks(uOrP, muscle) {
+  const rp = _rpOf(uOrP);
+  const ul = rp && rp.volumeLandmarks;
   if (ul && ul[muscle]) return ul[muscle];
   return RP_VOLUME_LANDMARKS[muscle] || { mev: 0, mav: 0, mrv: 0 };
 }
@@ -589,12 +610,63 @@ function startMesocycle(opts) {
 
   let newMeso;
   updateUser(u => {
+    if (!Array.isArray(u.programs)) u.programs = [];
+
+    // Find or create the rp-hypertrophy library entry. Prefer the active
+    // program if it's already rp-hypertrophy (typical Add Program flow that
+    // just ran); otherwise find the first rp-hypertrophy entry, otherwise
+    // create a fresh one and activate it.
+    let entry = u.programs.find(p => p.id === u.activeProgramId && p.templateId === "rp-hypertrophy");
+    if (!entry) entry = u.programs.find(p => p.templateId === "rp-hypertrophy" && !p.archivedAt);
+    if (!entry) {
+      const tpl = (typeof PROGRAM_TEMPLATES !== "undefined")
+        ? PROGRAM_TEMPLATES.find(t => t.id === "rp-hypertrophy") : null;
+      const name = (typeof uniquifyDisplayName === "function")
+        ? uniquifyDisplayName(tpl ? tpl.name : "RP Hypertrophy", u.programs)
+        : (tpl ? tpl.name : "RP Hypertrophy");
+      entry = {
+        id: (typeof genProgramId === "function")
+          ? genProgramId()
+          : ("p_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7)),
+        displayName: name,
+        templateId: "rp-hypertrophy",
+        program: [],
+        daysPerWeek: opts.daysPerWeek || (tpl && tpl.daysPerWeek) || 4,
+        totalWeeks: lw,
+        currentWeek: 1,
+        programStartDate: Date.now(),
+        weeklySchedule: null,
+        lastDoneDayId: null,
+        draft: null,
+        rp: null
+      };
+      u.programs.push(entry);
+    }
+    u.activeProgramId = entry.id;
+
+    // Ensure rp container on the entry.
+    if (!entry.rp) {
+      entry.rp = {
+        enabled: true,
+        rpeCalibrationCompletedAt: null,
+        rpeCalibrationMethod: null,
+        coldStartAnchors: {},
+        lastDeloadRecommendedAt: null,
+        dismissedDeloadForWeek: null,
+        volumeLandmarks: null,
+        mesocycles: [],
+        currentMesocycleId: null
+      };
+    } else {
+      entry.rp.enabled = true;
+    }
+
     // Close active mesocycle if any
-    const active = getActiveMesocycle(u);
+    const active = getActiveMesocycle(entry);
     if (active) active.finishedAt = Date.now();
 
     // Build exercise selection pool
-    const daysPerWeek = dpw || u.daysPerWeek || 4;
+    const daysPerWeek = dpw || entry.daysPerWeek || 4;
     const prevSelection = active ? active.exerciseSelection : {};
     const selection = opts.resensitize
       ? chooseNewExercises(prevSelection, daysPerWeek)
@@ -603,11 +675,10 @@ function startMesocycle(opts) {
     // Seed perMuscleVolume at MEV for week 1
     const perMuscleVolume = {};
     Object.keys(RP_VOLUME_LANDMARKS).forEach(muscle => {
-      const lm = rpLandmarks(u, muscle);
+      const lm = rpLandmarks(entry, muscle);
       if (lm.mev > 0 || lm.mav > 0) {
         const startSets = Math.max(lm.mev, 0);
         perMuscleVolume[muscle] = [{ week: 1, plannedSets: startSets, completedSets: null }];
-        // Pre-fill null slots for remaining weeks
         for (let w = 2; w <= lw; w++) {
           perMuscleVolume[muscle].push({ week: w, plannedSets: null, completedSets: null });
         }
@@ -630,15 +701,22 @@ function startMesocycle(opts) {
       flagsForNextMeso: {}
     };
 
-    if (!u.rp.mesocycles) u.rp.mesocycles = [];
-    u.rp.mesocycles.push(newMeso);
-    u.rp.currentMesocycleId = id;
+    if (!entry.rp.mesocycles) entry.rp.mesocycles = [];
+    entry.rp.mesocycles.push(newMeso);
+    entry.rp.currentMesocycleId = id;
 
     // Generate week 1 program (preserve user-added custom days)
-    var rpWeek1 = generateRpWeek(newMeso, 1, u);
-    u.program = (typeof preserveCustomDays === "function") ? preserveCustomDays(u.program, rpWeek1) : rpWeek1;
-    u.currentWeek = 1;
-    u.templateId = "rp-hypertrophy";
+    const rpWeek1 = generateRpWeek(newMeso, 1, entry);
+    entry.program = (typeof preserveCustomDays === "function")
+      ? preserveCustomDays(entry.program, rpWeek1) : rpWeek1;
+    entry.currentWeek = 1;
+    entry.daysPerWeek = daysPerWeek;
+    entry.totalWeeks = lw;
+    if (!entry.weeklySchedule || entry.weeklySchedule.length !== 7) {
+      entry.weeklySchedule = (typeof buildDefaultWeeklySchedule === "function")
+        ? buildDefaultWeeklySchedule({ program: entry.program, daysPerWeek })
+        : null;
+    }
   });
   return newMeso;
 }
@@ -966,18 +1044,20 @@ function _rpAdvanceMesocycleWeek(mesoId) {
   // Compute adjustments from current read-only snapshot
   const adjustments = adjustVolumeFromFeedback(u, meso);
 
-  updateUser(uMut => {
-    const m = getMesocycle(uMut, mesoId);
+  updateActiveProgram(entry => {
+    const m = getMesocycle(entry, mesoId);
     if (!m) return;
-    applyVolumeAdjustments(m, weekNum, adjustments, uMut);
-    checkResensitizationFlags(uMut, m);
+    applyVolumeAdjustments(m, weekNum, adjustments, entry);
+    checkResensitizationFlags(entry, m);
     if (nextWeek > m.lengthWeeks) {
       m.finishedAt = Date.now();
-      uMut.rp.currentMesocycleId = null;
+      if (entry.rp) entry.rp.currentMesocycleId = null;
     } else {
       m.currentWeek = nextWeek;
-      var rpGenerated = generateRpWeek(m, nextWeek, uMut);
-      uMut.program = (typeof preserveCustomDays === "function") ? preserveCustomDays(uMut.program, rpGenerated) : rpGenerated;
+      const rpGenerated = generateRpWeek(m, nextWeek, entry);
+      entry.program = (typeof preserveCustomDays === "function")
+        ? preserveCustomDays(entry.program, rpGenerated) : rpGenerated;
+      entry.currentWeek = nextWeek;
     }
   });
 
@@ -993,7 +1073,14 @@ function _rpAdvanceMesocycleWeek(mesoId) {
 function recomputeMesocycleState(mesocycleId) {
   if (!mesocycleId) return;
   updateUser(u => {
-    const meso = getMesocycle(u, mesocycleId);
+    // Walk every program entry to find the meso (it may live on a non-active
+    // library entry if the user has multiple programs).
+    let meso = null;
+    (u.programs || []).forEach(entry => {
+      if (meso) return;
+      const m = (entry.rp && entry.rp.mesocycles || []).find(x => x.id === mesocycleId);
+      if (m) meso = m;
+    });
     if (!meso) return;
 
     // Reset all completedSets to 0 before recount

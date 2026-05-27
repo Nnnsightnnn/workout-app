@@ -2,8 +2,8 @@
 // PROGRAM EDITING
 // ============================================================
 function mutateDay(fn) {
-  updateUser(u => {
-    const day = u.program.find(d => d.id === state.currentDayId);
+  updateActiveProgram(entry => {
+    const day = entry.program.find(d => d.id === state.currentDayId);
     if (day) fn(day);
   });
 }
@@ -19,11 +19,11 @@ function preserveCustomDays(oldProgram, newProgram) {
 
 // Add a new blank custom training day to the user's program.
 function addTrainingDay() {
-  var u = userData();
-  if (!u) return;
-  var nextId = u.program.length + 1;
+  var p = activeProgram();
+  if (!p) return;
+  var nextId = p.program.length + 1;
   // Ensure unique day id (skip any already used)
-  var usedIds = new Set(u.program.map(function(d) { return d.id; }));
+  var usedIds = new Set(p.program.map(function(d) { return d.id; }));
   while (usedIds.has(nextId)) nextId++;
   var newDay = {
     id: nextId,
@@ -32,9 +32,9 @@ function addTrainingDay() {
     blocks: [],
     isCustom: true
   };
-  updateUser(function(usr) {
-    usr.program.push(newDay);
-    usr.daysPerWeek = usr.program.length;
+  updateActiveProgram(function(entry) {
+    entry.program.push(newDay);
+    entry.daysPerWeek = entry.program.length;
   });
   // Switch to the new day and open customize mode
   state.currentDayId = nextId;
@@ -49,12 +49,16 @@ function addTrainingDay() {
 
 function resetCurrentDay() {
   if (!confirm("Reset this day to the generated default? Your custom edits will be lost.")) return;
-  const u = userData();
+  const p = activeProgram();
+  if (!p) return;
   // Regenerate from periodization engine for current week
-  const generated = resolveWeekProgram(u.templateId, u.currentWeek || 1, u.totalWeeks || 10, u.daysPerWeek);
+  const generated = resolveWeekProgram(p.templateId, p.currentWeek || 1, p.totalWeeks || 10, p.daysPerWeek);
   const defDay = generated ? generated.find(d => d.id === state.currentDayId) : null;
   if (!defDay) { showToast("Day not found"); return; }
-  updateUser(u => { u.program[u.program.findIndex(d => d.id === state.currentDayId)] = defDay; });
+  updateActiveProgram(entry => {
+    const idx = entry.program.findIndex(d => d.id === state.currentDayId);
+    if (idx >= 0) entry.program[idx] = defDay;
+  });
   renderWorkoutScreen();
   showToast("Day reset", "success");
 }
@@ -63,11 +67,13 @@ function resetAllProgram() {
   if (!confirm("Reset every user's program to their current week default? Session history is kept.")) return;
   const s = loadStore();
   s.users.forEach(u => {
-    const generated = resolveWeekProgram(u.templateId, u.currentWeek || 1, u.totalWeeks || 10, u.daysPerWeek);
-    if (generated) {
-      u.program = preserveCustomDays(u.program, generated);
-    }
-    u.lastDoneDayId = null;
+    (u.programs || []).forEach(entry => {
+      const generated = resolveWeekProgram(entry.templateId, entry.currentWeek || 1, entry.totalWeeks || 10, entry.daysPerWeek);
+      if (generated) {
+        entry.program = preserveCustomDays(entry.program, generated);
+      }
+      entry.lastDoneDayId = null;
+    });
   });
   saveStore(s);
   renderWorkoutScreen();
@@ -76,17 +82,17 @@ function resetAllProgram() {
 
 // Remove a custom day from the program. Only custom (user-added) days can be removed.
 function removeTrainingDay(dayId) {
-  var u = userData();
-  if (!u) return;
-  var day = u.program.find(function(d) { return d.id === dayId; });
+  var p = activeProgram();
+  if (!p) return;
+  var day = p.program.find(function(d) { return d.id === dayId; });
   if (!day || !day.isCustom) { showToast("Only custom days can be removed"); return; }
   if (!confirm("Remove " + day.name + "? This cannot be undone.")) return;
-  updateUser(function(usr) {
-    usr.program = usr.program.filter(function(d) { return d.id !== dayId; });
-    usr.daysPerWeek = usr.program.length;
+  updateActiveProgram(function(entry) {
+    entry.program = entry.program.filter(function(d) { return d.id !== dayId; });
+    entry.daysPerWeek = entry.program.length;
     // If we removed the current day, switch to day 1
     if (state.currentDayId === dayId) {
-      state.currentDayId = usr.program.length > 0 ? usr.program[0].id : 1;
+      state.currentDayId = entry.program.length > 0 ? entry.program[0].id : 1;
     }
   });
   state.dayChosen = true;

@@ -352,8 +352,9 @@ function renderPaperKicker() {
     return;
   }
   const u = (typeof userData === 'function') ? userData() : null;
-  const wk = (u && u.currentWeek)  ? u.currentWeek : 1;
-  const tot = (u && u.totalWeeks)  ? u.totalWeeks  : 16;
+  const ap = (typeof activeProgram === 'function') ? activeProgram() : null;
+  const wk = (ap && ap.currentWeek)  ? ap.currentWeek : 1;
+  const tot = (ap && ap.totalWeeks)  ? ap.totalWeeks  : 16;
   // Page number = total session count + 1 (current day index).
   const pg = (u && Array.isArray(u.sessions)) ? (u.sessions.length + 1) : 1;
   const pgStr = String(pg).padStart(3, '0');

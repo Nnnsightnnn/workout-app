@@ -13,9 +13,9 @@ let _builderEqFilter = new Set();
 let _builderMuscleFilter = new Set();
 
 function openProgramBuilder() {
-  const u = userData();
-  if (u && u.draft) {
-    if (!confirm("You have a workout in progress. Building a new program will discard it. Continue?")) return;
+  const ap = (typeof activeProgram === "function") ? activeProgram() : null;
+  if (ap && ap.draft) {
+    if (!confirm("You have a workout in progress on " + (ap.displayName || "your active program") + ". Building a new program will switch away. Continue?")) return;
   }
   _builderState = { name: "My Program", daysPerWeek: 3, totalWeeks: 10, days: [] };
   _builderStep = 1;
@@ -516,23 +516,29 @@ function _refreshBuilderResults() {
 }
 
 // ---------- Save ----------
+// v21: always add a NEW library entry (don't overwrite the active program).
+// Consistent with the library mental model — built programs accumulate.
 function saveCustomProgram() {
   const b = _builderState;
-  updateUser(u => {
-    u.templateId = "custom";
-    u.program = b.days.map(d => ({ id: d.id, name: d.name, sub: "", blocks: d.blocks }));
-    u.daysPerWeek = b.daysPerWeek;
-    u.totalWeeks = b.totalWeeks;
-    u.currentWeek = 1;
-    u.programStartDate = Date.now();
-    u.weeklySchedule = null;
-    u.draft = null;
-    u.lastDoneDayId = null;
+  const days = b.days.map(d => ({ id: d.id, name: d.name, sub: "", blocks: d.blocks }));
+  const entry = makeProgramEntry({
+    displayName: (b.name || "My Program").trim() || "My Program",
+    templateId: "custom",
+    program: days,
+    daysPerWeek: b.daysPerWeek,
+    totalWeeks: b.totalWeeks,
+    currentWeek: 1,
+    programStartDate: Date.now(),
+    weeklySchedule: null,
+    lastDoneDayId: null,
+    draft: null,
+    rp: null
   });
-  // Mirror applyProgramSwitch() side effects (19-program-picker.js)
+  addProgramEntry(entry, { activate: true });
+
   if (typeof stopSessionTimer === "function") stopSessionTimer();
   state.workoutStartedAt = null;
-  state.currentDayId = 1;
+  state.currentDayId = (typeof determineDefaultDay === "function") ? determineDefaultDay() : 1;
   state.dayChosen = false;
   _builderState = null;
   _builderStep = 1;

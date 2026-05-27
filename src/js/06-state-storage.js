@@ -51,20 +51,30 @@ function newUserRecord(name, templateId, totalWeeks, daysPerWeek) {
   const seedSchedule = (typeof buildDefaultWeeklySchedule === "function")
     ? buildDefaultWeeklySchedule({ program: generated || [], daysPerWeek: dpw })
     : null;
+  const entryId = (typeof genProgramId === "function")
+    ? genProgramId()
+    : ("p_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7));
+  const initialEntry = {
+    id: entryId,
+    displayName: tpl.name,
+    templateId: tpl.id,
+    program: generated || [],
+    daysPerWeek: dpw,
+    totalWeeks: tw,
+    currentWeek: 1,
+    programStartDate: Date.now(),
+    weeklySchedule: seedSchedule,
+    lastDoneDayId: null,
+    draft: null,
+    rp: null
+  };
   return {
     id: genId(),
     name: String(name || "User").trim().slice(0, 40) || "User",
-    templateId: tpl.id,
-    program: generated || [],
+    programs: [initialEntry],
+    activeProgramId: entryId,
     sessions: [],
     measurements: [],
-    draft: null,
-    lastDoneDayId: null,
-    programStartDate: Date.now(),
-    weeklySchedule: seedSchedule,
-    currentWeek: 1,
-    totalWeeks: tw,
-    daysPerWeek: dpw,
     pinnedLifts: [],
     manualPRs: [],
     firstWorkoutCompleted: false,
@@ -154,42 +164,56 @@ function loadStore() {
     s.users.forEach(u => {
       if (!u.id) u.id = genId();
       if (!u.name) u.name = "User";
-      if (!u.program) u.program = [];
       if (!u.sessions) u.sessions = [];
-      if (u.draft === undefined) u.draft = null;
-      if (u.draft && u.draft.pausedAt === undefined) u.draft.pausedAt = null;
-      if (u.lastDoneDayId === undefined) u.lastDoneDayId = null;
       if (!u.measurements) u.measurements = [];
-      if (!u.templateId) u.templateId = "conjugate5";
-      if (u.programStartDate === undefined) u.programStartDate = null;
-      if (u.weeklySchedule === undefined) u.weeklySchedule = null;
-      if (u.currentWeek === undefined) u.currentWeek = 1;
-      if (u.totalWeeks === undefined) u.totalWeeks = null;
-      if (u.daysPerWeek === undefined) u.daysPerWeek = null;
-      // Defensive default for u.rp (added in v9)
-      if (!u.rp) {
-        u.rp = {
-          enabled: false,
-          rpeCalibrationCompletedAt: null,
-          rpeCalibrationMethod: null,
-          coldStartAnchors: {},
-          lastDeloadRecommendedAt: null,
-          dismissedDeloadForWeek: null
-        };
-      }
-      // Defensive defaults for v10: mesocycle container + volume landmarks
-      if (!u.rp.volumeLandmarks) u.rp.volumeLandmarks = null; // seeded by migration; null means not yet set
-      if (!Array.isArray(u.rp.mesocycles)) u.rp.mesocycles = [];
-      if (u.rp.currentMesocycleId === undefined) u.rp.currentMesocycleId = null;
-      // Stamp blockType on all program blocks (default "strength"; v10 migration handles existing data,
-      // this defensive default catches blocks created by resolveWeekProgram on new users)
-      (u.program || []).forEach(day => {
-        (day.blocks || []).forEach(block => {
-          if (!block.blockType) {
-            block.blockType = (block.type === "warmup") ? "warmup" : "strength";
-          }
+
+      // v21: per-program fields live in u.programs[] / u.activeProgramId.
+      // Defensive fallback if a record is somehow stuck mid-migration.
+      if (!Array.isArray(u.programs)) u.programs = [];
+      if (u.activeProgramId === undefined) u.activeProgramId = null;
+      if (!u.activeProgramId && u.programs.length) u.activeProgramId = u.programs[0].id;
+
+      u.programs.forEach(p => {
+        if (!p.id) p.id = "p_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7);
+        if (!p.displayName) p.displayName = "Program";
+        if (!p.templateId) p.templateId = "conjugate5";
+        if (!Array.isArray(p.program)) p.program = [];
+        if (p.daysPerWeek === undefined) p.daysPerWeek = null;
+        if (p.totalWeeks === undefined) p.totalWeeks = null;
+        if (p.currentWeek === undefined) p.currentWeek = 1;
+        if (p.programStartDate === undefined) p.programStartDate = null;
+        if (p.weeklySchedule === undefined) p.weeklySchedule = null;
+        if (p.lastDoneDayId === undefined) p.lastDoneDayId = null;
+        if (p.draft === undefined) p.draft = null;
+        if (p.draft && p.draft.pausedAt === undefined) p.draft.pausedAt = null;
+        if (p.rp === undefined) p.rp = null;
+        if (p.templateId === "rp-hypertrophy" && !p.rp) {
+          p.rp = {
+            enabled: false,
+            rpeCalibrationCompletedAt: null,
+            rpeCalibrationMethod: null,
+            coldStartAnchors: {},
+            lastDeloadRecommendedAt: null,
+            dismissedDeloadForWeek: null,
+            volumeLandmarks: null,
+            mesocycles: [],
+            currentMesocycleId: null
+          };
+        }
+        if (p.rp) {
+          if (!p.rp.volumeLandmarks) p.rp.volumeLandmarks = null;
+          if (!Array.isArray(p.rp.mesocycles)) p.rp.mesocycles = [];
+          if (p.rp.currentMesocycleId === undefined) p.rp.currentMesocycleId = null;
+        }
+        (p.program || []).forEach(day => {
+          (day.blocks || []).forEach(block => {
+            if (!block.blockType) {
+              block.blockType = (block.type === "warmup") ? "warmup" : "strength";
+            }
+          });
         });
       });
+
       // Defensive default for v13: manual PRs and pinned lifts
       if (!Array.isArray(u.manualPRs)) u.manualPRs = [];
       if (!Array.isArray(u.pinnedLifts)) u.pinnedLifts = [];
@@ -228,6 +252,25 @@ function loadStore() {
 }
 function saveStore(s) {
   try {
+    // Stale-tab guard (v21): if another tab has already migrated the store to
+    // a newer schema, refuse to overwrite it with our in-memory copy — that
+    // would silently regress fields the newer tab added. Surface a reload
+    // prompt instead.
+    try {
+      const onDisk = localStorage.getItem(STORAGE_KEY);
+      if (onDisk) {
+        const parsed = JSON.parse(onDisk);
+        const diskVer = typeof parsed._schemaVersion === "number" ? parsed._schemaVersion : 0;
+        const memVer  = typeof s._schemaVersion === "number" ? s._schemaVersion : 0;
+        if (diskVer > memVer) {
+          console.error("KN Lifts: stale tab (mem v" + memVer + " < disk v" + diskVer + ") — refused to overwrite newer data.");
+          if (typeof showToast === "function") {
+            showToast("App was updated in another tab — reload to continue", "error");
+          }
+          return;
+        }
+      }
+    } catch (_) { /* if parse fails, fall through and let save proceed */ }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
   } catch (e) {
     console.error("KN Lifts: failed to save data:", e);
@@ -256,19 +299,24 @@ function addUser(name, templateId) {
     u.physiquePriority = s.onboarding.physiquePriority;
   }
 
-  // Initialize u.rp (newUserRecord doesn't create it; loadStore defensive defaults only apply on read)
-  if (!u.rp) {
-    u.rp = {
-      enabled: false,
-      rpeCalibrationCompletedAt: null,
-      rpeCalibrationMethod: null,
-      coldStartAnchors: {},
-      lastDeloadRecommendedAt: null,
-      dismissedDeloadForWeek: null,
-      volumeLandmarks: null,
-      mesocycles: [],
-      currentMesocycleId: null
-    };
+  // Active program entry exists via newUserRecord; RP state attaches to it.
+  const activeEntry = u.programs.find(p => p.id === u.activeProgramId);
+  function ensureEntryRp(e) {
+    if (!e) return null;
+    if (!e.rp) {
+      e.rp = {
+        enabled: false,
+        rpeCalibrationCompletedAt: null,
+        rpeCalibrationMethod: null,
+        coldStartAnchors: {},
+        lastDeloadRecommendedAt: null,
+        dismissedDeloadForWeek: null,
+        volumeLandmarks: null,
+        mesocycles: [],
+        currentMesocycleId: null
+      };
+    }
+    return e.rp;
   }
 
   // Propagate body weight from onboarding
@@ -282,10 +330,13 @@ function addUser(name, templateId) {
 
   // Propagate smart suggestions preference from onboarding
   if (s.onboarding && s.onboarding.smartSuggestions === "yes") {
-    u.rp.enabled = true;
-    if (s.onboarding.rpeCalibration && s.onboarding.rpeCalibration.completedAt) {
-      u.rp.rpeCalibrationCompletedAt = s.onboarding.rpeCalibration.completedAt;
-      u.rp.rpeCalibrationMethod = "onboarding";
+    const rp = ensureEntryRp(activeEntry);
+    if (rp) {
+      rp.enabled = true;
+      if (s.onboarding.rpeCalibration && s.onboarding.rpeCalibration.completedAt) {
+        rp.rpeCalibrationCompletedAt = s.onboarding.rpeCalibration.completedAt;
+        rp.rpeCalibrationMethod = "onboarding";
+      }
     }
   }
 

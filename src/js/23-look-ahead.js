@@ -18,14 +18,15 @@ var _laSelectedDate = null;
 // --- Entry point ---
 function openLookAhead() {
   var u = userData();
-  if (!u || !u.program || !u.program.length) {
+  var ap = (typeof activeProgram === "function") ? activeProgram() : null;
+  if (!u || !ap || !ap.program || !ap.program.length) {
     showToast("No program loaded");
     return;
   }
-  _laWeek = u.currentWeek || 1;
-  _laDays = _laResolveDays(u, _laWeek);
-  _laPhase = _laPhaseForWeek(u, _laWeek);
-  _laAllPhases = _laGetAllPhases(u);
+  _laWeek = ap.currentWeek || 1;
+  _laDays = _laResolveDays(ap, _laWeek);
+  _laPhase = _laPhaseForWeek(ap, _laWeek);
+  _laAllPhases = _laGetAllPhases(ap);
   _laView = "week";
   _laDetailDay = null;
   // Calendar defaults to current month
@@ -33,7 +34,7 @@ function openLookAhead() {
   _laCalYear = now.getFullYear();
   _laCalMonth = now.getMonth();
   _laSessionMap = _buildLaSessionMap(u);
-  _laProjectionMap = _buildLaProjectionMap(u);
+  _laProjectionMap = _buildLaProjectionMap(ap);
   _laSelectedDate = null;
   _renderLookAheadContent();
 }
@@ -59,10 +60,11 @@ function _renderLookAheadContent() {
 
 // --- Shared header with mode toggle ---
 function _buildLaHeader(container) {
-  var u = userData();
+  var ap = (typeof activeProgram === "function") ? activeProgram() : null;
   var tplName = "";
-  var tpl = PROGRAM_TEMPLATES.find(function(t) { return t.id === u.templateId; });
+  var tpl = ap ? PROGRAM_TEMPLATES.find(function(t) { return t.id === ap.templateId; }) : null;
   if (tpl) tplName = tpl.name;
+  if (!tplName && ap) tplName = ap.displayName || "";
 
   var hdr = document.createElement("div");
   hdr.className = "la-header";
@@ -119,8 +121,8 @@ function _buildLaHeader(container) {
 // LIST VIEW (decluttered)
 // ============================================================
 function _renderLaWeekView(container) {
-  var u = userData();
-  var totalWeeks = u.totalWeeks || 1;
+  var ap = (typeof activeProgram === "function") ? activeProgram() : null;
+  var totalWeeks = (ap && ap.totalWeeks) || 1;
 
   _buildLaHeader(container);
 
@@ -166,7 +168,7 @@ function _renderLaWeekView(container) {
   container.appendChild(nav);
 
   // Custom program note
-  if (u.templateId === "custom" && _laWeek !== (u.currentWeek || 1)) {
+  if (ap && ap.templateId === "custom" && _laWeek !== (ap.currentWeek || 1)) {
     var note = document.createElement("div");
     note.className = "la-custom-note";
     note.textContent = "Custom programs repeat the same pattern each week.";
@@ -174,7 +176,7 @@ function _renderLaWeekView(container) {
   }
 
   // Program complete note
-  if (u.currentWeek && u.totalWeeks && u.currentWeek > u.totalWeeks) {
+  if (ap && ap.currentWeek && ap.totalWeeks && ap.currentWeek > ap.totalWeeks) {
     var completeNote = document.createElement("div");
     completeNote.className = "la-custom-note";
     completeNote.textContent = "Program complete! Start a new program or continue repeating.";
@@ -188,6 +190,7 @@ function _renderLaWeekView(container) {
     empty.textContent = "No workout data for this week.";
     container.appendChild(empty);
   } else {
+    var u = userData();
     var completedIds = _laGetCompletedDayIds(u, _laWeek);
     _laDays.forEach(function(day, i) {
       var card = _buildLaDayCard(day, _laWeek, u, completedIds);
@@ -453,8 +456,8 @@ function _renderLaCalDateDetail(container) {
 
   // Projected (planned) workout
   if (projection) {
-    var u = userData();
-    var days = _laResolveDays(u, projection.weekNum);
+    var ap = (typeof activeProgram === "function") ? activeProgram() : null;
+    var days = _laResolveDays(ap, projection.weekNum);
     var day = days && days[projection.dayIdx] ? days[projection.dayIdx] : null;
 
     if (day) {
@@ -587,11 +590,12 @@ function _renderLaDayDetail(container) {
 
 function _getDayStatus(day, weekNum, u, completedIds) {
   if (!completedIds) completedIds = _laGetCompletedDayIds(u, weekNum);
-  var currentWeek = u.currentWeek || 1;
+  var entry = activeProgramOf(u);
+  var currentWeek = (entry && entry.currentWeek) || 1;
   if (weekNum < currentWeek) return completedIds.has(day.id) ? "done" : "upcoming";
   if (weekNum > currentWeek) return "upcoming";
   if (completedIds.has(day.id)) return "done";
-  if (u.draft && u.draft.dayId === day.id) return "in-progress";
+  if (entry && entry.draft && entry.draft.dayId === day.id) return "in-progress";
   if (day.id === determineDefaultDay()) return "today";
   return "upcoming";
 }
@@ -727,35 +731,38 @@ function _getSessionDotColor(session) {
 
 // Week navigation (read-only, no state mutation)
 function _laGoToWeek(weekNum) {
-  var u = userData();
-  var totalWeeks = u.totalWeeks || 1;
+  var ap = (typeof activeProgram === "function") ? activeProgram() : null;
+  if (!ap) return;
+  var totalWeeks = ap.totalWeeks || 1;
   weekNum = Math.max(1, Math.min(weekNum, totalWeeks));
   if (weekNum === _laWeek) return;
   _laWeek = weekNum;
-  _laDays = _laResolveDays(u, weekNum);
-  _laPhase = _laPhaseForWeek(u, weekNum);
+  _laDays = _laResolveDays(ap, weekNum);
+  _laPhase = _laPhaseForWeek(ap, weekNum);
   _laView = "week";
   _laDetailDay = null;
   _renderLookAheadContent();
 }
 
-function _laResolveDays(u, weekNum) {
-  if (weekNum === (u.currentWeek || 1)) return u.program;
-  if (u.templateId === "custom") return u.program;
-  var result = resolveWeekProgram(u.templateId, weekNum, u.totalWeeks, u.daysPerWeek);
-  return result || u.program;
+// `entry` is the active program entry (post-v21 shape: program/templateId/etc.).
+function _laResolveDays(entry, weekNum) {
+  if (!entry) return [];
+  if (weekNum === (entry.currentWeek || 1)) return entry.program;
+  if (entry.templateId === "custom") return entry.program;
+  var result = resolveWeekProgram(entry.templateId, weekNum, entry.totalWeeks, entry.daysPerWeek);
+  return result || entry.program;
 }
 
-function _laPhaseForWeek(u, weekNum) {
-  if (!u.templateId || u.templateId === "custom") return null;
-  var phases = getPhasesForTemplate(u.templateId, u.totalWeeks);
+function _laPhaseForWeek(entry, weekNum) {
+  if (!entry || !entry.templateId || entry.templateId === "custom") return null;
+  var phases = getPhasesForTemplate(entry.templateId, entry.totalWeeks);
   if (!phases) return null;
   return phaseForWeek(phases, weekNum);
 }
 
-function _laGetAllPhases(u) {
-  if (!u.templateId || u.templateId === "custom") return null;
-  return getPhasesForTemplate(u.templateId, u.totalWeeks);
+function _laGetAllPhases(entry) {
+  if (!entry || !entry.templateId || entry.templateId === "custom") return null;
+  return getPhasesForTemplate(entry.templateId, entry.totalWeeks);
 }
 
 // ============================================================
@@ -776,13 +783,13 @@ function _laTrainingPattern(daysPerWeek) {
   return patterns[daysPerWeek] || patterns[3];
 }
 
-function _laProgramStartSunday(u) {
+function _laProgramStartSunday(entry) {
   var start;
-  if (u.programStartDate) {
-    start = new Date(u.programStartDate);
+  if (entry && entry.programStartDate) {
+    start = new Date(entry.programStartDate);
   } else {
     // Infer: current week is W, so week 1 started (W-1)*7 days ago
-    var weeksBack = (u.currentWeek || 1) - 1;
+    var weeksBack = ((entry && entry.currentWeek) || 1) - 1;
     start = new Date();
     start.setDate(start.getDate() - weeksBack * 7);
   }
@@ -792,18 +799,18 @@ function _laProgramStartSunday(u) {
   return start;
 }
 
-function _buildLaProjectionMap(u) {
+function _buildLaProjectionMap(entry) {
   var map = {};
-  if (!u.totalWeeks || !u.daysPerWeek) return map;
+  if (!entry || !entry.totalWeeks || !entry.daysPerWeek) return map;
 
-  var startSunday = _laProgramStartSunday(u);
-  var pattern = _laTrainingPattern(u.daysPerWeek);
+  var startSunday = _laProgramStartSunday(entry);
+  var pattern = _laTrainingPattern(entry.daysPerWeek);
 
-  for (var w = 1; w <= u.totalWeeks; w++) {
+  for (var w = 1; w <= entry.totalWeeks; w++) {
     var weekStart = new Date(startSunday);
     weekStart.setDate(weekStart.getDate() + (w - 1) * 7);
 
-    for (var i = 0; i < pattern.length && i < u.daysPerWeek; i++) {
+    for (var i = 0; i < pattern.length && i < entry.daysPerWeek; i++) {
       var date = new Date(weekStart);
       date.setDate(date.getDate() + pattern[i]);
       var key = _laDateStr(date.getFullYear(), date.getMonth(), date.getDate());
