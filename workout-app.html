@@ -6223,6 +6223,15 @@ body[data-skin="paper"][data-paper-ink="black"]  { --paper-ink: #1a1612; --paper
 body[data-skin="paper"][data-paper-ink="pencil"] { --paper-ink: #5a534a; --paper-ink-soft: rgba(90, 83, 74, 0.78); }
 body[data-skin="paper"][data-paper-ink="red"]    { --paper-ink: #a83a2a; --paper-ink-soft: rgba(168, 58, 42, 0.78); }
 
+/* Dark-mode ink re-assert — must come AFTER the ink picker rules above so
+   source order resolves --paper-ink to white instead of the picked dark
+   color. Without this, a Navy / Near-Black bg + default Blue ink resolves
+   to dark blue text on dark blue bg → invisible (the search-input bug). */
+body[data-skin="paper"][data-paper-mode="dark"] {
+  --paper-ink:      #ffffff;
+  --paper-ink-soft: rgba(255, 255, 255, 0.82);
+}
+
 /* Hand variants */
 body[data-skin="paper"][data-paper-hand="Kalam"]              { --paper-hand: "Kalam", cursive; }
 body[data-skin="paper"][data-paper-hand="Caveat"]             { --paper-hand: "Caveat", cursive; }
@@ -6373,7 +6382,7 @@ body[data-skin="paper"] nav.bottom::before {
   pointer-events: none;
 }
 body[data-skin="paper"] nav.bottom button {
-  color: rgba(40, 30, 15, 0.55);
+  color: var(--paper-ink-faint);
   font-family: var(--paper-hand);
   font-weight: 400;
   background: transparent;
@@ -6552,6 +6561,27 @@ body[data-skin="paper"] .log-entry-edited {
   font-size: 11px;
   margin-left: 4px;
   opacity: 0.85;
+}
+
+/* Month divider inside the All-entries list */
+body[data-skin="paper"] .log-month-divider {
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--paper-ink-faint);
+  margin: 14px 0 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed rgba(40, 30, 15, 0.22);
+}
+.log-month-divider {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin: 14px 0 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -7076,7 +7106,7 @@ body[data-skin="paper"] .toast {
   width: 56px; flex-shrink: 0;
   font-family: var(--paper-form);
   font-size: 10px; letter-spacing: 0.16em;
-  color: rgba(40, 30, 15, 0.55);
+  color: var(--paper-ink-faint);
   text-transform: uppercase;
 }
 .paper-pref-options { display: flex; gap: 4px; flex: 1; flex-wrap: wrap; }
@@ -7104,7 +7134,7 @@ body[data-skin="paper"] .toast {
   cursor: pointer;
   font-family: var(--paper-form);
   font-size: 9px; letter-spacing: 0.12em;
-  color: rgba(40, 30, 15, 0.6);
+  color: var(--paper-ink-faint);
   text-transform: uppercase;
 }
 .paper-pref-ink-btn .swatch {
@@ -9079,6 +9109,10 @@ body[data-skin="paper"] .lib-search {
   color: var(--paper-ink);
   padding: 4px 0;
 }
+body[data-skin="paper"] .lib-search::placeholder {
+  color: var(--paper-ink-faint);
+  opacity: 1;
+}
 
 /* Toasts                                                            */
 body[data-skin="paper"] .toast {
@@ -9427,7 +9461,7 @@ body[data-skin="paper"] .paper-focus-swipe-hint {
   font-family: var(--paper-form);
   font-size: 9px;
   letter-spacing: 0.18em;
-  color: rgba(40, 30, 15, 0.4);
+  color: var(--paper-ink-mist);
   text-transform: uppercase;
   margin: 4px 0 8px;
 }
@@ -13044,7 +13078,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 20;
-const APP_BUILD = "e979ecb2";
+const APP_BUILD = "71f1f210";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -14684,7 +14718,6 @@ function openPlanAdhoc(dateMs) {
         updateUser(u => {
           u.sessions.push(session);
           u.sessions.sort((a, b) => a.finishedAt - b.finishedAt);
-          if (u.sessions.length > 365) u.sessions = u.sessions.slice(-365);
         });
         closeSheet();
         renderTimelineStrip();
@@ -14843,7 +14876,6 @@ function openLogSets(dateMs, day) {
     updateUser(u => {
       u.sessions.push(session);
       u.sessions.sort((a, b) => a.finishedAt - b.finishedAt);
-      if (u.sessions.length > 365) u.sessions = u.sessions.slice(-365);
     });
 
     recomputeAllIsPR();
@@ -15123,7 +15155,6 @@ function paperOpenLogSets(dateMs, day) {
     updateUser(u => {
       u.sessions.push(session);
       u.sessions.sort((a, b) => a.finishedAt - b.finishedAt);
-      if (u.sessions.length > 365) u.sessions = u.sessions.slice(-365);
     });
 
     if (typeof recomputeAllIsPR === "function") recomputeAllIsPR();
@@ -19615,10 +19646,6 @@ function finishWorkout(opts) {
 
   updateUser(u => {
     u.sessions.push(session);
-    if (u.sessions.length > 365) {
-      u.sessions = u.sessions.slice(-365);
-      setTimeout(() => showToast("Oldest sessions trimmed — export a backup to keep full history"), 3500);
-    }
     u.draft = null;
     u.lastDoneDayId = day.id;
     if (!u.firstWorkoutCompleted) u.firstWorkoutCompleted = true;
@@ -20055,7 +20082,8 @@ function renderHistory() {
   const sessions = u.sessions || [];
   const now = Date.now();
   const thirtyAgo = now - 30 * 86400000;
-  const recent = sessions.filter(s => s.finishedAt > thirtyAgo).slice().reverse();
+  const recent30d = sessions.filter(s => s.finishedAt > thirtyAgo);
+  const allNewestFirst = sessions.slice().sort((a, b) => b.finishedAt - a.finishedAt);
 
   let html = "";
 
@@ -20063,7 +20091,7 @@ function renderHistory() {
   const { count: streak } = getTrainingStreak(sessions, u.daysPerWeek);
   const prCount = _countRecentPRs(sessions, thirtyAgo);
   html += '<div class="log-stats">';
-  html += `<div class="log-stat-card"><div class="log-label">Sessions</div><div class="log-val">${sessions.length}</div><div class="log-sub">${recent.length} / 30d</div></div>`;
+  html += `<div class="log-stat-card"><div class="log-label">Sessions</div><div class="log-val">${sessions.length}</div><div class="log-sub">${recent30d.length} / 30d</div></div>`;
   html += `<div class="log-stat-card streak" style="position:relative;"><div style="position:relative;z-index:1;"><div class="log-label accent">Streak</div><div class="log-val">${streak}</div><div class="log-sub">days</div></div></div>`;
   html += `<div class="log-stat-card"><div class="log-label">PRs</div><div class="log-val">${String(prCount).padStart(2, "0")}</div><div class="log-sub">30 days</div></div>`;
   html += '</div>';
@@ -20074,8 +20102,8 @@ function renderHistory() {
   // ── PR table ──
   html += _buildPRTable(sessions);
 
-  // ── Recent entries ──
-  html += _buildRecentEntries(recent);
+  // ── All entries, newest first, with month dividers ──
+  html += _buildRecentEntries(allNewestFirst);
 
   root.innerHTML = html;
 
@@ -20186,18 +20214,27 @@ function _buildPRTable(sessions) {
   return html;
 }
 
-function _buildRecentEntries(recent) {
-  if (!recent.length) return '<div class="empty">No workouts yet. Finish one to see it here.</div>';
+function _buildRecentEntries(entries) {
+  if (!entries.length) return '<div class="empty">No workouts yet. Finish one to see it here.</div>';
   let html = '<div class="section-title" style="display:flex;justify-content:space-between;align-items:baseline;">';
-  html += '<span>Recent entries</span></div>';
-  recent.slice(0, 10).forEach(s => {
+  html += '<span>All entries</span><span style="color:var(--text-faint);">N=' + String(entries.length).padStart(3, "0") + '</span></div>';
+
+  const monthFmt = (d) => d.toLocaleDateString(undefined, { year: "numeric", month: "long" });
+  let lastMonthKey = "";
+  const nowMs = Date.now();
+
+  entries.forEach(s => {
     const date = new Date(s.finishedAt);
+    const monthKey = date.getFullYear() + "-" + date.getMonth();
+    if (monthKey !== lastMonthKey) {
+      lastMonthKey = monthKey;
+      html += '<div class="log-month-divider">\u00a7 ' + monthFmt(date) + '</div>';
+    }
     const dateStr = date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
     const color = _sessionPrimaryColor(s);
     const prNote = s.prCount ? "PR \u00b7 " + s.prCount + " record" + (s.prCount > 1 ? "s" : "") : "\u2014";
     const isPr = s.prCount > 0;
-    const isPlanned = s.finishedAt > Date.now();
-    // Only entries with real recorded sets are tappable.
+    const isPlanned = s.finishedAt > nowMs;
     const tappable = !isPlanned;
     const editedMark = s.editedAt ? '<span class="log-entry-edited" title="Edited">\u270e</span>' : '';
     html += '<div class="log-entry' + (tappable ? ' log-entry-tappable' : '') + '"'
@@ -24465,10 +24502,6 @@ function finishAdhocWorkout() {
   // Save session — does NOT touch lastDoneDayId or program rotation
   updateUser(u => {
     u.sessions.push(session);
-    if (u.sessions.length > 365) {
-      u.sessions = u.sessions.slice(-365);
-      setTimeout(() => showToast("Oldest sessions trimmed \u2014 export a backup to keep full history"), 3500);
-    }
     // Explicitly do NOT update u.lastDoneDayId or advance the program
   });
 

@@ -6010,6 +6010,15 @@ body[data-skin="paper"][data-paper-ink="black"]  { --paper-ink: #1a1612; --paper
 body[data-skin="paper"][data-paper-ink="pencil"] { --paper-ink: #5a534a; --paper-ink-soft: rgba(90, 83, 74, 0.78); }
 body[data-skin="paper"][data-paper-ink="red"]    { --paper-ink: #a83a2a; --paper-ink-soft: rgba(168, 58, 42, 0.78); }
 
+/* Dark-mode ink re-assert — must come AFTER the ink picker rules above so
+   source order resolves --paper-ink to white instead of the picked dark
+   color. Without this, a Navy / Near-Black bg + default Blue ink resolves
+   to dark blue text on dark blue bg → invisible (the search-input bug). */
+body[data-skin="paper"][data-paper-mode="dark"] {
+  --paper-ink:      #ffffff;
+  --paper-ink-soft: rgba(255, 255, 255, 0.82);
+}
+
 /* Hand variants */
 body[data-skin="paper"][data-paper-hand="Kalam"]              { --paper-hand: "Kalam", cursive; }
 body[data-skin="paper"][data-paper-hand="Caveat"]             { --paper-hand: "Caveat", cursive; }
@@ -6160,7 +6169,7 @@ body[data-skin="paper"] nav.bottom::before {
   pointer-events: none;
 }
 body[data-skin="paper"] nav.bottom button {
-  color: rgba(40, 30, 15, 0.55);
+  color: var(--paper-ink-faint);
   font-family: var(--paper-hand);
   font-weight: 400;
   background: transparent;
@@ -6339,6 +6348,27 @@ body[data-skin="paper"] .log-entry-edited {
   font-size: 11px;
   margin-left: 4px;
   opacity: 0.85;
+}
+
+/* Month divider inside the All-entries list */
+body[data-skin="paper"] .log-month-divider {
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--paper-ink-faint);
+  margin: 14px 0 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed rgba(40, 30, 15, 0.22);
+}
+.log-month-divider {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin: 14px 0 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -6863,7 +6893,7 @@ body[data-skin="paper"] .toast {
   width: 56px; flex-shrink: 0;
   font-family: var(--paper-form);
   font-size: 10px; letter-spacing: 0.16em;
-  color: rgba(40, 30, 15, 0.55);
+  color: var(--paper-ink-faint);
   text-transform: uppercase;
 }
 .paper-pref-options { display: flex; gap: 4px; flex: 1; flex-wrap: wrap; }
@@ -6891,7 +6921,7 @@ body[data-skin="paper"] .toast {
   cursor: pointer;
   font-family: var(--paper-form);
   font-size: 9px; letter-spacing: 0.12em;
-  color: rgba(40, 30, 15, 0.6);
+  color: var(--paper-ink-faint);
   text-transform: uppercase;
 }
 .paper-pref-ink-btn .swatch {
@@ -8866,6 +8896,10 @@ body[data-skin="paper"] .lib-search {
   color: var(--paper-ink);
   padding: 4px 0;
 }
+body[data-skin="paper"] .lib-search::placeholder {
+  color: var(--paper-ink-faint);
+  opacity: 1;
+}
 
 /* Toasts                                                            */
 body[data-skin="paper"] .toast {
@@ -9214,7 +9248,7 @@ body[data-skin="paper"] .paper-focus-swipe-hint {
   font-family: var(--paper-form);
   font-size: 9px;
   letter-spacing: 0.18em;
-  color: rgba(40, 30, 15, 0.4);
+  color: var(--paper-ink-mist);
   text-transform: uppercase;
   margin: 4px 0 8px;
 }

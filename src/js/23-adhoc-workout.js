@@ -835,10 +835,6 @@ function finishAdhocWorkout() {
   // Save session — does NOT touch lastDoneDayId or program rotation
   updateUser(u => {
     u.sessions.push(session);
-    if (u.sessions.length > 365) {
-      u.sessions = u.sessions.slice(-365);
-      setTimeout(() => showToast("Oldest sessions trimmed \u2014 export a backup to keep full history"), 3500);
-    }
     // Explicitly do NOT update u.lastDoneDayId or advance the program
   });
 

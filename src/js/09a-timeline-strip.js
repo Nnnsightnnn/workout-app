@@ -645,7 +645,6 @@ function openPlanAdhoc(dateMs) {
         updateUser(u => {
           u.sessions.push(session);
           u.sessions.sort((a, b) => a.finishedAt - b.finishedAt);
-          if (u.sessions.length > 365) u.sessions = u.sessions.slice(-365);
         });
         closeSheet();
         renderTimelineStrip();
@@ -804,7 +803,6 @@ function openLogSets(dateMs, day) {
     updateUser(u => {
       u.sessions.push(session);
       u.sessions.sort((a, b) => a.finishedAt - b.finishedAt);
-      if (u.sessions.length > 365) u.sessions = u.sessions.slice(-365);
     });
 
     recomputeAllIsPR();

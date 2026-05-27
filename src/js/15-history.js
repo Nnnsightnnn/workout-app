@@ -14,7 +14,8 @@ function renderHistory() {
   const sessions = u.sessions || [];
   const now = Date.now();
   const thirtyAgo = now - 30 * 86400000;
-  const recent = sessions.filter(s => s.finishedAt > thirtyAgo).slice().reverse();
+  const recent30d = sessions.filter(s => s.finishedAt > thirtyAgo);
+  const allNewestFirst = sessions.slice().sort((a, b) => b.finishedAt - a.finishedAt);
 
   let html = "";
 
@@ -22,7 +23,7 @@ function renderHistory() {
   const { count: streak } = getTrainingStreak(sessions, u.daysPerWeek);
   const prCount = _countRecentPRs(sessions, thirtyAgo);
   html += '<div class="log-stats">';
-  html += `<div class="log-stat-card"><div class="log-label">Sessions</div><div class="log-val">${sessions.length}</div><div class="log-sub">${recent.length} / 30d</div></div>`;
+  html += `<div class="log-stat-card"><div class="log-label">Sessions</div><div class="log-val">${sessions.length}</div><div class="log-sub">${recent30d.length} / 30d</div></div>`;
   html += `<div class="log-stat-card streak" style="position:relative;"><div style="position:relative;z-index:1;"><div class="log-label accent">Streak</div><div class="log-val">${streak}</div><div class="log-sub">days</div></div></div>`;
   html += `<div class="log-stat-card"><div class="log-label">PRs</div><div class="log-val">${String(prCount).padStart(2, "0")}</div><div class="log-sub">30 days</div></div>`;
   html += '</div>';
@@ -33,8 +34,8 @@ function renderHistory() {
   // ── PR table ──
   html += _buildPRTable(sessions);
 
-  // ── Recent entries ──
-  html += _buildRecentEntries(recent);
+  // ── All entries, newest first, with month dividers ──
+  html += _buildRecentEntries(allNewestFirst);
 
   root.innerHTML = html;
 
@@ -145,18 +146,27 @@ function _buildPRTable(sessions) {
   return html;
 }
 
-function _buildRecentEntries(recent) {
-  if (!recent.length) return '<div class="empty">No workouts yet. Finish one to see it here.</div>';
+function _buildRecentEntries(entries) {
+  if (!entries.length) return '<div class="empty">No workouts yet. Finish one to see it here.</div>';
   let html = '<div class="section-title" style="display:flex;justify-content:space-between;align-items:baseline;">';
-  html += '<span>Recent entries</span></div>';
-  recent.slice(0, 10).forEach(s => {
+  html += '<span>All entries</span><span style="color:var(--text-faint);">N=' + String(entries.length).padStart(3, "0") + '</span></div>';
+
+  const monthFmt = (d) => d.toLocaleDateString(undefined, { year: "numeric", month: "long" });
+  let lastMonthKey = "";
+  const nowMs = Date.now();
+
+  entries.forEach(s => {
     const date = new Date(s.finishedAt);
+    const monthKey = date.getFullYear() + "-" + date.getMonth();
+    if (monthKey !== lastMonthKey) {
+      lastMonthKey = monthKey;
+      html += '<div class="log-month-divider">\u00a7 ' + monthFmt(date) + '</div>';
+    }
     const dateStr = date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
     const color = _sessionPrimaryColor(s);
     const prNote = s.prCount ? "PR \u00b7 " + s.prCount + " record" + (s.prCount > 1 ? "s" : "") : "\u2014";
     const isPr = s.prCount > 0;
-    const isPlanned = s.finishedAt > Date.now();
-    // Only entries with real recorded sets are tappable.
+    const isPlanned = s.finishedAt > nowMs;
     const tappable = !isPlanned;
     const editedMark = s.editedAt ? '<span class="log-entry-edited" title="Edited">\u270e</span>' : '';
     html += '<div class="log-entry' + (tappable ? ' log-entry-tappable' : '') + '"'

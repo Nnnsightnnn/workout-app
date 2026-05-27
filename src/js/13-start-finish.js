@@ -369,10 +369,6 @@ function finishWorkout(opts) {
 
   updateUser(u => {
     u.sessions.push(session);
-    if (u.sessions.length > 365) {
-      u.sessions = u.sessions.slice(-365);
-      setTimeout(() => showToast("Oldest sessions trimmed — export a backup to keep full history"), 3500);
-    }
     u.draft = null;
     u.lastDoneDayId = day.id;
     if (!u.firstWorkoutCompleted) u.firstWorkoutCompleted = true;

@@ -170,7 +170,6 @@ function paperOpenLogSets(dateMs, day) {
     updateUser(u => {
       u.sessions.push(session);
       u.sessions.sort((a, b) => a.finishedAt - b.finishedAt);
-      if (u.sessions.length > 365) u.sessions = u.sessions.slice(-365);
     });
 
     if (typeof recomputeAllIsPR === "function") recomputeAllIsPR();

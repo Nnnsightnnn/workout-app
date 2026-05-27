@@ -3080,6 +3080,49 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     w.document.getElementById("sheetBg").classList.remove("active");
   });
 
+  t("history: renderHistory shows ALL sessions, not just last 30 days / 10 entries", () => {
+    _resetUserForCtTests();
+    // Seed 50 sessions spread across 12 months, from ~12mo ago to today.
+    const now = Date.now();
+    const span = 365 * 86400000;
+    const seeded = [];
+    for (let i = 0; i < 50; i++) {
+      const finishedAt = now - Math.round((i / 49) * span);
+      seeded.push(_makeSession("h" + i, finishedAt, { dayName: "Session " + i }));
+    }
+    w.updateUser(u => { u.sessions = seeded.slice(); });
+
+    // Navigate to history screen so the container exists and is rendered.
+    w.showScreen("history");
+    w.renderHistory();
+
+    const root = w.document.getElementById("historyContent");
+    assert(root, "historyContent root exists");
+    const entries = root.querySelectorAll(".log-entry[data-session-id]");
+    eq(entries.length, 50, "all 50 seeded sessions render (was capped at 10 / 30d before)");
+
+    // Month dividers should also be present for readability.
+    const dividers = root.querySelectorAll(".log-month-divider");
+    assert(dividers.length >= 2, "at least 2 month dividers across the 12mo span");
+  });
+
+  t("history: data layer keeps sessions beyond 365 (no silent trim)", () => {
+    _resetUserForCtTests();
+    // Build 400 sessions; previously the data layer would trim to 365 on push.
+    w.updateUser(u => {
+      const sessions = [];
+      for (let i = 0; i < 400; i++) {
+        sessions.push(_makeSession("k" + i, Date.now() - i * 86400000));
+      }
+      u.sessions = sessions;
+    });
+    // Push one more — the finishWorkout / log paths used to trim here.
+    // Simulate by directly invoking updateUser the way 13-start-finish.js does.
+    w.updateUser(u => { u.sessions.push(_makeSession("k-extra", Date.now() + 1)); });
+    const u = w.userData();
+    eq(u.sessions.length, 401, "all 401 sessions retained (no 365 cap)");
+  });
+
   t("ct-strip: renderDayPicker prepends strip when sessions exist today", () => {
     _resetUserForCtTests();
     const now = Date.now();
