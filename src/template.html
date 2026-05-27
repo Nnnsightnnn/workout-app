@@ -41,11 +41,14 @@
     <span class="user-chip-name" id="userChipName">User</span>
     <span class="user-chip-caret">▾</span>
   </button>
-  <button class="paper-menu-handle" id="paperMenuBtn" aria-label="Open menu" type="button" style="display:none;">
-    <span class="paper-menu-handle-label">menu</span>
-    <span class="paper-menu-handle-screen" id="paperMenuActiveLabel"></span>
-  </button>
 </header>
+
+<!-- Paper-skin menu handle — fixed top-right, only visible under paper skin
+     (the dark <header> is display:none in paper mode, so this lives outside it). -->
+<button class="paper-menu-handle" id="paperMenuBtn" aria-label="Open menu" type="button" style="display:none;">
+  <span class="paper-menu-handle-label">menu</span>
+  <span class="paper-menu-handle-screen" id="paperMenuActiveLabel"></span>
+</button>
 
 <main>
   <!-- Workout (default screen) -->
