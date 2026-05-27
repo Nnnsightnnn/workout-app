@@ -13392,7 +13392,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 21;
-const APP_BUILD = "76fa9870";
+const APP_BUILD = "6be63b26";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -17578,9 +17578,9 @@ function renderChaptersView(container, day) {
       // Cool-down still renders its own block — leave default for now
     }
     // Day-wide action bar — mirrors focus view, tracks first not-done set
-    // across the entire day. Only shown during an active workout.
-    if (state.workoutStartedAt
-        && typeof paperFindDayActiveSet === "function"
+    // across the entire day. Always shown on chapters view; reaching this
+    // path already implies an opened day or a live draft.
+    if (typeof paperFindDayActiveSet === "function"
         && typeof paperBuildActionBar === "function") {
       const active = paperFindDayActiveSet(day);
       const activeBlock = day.blocks[active.bi] || day.blocks[0];

@@ -1891,9 +1891,9 @@ function renderChaptersView(container, day) {
       // Cool-down still renders its own block — leave default for now
     }
     // Day-wide action bar — mirrors focus view, tracks first not-done set
-    // across the entire day. Only shown during an active workout.
-    if (state.workoutStartedAt
-        && typeof paperFindDayActiveSet === "function"
+    // across the entire day. Always shown on chapters view; reaching this
+    // path already implies an opened day or a live draft.
+    if (typeof paperFindDayActiveSet === "function"
         && typeof paperBuildActionBar === "function") {
       const active = paperFindDayActiveSet(day);
       const activeBlock = day.blocks[active.bi] || day.blocks[0];
