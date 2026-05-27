@@ -8405,34 +8405,44 @@ body[data-skin="paper"] .paper-start-stamp:active {
   box-shadow: 1px 2px 0 rgba(40,30,15,0.2);
 }
 
-/* "Save & exit" stamp — outline variant of paper-start-stamp. Outline (not  */
-/* filled) so it reads as the *opposite* of starting: ending the page with   */
-/* what's logged, rather than the firm red stamp that begins it.             */
-body[data-skin="paper"] .paper-exit-stamp-row {
+/* "Save & exit" chip — quiet outline-red secondary action sitting under the
+   action row. Outline (not filled) so it reads as the *opposite* of stamping
+   Log Set: leaving the page with what's logged rather than the firm red ink
+   that completes a set. Tilt is opposite the Finish stamp so the two never
+   sit parallel.                                                            */
+body[data-skin="paper"] .paper-action-exit-row {
   display: flex;
   justify-content: center;
-  padding: 18px 0 8px;
-  margin-top: 4px;
+  margin-top: 10px;
+  padding: 0 4px;
 }
-body[data-skin="paper"] .paper-exit-stamp {
+body[data-skin="paper"] .paper-action-exit {
   background: transparent;
   color: var(--paper-red);
-  border: 1.6px solid var(--paper-red);
+  border: 1.4px solid var(--paper-red);
   border-radius: 0;
   font-family: var(--paper-form);
-  font-size: 11px;
-  letter-spacing: 0.2em;
+  font-size: 10px;
+  letter-spacing: 0.20em;
   text-transform: uppercase;
   font-weight: 700;
-  padding: 10px 18px;
+  padding: 6px 14px;
   cursor: pointer;
-  transform: rotate(1.5deg);
-  box-shadow: 2px 3px 0 rgba(168, 58, 42, 0.18);
+  transform: rotate(-1.5deg);
 }
-body[data-skin="paper"] .paper-exit-stamp:active {
-  transform: rotate(1.5deg) translate(1px, 1px);
-  box-shadow: 1px 2px 0 rgba(168, 58, 42, 0.18);
+body[data-skin="paper"] .paper-action-exit:active {
   background: rgba(168, 58, 42, 0.06);
+  transform: rotate(-1.5deg) translate(1px, 1px);
+}
+
+/* Finish stamp — same red rubber-stamp as Log Set, just a label/icon swap
+   handled in JS. The minor lift in opacity + a touch heavier rotation give
+   it a different "this is the closing stamp" feel without breaking parity. */
+body[data-skin="paper"] .paper-action-log.paper-action-finish {
+  transform: rotate(-3deg);
+}
+body[data-skin="paper"] .paper-action-log.paper-action-finish:active {
+  transform: rotate(-3deg) translate(1px, 1px);
 }
 
 /* "Other workouts" toggle + list */

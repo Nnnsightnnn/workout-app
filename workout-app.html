@@ -8306,6 +8306,16 @@ body[data-skin="paper"] .paper-menu-item.active .paper-menu-item-squiggle {
 body[data-skin="paper"] .paper-menu-item:active {
   background: var(--paper-marker-soft);
 }
+/* Save & exit lives at the top of the menu sheet when a workout is in     */
+/* progress. Red ink + always-visible squiggle so it reads as a stamp      */
+/* action rather than a navigation destination.                            */
+body[data-skin="paper"] .paper-menu-item.exit {
+  color: var(--paper-red);
+  font-weight: 700;
+}
+body[data-skin="paper"] .paper-menu-item.exit .paper-menu-item-squiggle {
+  opacity: 1;
+}
 
 /* Hide the legacy timeline strip's chunky chrome — it produces a   */
 /* lot of background-fills that fight the cream paper. The strip's  */
@@ -8606,6 +8616,46 @@ body[data-skin="paper"] .paper-start-stamp {
 body[data-skin="paper"] .paper-start-stamp:active {
   transform: rotate(-1.5deg) translate(1px, 1px);
   box-shadow: 1px 2px 0 rgba(40,30,15,0.2);
+}
+
+/* "Save & exit" chip — quiet outline-red secondary action sitting under the
+   action row. Outline (not filled) so it reads as the *opposite* of stamping
+   Log Set: leaving the page with what's logged rather than the firm red ink
+   that completes a set. Tilt is opposite the Finish stamp so the two never
+   sit parallel.                                                            */
+body[data-skin="paper"] .paper-action-exit-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+  padding: 0 4px;
+}
+body[data-skin="paper"] .paper-action-exit {
+  background: transparent;
+  color: var(--paper-red);
+  border: 1.4px solid var(--paper-red);
+  border-radius: 0;
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 6px 14px;
+  cursor: pointer;
+  transform: rotate(-1.5deg);
+}
+body[data-skin="paper"] .paper-action-exit:active {
+  background: rgba(168, 58, 42, 0.06);
+  transform: rotate(-1.5deg) translate(1px, 1px);
+}
+
+/* Finish stamp — same red rubber-stamp as Log Set, just a label/icon swap
+   handled in JS. The minor lift in opacity + a touch heavier rotation give
+   it a different "this is the closing stamp" feel without breaking parity. */
+body[data-skin="paper"] .paper-action-log.paper-action-finish {
+  transform: rotate(-3deg);
+}
+body[data-skin="paper"] .paper-action-log.paper-action-finish:active {
+  transform: rotate(-3deg) translate(1px, 1px);
 }
 
 /* "Other workouts" toggle + list */
@@ -13392,7 +13442,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 21;
-const APP_BUILD = "6be63b26";
+const APP_BUILD = "e96e292a";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -29681,6 +29731,23 @@ function paperOpenNavMenu() {
   const inkColor = (typeof paperInkColor === "function") ? paperInkColor() : "#1e3a72";
   const activeScreen = document.querySelector(".screen.active");
   const activeId = activeScreen ? activeScreen.id.replace(/^screen-/, "") : "workout";
+
+  // Save & exit lives at the top when a workout is in progress (or when there
+  // are draft inputs that would be lost on cold navigation). Uses red ink so
+  // it reads as a stamp action rather than a navigation destination.
+  const workoutInProgress = state.workoutStartedAt != null
+    || (typeof hasAnyInput === "function" && hasAnyInput());
+  const exitItem = workoutInProgress && !state.adhocActive ? `
+    <button class="paper-menu-item exit" data-paper-menu-action="exit" type="button">
+      <span class="paper-menu-item-label">Save &amp; exit workout</span>
+      <svg class="paper-menu-item-squiggle" width="80" height="8" viewBox="0 0 80 8" aria-hidden="true">
+        <path d="M2 5 Q 16 1, 30 4 T 60 3 T 78 4" fill="none"
+          stroke="var(--paper-red)" stroke-width="2" stroke-linecap="round"
+          style="filter:url(#paper-roughen);"/>
+      </svg>
+    </button>
+  ` : "";
+
   const items = PAPER_NAV_TABS.map(t => {
     const isActive = t.screen === activeId;
     const dataAttrs = t.screen
@@ -29705,7 +29772,7 @@ function paperOpenNavMenu() {
       <span class="paper-menu-sheet-kicker">go to &mdash;</span>
       <button class="paper-menu-sheet-close" type="button" aria-label="Close menu">&times;</button>
     </div>
-    <div class="paper-menu-list">${items}</div>
+    <div class="paper-menu-list">${exitItem}${items}</div>
   `;
   openSheet(wrap);
 
@@ -29722,6 +29789,8 @@ function paperOpenNavMenu() {
         showScreen(screen);
       } else if (action === "timer" && typeof openStandaloneTimer === "function") {
         openStandaloneTimer();
+      } else if (action === "exit" && typeof openExitWorkoutSheet === "function") {
+        openExitWorkoutSheet();
       }
       if (navigator.vibrate) navigator.vibrate(10);
     });
@@ -30022,12 +30091,31 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi)
   const unit = isKg ? "kg" : "lb";
   const step = isKg ? 2.5 : 5;
 
+  // Day-wide completion totals — used for the all-done label so finishing
+  // reads as "11/11 logged" rather than the per-exercise count.
+  let _daySetsTotal = 0, _daySetsDone = 0;
+  if (day && day.blocks) {
+    for (const b of day.blocks) {
+      if (!b.exercises) continue;
+      for (let _ei = 0; _ei < b.exercises.length; _ei++) {
+        const _e = b.exercises[_ei];
+        if (_e.isWarmup) continue;
+        const _n = _e.sets || 3;
+        for (let _si = 0; _si < _n; _si++) {
+          _daySetsTotal++;
+          if ((typeof getInput === "function")
+              && getInput(inputKey(b.id, _ei, _si, "status"), null) === "done") _daySetsDone++;
+        }
+      }
+    }
+  }
+
   // Quiet label — the breathing active-set row above narrates context;
   // here we only echo "set n of total" so the bar stays informative but quiet.
   const lbl = document.createElement("div");
   lbl.className = "paper-action-edit-label";
   if (allDone) {
-    lbl.innerHTML = `<span class="pa-label-target">all done</span>`;
+    lbl.innerHTML = `<span class="pa-label-target">workout complete &middot; ${_daySetsDone}/${_daySetsTotal}</span>`;
   } else {
     const totalSets = (ex.sets || 3);
     lbl.innerHTML = `<span class="pa-label-target">set ${activeSetIdx + 1} of ${totalSets}</span>`;
@@ -30126,11 +30214,20 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi)
   if (typeof paperWirePress === "function") paperWirePress(swapBtn);
   row.appendChild(swapBtn);
 
-  // LOG SET — primary stamp
+  // LOG SET / FINISH — primary stamp. When the day is done, the same red
+  // stamp slot becomes the finish action — saves the session via the canonical
+  // finishWorkout() path (with autoCompleteUntouched, so any sets the user
+  // marked done without filling values get the prescribed defaults).
   const logBtn = document.createElement("button");
-  logBtn.className = "paper-action-log";
-  logBtn.disabled = !!allDone;
-  logBtn.innerHTML = `
+  logBtn.className = "paper-action-log" + (allDone ? " paper-action-finish" : "");
+  logBtn.innerHTML = allDone ? `
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 12 l4 4 L14 8"/>
+      <path d="M10 12 l4 4 L20 6"/>
+    </svg>
+    <span>Finish</span>
+  ` : `
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
          stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M5 12 l5 5 L20 6"/>
@@ -30139,7 +30236,12 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi)
   `;
   logBtn.addEventListener("click", (e) => {
     e.stopPropagation();
-    if (allDone || logBtn.disabled) return;
+    if (allDone) {
+      if (typeof finishWorkout === "function") finishWorkout();
+      if (navigator.vibrate) navigator.vibrate([15, 40, 15]);
+      return;
+    }
+    if (logBtn.disabled) return;
 
     // Hero moment: bloom from the active row before data + rerender.
     const activeRow = document.querySelector(".paper-focus-active-set");
@@ -30164,6 +30266,28 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi)
   row.appendChild(logBtn);
 
   bar.appendChild(row);
+
+  // Save & exit chip — quiet secondary action, only mid-workout. When the
+  // day is complete, Finish IS the resolution, so we don't show a parallel
+  // exit affordance. Mirrors the "Save & exit workout" item in the paper
+  // menu sheet so users have two paths to the same openExitWorkoutSheet().
+  if (!allDone) {
+    const exitRow = document.createElement("div");
+    exitRow.className = "paper-action-exit-row";
+    const exitBtn = document.createElement("button");
+    exitBtn.type = "button";
+    exitBtn.className = "paper-action-exit";
+    exitBtn.textContent = "Save & exit";
+    exitBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (typeof openExitWorkoutSheet === "function") openExitWorkoutSheet();
+      if (navigator.vibrate) navigator.vibrate(8);
+    });
+    if (typeof paperWirePress === "function") paperWirePress(exitBtn);
+    exitRow.appendChild(exitBtn);
+    bar.appendChild(exitRow);
+  }
+
   return bar;
 }
 

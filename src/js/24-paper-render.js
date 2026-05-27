@@ -787,29 +787,6 @@ function paperFindDayActiveSet(day) {
   return { bi: 0, exIdx: 0, setIdx: 0, allDone: true };
 }
 
-// "Save & exit" stamp — surfaces openExitWorkoutSheet() as a discoverable
-// affordance during an active workout. Distinct from the "✓ Finish" path
-// (which auto-completes untouched sets); this one saves only what the user
-// actually logged. Returns a DOM element or null when there's no draft to
-// save.
-function paperBuildExitStamp() {
-  if (!state.workoutStartedAt && !(typeof hasAnyInput === "function" && hasAnyInput())) return null;
-  const wrap = document.createElement("div");
-  wrap.className = "paper-exit-stamp-row";
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = "paper-exit-stamp";
-  btn.textContent = "Save & Exit";
-  btn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    if (typeof openExitWorkoutSheet === "function") openExitWorkoutSheet();
-    if (navigator.vibrate) navigator.vibrate(10);
-  });
-  if (typeof paperWirePress === "function") paperWirePress(btn);
-  wrap.appendChild(btn);
-  return wrap;
-}
-
 function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi) {
   const bar = document.createElement("div");
   bar.className = "paper-action-bar";
@@ -821,12 +798,31 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi)
   const unit = isKg ? "kg" : "lb";
   const step = isKg ? 2.5 : 5;
 
+  // Day-wide completion totals — used for the all-done label so finishing
+  // reads as "11/11 logged" rather than the per-exercise count.
+  let _daySetsTotal = 0, _daySetsDone = 0;
+  if (day && day.blocks) {
+    for (const b of day.blocks) {
+      if (!b.exercises) continue;
+      for (let _ei = 0; _ei < b.exercises.length; _ei++) {
+        const _e = b.exercises[_ei];
+        if (_e.isWarmup) continue;
+        const _n = _e.sets || 3;
+        for (let _si = 0; _si < _n; _si++) {
+          _daySetsTotal++;
+          if ((typeof getInput === "function")
+              && getInput(inputKey(b.id, _ei, _si, "status"), null) === "done") _daySetsDone++;
+        }
+      }
+    }
+  }
+
   // Quiet label — the breathing active-set row above narrates context;
   // here we only echo "set n of total" so the bar stays informative but quiet.
   const lbl = document.createElement("div");
   lbl.className = "paper-action-edit-label";
   if (allDone) {
-    lbl.innerHTML = `<span class="pa-label-target">all done</span>`;
+    lbl.innerHTML = `<span class="pa-label-target">workout complete &middot; ${_daySetsDone}/${_daySetsTotal}</span>`;
   } else {
     const totalSets = (ex.sets || 3);
     lbl.innerHTML = `<span class="pa-label-target">set ${activeSetIdx + 1} of ${totalSets}</span>`;
@@ -925,11 +921,20 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi)
   if (typeof paperWirePress === "function") paperWirePress(swapBtn);
   row.appendChild(swapBtn);
 
-  // LOG SET — primary stamp
+  // LOG SET / FINISH — primary stamp. When the day is done, the same red
+  // stamp slot becomes the finish action — saves the session via the canonical
+  // finishWorkout() path (with autoCompleteUntouched, so any sets the user
+  // marked done without filling values get the prescribed defaults).
   const logBtn = document.createElement("button");
-  logBtn.className = "paper-action-log";
-  logBtn.disabled = !!allDone;
-  logBtn.innerHTML = `
+  logBtn.className = "paper-action-log" + (allDone ? " paper-action-finish" : "");
+  logBtn.innerHTML = allDone ? `
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 12 l4 4 L14 8"/>
+      <path d="M10 12 l4 4 L20 6"/>
+    </svg>
+    <span>Finish</span>
+  ` : `
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
          stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M5 12 l5 5 L20 6"/>
@@ -938,7 +943,12 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi)
   `;
   logBtn.addEventListener("click", (e) => {
     e.stopPropagation();
-    if (allDone || logBtn.disabled) return;
+    if (allDone) {
+      if (typeof finishWorkout === "function") finishWorkout();
+      if (navigator.vibrate) navigator.vibrate([15, 40, 15]);
+      return;
+    }
+    if (logBtn.disabled) return;
 
     // Hero moment: bloom from the active row before data + rerender.
     const activeRow = document.querySelector(".paper-focus-active-set");
@@ -963,6 +973,28 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi)
   row.appendChild(logBtn);
 
   bar.appendChild(row);
+
+  // Save & exit chip — quiet secondary action, only mid-workout. When the
+  // day is complete, Finish IS the resolution, so we don't show a parallel
+  // exit affordance. Mirrors the "Save & exit workout" item in the paper
+  // menu sheet so users have two paths to the same openExitWorkoutSheet().
+  if (!allDone) {
+    const exitRow = document.createElement("div");
+    exitRow.className = "paper-action-exit-row";
+    const exitBtn = document.createElement("button");
+    exitBtn.type = "button";
+    exitBtn.className = "paper-action-exit";
+    exitBtn.textContent = "Save & exit";
+    exitBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (typeof openExitWorkoutSheet === "function") openExitWorkoutSheet();
+      if (navigator.vibrate) navigator.vibrate(8);
+    });
+    if (typeof paperWirePress === "function") paperWirePress(exitBtn);
+    exitRow.appendChild(exitBtn);
+    bar.appendChild(exitRow);
+  }
+
   return bar;
 }
 
@@ -1244,8 +1276,6 @@ function paperRenderFocusView(container, day) {
   wrap.appendChild(swipeHint);
 
   // ── ACTION BAR ──
-  const _focusExit = (typeof paperBuildExitStamp === "function") ? paperBuildExitStamp() : null;
-  if (_focusExit) wrap.appendChild(_focusExit);
   wrap.appendChild(paperBuildActionBar(day, block, active.exIdx, active.setIdx, active.allDone, bi));
 
   container.appendChild(wrap);
@@ -1262,7 +1292,6 @@ if (typeof window !== "undefined") {
   window.paperBuildDayCard = paperBuildDayCard;
   window.paperRenderFocusView = paperRenderFocusView;
   window.paperBuildActionBar = paperBuildActionBar;
-  window.paperBuildExitStamp = paperBuildExitStamp;
   window.paperFindActiveSet = paperFindActiveSet;
   window.paperFindDayActiveSet = paperFindDayActiveSet;
   window.paperOpenNavMenu = paperOpenNavMenu;
