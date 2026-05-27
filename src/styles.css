@@ -8064,13 +8064,13 @@ body[data-skin="paper"] .paper-menu-item {
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
-  padding: 12px 6px;
+  padding: 18px 10px;
   background: transparent;
   border: none;
   border-bottom: 1px dotted var(--paper-ink-mist);
   color: var(--paper-ink-faint);
   font-family: var(--paper-hand);
-  font-size: 26px;
+  font-size: 34px;
   font-weight: 400;
   cursor: pointer;
   text-align: left;
@@ -9038,6 +9038,76 @@ body[data-skin="paper"] .sheet [class*="pick-marker"] {
   height: auto;
   border-radius: 0;
   box-shadow: none;
+}
+
+/* Program-template picker rows (Add Program / Add from Program /   */
+/* Onboarding wizard). Same flat treatment as paper-day-card.       */
+body[data-skin="paper"] .tpl-option {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 12px 4px;
+  margin: 0;
+  color: var(--paper-ink);
+  position: relative;
+  cursor: pointer;
+}
+body[data-skin="paper"] .tpl-option + .tpl-option {
+  border-top: 1px dotted var(--paper-ink-mist);
+}
+body[data-skin="paper"] .tpl-option:active {
+  background: var(--paper-marker-soft);
+}
+body[data-skin="paper"] .tpl-option.active {
+  background: rgba(244, 211, 58, 0.12);
+}
+body[data-skin="paper"] .tpl-option.active::before {
+  content: "";
+  position: absolute;
+  left: -6px; top: 14px; bottom: 14px;
+  width: 2px;
+  background: var(--paper-red);
+}
+body[data-skin="paper"] .tpl-option .tpl-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+body[data-skin="paper"] .tpl-option .tpl-name {
+  font-family: var(--paper-hand);
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 1.1;
+  color: var(--paper-ink);
+  letter-spacing: -0.005em;
+}
+body[data-skin="paper"] .tpl-option .tpl-desc {
+  font-family: var(--paper-form);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--paper-ink-faint);
+  line-height: 1.5;
+  margin-top: 4px;
+}
+body[data-skin="paper"] .tpl-option .tpl-badge {
+  background: transparent;
+  color: var(--paper-red);
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  min-width: 0;
+  height: auto;
+  font-family: var(--paper-hand);
+  font-size: 24px;
+  font-weight: 700;
+}
+body[data-skin="paper"] .tpl-option .glossary-info {
+  color: var(--paper-red);
+  opacity: 0.85;
+  margin-left: 6px;
+  font-size: 13px;
 }
 
 /* Sheet primary/secondary buttons                                  */
