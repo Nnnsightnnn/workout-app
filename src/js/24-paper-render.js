@@ -438,6 +438,23 @@ function paperOpenNavMenu() {
   const inkColor = (typeof paperInkColor === "function") ? paperInkColor() : "#1e3a72";
   const activeScreen = document.querySelector(".screen.active");
   const activeId = activeScreen ? activeScreen.id.replace(/^screen-/, "") : "workout";
+
+  // Save & exit lives at the top when a workout is in progress (or when there
+  // are draft inputs that would be lost on cold navigation). Uses red ink so
+  // it reads as a stamp action rather than a navigation destination.
+  const workoutInProgress = state.workoutStartedAt != null
+    || (typeof hasAnyInput === "function" && hasAnyInput());
+  const exitItem = workoutInProgress && !state.adhocActive ? `
+    <button class="paper-menu-item exit" data-paper-menu-action="exit" type="button">
+      <span class="paper-menu-item-label">Save &amp; exit workout</span>
+      <svg class="paper-menu-item-squiggle" width="80" height="8" viewBox="0 0 80 8" aria-hidden="true">
+        <path d="M2 5 Q 16 1, 30 4 T 60 3 T 78 4" fill="none"
+          stroke="var(--paper-red)" stroke-width="2" stroke-linecap="round"
+          style="filter:url(#paper-roughen);"/>
+      </svg>
+    </button>
+  ` : "";
+
   const items = PAPER_NAV_TABS.map(t => {
     const isActive = t.screen === activeId;
     const dataAttrs = t.screen
@@ -462,7 +479,7 @@ function paperOpenNavMenu() {
       <span class="paper-menu-sheet-kicker">go to &mdash;</span>
       <button class="paper-menu-sheet-close" type="button" aria-label="Close menu">&times;</button>
     </div>
-    <div class="paper-menu-list">${items}</div>
+    <div class="paper-menu-list">${exitItem}${items}</div>
   `;
   openSheet(wrap);
 
@@ -479,6 +496,8 @@ function paperOpenNavMenu() {
         showScreen(screen);
       } else if (action === "timer" && typeof openStandaloneTimer === "function") {
         openStandaloneTimer();
+      } else if (action === "exit" && typeof openExitWorkoutSheet === "function") {
+        openExitWorkoutSheet();
       }
       if (navigator.vibrate) navigator.vibrate(10);
     });
@@ -766,6 +785,29 @@ function paperFindDayActiveSet(day) {
     }
   }
   return { bi: 0, exIdx: 0, setIdx: 0, allDone: true };
+}
+
+// "Save & exit" stamp — surfaces openExitWorkoutSheet() as a discoverable
+// affordance during an active workout. Distinct from the "✓ Finish" path
+// (which auto-completes untouched sets); this one saves only what the user
+// actually logged. Returns a DOM element or null when there's no draft to
+// save.
+function paperBuildExitStamp() {
+  if (!state.workoutStartedAt && !(typeof hasAnyInput === "function" && hasAnyInput())) return null;
+  const wrap = document.createElement("div");
+  wrap.className = "paper-exit-stamp-row";
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "paper-exit-stamp";
+  btn.textContent = "Save & Exit";
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (typeof openExitWorkoutSheet === "function") openExitWorkoutSheet();
+    if (navigator.vibrate) navigator.vibrate(10);
+  });
+  if (typeof paperWirePress === "function") paperWirePress(btn);
+  wrap.appendChild(btn);
+  return wrap;
 }
 
 function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi) {
@@ -1202,6 +1244,8 @@ function paperRenderFocusView(container, day) {
   wrap.appendChild(swipeHint);
 
   // ── ACTION BAR ──
+  const _focusExit = (typeof paperBuildExitStamp === "function") ? paperBuildExitStamp() : null;
+  if (_focusExit) wrap.appendChild(_focusExit);
   wrap.appendChild(paperBuildActionBar(day, block, active.exIdx, active.setIdx, active.allDone, bi));
 
   container.appendChild(wrap);
@@ -1218,6 +1262,7 @@ if (typeof window !== "undefined") {
   window.paperBuildDayCard = paperBuildDayCard;
   window.paperRenderFocusView = paperRenderFocusView;
   window.paperBuildActionBar = paperBuildActionBar;
+  window.paperBuildExitStamp = paperBuildExitStamp;
   window.paperFindActiveSet = paperFindActiveSet;
   window.paperFindDayActiveSet = paperFindDayActiveSet;
   window.paperOpenNavMenu = paperOpenNavMenu;

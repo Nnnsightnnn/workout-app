@@ -8093,6 +8093,16 @@ body[data-skin="paper"] .paper-menu-item.active .paper-menu-item-squiggle {
 body[data-skin="paper"] .paper-menu-item:active {
   background: var(--paper-marker-soft);
 }
+/* Save & exit lives at the top of the menu sheet when a workout is in     */
+/* progress. Red ink + always-visible squiggle so it reads as a stamp      */
+/* action rather than a navigation destination.                            */
+body[data-skin="paper"] .paper-menu-item.exit {
+  color: var(--paper-red);
+  font-weight: 700;
+}
+body[data-skin="paper"] .paper-menu-item.exit .paper-menu-item-squiggle {
+  opacity: 1;
+}
 
 /* Hide the legacy timeline strip's chunky chrome — it produces a   */
 /* lot of background-fills that fight the cream paper. The strip's  */
@@ -8393,6 +8403,36 @@ body[data-skin="paper"] .paper-start-stamp {
 body[data-skin="paper"] .paper-start-stamp:active {
   transform: rotate(-1.5deg) translate(1px, 1px);
   box-shadow: 1px 2px 0 rgba(40,30,15,0.2);
+}
+
+/* "Save & exit" stamp — outline variant of paper-start-stamp. Outline (not  */
+/* filled) so it reads as the *opposite* of starting: ending the page with   */
+/* what's logged, rather than the firm red stamp that begins it.             */
+body[data-skin="paper"] .paper-exit-stamp-row {
+  display: flex;
+  justify-content: center;
+  padding: 18px 0 8px;
+  margin-top: 4px;
+}
+body[data-skin="paper"] .paper-exit-stamp {
+  background: transparent;
+  color: var(--paper-red);
+  border: 1.6px solid var(--paper-red);
+  border-radius: 0;
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 10px 18px;
+  cursor: pointer;
+  transform: rotate(1.5deg);
+  box-shadow: 2px 3px 0 rgba(168, 58, 42, 0.18);
+}
+body[data-skin="paper"] .paper-exit-stamp:active {
+  transform: rotate(1.5deg) translate(1px, 1px);
+  box-shadow: 1px 2px 0 rgba(168, 58, 42, 0.18);
+  background: rgba(168, 58, 42, 0.06);
 }
 
 /* "Other workouts" toggle + list */
