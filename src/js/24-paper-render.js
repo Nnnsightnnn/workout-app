@@ -413,12 +413,10 @@ const PAPER_NAV_TABS = [
 ];
 
 function paperRebuildBottomNav() {
-  // Bottom nav itself is hidden via CSS under paper skin. Wire the top-right
-  // menu handle to open the paper menu sheet. Idempotent.
+  // Bottom nav is hidden via CSS under paper skin; FAB visibility is also
+  // CSS-only. Here we just wire the click handler once. Idempotent.
   const handle = document.getElementById("paperMenuBtn");
-  if (!handle) return;
-  handle.style.display = "";
-  if (handle.dataset.paperBuilt === "1") return;
+  if (!handle || handle.dataset.paperBuilt === "1") return;
   handle.addEventListener("click", (e) => {
     e.stopPropagation();
     paperOpenNavMenu();

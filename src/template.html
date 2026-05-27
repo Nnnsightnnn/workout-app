@@ -43,11 +43,13 @@
   </button>
 </header>
 
-<!-- Paper-skin menu handle — fixed top-right, only visible under paper skin
-     (the dark <header> is display:none in paper mode, so this lives outside it). -->
-<button class="paper-menu-handle" id="paperMenuBtn" aria-label="Open menu" type="button" style="display:none;">
-  <span class="paper-menu-handle-label">menu</span>
-  <span class="paper-menu-handle-screen" id="paperMenuActiveLabel"></span>
+<!-- Paper-skin menu FAB — sticky-note top-right, only visible under paper
+     skin (the dark <header> is display:none in paper mode). Visibility is
+     controlled purely by CSS so this can't get stuck hidden by JS. -->
+<button class="paper-menu-fab" id="paperMenuBtn" aria-label="Open menu" type="button">
+  <span class="paper-menu-fab-tape" aria-hidden="true"></span>
+  <span class="paper-menu-fab-label">menu</span>
+  <span class="paper-menu-fab-screen" id="paperMenuActiveLabel"></span>
 </button>
 
 <main>
