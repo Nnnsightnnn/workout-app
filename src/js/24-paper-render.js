@@ -944,6 +944,10 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi)
   logBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     if (allDone) {
+      // Reset dayChosen so finishWorkout()'s render lands on the day picker
+      // (home) instead of the rotated next-day's empty chapters view.
+      // Mirrors exitWorkout()'s behavior in 13-start-finish.js.
+      state.dayChosen = false;
       if (typeof finishWorkout === "function") finishWorkout();
       if (navigator.vibrate) navigator.vibrate([15, 40, 15]);
       return;
