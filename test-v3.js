@@ -3139,6 +3139,206 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     eq(cards.length, 1, "one card on the strip");
   });
 
+  // -------------------- CSV import tests --------------------
+  const CSV_CANONICAL = [
+    "date,day_name,block,exercise,set_number,weight,reps,rpe,notes",
+    "2026-05-20,Full Body — Squat Focus,B. Squat,Back Squat,1,135,8,7,Moderate load",
+    "2026-05-20,Full Body — Squat Focus,B. Squat,Back Squat,2,135,8,7.5,",
+    "2026-05-20,Full Body — Squat Focus,B. Squat,Back Squat,3,135,8,8,",
+    "2026-05-20,Full Body — Squat Focus,C. Row + Shoulders,Gorilla Row,1,35,12,7,"
+  ].join("\n");
+
+  t("csv: parses canonical example into one session with 4 sets", () => {
+    const parsed = w.parseCsv(CSV_CANONICAL);
+    eq(parsed.ok, true, "ok");
+    eq(parsed.blockingErrors.length, 0, "no blocking errors");
+    eq(parsed.sessions.length, 1, "1 session");
+    eq(parsed.totalSets, 4, "4 sets total");
+    const s = parsed.sessions[0];
+    eq(s.date, "2026-05-20", "date");
+    eq(s.dayName, "Full Body — Squat Focus", "day name");
+    eq(s.exercises.length, 2, "2 exercises (Back Squat + Gorilla Row)");
+    eq(s.exercises[0].sets.length, 3, "Back Squat: 3 sets");
+    eq(s.exercises[0].sets[0].weight, 135, "set 1 weight");
+    eq(s.exercises[0].sets[0].reps, 8, "set 1 reps");
+    eq(s.exercises[0].sets[0].rpe, 7, "set 1 rpe");
+    eq(s.exercises[0].sets[0].notes, "Moderate load", "set 1 notes");
+  });
+
+  t("csv: header order is tolerated (columns shuffled)", () => {
+    const csv = [
+      "notes,reps,set_number,exercise,weight,block,day_name,rpe,date",
+      "First,5,1,Bench Press,135,A. Bench,Push Day,8,2026-05-21",
+      ",5,2,Bench Press,135,A. Bench,Push Day,8.5,2026-05-21"
+    ].join("\n");
+    const parsed = w.parseCsv(csv);
+    eq(parsed.ok, true, "ok");
+    eq(parsed.sessions.length, 1, "1 session");
+    eq(parsed.totalSets, 2, "2 sets");
+    eq(parsed.sessions[0].exercises[0].sets[0].weight, 135, "weight");
+    eq(parsed.sessions[0].exercises[0].sets[0].notes, "First", "notes");
+  });
+
+  t("csv: bodyweight inferred when weight empty + library says bodyweight", () => {
+    const csv = [
+      "date,day_name,block,exercise,set_number,weight,reps,rpe,notes",
+      "2026-05-22,Push,A. Bodyweight,Push-Up,1,,20,7,",
+      "2026-05-22,Push,A. Bodyweight,Push-Up,2,,18,8,"
+    ].join("\n");
+    const parsed = w.parseCsv(csv);
+    eq(parsed.ok, true, "ok — bodyweight rows with empty weight should parse");
+    eq(parsed.blockingErrors.length, 0, "no blocking errors");
+    const s = parsed.sessions[0];
+    eq(s.exercises[0].sets[0].bodyweight, true, "bodyweight flag set");
+    eq(s.exercises[0].sets[0].weight, 0, "weight defaulted to 0 for bodyweight");
+  });
+
+  t("csv: missing weight on non-bodyweight row → blocking error", () => {
+    const csv = [
+      "date,day_name,block,exercise,set_number,weight,reps,rpe,notes",
+      "2026-05-23,Push,A. Bench,Back Squat,1,,5,7,"
+    ].join("\n");
+    const parsed = w.parseCsv(csv);
+    eq(parsed.ok, false, "not ok");
+    assert(parsed.blockingErrors.length >= 1, "has blocking error");
+    assert(
+      /missing weight/i.test(parsed.blockingErrors[0].message),
+      "error mentions missing weight: " + parsed.blockingErrors[0].message
+    );
+    eq(parsed.blockingErrors[0].row, 2, "row 2 (after header)");
+  });
+
+  t("csv: unresolved exercise listed but not blocking", () => {
+    const csv = [
+      "date,day_name,block,exercise,set_number,weight,reps,rpe,notes",
+      "2026-05-24,Custom,A. Weird,Glute Ham Raise Reverse,1,0,10,7,",
+      "2026-05-24,Custom,A. Weird,Glute Ham Raise Reverse,2,0,10,7,"
+    ].join("\n");
+    const parsed = w.parseCsv(csv);
+    eq(parsed.ok, true, "ok — unresolved doesn't block");
+    eq(parsed.unresolved.length, 1, "1 unresolved exercise");
+    eq(parsed.unresolved[0].name, "Glute Ham Raise Reverse", "unresolved name");
+    eq(parsed.unresolved[0].count, 2, "unresolved appears in 2 rows");
+  });
+
+  t("csv: multi-date CSV produces one session per date", () => {
+    const csv = [
+      "date,day_name,block,exercise,set_number,weight,reps,rpe,notes",
+      "2026-05-25,Day A,A. Squat,Back Squat,1,135,5,7,",
+      "2026-05-26,Day B,A. Bench,Bench Press,1,135,5,7,",
+      "2026-05-27,Day C,A. Hinge,Conventional Deadlift,1,225,5,8,"
+    ].join("\n");
+    const parsed = w.parseCsv(csv);
+    eq(parsed.ok, true, "ok");
+    eq(parsed.sessions.length, 3, "3 sessions");
+    // Dates are sorted ascending
+    eq(parsed.sessions[0].date, "2026-05-25", "session 0 = earliest date");
+    eq(parsed.sessions[2].date, "2026-05-27", "session 2 = latest date");
+    eq(parsed.sessions[1].dayName, "Day B", "day name preserved");
+  });
+
+  t("csv: block letter + name preserved in parsed exercises", () => {
+    const parsed = w.parseCsv(CSV_CANONICAL);
+    const exs = parsed.sessions[0].exercises;
+    eq(exs[0].block.letter, "B", "Back Squat block letter");
+    eq(exs[0].block.name, "Squat", "Back Squat block name");
+    eq(exs[1].block.letter, "C", "Gorilla Row block letter");
+    eq(exs[1].block.name, "Row + Shoulders", "Gorilla Row block name");
+  });
+
+  t("csv: rejects file with no recognizable header", () => {
+    const csv = "totally not a workout csv\nfoo,bar,baz\n";
+    const parsed = w.parseCsv(csv);
+    eq(parsed.ok, false, "not ok");
+    assert(parsed.blockingErrors.length >= 1, "has blocking error");
+    assert(
+      /missing header|missing required column/i.test(parsed.blockingErrors[0].message),
+      "error mentions missing header: " + parsed.blockingErrors[0].message
+    );
+  });
+
+  t("csv: rejects empty CSV", () => {
+    const parsed = w.parseCsv("");
+    eq(parsed.ok, false, "not ok");
+    assert(/empty/i.test(parsed.blockingErrors[0].message), "empty error");
+  });
+
+  t("csv: rejects bad date format", () => {
+    const csv = [
+      "date,day_name,block,exercise,set_number,weight,reps,rpe,notes",
+      "05/20/2026,Push,A,Back Squat,1,135,5,7,"
+    ].join("\n");
+    const parsed = w.parseCsv(csv);
+    eq(parsed.ok, false, "not ok");
+    assert(/bad date|YYYY-MM-DD/i.test(parsed.blockingErrors[0].message), "date format error");
+  });
+
+  t("csv: rejects RPE out of 0-10 range", () => {
+    const csv = [
+      "date,day_name,block,exercise,set_number,weight,reps,rpe,notes",
+      "2026-05-20,Push,A. Bench,Bench Press,1,135,5,15,"
+    ].join("\n");
+    const parsed = w.parseCsv(csv);
+    eq(parsed.ok, false, "not ok");
+    assert(/RPE/i.test(parsed.blockingErrors[0].message), "RPE error");
+  });
+
+  t("csv: quoted fields with embedded commas + escaped quotes parse correctly", () => {
+    const csv = [
+      'date,day_name,block,exercise,set_number,weight,reps,rpe,notes',
+      '2026-05-20,"Full Body, Squat Focus",A. Squat,Back Squat,1,135,5,7,"Felt ""crispy"" today"'
+    ].join("\n");
+    const parsed = w.parseCsv(csv);
+    eq(parsed.ok, true, "ok");
+    eq(parsed.sessions[0].dayName, "Full Body, Squat Focus", "comma-in-quoted preserved");
+    eq(parsed.sessions[0].exercises[0].sets[0].notes, 'Felt "crispy" today', "escaped quotes decoded");
+  });
+
+  t("csv: _csvLookupExercise resolves library names case-insensitively", () => {
+    assert(w._csvLookupExercise("Back Squat"), "exact");
+    assert(w._csvLookupExercise("back squat"), "lowercase");
+    assert(w._csvLookupExercise("BACK SQUAT"), "uppercase");
+    assert(w._csvLookupExercise("Back-Squat"), "punctuation-tolerant");
+    eq(w._csvLookupExercise("nonexistent exercise 12345"), null, "unknown returns null");
+  });
+
+  t("csv: import pushes sessions to userData and returns count", () => {
+    // Reset user with empty sessions
+    w.updateUser(u => { u.sessions = []; });
+    const parsed = w.parseCsv(CSV_CANONICAL);
+    const n = w._csvImportSessions(parsed);
+    eq(n, 1, "1 session imported");
+    const u = w.userData();
+    const csvSessions = (u.sessions || []).filter(s => s.csvImport);
+    eq(csvSessions.length, 1, "1 csv session persisted");
+    const s = csvSessions[0];
+    eq(s.dayName, "Full Body — Squat Focus", "dayName persisted");
+    eq(s.sets.length, 4, "4 sets persisted");
+    eq(s.manual, true, "manual flag set");
+    // Back Squat is in the library so it should have exId
+    const bs = s.sets.find(x => x.exName === "Back Squat");
+    assert(bs && bs.exId === "backsquat", "library exercise gets exId");
+    assert(bs.muscles && bs.muscles.length, "library exercise gets muscles");
+  });
+
+  t("csv: import sheet exposes the CSV button and openCsvImportSheet mounts the picker", () => {
+    w.openImportWorkoutSheet();
+    const csvBtn = w.document.getElementById("shareImportCsvBtn");
+    assert(csvBtn, "Import CSV button mounted in main import sheet");
+
+    // Call openCsvImportSheet directly — bypasses the 30ms wiring hop the
+    // synchronous test harness can't await. This is the function the CSV
+    // button delegates to.
+    w.openCsvImportSheet();
+    const fileInput = w.document.getElementById("csvImportFile");
+    const ta = w.document.getElementById("csvImportText");
+    const previewBtn = w.document.getElementById("csvImportPreview");
+    assert(fileInput, "CSV file picker mounted");
+    assert(ta, "CSV textarea mounted");
+    assert(previewBtn, "Preview button mounted");
+    w.document.getElementById("sheetBg").classList.remove("active");
+  });
+
   console.log("\n===== RESULTS =====");
   let pass = 0, fail = 0;
   for (const [n, s, e] of results) {

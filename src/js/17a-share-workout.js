@@ -634,6 +634,12 @@ function openImportWorkoutSheet() {
       <button id="shareImportCancel">Cancel</button>
       <button class="primary" id="shareImportNext">Next</button>
     </div>
+    <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--border);">
+      <p style="color:var(--text-dim); font-size:11px; margin:0 0 8px;">
+        Have a backlog of past workouts from another app? Bulk-import them as history.
+      </p>
+      <button id="shareImportCsvBtn" style="width:100%;">Import CSV…</button>
+    </div>
   `;
   openSheet(html);
   setTimeout(() => {
@@ -652,6 +658,10 @@ function openImportWorkoutSheet() {
       const errors = validateImportedDay(parsed.data);
       if (errors.length) { showToast(errors[0]); return; }
       _showImportConfirmSheet(parsed.data);
+    };
+    const csvBtn = document.getElementById("shareImportCsvBtn");
+    if (csvBtn) csvBtn.onclick = () => {
+      if (typeof openCsvImportSheet === "function") openCsvImportSheet();
     };
   }, 30);
 }
