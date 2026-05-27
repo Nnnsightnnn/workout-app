@@ -419,7 +419,15 @@ function paperRebuildBottomNav() {
   if (!handle || handle.dataset.paperBuilt === "1") return;
   handle.addEventListener("click", (e) => {
     e.stopPropagation();
-    paperOpenNavMenu();
+    const sheetBg = document.getElementById("sheetBg");
+    const menuOpen = sheetBg
+      && sheetBg.classList.contains("active")
+      && sheetBg.querySelector(".paper-menu-sheet");
+    if (menuOpen) {
+      closeSheet();
+    } else {
+      paperOpenNavMenu();
+    }
     if (navigator.vibrate) navigator.vibrate(8);
   });
   handle.dataset.paperBuilt = "1";

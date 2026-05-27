@@ -23,6 +23,25 @@ function openAdhocWorkout() {
     </p>
   `;
 
+  // v21: top-row entry into "add from program" — single day (one-off) or
+  // whole program (library install). Routes through the existing template
+  // picker + duration picker; single-day re-uses the ad-hoc flow below.
+  const fromProgramRow = document.createElement("button");
+  fromProgramRow.type = "button";
+  fromProgramRow.className = "adhoc-from-program-row";
+  fromProgramRow.innerHTML = `
+    <div class="adhoc-from-program-body">
+      <div class="adhoc-from-program-title">Add from a program</div>
+      <div class="adhoc-from-program-sub">Pull one day as today's session — or add the whole program to your library.</div>
+    </div>
+    <span class="adhoc-from-program-arrow" aria-hidden="true">→</span>
+  `;
+  fromProgramRow.onclick = () => {
+    closeSheet();
+    setTimeout(openAddFromProgramSheet, 80);
+  };
+  wrap.appendChild(fromProgramRow);
+
   // Custom activity input
   const customRow = document.createElement("div");
   customRow.className = "adhoc-custom-row";
@@ -872,4 +891,150 @@ function cancelAdhocWorkout() {
   state.dayChosen = false;
   renderWorkoutScreen();
   showToast("Quick workout cancelled");
+}
+
+// ============================================================
+// ADD FROM PROGRAM (v21) — one day or whole program from a template
+// ============================================================
+// Entered from the "+" workout sheet (openAdhocWorkout, top row).
+// Step 1: pick a template (PROGRAM_TEMPLATES, minus "custom").
+// Step 2: pick mode — "Run one day" (ad-hoc, one-off) or "Add whole program"
+//         (routes to openDurationPicker → addProgramEntry).
+// Step 3a (one day): pick which day from a sample week → load as ad-hoc.
+
+function openAddFromProgramSheet() {
+  const wrap = document.createElement("div");
+  let html = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <h3 style="margin:0;">Add from a program</h3>
+      <button class="icon-btn" onclick="closeSheet()" title="Close">✕</button>
+    </div>
+    <p style="color:var(--text-dim);font-size:12px;margin-bottom:12px;">Pick a template. Next step asks whether you want just one day or the whole program.</p>
+  `;
+  (typeof PROGRAM_TEMPLATES !== "undefined" ? PROGRAM_TEMPLATES : []).forEach(tpl => {
+    if (tpl.id === "custom") return;
+    html += `
+      <div class="tpl-option" data-tpl-id="${tpl.id}">
+        <div class="tpl-head"><div class="tpl-name">${tpl.name}</div></div>
+        <div class="tpl-desc">${tpl.description || ""}</div>
+      </div>
+    `;
+  });
+  wrap.innerHTML = html;
+  wrap.querySelectorAll(".tpl-option").forEach(row => {
+    row.onclick = () => {
+      closeSheet();
+      setTimeout(() => openTemplateActionSheet(row.dataset.tplId), 80);
+    };
+  });
+  openSheet(wrap);
+}
+
+function openTemplateActionSheet(templateId) {
+  const tpl = (typeof PROGRAM_TEMPLATES !== "undefined")
+    ? PROGRAM_TEMPLATES.find(t => t.id === templateId) : null;
+  if (!tpl) return;
+
+  const wrap = document.createElement("div");
+  wrap.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <h3 style="margin:0;">${tpl.name}</h3>
+      <button class="icon-btn" onclick="closeSheet()" title="Close">✕</button>
+    </div>
+    <p style="color:var(--text-dim);font-size:12px;margin-bottom:14px;">${tpl.description || ""}</p>
+  `;
+
+  const oneDay = document.createElement("button");
+  oneDay.className = "sheet-item";
+  oneDay.innerHTML = `<span class="icon">1</span><span><strong>Run one day</strong><div style="color:var(--text-dim);font-size:11px;font-weight:500;">One-off — won't change your library. Logs as today's quick workout.</div></span>`;
+  oneDay.onclick = () => {
+    closeSheet();
+    setTimeout(() => openTemplateDayPicker(templateId), 80);
+  };
+  wrap.appendChild(oneDay);
+
+  const wholeProg = document.createElement("button");
+  wholeProg.className = "sheet-item";
+  wholeProg.style.marginTop = "8px";
+  wholeProg.innerHTML = `<span class="icon">▦</span><span><strong>Add the whole program</strong><div style="color:var(--text-dim);font-size:11px;font-weight:500;">Pick days/wk and weeks. Adds to your library and switches to it.</div></span>`;
+  wholeProg.onclick = () => {
+    closeSheet();
+    // openDurationPicker drives the existing applyProgramSwitch flow.
+    setTimeout(() => openDurationPicker(templateId), 80);
+  };
+  wrap.appendChild(wholeProg);
+
+  openSheet(wrap);
+}
+
+function openTemplateDayPicker(templateId) {
+  const tpl = (typeof PROGRAM_TEMPLATES !== "undefined")
+    ? PROGRAM_TEMPLATES.find(t => t.id === templateId) : null;
+  if (!tpl) return;
+  const dpw = tpl.daysPerWeek || 4;
+  const tw = tpl.totalWeeks || tpl.minWeeks || 10;
+  const days = (typeof resolveWeekProgram === "function")
+    ? resolveWeekProgram(templateId, 1, tw, dpw) : null;
+  if (!Array.isArray(days) || !days.length) {
+    showToast("Couldn't preview that program — try the whole-program flow.");
+    return;
+  }
+
+  const wrap = document.createElement("div");
+  wrap.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <h3 style="margin:0;">${tpl.name}</h3>
+      <button class="icon-btn" id="atdpBack" title="Back">←</button>
+    </div>
+    <p style="color:var(--text-dim);font-size:12px;margin-bottom:12px;">Which day do you want to run today? It logs as a one-off — your active program isn't touched.</p>
+  `;
+  days.forEach(day => {
+    const btn = document.createElement("button");
+    btn.className = "sheet-item";
+    const breakdown = (typeof getSessionBreakdown === "function") ? getSessionBreakdown(day) : null;
+    const meta = breakdown ? ` · ~${breakdown.totalMin} min` : "";
+    btn.innerHTML = `<span class="icon">${day.id}</span><span>${day.name}<div style="color:var(--text-dim);font-size:11px;font-weight:500;">${(day.sub || "")}${meta}</div></span>`;
+    btn.onclick = () => {
+      closeSheet();
+      _beginAdhocFromTemplateDay(day, tpl.name);
+    };
+    wrap.appendChild(btn);
+  });
+  openSheet(wrap);
+  const backBtn = wrap.querySelector("#atdpBack");
+  if (backBtn) backBtn.onclick = () => { closeSheet(); setTimeout(() => openTemplateActionSheet(templateId), 80); };
+}
+
+// Load a single template day as today's ad-hoc workout. Preserves block
+// structure (warm-up, main, supersets) — unlike _beginAdhocSession which
+// flattens to one block — by stuffing the resolved day directly into
+// state.adhocDay. Saves as a normal ad-hoc session on finish; no PR
+// inflation against the active program's history because session.programId
+// stays null for ad-hoc records.
+function _beginAdhocFromTemplateDay(day, tplName) {
+  const clonedBlocks = (day.blocks || []).map(b => ({
+    id: "adhoc-tpl-" + (b.id || b.letter || Math.random().toString(36).slice(2, 6)),
+    letter: b.letter || "A",
+    name: b.name || "",
+    type: b.type || null,
+    blockType: b.blockType || "strength",
+    exercises: (b.exercises || []).map(e => (typeof mkSets === "function") ? mkSets(e) : Object.assign({}, e))
+  }));
+
+  state.adhocActive = true;
+  state.adhocDay = {
+    id: "adhoc",
+    name: day.name || (tplName + " day"),
+    sub: tplName + " · one-off",
+    blocks: clonedBlocks
+  };
+  state.adhocCustomName = null;
+  state.adhocExercises = null;
+  state.adhocStartedAt = Date.now();
+  state.adhocInputs = {};
+  state.dayChosen = true;
+  state.workoutView = "chapters";
+
+  if (typeof renderAdhocScreen === "function") renderAdhocScreen();
+  if (typeof showToast === "function") showToast("Loaded " + (day.name || "day") + " from " + tplName, "success");
 }

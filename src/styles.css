@@ -4484,6 +4484,36 @@
   background: rgba(255,107,31,0.25) !important;
 }
 
+/* v21: top-of-sheet entry into "add from program" — single day or full library install. */
+.adhoc-from-program-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  width: 100%; padding: 12px 14px; margin-bottom: 14px;
+  background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 14px;
+  cursor: pointer; text-align: left; color: var(--text);
+  transition: transform 80ms ease, border-color 120ms ease;
+}
+.adhoc-from-program-row:active { transform: scale(0.99); }
+.adhoc-from-program-body { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+.adhoc-from-program-title { font-weight: 700; font-size: 14px; }
+.adhoc-from-program-sub { color: var(--text-dim); font-size: 11px; font-weight: 500; line-height: 1.35; }
+.adhoc-from-program-arrow { color: var(--accent); font-size: 18px; font-weight: 700; }
+
+/* Paper-skin override: flat ruled row with dotted underline, no card chrome. */
+body[data-skin="paper"] .adhoc-from-program-row {
+  background: transparent; border: none; border-bottom: 1px dotted var(--paper-ink-mist);
+  border-radius: 0; padding: 10px 4px 12px; margin-bottom: 16px;
+}
+body[data-skin="paper"] .adhoc-from-program-title {
+  font-family: var(--paper-hand); font-weight: 400; font-size: 18px; color: var(--paper-ink);
+}
+body[data-skin="paper"] .adhoc-from-program-sub {
+  font-family: var(--paper-form); font-size: 10.5px; letter-spacing: 0.06em;
+  color: var(--paper-ink-faint); text-transform: none;
+}
+body[data-skin="paper"] .adhoc-from-program-arrow {
+  font-family: var(--paper-hand); color: var(--paper-red);
+}
+
 /* Custom activity input row in the sheet */
 .adhoc-custom-input-row {
   display: flex; gap: 8px; align-items: center;
