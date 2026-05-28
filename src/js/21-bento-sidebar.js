@@ -7,7 +7,9 @@ function openSidebar(filterCat, targetBi, targetEi) {
   state.sidebarSelectedEx = null;
   if (targetBi !== undefined && targetEi !== undefined) {
     state.sidebarSwapTarget = { bi: targetBi, ei: targetEi };
-    const day = getCurrentDay();
+    // In an ad-hoc workout the day lives in state.adhocDay, not the active
+    // program — fall back to it so the swap banner labels correctly.
+    const day = state.adhocActive ? state.adhocDay : getCurrentDay();
     const exName = day.blocks[targetBi].exercises[targetEi].name;
     document.getElementById("sidebarSwapBanner").innerHTML =
       `<span>Replace: ${exName}</span><button class="cancel-swap" onclick="clearSwapTarget()">Cancel</button>`;
@@ -112,10 +114,20 @@ function onWorkoutCardTapForSwap(bi, ei) {
 }
 
 function executeSidebarSwap(libEx, bi, ei) {
-  mutateDay(d => {
-    d.blocks[bi].exercises[ei] = mkSets(libEx);
-  });
-  renderWorkoutScreen();
+  if (state.adhocActive) {
+    // Ad-hoc workouts live in state.adhocDay, not the active program — mutate
+    // there and rerender via renderAdhocScreen so the paper action bar updates.
+    if (state.adhocDay && state.adhocDay.blocks
+        && state.adhocDay.blocks[bi] && state.adhocDay.blocks[bi].exercises) {
+      state.adhocDay.blocks[bi].exercises[ei] = mkSets(libEx);
+    }
+    if (typeof renderAdhocScreen === "function") renderAdhocScreen();
+  } else {
+    mutateDay(d => {
+      d.blocks[bi].exercises[ei] = mkSets(libEx);
+    });
+    renderWorkoutScreen();
+  }
   showToast(`Swapped to ${libEx.name}`, "success");
   closeSidebar();
 }

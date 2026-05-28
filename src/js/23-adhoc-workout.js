@@ -249,6 +249,272 @@ function _getAdhocDay() {
   return state.adhocDay || null;
 }
 
+// ─────────────────────────────────────────────────────────────
+// PAPER ACTION BAR (ad-hoc variant)
+// ─────────────────────────────────────────────────────────────
+// Mirrors paperBuildActionBar in 24-paper-render.js, but reads/writes
+// state.adhocInputs (keyed `adhoc|bi|ei|si`) instead of the program
+// draft, and finishes via finishAdhocWorkout(). Used so the same Rest
+// / Weight / Swap / Log set / Save & exit chrome shows whenever a
+// workout is loaded in the Overview area — single program day, saved
+// workout, or quick custom session.
+
+function _paperFindAdhocActiveSet(day) {
+  if (!day || !day.blocks) return { bi: 0, exIdx: 0, setIdx: 0, allDone: true };
+  for (let bi = 0; bi < day.blocks.length; bi++) {
+    const block = day.blocks[bi];
+    if (!block || !block.exercises) continue;
+    for (let ei = 0; ei < block.exercises.length; ei++) {
+      const ex = block.exercises[ei];
+      if (ex.isWarmup) continue;
+      const nSets = ex.sets || 3;
+      for (let si = 0; si < nSets; si++) {
+        const sKey = `adhoc|${bi}|${ei}|${si}`;
+        const inp = state.adhocInputs[sKey] || {};
+        if (inp.status !== "done") return { bi, exIdx: ei, setIdx: si, allDone: false };
+      }
+    }
+  }
+  return { bi: 0, exIdx: 0, setIdx: 0, allDone: true };
+}
+
+function _paperBuildAdhocActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi) {
+  const bar = document.createElement("div");
+  bar.className = "paper-action-bar";
+
+  const ex = block.exercises[activeExIdx] || block.exercises[0];
+  const lib = (typeof LIB_BY_ID !== "undefined") ? (LIB_BY_ID[ex.exId] || ex) : ex;
+  const bw = lib.bodyweight;
+  const isKg = (typeof state !== "undefined" && state.unit === "kg");
+  const unit = isKg ? "kg" : "lb";
+  const step = isKg ? 2.5 : 5;
+
+  // Day-wide completion counts for the all-done label.
+  let _daySetsTotal = 0, _daySetsDone = 0;
+  if (day && day.blocks) {
+    for (let _bi = 0; _bi < day.blocks.length; _bi++) {
+      const b = day.blocks[_bi];
+      if (!b.exercises) continue;
+      for (let _ei = 0; _ei < b.exercises.length; _ei++) {
+        const _e = b.exercises[_ei];
+        if (_e.isWarmup) continue;
+        const _n = _e.sets || 3;
+        for (let _si = 0; _si < _n; _si++) {
+          _daySetsTotal++;
+          const _k = `adhoc|${_bi}|${_ei}|${_si}`;
+          if ((state.adhocInputs[_k] || {}).status === "done") _daySetsDone++;
+        }
+      }
+    }
+  }
+
+  const lbl = document.createElement("div");
+  lbl.className = "paper-action-edit-label";
+  if (allDone) {
+    lbl.innerHTML = `<span class="pa-label-target">workout complete &middot; ${_daySetsDone}/${_daySetsTotal}</span>`;
+  } else {
+    const totalSets = (ex.sets || 3);
+    lbl.innerHTML = `<span class="pa-label-target">set ${activeSetIdx + 1} of ${totalSets}</span>`;
+  }
+  bar.appendChild(lbl);
+
+  const row = document.createElement("div");
+  row.className = "paper-action-row";
+
+  // REST
+  const restBtn = document.createElement("button");
+  restBtn.className = "paper-action-rest";
+  const restSec = (ex.rest != null ? ex.rest
+                    : (block.exercises[0] && block.exercises[0].rest != null
+                       ? block.exercises[0].rest : 90));
+  const restStr = (typeof formatRest === "function") ? formatRest(restSec) : (restSec + "s");
+  restBtn.innerHTML = `
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+         style="filter:url(#paper-roughen);">
+      <circle cx="12" cy="13" r="8"/>
+      <path d="M12 9v4l2 2"/>
+      <line x1="9" y1="2" x2="15" y2="2"/>
+      <line x1="12" y1="2" x2="12" y2="4"/>
+    </svg>
+    <span class="pa-rest-lbl">Rest</span>
+    <span class="pa-rest-val">${restStr}</span>
+  `;
+  restBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (typeof showHeaderRest === "function") showHeaderRest(restSec);
+    if (typeof openRestSheet === "function") openRestSheet();
+    if (navigator.vibrate) navigator.vibrate(10);
+  });
+  if (typeof paperWirePress === "function") paperWirePress(restBtn);
+  row.appendChild(restBtn);
+
+  // WEIGHT stepper (skip for bodyweight)
+  const wWrap = document.createElement("div");
+  wWrap.className = "paper-action-weight";
+  const sKeyActive = `adhoc|${bi}|${activeExIdx}|${activeSetIdx}`;
+  if (bw) {
+    wWrap.classList.add("paper-action-weight-bw");
+    wWrap.innerHTML = `<div class="pa-weight-label">Weight</div><div class="pa-weight-bw">BW</div>`;
+  } else {
+    const last = (typeof getLastSetsFor === "function") ? getLastSetsFor(ex.exId || ex.name) : [];
+    const lastSet = last[activeSetIdx] || last[last.length - 1];
+    const existing = state.adhocInputs[sKeyActive] || {};
+    const cur = existing.w != null ? existing.w
+      : (lastSet ? lastSet.weight : (ex.defaultWeight || 0));
+    wWrap.innerHTML = `
+      <div class="pa-weight-label">Weight</div>
+      <div class="pa-weight-row">
+        <button class="pa-weight-step pa-weight-minus" aria-label="Decrease weight">&minus;</button>
+        <div class="pa-weight-val"><span class="pa-weight-num">${cur}</span><span class="pa-weight-unit">${unit}</span></div>
+        <button class="pa-weight-step pa-weight-plus" aria-label="Increase weight">+</button>
+      </div>
+    `;
+    const minus = wWrap.querySelector(".pa-weight-minus");
+    const plus = wWrap.querySelector(".pa-weight-plus");
+    const apply = (delta) => {
+      const v = Math.max(0, Number(cur) + delta);
+      if (!state.adhocInputs[sKeyActive]) state.adhocInputs[sKeyActive] = {};
+      state.adhocInputs[sKeyActive].w = v;
+      if (navigator.vibrate) navigator.vibrate(5);
+      renderAdhocScreen();
+    };
+    minus.addEventListener("click", (e) => { e.stopPropagation(); apply(-step); });
+    plus.addEventListener("click", (e) => { e.stopPropagation(); apply(+step); });
+    if (typeof paperWirePress === "function") {
+      paperWirePress(minus);
+      paperWirePress(plus);
+    }
+  }
+  row.appendChild(wWrap);
+
+  // SWAP
+  const swapBtn = document.createElement("button");
+  swapBtn.className = "paper-action-swap";
+  swapBtn.innerHTML = `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+         style="filter:url(#paper-roughen);">
+      <path d="M3 7 L17 7 L13 3"/>
+      <path d="M21 17 L7 17 L11 21"/>
+    </svg>
+    <span>Swap</span>
+  `;
+  swapBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (typeof openSidebar === "function") {
+      const libEx = (typeof LIB_BY_ID !== "undefined") ? LIB_BY_ID[ex.exId] : null;
+      const cat = libEx ? libEx.cat : null;
+      openSidebar(cat, bi, activeExIdx);
+    }
+  });
+  if (typeof paperWirePress === "function") paperWirePress(swapBtn);
+  row.appendChild(swapBtn);
+
+  // LOG SET / FINISH
+  const logBtn = document.createElement("button");
+  logBtn.className = "paper-action-log" + (allDone ? " paper-action-finish" : "");
+  logBtn.innerHTML = allDone ? `
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 12 l4 4 L14 8"/>
+      <path d="M10 12 l4 4 L20 6"/>
+    </svg>
+    <span>Finish</span>
+  ` : `
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 12 l5 5 L20 6"/>
+    </svg>
+    <span>Log set</span>
+  `;
+  logBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (allDone) {
+      state.dayChosen = false;
+      if (typeof finishAdhocWorkout === "function") finishAdhocWorkout();
+      if (navigator.vibrate) navigator.vibrate([15, 40, 15]);
+      return;
+    }
+    if (logBtn.disabled) return;
+
+    const activeRow = document.querySelector(".paper-focus-active-set");
+    if (activeRow && typeof paperInkBloom === "function") {
+      paperInkBloom(activeRow);
+    }
+
+    // Capture displayed weight / reps from the active row's inputs so they
+    // persist on finish — mirrors _wireAdhocPaperSetRow.toggleDone.
+    if (!state.adhocInputs[sKeyActive]) state.adhocInputs[sKeyActive] = {};
+    const cur = state.adhocInputs[sKeyActive];
+    cur.status = "done";
+    if (activeRow) {
+      const wEl = activeRow.querySelector('input[data-field="w"]');
+      const rEl = activeRow.querySelector('input[data-field="r"]');
+      if (wEl) cur.w = parseFloat(wEl.value) || 0;
+      if (rEl) cur.r = parseInt(rEl.value) || 0;
+    }
+    if (typeof showHeaderRest === "function") showHeaderRest(restSec);
+
+    setTimeout(() => { if (navigator.vibrate) navigator.vibrate(15); }, 50);
+
+    logBtn.disabled = true;
+    setTimeout(() => { renderAdhocScreen(); }, 320);
+  });
+  if (typeof paperWirePress === "function") paperWirePress(logBtn);
+  row.appendChild(logBtn);
+
+  bar.appendChild(row);
+
+  // Save & exit — quiet secondary, only mid-workout. Adhoc uses its own
+  // confirm sheet because the global exitWorkout() discards adhoc drafts
+  // (cancelAdhocWorkout) instead of saving them.
+  if (!allDone) {
+    const exitRow = document.createElement("div");
+    exitRow.className = "paper-action-exit-row";
+    const exitBtn = document.createElement("button");
+    exitBtn.type = "button";
+    exitBtn.className = "paper-action-exit";
+    exitBtn.textContent = "Save & exit";
+    exitBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      _openAdhocExitSheet();
+      if (navigator.vibrate) navigator.vibrate(8);
+    });
+    if (typeof paperWirePress === "function") paperWirePress(exitBtn);
+    exitRow.appendChild(exitBtn);
+    bar.appendChild(exitRow);
+  }
+
+  return bar;
+}
+
+// Confirm sheet for the Save & exit chip. Saves via finishAdhocWorkout so
+// the user's logged sets persist — distinct from cancelAdhocWorkout.
+function _openAdhocExitSheet() {
+  const html = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <h3 style="margin:0;">End quick workout?</h3>
+      <button class="icon-btn" onclick="closeSheet()" title="Close">&times;</button>
+    </div>
+    <p style="color:var(--text-dim);font-size:13px;line-height:1.5;margin-bottom:10px;">
+      We'll save what you logged so far.
+    </p>
+    <div class="sheet-actions">
+      <button class="primary" id="adhocExitConfirm">Save and end</button>
+      <button class="secondary" id="adhocExitCancel">Keep going</button>
+    </div>
+  `;
+  if (typeof openSheet === "function") openSheet(html);
+  const cancelEl = document.getElementById("adhocExitCancel");
+  const confirmEl = document.getElementById("adhocExitConfirm");
+  if (cancelEl) cancelEl.onclick = () => { if (typeof closeSheet === "function") closeSheet(); };
+  if (confirmEl) confirmEl.onclick = () => {
+    if (typeof closeSheet === "function") closeSheet();
+    if (typeof finishAdhocWorkout === "function") finishAdhocWorkout();
+  };
+}
+
 function renderAdhocScreen() {
   if (!state.adhocActive) return;
 
@@ -286,6 +552,11 @@ function renderAdhocScreen() {
 
   const wrap = document.createElement("div");
   wrap.className = paperOn ? "adhoc-paper-wrap" : "adhoc-workout-wrap";
+
+  // Compute total exercise count up-front so downstream logic can gate the
+  // paper action bar (only shows when there's at least one real exercise).
+  let _adhocExCount = 0;
+  state.adhocDay.blocks.forEach(b => { _adhocExCount += (b.exercises || []).length; });
 
   // If we have exercises, render them
   if (state.adhocDay.blocks.length > 0) {
@@ -363,6 +634,20 @@ function renderAdhocScreen() {
     }, 10);
   }
 
+  // Paper action bar \u2014 Rest / Weight / Swap / Log set / Save & exit, plus the
+  // red Finish stamp once all sets are done. Only shows in paper skin and only
+  // when there's at least one real exercise (custom-activity mode skips it).
+  const _showAdhocBar = paperOn && _adhocExCount > 0;
+  let _adhocBarActive = null;
+  if (_showAdhocBar) {
+    _adhocBarActive = _paperFindAdhocActiveSet(state.adhocDay);
+    const activeBlock = state.adhocDay.blocks[_adhocBarActive.bi] || state.adhocDay.blocks[0];
+    wrap.appendChild(_paperBuildAdhocActionBar(
+      state.adhocDay, activeBlock,
+      _adhocBarActive.exIdx, _adhocBarActive.setIdx, _adhocBarActive.allDone, _adhocBarActive.bi
+    ));
+  }
+
   // Add exercise button
   const addExBtn = document.createElement("button");
   addExBtn.className = paperOn ? "paper-add-ex" : "adhoc-add-exercise-btn";
@@ -370,19 +655,35 @@ function renderAdhocScreen() {
   addExBtn.onclick = () => _openAdhocAddExercise();
   wrap.appendChild(addExBtn);
 
-  // Finish button
-  const finBtn = document.createElement("button");
-  if (paperOn) {
-    finBtn.className = "paper-stamp-btn adhoc-paper-finish";
-    finBtn.innerHTML = `<span>\u2713 finish quick workout</span>`;
-  } else {
-    finBtn.className = "action-btn success adhoc-finish-btn";
-    finBtn.textContent = "\u2713 Finish Quick Workout";
+  // Finish button \u2014 when the paper action bar is shown, its all-done state
+  // already provides the Finish stamp, so we hide this redundant one.
+  if (!_showAdhocBar) {
+    const finBtn = document.createElement("button");
+    if (paperOn) {
+      finBtn.className = "paper-stamp-btn adhoc-paper-finish";
+      finBtn.innerHTML = `<span>\u2713 finish quick workout</span>`;
+    } else {
+      finBtn.className = "action-btn success adhoc-finish-btn";
+      finBtn.textContent = "\u2713 Finish Quick Workout";
+    }
+    finBtn.onclick = finishAdhocWorkout;
+    wrap.appendChild(finBtn);
   }
-  finBtn.onclick = finishAdhocWorkout;
-  wrap.appendChild(finBtn);
 
   container.appendChild(wrap);
+
+  // Highlight the active set row after the DOM is in place \u2014 mirrors the
+  // program-flow logic in renderChaptersView (10-render-workout.js:1905-1912).
+  if (_showAdhocBar && _adhocBarActive && !_adhocBarActive.allDone) {
+    requestAnimationFrame(() => {
+      const row = wrap.querySelector(
+        `.paper-block[data-bi="${_adhocBarActive.bi}"] ` +
+        `.paper-exercise[data-ei="${_adhocBarActive.exIdx}"] ` +
+        `.paper-set-row[data-set-idx="${_adhocBarActive.setIdx}"]`
+      );
+      if (row) row.classList.add("paper-focus-active-set");
+    });
+  }
 
   // Show the header finish button too
   const hfBtn = document.getElementById("headerFinishBtn");
