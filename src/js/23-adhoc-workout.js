@@ -23,6 +23,31 @@ function openAdhocWorkout() {
     </p>
   `;
 
+  // v22: top-row entry to repeat a previously-saved workout. Only shows
+  // when the user actually has saved workouts so an empty list doesn't
+  // add noise for new users.
+  const _u22 = userData();
+  const _savedCount = (_u22 && Array.isArray(_u22.savedWorkouts)) ? _u22.savedWorkouts.length : 0;
+  if (_savedCount > 0) {
+    const savedRow = document.createElement("button");
+    savedRow.type = "button";
+    savedRow.className = "adhoc-from-program-row";
+    savedRow.innerHTML = `
+      <div class="adhoc-from-program-body">
+        <div class="adhoc-from-program-title">Repeat a saved workout</div>
+        <div class="adhoc-from-program-sub">${_savedCount} saved · pick one to run as today's session.</div>
+      </div>
+      <span class="adhoc-from-program-arrow" aria-hidden="true">→</span>
+    `;
+    savedRow.onclick = () => {
+      closeSheet();
+      setTimeout(() => {
+        if (typeof openSavedWorkoutsPicker === "function") openSavedWorkoutsPicker();
+      }, 80);
+    };
+    wrap.appendChild(savedRow);
+  }
+
   // v21: top-row entry into "add from program" — single day (one-off) or
   // whole program (library install). Routes through the existing template
   // picker + duration picker; single-day re-uses the ad-hoc flow below.
@@ -49,7 +74,7 @@ function openAdhocWorkout() {
     <div class="section-title" style="margin-top:0;">Custom Activity</div>
     <div class="adhoc-custom-input-row">
       <input type="text" id="adhocCustomName" class="name-input" placeholder="e.g. Bike, Basketball, Yoga…" autocomplete="off" style="flex:1;">
-      <button class="action-btn primary" id="adhocCustomStart" style="white-space:nowrap;">Start</button>
+      <button class="action-btn" id="adhocCustomAdd" style="white-space:nowrap;">Add</button>
     </div>
   `;
   wrap.appendChild(customRow);
@@ -152,16 +177,29 @@ function openAdhocWorkout() {
   wrap.appendChild(selectedWrap);
   wrap.appendChild(libSection);
 
-  // Wire custom activity start
+  // Wire custom activity add — pushes the typed name into the selected list
+  // as a synthetic exercise so users can build a multi-exercise quick workout
+  // mixing custom names with library picks.
   setTimeout(() => {
     const customInput = document.getElementById("adhocCustomName");
-    const customBtn = document.getElementById("adhocCustomStart");
+    const customBtn = document.getElementById("adhocCustomAdd");
     if (customInput && customBtn) {
       customBtn.onclick = () => {
         const name = customInput.value.trim();
         if (!name) { customInput.focus(); return; }
-        closeSheet();
-        _beginAdhocSession(name, []);
+        const synthetic = {
+          id: "custom-" + Date.now(),
+          name: name,
+          cat: "Custom",
+          muscles: [],
+          sets: 3,
+          reps: 10
+        };
+        selectedExercises.push(synthetic);
+        updateSelectedUI();
+        renderList();
+        customInput.value = "";
+        customInput.focus();
       };
       customInput.addEventListener("keydown", e => {
         if (e.key === "Enter") customBtn.click();
@@ -848,13 +886,23 @@ function finishAdhocWorkout() {
     mesocycleId: null,
     mesoWeek: null,
     isAdhoc: true,
-    adhocMeta: adhocMeta
+    adhocMeta: adhocMeta,
+    savedWorkoutId: state.adhocSavedWorkoutId || null
   };
 
   // Save session — does NOT touch lastDoneDayId or program rotation
   updateUser(u => {
     u.sessions.push(session);
     // Explicitly do NOT update u.lastDoneDayId or advance the program
+
+    // Bump use-count + lastUsedAt on the source saved workout, if any.
+    if (state.adhocSavedWorkoutId && Array.isArray(u.savedWorkouts)) {
+      const sw = u.savedWorkouts.find(x => x.id === state.adhocSavedWorkoutId);
+      if (sw) {
+        sw.useCount = (sw.useCount || 0) + 1;
+        sw.lastUsedAt = Date.now();
+      }
+    }
   });
 
   // Clean up ad-hoc state
@@ -875,6 +923,7 @@ function _cleanupAdhocState() {
   state.adhocExercises = null;
   state.adhocStartedAt = null;
   state.adhocInputs = null;
+  state.adhocSavedWorkoutId = null;
   state.workoutStartedAt = null;
   stopSessionTimer();
   hideHeaderRest();

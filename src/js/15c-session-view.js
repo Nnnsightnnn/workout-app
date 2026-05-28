@@ -204,6 +204,18 @@ function paperRenderSessionView(container, editing) {
     footer.appendChild(revertBtn);
   }
 
+  const saveBtn = document.createElement("button");
+  saveBtn.className = "paper-link-btn paper-session-save-tpl";
+  saveBtn.textContent = "↻ save to repeat";
+  saveBtn.addEventListener("click", () => {
+    if (typeof openSaveWorkoutSheet === "function") {
+      // Flush any pending edits so the saved template reflects current values.
+      flushSessionSaveNow();
+      openSaveWorkoutSheet(_editState.editing);
+    }
+  });
+  footer.appendChild(saveBtn);
+
   const delBtn = document.createElement("button");
   delBtn.className = "paper-stamp-btn paper-session-delete";
   delBtn.textContent = "delete session";

@@ -6345,6 +6345,36 @@ body[data-skin="paper"] .log-pr-row,
 body[data-skin="paper"] .log-entry {
   border-bottom: 1px dotted rgba(40, 30, 15, 0.25);
   background: transparent;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s ease-out;
+  touch-action: pan-y;
+}
+body[data-skin="paper"] .log-entry-delete {
+  position: absolute;
+  right: -82px;
+  top: 6px;
+  bottom: 6px;
+  width: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: lowercase;
+  color: var(--paper-red);
+  border: 1.6px solid var(--paper-red);
+  background: var(--paper-bg);
+  transform: rotate(-2deg);
+  box-shadow: 2px 3px 0 rgba(168, 58, 42, 0.15);
+  cursor: pointer;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+body[data-skin="paper"] .log-entry-delete:active {
+  box-shadow: 1px 1px 0 rgba(168, 58, 42, 0.15);
+  transform: rotate(-2deg) translate(1px, 2px);
 }
 body[data-skin="paper"] .log-pr-name,
 body[data-skin="paper"] .log-pr-set,
@@ -7962,24 +7992,24 @@ body[data-skin="paper"] .paper-menu-fab {
   justify-content: center;
   gap: 1px;
   position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 14px);
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
   right: calc(env(safe-area-inset-right, 0px) + 14px);
   z-index: 100;
-  width: 64px;
-  height: 64px;
-  padding: 8px 6px 6px;
+  width: 84px;
+  height: 84px;
+  padding: 14px 8px 10px;
   background: var(--paper-postit, #ffe48a);
   border: none;
   border-radius: 1px;
   color: var(--paper-ink);
   cursor: pointer;
   font-family: var(--paper-form);
-  letter-spacing: 0.16em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   /* Stuck-to-the-wall shadow: small drop, slight rotation, subtle curl. */
   box-shadow:
-    1px 3px 0 rgba(40, 30, 15, 0.10),
-    2px 6px 14px rgba(40, 30, 15, 0.20);
+    1.5px 4px 0 rgba(40, 30, 15, 0.12),
+    3px 8px 18px rgba(40, 30, 15, 0.22);
   transform: rotate(-3deg);
   transition: transform 80ms ease, box-shadow 80ms ease;
 }
@@ -7987,36 +8017,36 @@ body[data-skin="paper"] .paper-menu-fab:active {
   transform: rotate(-3deg) translate(1px, 1px) scale(0.98);
   box-shadow:
     0.5px 1.5px 0 rgba(40, 30, 15, 0.10),
-    1px 3px 8px rgba(40, 30, 15, 0.18);
+    1.5px 4px 10px rgba(40, 30, 15, 0.20);
 }
 /* Washi-tape strip at the top — "stuck on" detail. */
 body[data-skin="paper"] .paper-menu-fab-tape {
   position: absolute;
-  top: -6px; left: 50%;
+  top: -8px; left: 50%;
   transform: translateX(-50%) rotate(1.5deg);
-  width: 38px;
-  height: 12px;
+  width: 52px;
+  height: 16px;
   background: rgba(168, 58, 42, 0.32);
   border-left: 1px dashed rgba(40, 30, 15, 0.2);
   border-right: 1px dashed rgba(40, 30, 15, 0.2);
   pointer-events: none;
 }
 body[data-skin="paper"] .paper-menu-fab-label {
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--paper-ink);
   line-height: 1;
-  margin-top: 2px;
+  margin-top: 4px;
 }
 body[data-skin="paper"] .paper-menu-fab-screen {
   font-family: var(--paper-hand);
-  font-size: 13px;
+  font-size: 18px;
   letter-spacing: 0;
   text-transform: none;
   color: var(--paper-ink);
-  line-height: 1;
-  margin-top: 2px;
-  max-width: 56px;
+  line-height: 1.05;
+  margin-top: 4px;
+  max-width: 72px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

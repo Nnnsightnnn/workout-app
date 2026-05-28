@@ -35,6 +35,7 @@ let state = {
   adhocExercises: null,
   adhocStartedAt: null,
   adhocInputs: null,
+  adhocSavedWorkoutId: null,  // backreference when ad-hoc was loaded from a saved workout
   autoTimer: false,
 };
 
@@ -217,6 +218,8 @@ function loadStore() {
       // Defensive default for v13: manual PRs and pinned lifts
       if (!Array.isArray(u.manualPRs)) u.manualPRs = [];
       if (!Array.isArray(u.pinnedLifts)) u.pinnedLifts = [];
+      // Defensive default for v22: saved custom workouts
+      if (!Array.isArray(u.savedWorkouts)) u.savedWorkouts = [];
       if (u.firstWorkoutCompleted === undefined) u.firstWorkoutCompleted = false;
       // Defensive defaults for v18 paper-skin prefs
       if (u.paperSkin === undefined) u.paperSkin = true;

@@ -77,7 +77,7 @@ function renderProgramPicker() {
   if (!el) return;
   const u = userData();
   if (!u || !Array.isArray(u.programs) || !u.programs.length) {
-    el.innerHTML = `
+    let emptyHtml = `
       <div class="paper-settings-block">
         <div class="paper-settings-title">No programs yet</div>
         <div class="paper-settings-actions">
@@ -85,6 +85,11 @@ function renderProgramPicker() {
         </div>
       </div>
     `;
+    if (typeof renderSavedWorkoutsSection === "function") {
+      emptyHtml += renderSavedWorkoutsSection();
+    }
+    el.innerHTML = emptyHtml;
+    if (typeof wireSavedWorkoutsActions === "function") wireSavedWorkoutsActions(el);
     return;
   }
 
@@ -146,10 +151,18 @@ function renderProgramPicker() {
 
   html += '</div>';
 
+  // Append the Saved Workouts library as a sibling block.
+  if (typeof renderSavedWorkoutsSection === "function") {
+    html += renderSavedWorkoutsSection();
+  }
+
   el.innerHTML = html;
 
+  // Wire saved-workouts row actions (handles its own data-sw-id / data-sw-act).
+  if (typeof wireSavedWorkoutsActions === "function") wireSavedWorkoutsActions(el);
+
   // Wire row actions
-  el.querySelectorAll(".paper-library-row").forEach(row => {
+  el.querySelectorAll(".paper-library-row[data-pid]").forEach(row => {
     const pid = row.dataset.pid;
     row.querySelectorAll("[data-act]").forEach(btn => {
       btn.addEventListener("click", e => {

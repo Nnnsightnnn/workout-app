@@ -3504,6 +3504,186 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     w.document.getElementById("sheetBg").classList.remove("active");
   });
 
+  // ─────────────────────────────────────────────────────────────
+  // Saved Workouts (v22) — save & repeat custom workouts
+  // ─────────────────────────────────────────────────────────────
+  t("saved: schema version bumped to v22 and new user has empty savedWorkouts[]", () => {
+    eq(w.APP_VERSION, 22, "APP_VERSION should be 22");
+    const u = w.userData();
+    assert(u, "have a user");
+    assert(Array.isArray(u.savedWorkouts), "u.savedWorkouts is an array");
+    eq(u.savedWorkouts.length, 0, "empty by default");
+  });
+
+  t("saved: derivePrescribedBlocksFromSession groups flat sets by exId, counts sets, uses library defaults", () => {
+    const session = {
+      id: "test-session",
+      dayName: "Pull Day",
+      sets: [
+        { exId: "bb_row", exName: "Barbell Row", muscles: ["lats"], setIdx: 1, weight: 135, reps: 8 },
+        { exId: "bb_row", exName: "Barbell Row", muscles: ["lats"], setIdx: 2, weight: 135, reps: 7 },
+        { exId: "bb_row", exName: "Barbell Row", muscles: ["lats"], setIdx: 3, weight: 135, reps: 6 },
+        { exId: "lat_pulldown", exName: "Lat Pulldown", muscles: ["lats"], setIdx: 1, weight: 120, reps: 10 },
+        { exId: "lat_pulldown", exName: "Lat Pulldown", muscles: ["lats"], setIdx: 2, weight: 120, reps: 10 }
+      ]
+    };
+    const blocks = w.derivePrescribedBlocksFromSession(session);
+    eq(blocks.length, 1, "one wrapper block");
+    eq(blocks[0].exercises.length, 2, "two grouped exercises");
+    eq(blocks[0].exercises[0].exId, "bb_row", "first exercise preserved");
+    eq(blocks[0].exercises[0].sets, 3, "row's set count derived from session");
+    eq(blocks[0].exercises[1].exId, "lat_pulldown", "second exercise preserved");
+    eq(blocks[0].exercises[1].sets, 2, "lat pulldown set count");
+  });
+
+  t("saved: derivePrescribedBlocksFromSession on empty session returns a single empty block", () => {
+    const blocks = w.derivePrescribedBlocksFromSession({ id: "empty", dayName: "X", sets: [] });
+    eq(blocks.length, 1, "always returns a block");
+    eq(blocks[0].exercises.length, 0, "no exercises");
+  });
+
+  t("saved: save persists to u.savedWorkouts with correct shape", () => {
+    const u = w.userData();
+    const beforeCount = u.savedWorkouts.length;
+    const session = {
+      id: "sess-for-save",
+      dayName: "Push Lite",
+      sets: [
+        { exId: "bench_press", exName: "Bench Press", muscles: ["chest"], setIdx: 1, weight: 185, reps: 5 },
+        { exId: "bench_press", exName: "Bench Press", muscles: ["chest"], setIdx: 2, weight: 185, reps: 5 }
+      ]
+    };
+    const blocks = w.derivePrescribedBlocksFromSession(session);
+    w.updateUser(usr => {
+      usr.savedWorkouts.push({
+        id: "sw_test1",
+        name: "My Push",
+        createdAt: Date.now(),
+        lastUsedAt: null,
+        useCount: 0,
+        sourceSessionId: session.id,
+        blocks: blocks
+      });
+    });
+    const u2 = w.userData();
+    eq(u2.savedWorkouts.length, beforeCount + 1, "added one");
+    const sw = u2.savedWorkouts.find(x => x.id === "sw_test1");
+    assert(sw, "saved workout retrievable by id");
+    eq(sw.name, "My Push", "name persisted");
+    eq(sw.blocks.length, 1, "blocks persisted");
+    eq(sw.blocks[0].exercises[0].exId, "bench_press", "exercise persisted");
+  });
+
+  t("saved: _beginSavedWorkout sets adhoc state with adhocSavedWorkoutId backreference", () => {
+    // Reset any prior ad-hoc state so we get a clean start
+    if (w.state.adhocActive && typeof w._cleanupAdhocState === "function") w._cleanupAdhocState();
+    w.state.adhocActive = false;
+    w.state.adhocSavedWorkoutId = null;
+
+    // Confirm picker renders a row for the saved workout (UI surface check).
+    w.openSavedWorkoutsPicker();
+    const row = w.document.querySelector('.tpl-option[data-sw-id="sw_test1"]');
+    assert(row, "picker row rendered for saved workout");
+    w.document.getElementById("sheetBg").classList.remove("active");
+
+    // State assertions: call _beginSavedWorkout directly (sync).
+    w._beginSavedWorkout("sw_test1");
+    eq(w.state.adhocActive, true, "ad-hoc active after begin");
+    eq(w.state.adhocSavedWorkoutId, "sw_test1", "backref stored");
+    assert(w.state.adhocDay, "adhoc day populated");
+    eq(w.state.adhocDay.name, "My Push", "name carried over");
+    assert(Array.isArray(w.state.adhocDay.blocks) && w.state.adhocDay.blocks.length === 1,
+      "blocks cloned");
+    assert(w.state.adhocDay.blocks[0].exercises.length === 1, "exercise cloned");
+    eq(w.state.adhocDay.blocks[0].exercises[0].exId, "bench_press", "exercise exId cloned");
+  });
+
+  t("saved: finishing an ad-hoc loaded from a saved workout bumps useCount and lastUsedAt", () => {
+    // We're already in an ad-hoc state from the previous test with savedWorkoutId=sw_test1.
+    assert(w.state.adhocActive && w.state.adhocSavedWorkoutId === "sw_test1",
+      "previous test left ad-hoc active with backref");
+
+    // Pre-flight: useCount is currently 0.
+    let sw = w.userData().savedWorkouts.find(x => x.id === "sw_test1");
+    eq(sw.useCount, 0, "starts at 0");
+    eq(sw.lastUsedAt, null, "starts null");
+
+    // Mark one set as done so the session has something to log.
+    w.state.adhocInputs["adhoc|0|0|0"] = { w: 185, r: 5, status: "done" };
+
+    // Finish
+    w.finishAdhocWorkout();
+
+    // Use count incremented; lastUsedAt set.
+    sw = w.userData().savedWorkouts.find(x => x.id === "sw_test1");
+    eq(sw.useCount, 1, "incremented to 1");
+    assert(sw.lastUsedAt && sw.lastUsedAt > 0, "lastUsedAt populated");
+
+    // State cleaned up after finish.
+    eq(w.state.adhocSavedWorkoutId, null, "backref cleared on cleanup");
+    eq(w.state.adhocActive, false, "ad-hoc deactivated");
+
+    // Session was stamped with savedWorkoutId for provenance.
+    const u = w.userData();
+    const lastSession = u.sessions[u.sessions.length - 1];
+    eq(lastSession.savedWorkoutId, "sw_test1", "session.savedWorkoutId stamped");
+  });
+
+  t("saved: rename updates the entry name", () => {
+    w.renameSavedWorkout = w.renameSavedWorkout; // no-op accessor
+    // jsdom's prompt() returns null by default. Stub it.
+    const orig = w.prompt;
+    w.prompt = () => "Renamed Push";
+    try {
+      w.renameSavedWorkout("sw_test1");
+      const u = w.userData();
+      const sw = u.savedWorkouts.find(x => x.id === "sw_test1");
+      eq(sw.name, "Renamed Push", "rename persisted");
+    } finally {
+      w.prompt = orig;
+    }
+  });
+
+  t("saved: delete removes the entry", () => {
+    const orig = w.confirm;
+    w.confirm = () => true;
+    try {
+      w.deleteSavedWorkout("sw_test1");
+      const u = w.userData();
+      assert(!u.savedWorkouts.find(x => x.id === "sw_test1"), "entry gone");
+    } finally {
+      w.confirm = orig;
+    }
+  });
+
+  t("saved: Quick Workout sheet shows the 'Repeat a saved workout' row only when saved items exist", () => {
+    // Currently empty: row should NOT appear
+    w.openAdhocWorkout();
+    let savedRow = Array.from(w.document.querySelectorAll(".adhoc-from-program-title"))
+      .find(el => el.textContent.includes("Repeat a saved workout"));
+    assert(!savedRow, "no Repeat row when no saved workouts");
+    w.document.getElementById("sheetBg").classList.remove("active");
+
+    // Seed one and re-open
+    w.updateUser(usr => {
+      usr.savedWorkouts.push({
+        id: "sw_test2",
+        name: "Quick Pull",
+        createdAt: Date.now(),
+        lastUsedAt: null,
+        useCount: 0,
+        sourceSessionId: null,
+        blocks: [{ id: "b1", letter: "A", name: "Pull", blockType: "strength",
+                   exercises: [{ exId: "bb_row", name: "Barbell Row", muscles: ["lats"], sets: 3, reps: 8, rest: 90 }] }]
+      });
+    });
+    w.openAdhocWorkout();
+    savedRow = Array.from(w.document.querySelectorAll(".adhoc-from-program-title"))
+      .find(el => el.textContent.includes("Repeat a saved workout"));
+    assert(savedRow, "Repeat row appears once saved workout exists");
+    w.document.getElementById("sheetBg").classList.remove("active");
+  });
+
   console.log("\n===== RESULTS =====");
   let pass = 0, fail = 0;
   for (const [n, s, e] of results) {

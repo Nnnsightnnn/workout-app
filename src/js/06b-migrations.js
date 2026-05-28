@@ -408,6 +408,16 @@ const MIGRATIONS = [
       });
       return store;
     }
+  },
+  {
+    version: 22,
+    description: "Seed u.savedWorkouts[] for the save-and-repeat custom workouts feature",
+    migrate(store) {
+      (store.users || []).forEach(u => {
+        if (!Array.isArray(u.savedWorkouts)) u.savedWorkouts = [];
+      });
+      return store;
+    }
   }
 ];
 

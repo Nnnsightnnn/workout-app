@@ -1,6 +1,25 @@
 // ============================================================
 // HISTORY — The Log (Midnight Forge)
 // ============================================================
+let _openLogEntryId = null;
+let _logOutsideClickHandler = null;
+
+function _closeOpenLogEntry() {
+  const root = document.getElementById("historyContent");
+  if (root && _openLogEntryId) {
+    const open = root.querySelector('.log-entry[data-session-id="' + _openLogEntryId + '"]');
+    if (open) {
+      open.style.transform = "";
+      open.classList.remove("log-entry-swiped");
+    }
+  }
+  _openLogEntryId = null;
+  if (_logOutsideClickHandler) {
+    document.removeEventListener("click", _logOutsideClickHandler, true);
+    _logOutsideClickHandler = null;
+  }
+}
+
 function renderHistory() {
   const root = document.getElementById("historyContent");
   if (!root) return;
@@ -40,14 +59,98 @@ function renderHistory() {
 
   root.innerHTML = html;
 
-  // Wire log-entry rows → open the session editor.
-  // Skip planned-future entries (no real sets yet).
+  _openLogEntryId = null;
+  if (_logOutsideClickHandler) {
+    document.removeEventListener("click", _logOutsideClickHandler, true);
+    _logOutsideClickHandler = null;
+  }
+
+  // Wire log-entry rows: tap = open editor; swipe-left = reveal delete stamp.
+  // Skip planned-future entries (no data-session-id).
   root.querySelectorAll(".log-entry[data-session-id]").forEach(el => {
-    el.addEventListener("click", () => {
-      const id = el.dataset.sessionId;
+    const id = el.dataset.sessionId;
+
+    el.addEventListener("click", (e) => {
+      if (e.target.closest(".log-entry-delete")) return;
+      if (_openLogEntryId) {
+        _closeOpenLogEntry();
+        return;
+      }
       const s = (userData()?.sessions || []).find(x => x.id === id);
       if (s && typeof openSessionEditor === "function") openSessionEditor(s);
     });
+
+    const delBtn = el.querySelector(".log-entry-delete");
+    if (delBtn) {
+      delBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const s = (userData()?.sessions || []).find(x => x.id === id);
+        if (!s) return;
+        if (typeof _undoPending !== "undefined" && _undoPending) {
+          if (typeof clearUndoToast === "function") clearUndoToast();
+        }
+        const deletedSession = deepClone(s);
+        const deletedUserId = state.userId;
+        _closeOpenLogEntry();
+        deleteSession(id);
+        if (typeof renderTimelineStrip === "function") renderTimelineStrip();
+        renderHistory();
+        if (typeof _undoPending !== "undefined") {
+          _undoPending = { session: deletedSession, userId: deletedUserId, timerId: null, onExpire: null };
+        }
+        if (typeof showUndoToast === "function") {
+          showUndoToast("Session deleted", () => { if (typeof _undoPending !== "undefined") _undoPending = null; });
+        }
+      });
+    }
+
+    let startX = 0, startY = 0, isSwiping = false, hasMoved = false;
+    el.addEventListener("touchstart", (e) => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      isSwiping = false;
+      hasMoved = false;
+    }, { passive: true });
+    el.addEventListener("touchmove", (e) => {
+      const dx = e.touches[0].clientX - startX;
+      const dy = e.touches[0].clientY - startY;
+      hasMoved = true;
+      if (!isSwiping && dx < -10 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        if (_openLogEntryId && _openLogEntryId !== id) _closeOpenLogEntry();
+        isSwiping = true;
+      }
+      if (isSwiping) {
+        e.preventDefault();
+        el.style.transition = "none";
+        const tx = Math.max(-90, Math.min(0, dx));
+        el.style.transform = "translateX(" + tx + "px)";
+      }
+    }, { passive: false });
+    el.addEventListener("touchend", (e) => {
+      if (!isSwiping) return;
+      const dx = e.changedTouches[0].clientX - startX;
+      el.style.transition = "";
+      if (dx < -50) {
+        el.style.transform = "translateX(-90px)";
+        el.classList.add("log-entry-swiped");
+        _openLogEntryId = id;
+        if (_logOutsideClickHandler) {
+          document.removeEventListener("click", _logOutsideClickHandler, true);
+        }
+        _logOutsideClickHandler = (ev) => {
+          if (ev.target.closest('.log-entry[data-session-id="' + id + '"]')) return;
+          _closeOpenLogEntry();
+        };
+        setTimeout(() => {
+          document.addEventListener("click", _logOutsideClickHandler, true);
+        }, 0);
+      } else {
+        el.style.transform = "";
+        el.classList.remove("log-entry-swiped");
+        if (_openLogEntryId === id) _openLogEntryId = null;
+      }
+      isSwiping = false;
+    }, { passive: true });
   });
 }
 
@@ -179,6 +282,9 @@ function _buildRecentEntries(entries) {
     html += '<div class="log-entry-info"><div class="name">' + (s.dayName || "Day " + s.dayId) + ' ' + adhocTag + plannedTag + editedMark + '</div>';
     html += '<div class="note' + (isPr ? " pr" : "") + '">' + prNote + (tappable ? ' <span class="log-entry-cue">tap to edit \u2192</span>' : '') + '</div></div>';
     html += '<div class="log-entry-vol">' + (s.volume > 0 ? s.volume.toLocaleString() : "\u2014") + '</div>';
+    if (tappable) {
+      html += '<button class="log-entry-delete" type="button" aria-label="Delete workout">delete</button>';
+    }
     html += '</div>';
   });
   return html;

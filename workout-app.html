@@ -6558,6 +6558,36 @@ body[data-skin="paper"] .log-pr-row,
 body[data-skin="paper"] .log-entry {
   border-bottom: 1px dotted rgba(40, 30, 15, 0.25);
   background: transparent;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s ease-out;
+  touch-action: pan-y;
+}
+body[data-skin="paper"] .log-entry-delete {
+  position: absolute;
+  right: -82px;
+  top: 6px;
+  bottom: 6px;
+  width: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: lowercase;
+  color: var(--paper-red);
+  border: 1.6px solid var(--paper-red);
+  background: var(--paper-bg);
+  transform: rotate(-2deg);
+  box-shadow: 2px 3px 0 rgba(168, 58, 42, 0.15);
+  cursor: pointer;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+body[data-skin="paper"] .log-entry-delete:active {
+  box-shadow: 1px 1px 0 rgba(168, 58, 42, 0.15);
+  transform: rotate(-2deg) translate(1px, 2px);
 }
 body[data-skin="paper"] .log-pr-name,
 body[data-skin="paper"] .log-pr-set,
@@ -8175,24 +8205,24 @@ body[data-skin="paper"] .paper-menu-fab {
   justify-content: center;
   gap: 1px;
   position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 14px);
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
   right: calc(env(safe-area-inset-right, 0px) + 14px);
   z-index: 100;
-  width: 64px;
-  height: 64px;
-  padding: 8px 6px 6px;
+  width: 84px;
+  height: 84px;
+  padding: 14px 8px 10px;
   background: var(--paper-postit, #ffe48a);
   border: none;
   border-radius: 1px;
   color: var(--paper-ink);
   cursor: pointer;
   font-family: var(--paper-form);
-  letter-spacing: 0.16em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   /* Stuck-to-the-wall shadow: small drop, slight rotation, subtle curl. */
   box-shadow:
-    1px 3px 0 rgba(40, 30, 15, 0.10),
-    2px 6px 14px rgba(40, 30, 15, 0.20);
+    1.5px 4px 0 rgba(40, 30, 15, 0.12),
+    3px 8px 18px rgba(40, 30, 15, 0.22);
   transform: rotate(-3deg);
   transition: transform 80ms ease, box-shadow 80ms ease;
 }
@@ -8200,36 +8230,36 @@ body[data-skin="paper"] .paper-menu-fab:active {
   transform: rotate(-3deg) translate(1px, 1px) scale(0.98);
   box-shadow:
     0.5px 1.5px 0 rgba(40, 30, 15, 0.10),
-    1px 3px 8px rgba(40, 30, 15, 0.18);
+    1.5px 4px 10px rgba(40, 30, 15, 0.20);
 }
 /* Washi-tape strip at the top — "stuck on" detail. */
 body[data-skin="paper"] .paper-menu-fab-tape {
   position: absolute;
-  top: -6px; left: 50%;
+  top: -8px; left: 50%;
   transform: translateX(-50%) rotate(1.5deg);
-  width: 38px;
-  height: 12px;
+  width: 52px;
+  height: 16px;
   background: rgba(168, 58, 42, 0.32);
   border-left: 1px dashed rgba(40, 30, 15, 0.2);
   border-right: 1px dashed rgba(40, 30, 15, 0.2);
   pointer-events: none;
 }
 body[data-skin="paper"] .paper-menu-fab-label {
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--paper-ink);
   line-height: 1;
-  margin-top: 2px;
+  margin-top: 4px;
 }
 body[data-skin="paper"] .paper-menu-fab-screen {
   font-family: var(--paper-hand);
-  font-size: 13px;
+  font-size: 18px;
   letter-spacing: 0;
   text-transform: none;
   color: var(--paper-ink);
-  line-height: 1;
-  margin-top: 2px;
-  max-width: 56px;
+  line-height: 1.05;
+  margin-top: 4px;
+  max-width: 72px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -13134,6 +13164,7 @@ let state = {
   adhocExercises: null,
   adhocStartedAt: null,
   adhocInputs: null,
+  adhocSavedWorkoutId: null,  // backreference when ad-hoc was loaded from a saved workout
   autoTimer: false,
 };
 
@@ -13316,6 +13347,8 @@ function loadStore() {
       // Defensive default for v13: manual PRs and pinned lifts
       if (!Array.isArray(u.manualPRs)) u.manualPRs = [];
       if (!Array.isArray(u.pinnedLifts)) u.pinnedLifts = [];
+      // Defensive default for v22: saved custom workouts
+      if (!Array.isArray(u.savedWorkouts)) u.savedWorkouts = [];
       if (u.firstWorkoutCompleted === undefined) u.firstWorkoutCompleted = false;
       // Defensive defaults for v18 paper-skin prefs
       if (u.paperSkin === undefined) u.paperSkin = true;
@@ -13511,8 +13544,8 @@ function switchUser(id) {
 // ============================================================
 // VERSION
 // ============================================================
-const APP_VERSION = 21;
-const APP_BUILD = "383bfec3";
+const APP_VERSION = 22;
+const APP_BUILD = "ff132342";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -13923,6 +13956,16 @@ const MIGRATIONS = [
         delete u.lastDoneDayId;
         delete u.draft;
         delete u.rp;
+      });
+      return store;
+    }
+  },
+  {
+    version: 22,
+    description: "Seed u.savedWorkouts[] for the save-and-repeat custom workouts feature",
+    migrate(store) {
+      (store.users || []).forEach(u => {
+        if (!Array.isArray(u.savedWorkouts)) u.savedWorkouts = [];
       });
       return store;
     }
@@ -20748,6 +20791,25 @@ function formatVolume(v) {
 // ============================================================
 // HISTORY — The Log (Midnight Forge)
 // ============================================================
+let _openLogEntryId = null;
+let _logOutsideClickHandler = null;
+
+function _closeOpenLogEntry() {
+  const root = document.getElementById("historyContent");
+  if (root && _openLogEntryId) {
+    const open = root.querySelector('.log-entry[data-session-id="' + _openLogEntryId + '"]');
+    if (open) {
+      open.style.transform = "";
+      open.classList.remove("log-entry-swiped");
+    }
+  }
+  _openLogEntryId = null;
+  if (_logOutsideClickHandler) {
+    document.removeEventListener("click", _logOutsideClickHandler, true);
+    _logOutsideClickHandler = null;
+  }
+}
+
 function renderHistory() {
   const root = document.getElementById("historyContent");
   if (!root) return;
@@ -20787,14 +20849,98 @@ function renderHistory() {
 
   root.innerHTML = html;
 
-  // Wire log-entry rows → open the session editor.
-  // Skip planned-future entries (no real sets yet).
+  _openLogEntryId = null;
+  if (_logOutsideClickHandler) {
+    document.removeEventListener("click", _logOutsideClickHandler, true);
+    _logOutsideClickHandler = null;
+  }
+
+  // Wire log-entry rows: tap = open editor; swipe-left = reveal delete stamp.
+  // Skip planned-future entries (no data-session-id).
   root.querySelectorAll(".log-entry[data-session-id]").forEach(el => {
-    el.addEventListener("click", () => {
-      const id = el.dataset.sessionId;
+    const id = el.dataset.sessionId;
+
+    el.addEventListener("click", (e) => {
+      if (e.target.closest(".log-entry-delete")) return;
+      if (_openLogEntryId) {
+        _closeOpenLogEntry();
+        return;
+      }
       const s = (userData()?.sessions || []).find(x => x.id === id);
       if (s && typeof openSessionEditor === "function") openSessionEditor(s);
     });
+
+    const delBtn = el.querySelector(".log-entry-delete");
+    if (delBtn) {
+      delBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const s = (userData()?.sessions || []).find(x => x.id === id);
+        if (!s) return;
+        if (typeof _undoPending !== "undefined" && _undoPending) {
+          if (typeof clearUndoToast === "function") clearUndoToast();
+        }
+        const deletedSession = deepClone(s);
+        const deletedUserId = state.userId;
+        _closeOpenLogEntry();
+        deleteSession(id);
+        if (typeof renderTimelineStrip === "function") renderTimelineStrip();
+        renderHistory();
+        if (typeof _undoPending !== "undefined") {
+          _undoPending = { session: deletedSession, userId: deletedUserId, timerId: null, onExpire: null };
+        }
+        if (typeof showUndoToast === "function") {
+          showUndoToast("Session deleted", () => { if (typeof _undoPending !== "undefined") _undoPending = null; });
+        }
+      });
+    }
+
+    let startX = 0, startY = 0, isSwiping = false, hasMoved = false;
+    el.addEventListener("touchstart", (e) => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      isSwiping = false;
+      hasMoved = false;
+    }, { passive: true });
+    el.addEventListener("touchmove", (e) => {
+      const dx = e.touches[0].clientX - startX;
+      const dy = e.touches[0].clientY - startY;
+      hasMoved = true;
+      if (!isSwiping && dx < -10 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        if (_openLogEntryId && _openLogEntryId !== id) _closeOpenLogEntry();
+        isSwiping = true;
+      }
+      if (isSwiping) {
+        e.preventDefault();
+        el.style.transition = "none";
+        const tx = Math.max(-90, Math.min(0, dx));
+        el.style.transform = "translateX(" + tx + "px)";
+      }
+    }, { passive: false });
+    el.addEventListener("touchend", (e) => {
+      if (!isSwiping) return;
+      const dx = e.changedTouches[0].clientX - startX;
+      el.style.transition = "";
+      if (dx < -50) {
+        el.style.transform = "translateX(-90px)";
+        el.classList.add("log-entry-swiped");
+        _openLogEntryId = id;
+        if (_logOutsideClickHandler) {
+          document.removeEventListener("click", _logOutsideClickHandler, true);
+        }
+        _logOutsideClickHandler = (ev) => {
+          if (ev.target.closest('.log-entry[data-session-id="' + id + '"]')) return;
+          _closeOpenLogEntry();
+        };
+        setTimeout(() => {
+          document.addEventListener("click", _logOutsideClickHandler, true);
+        }, 0);
+      } else {
+        el.style.transform = "";
+        el.classList.remove("log-entry-swiped");
+        if (_openLogEntryId === id) _openLogEntryId = null;
+      }
+      isSwiping = false;
+    }, { passive: true });
   });
 }
 
@@ -20926,6 +21072,9 @@ function _buildRecentEntries(entries) {
     html += '<div class="log-entry-info"><div class="name">' + (s.dayName || "Day " + s.dayId) + ' ' + adhocTag + plannedTag + editedMark + '</div>';
     html += '<div class="note' + (isPr ? " pr" : "") + '">' + prNote + (tappable ? ' <span class="log-entry-cue">tap to edit \u2192</span>' : '') + '</div></div>';
     html += '<div class="log-entry-vol">' + (s.volume > 0 ? s.volume.toLocaleString() : "\u2014") + '</div>';
+    if (tappable) {
+      html += '<button class="log-entry-delete" type="button" aria-label="Delete workout">delete</button>';
+    }
     html += '</div>';
   });
   return html;
@@ -21879,6 +22028,18 @@ function paperRenderSessionView(container, editing) {
     });
     footer.appendChild(revertBtn);
   }
+
+  const saveBtn = document.createElement("button");
+  saveBtn.className = "paper-link-btn paper-session-save-tpl";
+  saveBtn.textContent = "↻ save to repeat";
+  saveBtn.addEventListener("click", () => {
+    if (typeof openSaveWorkoutSheet === "function") {
+      // Flush any pending edits so the saved template reflects current values.
+      flushSessionSaveNow();
+      openSaveWorkoutSheet(_editState.editing);
+    }
+  });
+  footer.appendChild(saveBtn);
 
   const delBtn = document.createElement("button");
   delBtn.className = "paper-stamp-btn paper-session-delete";
@@ -24018,7 +24179,7 @@ function renderProgramPicker() {
   if (!el) return;
   const u = userData();
   if (!u || !Array.isArray(u.programs) || !u.programs.length) {
-    el.innerHTML = `
+    let emptyHtml = `
       <div class="paper-settings-block">
         <div class="paper-settings-title">No programs yet</div>
         <div class="paper-settings-actions">
@@ -24026,6 +24187,11 @@ function renderProgramPicker() {
         </div>
       </div>
     `;
+    if (typeof renderSavedWorkoutsSection === "function") {
+      emptyHtml += renderSavedWorkoutsSection();
+    }
+    el.innerHTML = emptyHtml;
+    if (typeof wireSavedWorkoutsActions === "function") wireSavedWorkoutsActions(el);
     return;
   }
 
@@ -24087,10 +24253,18 @@ function renderProgramPicker() {
 
   html += '</div>';
 
+  // Append the Saved Workouts library as a sibling block.
+  if (typeof renderSavedWorkoutsSection === "function") {
+    html += renderSavedWorkoutsSection();
+  }
+
   el.innerHTML = html;
 
+  // Wire saved-workouts row actions (handles its own data-sw-id / data-sw-act).
+  if (typeof wireSavedWorkoutsActions === "function") wireSavedWorkoutsActions(el);
+
   // Wire row actions
-  el.querySelectorAll(".paper-library-row").forEach(row => {
+  el.querySelectorAll(".paper-library-row[data-pid]").forEach(row => {
     const pid = row.dataset.pid;
     row.querySelectorAll("[data-act]").forEach(btn => {
       btn.addEventListener("click", e => {
@@ -25232,6 +25406,31 @@ function openAdhocWorkout() {
     </p>
   `;
 
+  // v22: top-row entry to repeat a previously-saved workout. Only shows
+  // when the user actually has saved workouts so an empty list doesn't
+  // add noise for new users.
+  const _u22 = userData();
+  const _savedCount = (_u22 && Array.isArray(_u22.savedWorkouts)) ? _u22.savedWorkouts.length : 0;
+  if (_savedCount > 0) {
+    const savedRow = document.createElement("button");
+    savedRow.type = "button";
+    savedRow.className = "adhoc-from-program-row";
+    savedRow.innerHTML = `
+      <div class="adhoc-from-program-body">
+        <div class="adhoc-from-program-title">Repeat a saved workout</div>
+        <div class="adhoc-from-program-sub">${_savedCount} saved · pick one to run as today's session.</div>
+      </div>
+      <span class="adhoc-from-program-arrow" aria-hidden="true">→</span>
+    `;
+    savedRow.onclick = () => {
+      closeSheet();
+      setTimeout(() => {
+        if (typeof openSavedWorkoutsPicker === "function") openSavedWorkoutsPicker();
+      }, 80);
+    };
+    wrap.appendChild(savedRow);
+  }
+
   // v21: top-row entry into "add from program" — single day (one-off) or
   // whole program (library install). Routes through the existing template
   // picker + duration picker; single-day re-uses the ad-hoc flow below.
@@ -25258,7 +25457,7 @@ function openAdhocWorkout() {
     <div class="section-title" style="margin-top:0;">Custom Activity</div>
     <div class="adhoc-custom-input-row">
       <input type="text" id="adhocCustomName" class="name-input" placeholder="e.g. Bike, Basketball, Yoga…" autocomplete="off" style="flex:1;">
-      <button class="action-btn primary" id="adhocCustomStart" style="white-space:nowrap;">Start</button>
+      <button class="action-btn" id="adhocCustomAdd" style="white-space:nowrap;">Add</button>
     </div>
   `;
   wrap.appendChild(customRow);
@@ -25361,16 +25560,29 @@ function openAdhocWorkout() {
   wrap.appendChild(selectedWrap);
   wrap.appendChild(libSection);
 
-  // Wire custom activity start
+  // Wire custom activity add — pushes the typed name into the selected list
+  // as a synthetic exercise so users can build a multi-exercise quick workout
+  // mixing custom names with library picks.
   setTimeout(() => {
     const customInput = document.getElementById("adhocCustomName");
-    const customBtn = document.getElementById("adhocCustomStart");
+    const customBtn = document.getElementById("adhocCustomAdd");
     if (customInput && customBtn) {
       customBtn.onclick = () => {
         const name = customInput.value.trim();
         if (!name) { customInput.focus(); return; }
-        closeSheet();
-        _beginAdhocSession(name, []);
+        const synthetic = {
+          id: "custom-" + Date.now(),
+          name: name,
+          cat: "Custom",
+          muscles: [],
+          sets: 3,
+          reps: 10
+        };
+        selectedExercises.push(synthetic);
+        updateSelectedUI();
+        renderList();
+        customInput.value = "";
+        customInput.focus();
       };
       customInput.addEventListener("keydown", e => {
         if (e.key === "Enter") customBtn.click();
@@ -26057,13 +26269,23 @@ function finishAdhocWorkout() {
     mesocycleId: null,
     mesoWeek: null,
     isAdhoc: true,
-    adhocMeta: adhocMeta
+    adhocMeta: adhocMeta,
+    savedWorkoutId: state.adhocSavedWorkoutId || null
   };
 
   // Save session — does NOT touch lastDoneDayId or program rotation
   updateUser(u => {
     u.sessions.push(session);
     // Explicitly do NOT update u.lastDoneDayId or advance the program
+
+    // Bump use-count + lastUsedAt on the source saved workout, if any.
+    if (state.adhocSavedWorkoutId && Array.isArray(u.savedWorkouts)) {
+      const sw = u.savedWorkouts.find(x => x.id === state.adhocSavedWorkoutId);
+      if (sw) {
+        sw.useCount = (sw.useCount || 0) + 1;
+        sw.lastUsedAt = Date.now();
+      }
+    }
   });
 
   // Clean up ad-hoc state
@@ -26084,6 +26306,7 @@ function _cleanupAdhocState() {
   state.adhocExercises = null;
   state.adhocStartedAt = null;
   state.adhocInputs = null;
+  state.adhocSavedWorkoutId = null;
   state.workoutStartedAt = null;
   stopSessionTimer();
   hideHeaderRest();
@@ -29044,6 +29267,413 @@ function detectNewPRsInSession(newSets, priorSessions) {
     prExIds.add(s.exId);
   });
   return Array.from(prExIds);
+}
+
+
+// ============================================================
+// SAVED WORKOUTS
+// ============================================================
+// Lightweight, repeatable workout templates. Distinct from u.programs[]
+// (heavy multi-day periodized plans) and u.sessions[] (immutable logs).
+// Stored at u.savedWorkouts[]. Created by saving any past session as a
+// template; repeated by routing through the ad-hoc workout flow.
+//
+//   { id, name, createdAt, lastUsedAt, useCount,
+//     sourceSessionId, blocks: [{ id, letter, name, blockType, exercises }] }
+
+// ─────────────────────────────────────────────────────────────
+// Build a prescribed block/exercise structure from a logged
+// session. Groups flat session.sets by exId (preserving order of
+// first appearance), counts sets, and pulls library defaults for
+// reps/rest/bodyweight. Wraps everything in a single block.
+// ─────────────────────────────────────────────────────────────
+function derivePrescribedBlocksFromSession(session) {
+  const sets = (session && session.sets) || [];
+  if (!sets.length) {
+    return [{ id: "sw-block-1", letter: "A", name: "Workout", blockType: "strength", exercises: [] }];
+  }
+
+  const order = [];
+  const byId = {};
+  sets.forEach(s => {
+    const id = s.exId;
+    if (!id) return;
+    if (!byId[id]) {
+      byId[id] = { exId: id, name: s.exName || id, muscles: s.muscles || [], bodyweight: !!s.bodyweight, count: 0, sumReps: 0, sumWeight: 0 };
+      order.push(id);
+    }
+    byId[id].count++;
+    if (typeof s.reps === "number") byId[id].sumReps += s.reps;
+    if (typeof s.weight === "number" && s.weight > 0) byId[id].sumWeight += s.weight;
+  });
+
+  const exercises = order.map(id => {
+    const g = byId[id];
+    const lib = (typeof LIB_BY_ID !== "undefined") ? LIB_BY_ID[id] : null;
+    const avgReps = g.count > 0 ? Math.round(g.sumReps / g.count) : (lib ? lib.defaultReps : 8);
+    return {
+      exId: id,
+      name: g.name,
+      muscles: g.muscles.slice(),
+      cat: lib ? lib.cat : null,
+      sets: g.count,
+      reps: avgReps || (lib ? lib.defaultReps : 8),
+      rest: lib ? lib.defaultRest : 90,
+      defaultWeight: lib ? (lib.defaultWeight ?? 0) : 0,
+      bodyweight: g.bodyweight,
+      perSide: lib ? !!lib.perSide : false,
+      isTime: lib ? !!lib.isTime : false,
+      isDistance: lib ? !!lib.isDistance : false,
+      noRpe: lib ? !!lib.noRpe : false,
+      tempo: "",
+      notes: ""
+    };
+  });
+
+  return [{
+    id: "sw-block-1",
+    letter: "A",
+    name: session.dayName || "Workout",
+    blockType: "strength",
+    exercises
+  }];
+}
+
+function _genSavedWorkoutId() {
+  return "sw_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7);
+}
+
+// ─────────────────────────────────────────────────────────────
+// SAVE — bottom sheet that takes a name and writes to
+// u.savedWorkouts[]. Reachable from the paper session view footer.
+// ─────────────────────────────────────────────────────────────
+function openSaveWorkoutSheet(session) {
+  if (!session) return;
+  const blocks = derivePrescribedBlocksFromSession(session);
+  const exCount = blocks.reduce((n, b) => n + (b.exercises || []).length, 0);
+  if (exCount === 0) {
+    if (typeof showToast === "function") showToast("Nothing to save — this session has no exercises.");
+    return;
+  }
+  const defaultName = (session.dayName || "Saved workout").trim();
+
+  const wrap = document.createElement("div");
+  wrap.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <h3 style="margin:0;">Save to repeat</h3>
+      <button class="icon-btn" onclick="closeSheet()" title="Close">&times;</button>
+    </div>
+    <p style="color:var(--text-dim);font-size:12px;margin-bottom:14px;">
+      Save this workout's structure so you can repeat it from the Quick Workout menu.
+    </p>
+  `;
+
+  const nameLabel = document.createElement("div");
+  nameLabel.className = "section-title";
+  nameLabel.style.marginTop = "0";
+  nameLabel.textContent = "Name";
+  wrap.appendChild(nameLabel);
+
+  const nameIn = document.createElement("input");
+  nameIn.type = "text";
+  nameIn.className = "name-input";
+  nameIn.value = defaultName;
+  nameIn.maxLength = 60;
+  nameIn.style.cssText = "width:100%;margin-bottom:14px;box-sizing:border-box;";
+  wrap.appendChild(nameIn);
+
+  // Preview list
+  const previewLabel = document.createElement("div");
+  previewLabel.className = "section-title";
+  previewLabel.textContent = exCount + " exercise" + (exCount === 1 ? "" : "s");
+  wrap.appendChild(previewLabel);
+
+  const preview = document.createElement("div");
+  preview.style.cssText = "max-height:38vh;overflow-y:auto;margin-bottom:14px;border-top:1px dotted var(--paper-ink-mist,#aaa);border-bottom:1px dotted var(--paper-ink-mist,#aaa);padding:6px 0;";
+  blocks.forEach(b => {
+    (b.exercises || []).forEach(ex => {
+      const row = document.createElement("div");
+      row.className = "saved-preview-row";
+      row.style.cssText = "display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;font-family:var(--paper-hand,inherit);font-size:15px;color:var(--paper-ink,inherit);";
+      const left = document.createElement("span");
+      left.textContent = ex.name;
+      const right = document.createElement("span");
+      right.style.cssText = "font-family:var(--paper-form,monospace);font-size:11px;letter-spacing:0.12em;color:var(--paper-ink-faint,#888);text-transform:lowercase;";
+      right.textContent = ex.sets + " × " + (ex.reps || "?");
+      row.appendChild(left);
+      row.appendChild(right);
+      preview.appendChild(row);
+    });
+  });
+  wrap.appendChild(preview);
+
+  const actions = document.createElement("div");
+  actions.className = "sheet-actions";
+  const cancel = document.createElement("button");
+  cancel.textContent = "Cancel";
+  cancel.onclick = () => closeSheet();
+  const save = document.createElement("button");
+  save.className = "primary paper-stamp-btn";
+  save.textContent = "Save";
+  save.onclick = () => {
+    const name = (nameIn.value || "").trim() || defaultName || "Saved workout";
+    const entry = {
+      id: _genSavedWorkoutId(),
+      name: name,
+      createdAt: Date.now(),
+      lastUsedAt: null,
+      useCount: 0,
+      sourceSessionId: session.id || null,
+      blocks: blocks
+    };
+    updateUser(u => {
+      if (!Array.isArray(u.savedWorkouts)) u.savedWorkouts = [];
+      u.savedWorkouts.push(entry);
+    });
+    closeSheet();
+    if (typeof showToast === "function") showToast("Saved “" + name + "” — find it under the + button.", "success");
+  };
+  actions.appendChild(cancel);
+  actions.appendChild(save);
+  wrap.appendChild(actions);
+
+  openSheet(wrap);
+  setTimeout(() => { try { nameIn.select(); } catch (_) {} }, 30);
+}
+
+// ─────────────────────────────────────────────────────────────
+// ACCESS — picker sheet listing the user's saved workouts.
+// Opened from the Quick Workout (+) sheet.
+// ─────────────────────────────────────────────────────────────
+function openSavedWorkoutsPicker() {
+  const u = userData();
+  const saved = (u && u.savedWorkouts) || [];
+  const wrap = document.createElement("div");
+  let html = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <h3 style="margin:0;">Saved workouts</h3>
+      <button class="icon-btn" onclick="closeSheet()" title="Close">&times;</button>
+    </div>
+    <p style="color:var(--text-dim);font-size:12px;margin-bottom:12px;">Tap one to run it as today's session.</p>
+  `;
+
+  if (!saved.length) {
+    html += '<p style="color:var(--text-dim);font-size:13px;padding:8px 0;">No saved workouts yet — finish a workout, open it from History, and tap “↻ save to repeat.”</p>';
+    wrap.innerHTML = html;
+    openSheet(wrap);
+    return;
+  }
+
+  // Most-recently-used first; never-used at the end (by createdAt desc).
+  const sorted = saved.slice().sort((a, b) => {
+    const ax = a.lastUsedAt || 0;
+    const bx = b.lastUsedAt || 0;
+    if (ax !== bx) return bx - ax;
+    return (b.createdAt || 0) - (a.createdAt || 0);
+  });
+
+  sorted.forEach(sw => {
+    const exCount = (sw.blocks || []).reduce((n, b) => n + (b.exercises || []).length, 0);
+    const meta = _savedWorkoutMetaLine(sw, exCount);
+    html += `
+      <div class="tpl-option" data-sw-id="${sw.id}">
+        <div class="tpl-head"><div class="tpl-name">${_escSw(sw.name || "Workout")}</div></div>
+        <div class="tpl-desc">${meta}</div>
+      </div>
+    `;
+  });
+  wrap.innerHTML = html;
+  wrap.querySelectorAll(".tpl-option").forEach(row => {
+    row.onclick = () => {
+      const id = row.dataset.swId;
+      closeSheet();
+      setTimeout(() => _beginSavedWorkout(id), 80);
+    };
+  });
+  openSheet(wrap);
+}
+
+function _savedWorkoutMetaLine(sw, exCount) {
+  const parts = [];
+  parts.push(exCount + " exercise" + (exCount === 1 ? "" : "s"));
+  if (sw.lastUsedAt) {
+    const d = new Date(sw.lastUsedAt);
+    parts.push("last used " + d.toLocaleDateString(undefined, { month: "short", day: "numeric" }));
+  } else {
+    parts.push("never used");
+  }
+  if (sw.useCount > 0) parts.push("used " + sw.useCount + "×");
+  return parts.join(" · ");
+}
+
+// ─────────────────────────────────────────────────────────────
+// REPEAT — clones a saved workout into the ad-hoc flow, then
+// renders the workout screen. Mirrors _beginAdhocFromTemplateDay.
+// ─────────────────────────────────────────────────────────────
+function _beginSavedWorkout(id) {
+  const u = userData();
+  const sw = (u && u.savedWorkouts || []).find(x => x.id === id);
+  if (!sw) {
+    if (typeof showToast === "function") showToast("Couldn't find that saved workout.");
+    return;
+  }
+
+  const cloned = (sw.blocks || []).map((b, bi) => ({
+    id: "adhoc-sw-" + (b.id || b.letter || bi),
+    letter: b.letter || String.fromCharCode(65 + bi),
+    name: b.name || "",
+    type: b.type || null,
+    blockType: b.blockType || "strength",
+    exercises: (b.exercises || []).map(e => {
+      const lib = (typeof LIB_BY_ID !== "undefined") ? LIB_BY_ID[e.exId] : null;
+      if (lib && typeof mkSets === "function") {
+        // mkSets gives us a clean instance with library defaults; then layer
+        // the saved overrides (sets count, prescribed reps, rest) on top.
+        return mkSets(lib, {
+          sets: e.sets,
+          reps: e.reps,
+          rest: e.rest,
+          bodyweight: e.bodyweight,
+          tempo: e.tempo || "",
+          notes: e.notes || ""
+        });
+      }
+      // Library entry gone — keep the saved exercise as-is.
+      return Object.assign({}, e);
+    })
+  }));
+
+  state.adhocActive = true;
+  state.adhocDay = {
+    id: "adhoc",
+    name: sw.name || "Saved workout",
+    sub: "saved · won't affect program",
+    blocks: cloned
+  };
+  state.adhocCustomName = null;
+  state.adhocExercises = null;
+  state.adhocStartedAt = Date.now();
+  state.adhocInputs = {};
+  state.adhocSavedWorkoutId = sw.id;
+  state.dayChosen = true;
+  state.workoutView = "chapters";
+
+  if (typeof renderAdhocScreen === "function") renderAdhocScreen();
+  if (typeof showToast === "function") showToast("Loaded “" + (sw.name || "saved workout") + "”", "success");
+}
+
+// ─────────────────────────────────────────────────────────────
+// MANAGE — Settings → Programs library appends a "Saved
+// workouts" block rendered by this function. Uses the same
+// .paper-library-row markup as the Programs list.
+// ─────────────────────────────────────────────────────────────
+function renderSavedWorkoutsSection() {
+  const u = userData();
+  if (!u) return "";
+  const saved = u.savedWorkouts || [];
+
+  let html = '<div class="paper-settings-block paper-library paper-saved-library">';
+  html += '<div class="paper-settings-title">Saved workouts</div>';
+  html += '<div class="paper-settings-sub">Workouts you saved from past sessions — repeat them from the + menu.</div>';
+
+  if (!saved.length) {
+    html += '<p style="color:var(--paper-ink-faint,#999);font-family:var(--paper-form,monospace);font-size:11px;letter-spacing:0.12em;text-transform:lowercase;padding:8px 0 0;">';
+    html += 'none yet — save one from a past session in history.';
+    html += '</p>';
+    html += '</div>';
+    return html;
+  }
+
+  // Same sort as picker — most-recently-used first.
+  const sorted = saved.slice().sort((a, b) => {
+    const ax = a.lastUsedAt || 0;
+    const bx = b.lastUsedAt || 0;
+    if (ax !== bx) return bx - ax;
+    return (b.createdAt || 0) - (a.createdAt || 0);
+  });
+
+  html += '<div class="paper-library-list">';
+  sorted.forEach(sw => {
+    const exCount = (sw.blocks || []).reduce((n, b) => n + (b.exercises || []).length, 0);
+    const meta = _savedWorkoutMetaLine(sw, exCount);
+    html += '<div class="paper-library-row" data-sw-id="' + sw.id + '">';
+    html += '  <div class="paper-library-bullet" aria-hidden="true">·</div>';
+    html += '  <div class="paper-library-body">';
+    html += '    <div class="paper-library-name">' + _escSw(sw.name || "Workout") + '</div>';
+    html += '    <div class="paper-library-meta">' + meta + '</div>';
+    html += '    <div class="paper-library-actions">';
+    html += '      <button class="paper-link-btn" data-sw-act="rename">Rename</button>';
+    html += '      <button class="paper-link-btn paper-link-btn-danger" data-sw-act="delete">Delete</button>';
+    html += '    </div>';
+    html += '  </div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  html += '</div>';
+  return html;
+}
+
+function wireSavedWorkoutsActions(root) {
+  if (!root) return;
+  root.querySelectorAll('.paper-library-row[data-sw-id]').forEach(row => {
+    const id = row.dataset.swId;
+    row.querySelectorAll('[data-sw-act]').forEach(btn => {
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        const act = btn.dataset.swAct;
+        if (act === "rename") renameSavedWorkout(id);
+        else if (act === "delete") deleteSavedWorkout(id);
+      });
+    });
+  });
+}
+
+function renameSavedWorkout(id) {
+  const u = userData();
+  const sw = (u && u.savedWorkouts || []).find(x => x.id === id);
+  if (!sw) return;
+  const next = prompt("Rename saved workout:", sw.name || "");
+  if (next == null) return;
+  const trimmed = String(next).trim();
+  if (!trimmed || trimmed === sw.name) return;
+  updateUser(usr => {
+    const target = (usr.savedWorkouts || []).find(x => x.id === id);
+    if (target) target.name = trimmed.slice(0, 60);
+  });
+  if (typeof renderProgramPicker === "function") renderProgramPicker();
+  if (typeof showToast === "function") showToast("Renamed", "success");
+}
+
+function deleteSavedWorkout(id) {
+  const u = userData();
+  const sw = (u && u.savedWorkouts || []).find(x => x.id === id);
+  if (!sw) return;
+  if (!confirm("Delete \"" + (sw.name || "saved workout") + "\"? This cannot be undone.")) return;
+  updateUser(usr => {
+    if (!Array.isArray(usr.savedWorkouts)) return;
+    const idx = usr.savedWorkouts.findIndex(x => x.id === id);
+    if (idx >= 0) usr.savedWorkouts.splice(idx, 1);
+  });
+  if (typeof renderProgramPicker === "function") renderProgramPicker();
+  if (typeof showToast === "function") showToast("Deleted", "success");
+}
+
+// Local html escaper — kept independent of other render files.
+function _escSw(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+if (typeof window !== "undefined") {
+  window.derivePrescribedBlocksFromSession = derivePrescribedBlocksFromSession;
+  window.openSaveWorkoutSheet = openSaveWorkoutSheet;
+  window.openSavedWorkoutsPicker = openSavedWorkoutsPicker;
+  window.renderSavedWorkoutsSection = renderSavedWorkoutsSection;
+  window.wireSavedWorkoutsActions = wireSavedWorkoutsActions;
+  window.renameSavedWorkout = renameSavedWorkout;
+  window.deleteSavedWorkout = deleteSavedWorkout;
+  window._beginSavedWorkout = _beginSavedWorkout;
 }
 
 

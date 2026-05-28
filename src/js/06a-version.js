@@ -1,6 +1,6 @@
 // ============================================================
 // VERSION
 // ============================================================
-const APP_VERSION = 21;
+const APP_VERSION = 22;
 const APP_BUILD = "__BUILD_HASH__";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
