@@ -1361,7 +1361,7 @@ function renderSetsTable(block, ex, bi, ei) {
     wrap.appendChild(chip);
   }
 
-  // Add set button
+  // Add/remove set buttons
   const addWrap = document.createElement("div");
   addWrap.className = "add-set-row";
   const addBtn = document.createElement("button");
@@ -1372,6 +1372,28 @@ function renderSetsTable(block, ex, bi, ei) {
     renderWorkoutScreen();
   };
   addWrap.appendChild(addBtn);
+  if (numSets > 1) {
+    const rmBtn = document.createElement("button");
+    rmBtn.className = "add-set-btn";
+    rmBtn.textContent = "− Remove set";
+    rmBtn.onclick = () => {
+      const lastIdx = numSets - 1;
+      updateActiveProgram(entry => {
+        const day = entry.program.find(d => d.id === state.currentDayId);
+        if (day) {
+          const e = day.blocks[bi].exercises[ei];
+          e.sets = Math.max(1, (e.sets || 1) - 1);
+        }
+        if (entry.draft && entry.draft.dayId === state.currentDayId) {
+          ["status", "w", "r", "p"].forEach(f => {
+            delete entry.draft.inputs[inputKey(block.id, ei, lastIdx, f)];
+          });
+        }
+      });
+      renderWorkoutScreen();
+    };
+    addWrap.appendChild(rmBtn);
+  }
   wrap.appendChild(addWrap);
 
   return wrap;

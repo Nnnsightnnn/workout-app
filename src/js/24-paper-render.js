@@ -269,7 +269,7 @@ function paperRenderSetsTable(block, ex, bi, ei) {
     list.appendChild(row);
   }
 
-  // Add-set affordance — handwritten, no box
+  // Add-set / remove-set affordances — handwritten, no box
   const addBtn = document.createElement("button");
   addBtn.className = "paper-add-set";
   addBtn.textContent = "+ add set";
@@ -280,6 +280,30 @@ function paperRenderSetsTable(block, ex, bi, ei) {
     }
   });
   list.appendChild(addBtn);
+
+  if (numSets > 1) {
+    const rmBtn = document.createElement("button");
+    rmBtn.className = "paper-add-set";
+    rmBtn.textContent = "− remove set";
+    rmBtn.addEventListener("click", () => {
+      if (typeof updateActiveProgram !== "function") return;
+      const lastIdx = numSets - 1;
+      updateActiveProgram(entry => {
+        const day = entry.program.find(d => d.id === state.currentDayId);
+        if (day) {
+          const e = day.blocks[bi].exercises[ei];
+          e.sets = Math.max(1, (e.sets || 1) - 1);
+        }
+        if (entry.draft && entry.draft.dayId === state.currentDayId) {
+          ["status", "w", "r", "p"].forEach(f => {
+            delete entry.draft.inputs[inputKey(block.id, ei, lastIdx, f)];
+          });
+        }
+      });
+      renderWorkoutScreen();
+    });
+    list.appendChild(rmBtn);
+  }
 
   return list;
 }
@@ -419,12 +443,16 @@ function paperRebuildBottomNav() {
   if (!handle || handle.dataset.paperBuilt === "1") return;
   handle.addEventListener("click", (e) => {
     e.stopPropagation();
+    // Toggle: if any menu surface is open (bottom sheet OR side library),
+    // tapping the MENU sticky closes it. Otherwise open the paper nav menu.
     const sheetBg = document.getElementById("sheetBg");
-    const menuOpen = sheetBg
-      && sheetBg.classList.contains("active")
-      && sheetBg.querySelector(".paper-menu-sheet");
-    if (menuOpen) {
+    const sidebarBg = document.getElementById("sidebarBg");
+    const sheetOpen = sheetBg && sheetBg.classList.contains("active");
+    const sidebarOpen = sidebarBg && sidebarBg.classList.contains("active");
+    if (sheetOpen) {
       closeSheet();
+    } else if (sidebarOpen) {
+      closeSidebar();
     } else {
       paperOpenNavMenu();
     }
