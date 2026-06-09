@@ -174,17 +174,13 @@ function triggerCelebration() {
   if (document.querySelector(".celebration")) return;
   const el = document.createElement("div");
   el.className = "celebration";
-  const colors = Object.values(GROUP_COLORS);
-  for (let i = 0; i < 30; i++) {
-    const dot = document.createElement("span");
-    dot.style.left = (20 + Math.random() * 60) + "%";
-    dot.style.top = (40 + Math.random() * 20) + "%";
-    dot.style.background = colors[i % colors.length];
-    dot.style.animationDelay = (i * 30) + "ms";
-    dot.style.width = (4 + Math.random() * 4) + "px";
-    dot.style.height = dot.style.width;
-    el.appendChild(dot);
-  }
+  // Quiet stamp reveal — one rubber-stamped "COMPLETE" in paper-red,
+  // tilted, fades in and lingers. No confetti, no bounce. The ethos
+  // rewards the work, not the dopamine.
+  const stampHtml = (typeof paperStamp === "function")
+    ? paperStamp("COMPLETE", "var(--paper-red, #a83a2a)", -5)
+    : '<span style="border:2.5px solid #a83a2a;color:#a83a2a;padding:4px 10px 3px;font-family:\'Special Elite\',monospace;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;transform:rotate(-5deg);display:inline-block;">COMPLETE</span>';
+  el.innerHTML = `<div class="celebration-stamp">${stampHtml}</div>`;
   document.body.appendChild(el);
-  setTimeout(() => el.remove(), 2500);
+  setTimeout(() => el.remove(), 1800);
 }

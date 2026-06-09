@@ -251,7 +251,13 @@ function _buildPRTable(sessions) {
 }
 
 function _buildRecentEntries(entries) {
-  if (!entries.length) return '<div class="empty">No workouts yet. Finish one to see it here.</div>';
+  if (!entries.length) {
+    const ensoHtml = (typeof paperEnso === "function") ? paperEnso(96, "var(--paper-ink, #2B4A7A)") : "";
+    return '<div class="empty paper-empty-with-enso">'
+      + '<div class="paper-empty-enso" aria-hidden="true">' + ensoHtml + '</div>'
+      + '<div class="paper-empty-msg">No workouts yet. Finish one to see it here.</div>'
+      + '</div>';
+  }
   let html = '<div class="section-title" style="display:flex;justify-content:space-between;align-items:baseline;">';
   html += '<span>All entries</span><span style="color:var(--text-faint);">N=' + String(entries.length).padStart(3, "0") + '</span></div>';
 

@@ -104,10 +104,11 @@ function renderBodyScreen() {
         </div>`;
     }
   } else {
+    const ensoHtml = (typeof paperEnso === "function") ? paperEnso(80, "var(--paper-ink, #2B4A7A)") : "";
     html += `
-      <div class="body-nudge body-nudge--static">
-        <span class="body-nudge-icon">&#128203;</span>
-        <span>No measurements yet &mdash; <strong>tap a card to log your first</strong></span>
+      <div class="body-nudge body-nudge--static paper-empty-with-enso">
+        <div class="paper-empty-enso" aria-hidden="true">${ensoHtml}</div>
+        <div class="paper-empty-msg">No measurements yet &mdash; <strong>tap a card to log your first</strong></div>
       </div>`;
   }
 

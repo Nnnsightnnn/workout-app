@@ -360,24 +360,22 @@
   }
   .ex-progress-bar.complete::after { background: var(--success); box-shadow: 0 0 8px rgba(45,212,168,0.2); }
 
-  /* === Celebration Confetti === */
+  /* === Celebration: quiet stamp reveal (replaces confetti) === */
+  /* stillness sharpens sight — one stamp, fades in, lingers, fades out */
   .celebration { position: fixed; inset: 0; z-index: 200; pointer-events: none; }
-  .celebration span {
-    position: absolute; width: 6px; height: 6px; border-radius: 50%;
+  .celebration-stamp {
+    position: absolute; left: 50%; top: 58%;
+    transform: translate(-50%, -50%) scale(0.92);
     opacity: 0;
+    animation: stamp-reveal 1.8s ease-out forwards;
   }
-  .celebration span:nth-child(6n+1) { animation: confetti1 1s ease-out forwards; }
-  .celebration span:nth-child(6n+2) { animation: confetti2 1s ease-out forwards; }
-  .celebration span:nth-child(6n+3) { animation: confetti3 1s ease-out forwards; }
-  .celebration span:nth-child(6n+4) { animation: confetti4 1s ease-out forwards; }
-  .celebration span:nth-child(6n+5) { animation: confetti5 1s ease-out forwards; }
-  .celebration span:nth-child(6n+6) { animation: confetti6 1s ease-out forwards; }
-  @keyframes confetti1 { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(-40px,-220px) rotate(200deg) scale(0.4)} }
-  @keyframes confetti2 { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(50px,-260px) rotate(310deg) scale(0.3)} }
-  @keyframes confetti3 { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(-20px,-180px) rotate(140deg) scale(0.5)} }
-  @keyframes confetti4 { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(35px,-300px) rotate(250deg) scale(0.3)} }
-  @keyframes confetti5 { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(-55px,-240px) rotate(180deg) scale(0.4)} }
-  @keyframes confetti6 { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(25px,-200px) rotate(320deg) scale(0.5)} }
+  .celebration-stamp .paper-stamp { font-size: 22px; padding: 10px 22px 8px; }
+  @keyframes stamp-reveal {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.92); }
+    15%  { opacity: 0.92; transform: translate(-50%, -50%) scale(1); }
+    78%  { opacity: 0.92; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+  }
 
   /* === Bubble Breathing Animations === */
   @keyframes breathe {
@@ -1235,6 +1233,15 @@
   .about-divider { width: 40px; height: 2px; background: var(--border); border-radius: 1px; margin: 2px 0; }
   .about-version { font-size: 13px; font-weight: 700; color: var(--text-dim); }
   .about-build { font-size: 10px; font-weight: 600; color: var(--text-faint); letter-spacing: 0.04em; }
+  .about-ethos {
+    font-family: var(--paper-form, "Courier Prime", monospace);
+    font-size: 11px; letter-spacing: 0.14em; text-transform: lowercase;
+    color: var(--paper-ink-faint, var(--text-faint));
+    margin-top: 2px;
+  }
+  .about-enso { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  body[data-skin="paper"] .about-enso { width: 56px; height: 56px; }
+  body[data-skin="paper"] .about-enso svg { width: 100%; height: 100%; }
   .hanko-stamp {
     width: 56px; height: 56px; border: 3px solid var(--accent); border-radius: 50%;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -10589,4 +10596,37 @@ body[data-skin="paper"] .nnn-credit strong{
 body[data-skin="paper"] .nnn-credit svg{
   width: 18px;
   height: 18px;
+}
+
+/* ============================================================ */
+/* Empty states with ensō-eye watermark                          */
+/* stillness sharpens sight — the brand mark sits faint behind   */
+/* the message rather than the page feeling abandoned.           */
+/* ============================================================ */
+.paper-empty-with-enso {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px;
+  padding: 36px 20px;
+  text-align: center;
+}
+.paper-empty-with-enso .paper-empty-enso {
+  opacity: 0.18;
+  line-height: 0;
+  pointer-events: none;
+}
+.paper-empty-with-enso .paper-empty-msg {
+  font-family: var(--paper-form, "Courier Prime", monospace);
+  font-size: 13px;
+  letter-spacing: 0.10em;
+  color: var(--paper-ink-faint, var(--text-dim));
+  max-width: 280px;
+  line-height: 1.5;
+}
+body[data-skin="paper"] .paper-empty-with-enso .paper-empty-msg strong {
+  font-family: var(--paper-hand);
+  font-weight: 700;
+  letter-spacing: 0;
+  font-size: 15px;
+  color: var(--paper-ink);
 }

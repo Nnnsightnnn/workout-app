@@ -156,6 +156,23 @@ function paperInkBloom(rowEl) {
   }, 320);
 }
 
+// Ensō-eye mark: one brush-stroke ring + a single dot ("awareness, not
+// surveillance" per brand/ETHOS.md). Ai Indigo by default. The ring uses a
+// dash-array gap so it reads as a brush stroke rather than a closed circle.
+// roughen=true applies the paper-roughen displacement filter for hand-drawn
+// wobble — leave off for favicons / canvas / contexts without the filter def.
+function paperEnso(size, ink, roughen) {
+  size = size || 64;
+  ink = ink || '#2B4A7A';
+  const filt = (roughen === false) ? '' : ' style="filter:url(#paper-roughen);"';
+  return `<svg class="paper-enso" width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+    <circle cx="32" cy="32" r="22" fill="none" stroke="${ink}" stroke-width="2.4"
+      stroke-linecap="round" stroke-dasharray="128 10"
+      transform="rotate(-14 32 32)"${filt}/>
+    <circle cx="44" cy="27" r="2.6" fill="${ink}"/>
+  </svg>`;
+}
+
 // Rubber-stamp pill (e.g. "PR", "DONE", "All-time"). Default = red ink.
 function paperStamp(text, color, angle) {
   color = color || PAPER.inkRed;
@@ -636,6 +653,7 @@ try {
     window.paperWirePress = paperWirePress;
     window.paperInkBloom = paperInkBloom;
     window.paperStamp = paperStamp;
+    window.paperEnso = paperEnso;
     window.paperMarginNote = paperMarginNote;
     window.paperTape = paperTape;
     window.paperTornEdge = paperTornEdge;

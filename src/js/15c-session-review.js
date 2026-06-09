@@ -173,8 +173,10 @@ function _buildSessionReviewContent(session) {
   const groups = _groupSessionSets(sets);
   if (groups.length === 0) {
     const empty = document.createElement("div");
-    empty.className = "sr-empty";
-    empty.textContent = "No sets logged.";
+    empty.className = "sr-empty paper-empty-with-enso";
+    const ensoHtml = (typeof paperEnso === "function") ? paperEnso(72, "var(--paper-ink, #2B4A7A)") : "";
+    empty.innerHTML = '<div class="paper-empty-enso" aria-hidden="true">' + ensoHtml + '</div>'
+      + '<div class="paper-empty-msg">No sets logged.</div>';
     wrap.appendChild(empty);
   } else {
     const list = document.createElement("div");

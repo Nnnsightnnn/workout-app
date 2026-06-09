@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="K&N Lifts">
-<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%20role%3D%22img%22%20aria-label%3D%22K%26amp%3BN%20Lifts%22%3E%20%3Cdefs%3E%20%3CradialGradient%20id%3D%22g%22%20cx%3D%2250%25%22%20cy%3D%2255%25%22%20r%3D%2260%25%22%3E%20%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%231a1f2e%22%2F%3E%20%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%230a0c12%22%2F%3E%20%3C%2FradialGradient%3E%20%3C%2Fdefs%3E%20%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2210%22%20fill%3D%22url%28%23g%29%22%2F%3E%20%3Crect%20x%3D%220.6%22%20y%3D%220.6%22%20width%3D%2262.8%22%20height%3D%2262.8%22%20rx%3D%229.4%22%20fill%3D%22none%22%20stroke%3D%22%23ff6b1f%22%20stroke-width%3D%221.2%22%20opacity%3D%220.4%22%2F%3E%20%3Cpath%20d%3D%22M479%20867H533Q608%20867%20641%20914L969%201390Q998%201428%201031.5%201442.5Q1065%201457%201115%201457H1409L977%20868Q931%20807%20878%20780Q916%20766%20947.0%20741.0Q978%20716%201005%20676L1445%200H1143Q1114%200%201093.5%204.0Q1073%208%201058.0%2016.0Q1043%2024%201032.0%2035.5Q1021%2047%201011%2062L681%20569Q663%20597%20635.5%20608.5Q608%20620%20561%20620H479V0H141V1457H479Z%22%20fill%3D%22%23ff6b1f%22%20transform%3D%22translate%2832%2033%29%20scale%280.028826355525051476%20-0.028826355525051476%29%20translate%28-793.0%20-728.5%29%22%2F%3E%20%3C%2Fsvg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%20role%3D%22img%22%20aria-label%3D%22nnnsightnnn%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%228%22%20fill%3D%22%23f4ecd3%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%2222%22%20fill%3D%22none%22%20stroke%3D%22%232B4A7A%22%20stroke-width%3D%222.6%22%20stroke-linecap%3D%22round%22%20stroke-dasharray%3D%22128%2010%22%20transform%3D%22rotate(-14%2032%2032)%22%2F%3E%3Ccircle%20cx%3D%2244%22%20cy%3D%2227%22%20r%3D%222.8%22%20fill%3D%22%232B4A7A%22%2F%3E%3C%2Fsvg%3E">
 <title>K&amp;N Lifts</title>
 <style>
 /* latin */
@@ -573,24 +573,22 @@
   }
   .ex-progress-bar.complete::after { background: var(--success); box-shadow: 0 0 8px rgba(45,212,168,0.2); }
 
-  /* === Celebration Confetti === */
+  /* === Celebration: quiet stamp reveal (replaces confetti) === */
+  /* stillness sharpens sight — one stamp, fades in, lingers, fades out */
   .celebration { position: fixed; inset: 0; z-index: 200; pointer-events: none; }
-  .celebration span {
-    position: absolute; width: 6px; height: 6px; border-radius: 50%;
+  .celebration-stamp {
+    position: absolute; left: 50%; top: 58%;
+    transform: translate(-50%, -50%) scale(0.92);
     opacity: 0;
+    animation: stamp-reveal 1.8s ease-out forwards;
   }
-  .celebration span:nth-child(6n+1) { animation: confetti1 1s ease-out forwards; }
-  .celebration span:nth-child(6n+2) { animation: confetti2 1s ease-out forwards; }
-  .celebration span:nth-child(6n+3) { animation: confetti3 1s ease-out forwards; }
-  .celebration span:nth-child(6n+4) { animation: confetti4 1s ease-out forwards; }
-  .celebration span:nth-child(6n+5) { animation: confetti5 1s ease-out forwards; }
-  .celebration span:nth-child(6n+6) { animation: confetti6 1s ease-out forwards; }
-  @keyframes confetti1 { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(-40px,-220px) rotate(200deg) scale(0.4)} }
-  @keyframes confetti2 { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(50px,-260px) rotate(310deg) scale(0.3)} }
-  @keyframes confetti3 { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(-20px,-180px) rotate(140deg) scale(0.5)} }
-  @keyframes confetti4 { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(35px,-300px) rotate(250deg) scale(0.3)} }
-  @keyframes confetti5 { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(-55px,-240px) rotate(180deg) scale(0.4)} }
-  @keyframes confetti6 { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(25px,-200px) rotate(320deg) scale(0.5)} }
+  .celebration-stamp .paper-stamp { font-size: 22px; padding: 10px 22px 8px; }
+  @keyframes stamp-reveal {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.92); }
+    15%  { opacity: 0.92; transform: translate(-50%, -50%) scale(1); }
+    78%  { opacity: 0.92; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+  }
 
   /* === Bubble Breathing Animations === */
   @keyframes breathe {
@@ -1448,6 +1446,15 @@
   .about-divider { width: 40px; height: 2px; background: var(--border); border-radius: 1px; margin: 2px 0; }
   .about-version { font-size: 13px; font-weight: 700; color: var(--text-dim); }
   .about-build { font-size: 10px; font-weight: 600; color: var(--text-faint); letter-spacing: 0.04em; }
+  .about-ethos {
+    font-family: var(--paper-form, "Courier Prime", monospace);
+    font-size: 11px; letter-spacing: 0.14em; text-transform: lowercase;
+    color: var(--paper-ink-faint, var(--text-faint));
+    margin-top: 2px;
+  }
+  .about-enso { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  body[data-skin="paper"] .about-enso { width: 56px; height: 56px; }
+  body[data-skin="paper"] .about-enso svg { width: 100%; height: 100%; }
   .hanko-stamp {
     width: 56px; height: 56px; border: 3px solid var(--accent); border-radius: 50%;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -10804,6 +10811,39 @@ body[data-skin="paper"] .nnn-credit svg{
   height: 18px;
 }
 
+/* ============================================================ */
+/* Empty states with ensō-eye watermark                          */
+/* stillness sharpens sight — the brand mark sits faint behind   */
+/* the message rather than the page feeling abandoned.           */
+/* ============================================================ */
+.paper-empty-with-enso {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px;
+  padding: 36px 20px;
+  text-align: center;
+}
+.paper-empty-with-enso .paper-empty-enso {
+  opacity: 0.18;
+  line-height: 0;
+  pointer-events: none;
+}
+.paper-empty-with-enso .paper-empty-msg {
+  font-family: var(--paper-form, "Courier Prime", monospace);
+  font-size: 13px;
+  letter-spacing: 0.10em;
+  color: var(--paper-ink-faint, var(--text-dim));
+  max-width: 280px;
+  line-height: 1.5;
+}
+body[data-skin="paper"] .paper-empty-with-enso .paper-empty-msg strong {
+  font-family: var(--paper-hand);
+  font-weight: 700;
+  letter-spacing: 0;
+  font-size: 15px;
+  color: var(--paper-ink);
+}
+
 </style>
 </head>
 <body>
@@ -11033,14 +11073,12 @@ body[data-skin="paper"] .nnn-credit svg{
     <div class="about-card">
       <div class="about-info">
         <div class="about-title">K&amp;N Lifts</div>
+        <div class="about-ethos">nnnsightnnn &middot; stillness sharpens sight</div>
         <div class="about-divider"></div>
         <div class="about-version" id="appVersionLabel"></div>
         <div class="about-build" id="appBuildLabel"></div>
       </div>
-      <div class="hanko-stamp">
-        <span class="hanko-icon">&#127947;&#65039;</span>
-        <span class="hanko-text">K&amp;N</span>
-      </div>
+      <div class="about-enso" id="aboutEnsoMark" aria-hidden="true"></div>
     </div>
     <button class="action-btn" onclick="openInfoGuide()" style="margin-top:8px;">App Guide</button>
     <p style="color: var(--text-faint); font-size: 11px; margin-top: 6px; line-height:1.5;">
@@ -13545,7 +13583,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 22;
-const APP_BUILD = "b03cb170";
+const APP_BUILD = "b6cf783c";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -14617,19 +14655,15 @@ function triggerCelebration() {
   if (document.querySelector(".celebration")) return;
   const el = document.createElement("div");
   el.className = "celebration";
-  const colors = Object.values(GROUP_COLORS);
-  for (let i = 0; i < 30; i++) {
-    const dot = document.createElement("span");
-    dot.style.left = (20 + Math.random() * 60) + "%";
-    dot.style.top = (40 + Math.random() * 20) + "%";
-    dot.style.background = colors[i % colors.length];
-    dot.style.animationDelay = (i * 30) + "ms";
-    dot.style.width = (4 + Math.random() * 4) + "px";
-    dot.style.height = dot.style.width;
-    el.appendChild(dot);
-  }
+  // Quiet stamp reveal — one rubber-stamped "COMPLETE" in paper-red,
+  // tilted, fades in and lingers. No confetti, no bounce. The ethos
+  // rewards the work, not the dopamine.
+  const stampHtml = (typeof paperStamp === "function")
+    ? paperStamp("COMPLETE", "var(--paper-red, #a83a2a)", -5)
+    : '<span style="border:2.5px solid #a83a2a;color:#a83a2a;padding:4px 10px 3px;font-family:\'Special Elite\',monospace;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;transform:rotate(-5deg);display:inline-block;">COMPLETE</span>';
+  el.innerHTML = `<div class="celebration-stamp">${stampHtml}</div>`;
   document.body.appendChild(el);
-  setTimeout(() => el.remove(), 2500);
+  setTimeout(() => el.remove(), 1800);
 }
 
 // ============================================================
@@ -21063,7 +21097,13 @@ function _buildPRTable(sessions) {
 }
 
 function _buildRecentEntries(entries) {
-  if (!entries.length) return '<div class="empty">No workouts yet. Finish one to see it here.</div>';
+  if (!entries.length) {
+    const ensoHtml = (typeof paperEnso === "function") ? paperEnso(96, "var(--paper-ink, #2B4A7A)") : "";
+    return '<div class="empty paper-empty-with-enso">'
+      + '<div class="paper-empty-enso" aria-hidden="true">' + ensoHtml + '</div>'
+      + '<div class="paper-empty-msg">No workouts yet. Finish one to see it here.</div>'
+      + '</div>';
+  }
   let html = '<div class="section-title" style="display:flex;justify-content:space-between;align-items:baseline;">';
   html += '<span>All entries</span><span style="color:var(--text-faint);">N=' + String(entries.length).padStart(3, "0") + '</span></div>';
 
@@ -21770,8 +21810,10 @@ function _buildSessionReviewContent(session) {
   const groups = _groupSessionSets(sets);
   if (groups.length === 0) {
     const empty = document.createElement("div");
-    empty.className = "sr-empty";
-    empty.textContent = "No sets logged.";
+    empty.className = "sr-empty paper-empty-with-enso";
+    const ensoHtml = (typeof paperEnso === "function") ? paperEnso(72, "var(--paper-ink, #2B4A7A)") : "";
+    empty.innerHTML = '<div class="paper-empty-enso" aria-hidden="true">' + ensoHtml + '</div>'
+      + '<div class="paper-empty-msg">No sets logged.</div>';
     wrap.appendChild(empty);
   } else {
     const list = document.createElement("div");
@@ -23784,10 +23826,11 @@ function renderBodyScreen() {
         </div>`;
     }
   } else {
+    const ensoHtml = (typeof paperEnso === "function") ? paperEnso(80, "var(--paper-ink, #2B4A7A)") : "";
     html += `
-      <div class="body-nudge body-nudge--static">
-        <span class="body-nudge-icon">&#128203;</span>
-        <span>No measurements yet &mdash; <strong>tap a card to log your first</strong></span>
+      <div class="body-nudge body-nudge--static paper-empty-with-enso">
+        <div class="paper-empty-enso" aria-hidden="true">${ensoHtml}</div>
+        <div class="paper-empty-msg">No measurements yet &mdash; <strong>tap a card to log your first</strong></div>
       </div>`;
   }
 
@@ -24974,21 +25017,31 @@ function executeSidebarSwap(libEx, bi, ei) {
 // INIT
 // ============================================================
 function setupPWA() {
-  // Generate app icon via canvas
+  // Generate app icon via canvas — ensō-eye on cream paper.
+  // Brush-stroke ring + single indigo dot ("awareness, not surveillance").
   const c = document.createElement("canvas");
   c.width = 180; c.height = 180;
   const x = c.getContext("2d");
   if (!x) return; // No canvas support (e.g. test environment)
-  x.fillStyle = "#0a0c12";
+  // Cream paper background
+  x.fillStyle = "#f4ecd3";
   x.fillRect(0, 0, 180, 180);
-  x.fillStyle = "#ff6b1f";
-  x.font = "900 52px system-ui";
-  x.textAlign = "center";
-  x.textBaseline = "middle";
-  x.fillText("K&N", 90, 72);
-  x.fillStyle = "#f2f2f7";
-  x.font = "700 20px system-ui";
-  x.fillText("LIFTS", 90, 115);
+  // Ensō ring — incomplete circle for the brush-stroke feel
+  x.strokeStyle = "#2B4A7A";
+  x.lineWidth = 6.5;
+  x.lineCap = "round";
+  x.beginPath();
+  // Start at ~ -90° + small offset, sweep ~340° clockwise — leaves a gap.
+  const cx = 90, cy = 90, r = 60;
+  const start = -Math.PI / 2 + 0.18;
+  const end   = start + Math.PI * 2 * (340 / 360);
+  x.arc(cx, cy, r, start, end);
+  x.stroke();
+  // The dot of awareness — slightly above-right of center
+  x.fillStyle = "#2B4A7A";
+  x.beginPath();
+  x.arc(124, 76, 7.5, 0, Math.PI * 2);
+  x.fill();
   const iconUrl = c.toDataURL("image/png");
 
   // Apple touch icon
@@ -25001,7 +25054,7 @@ function setupPWA() {
   const manifest = {
     name: "K&N Lifts", short_name: "K&N Lifts",
     display: "standalone", orientation: "portrait",
-    background_color: "#0a0c12", theme_color: "#ff6b1f",
+    background_color: "#f4ecd3", theme_color: "#2B4A7A",
     icons: [{ src: iconUrl, sizes: "180x180", type: "image/png", purpose: "any" }]
   };
   const mLink = document.createElement("link");
@@ -25319,6 +25372,12 @@ function init() {
   if (versionEl) versionEl.textContent = "v" + APP_DISPLAY_VERSION;
   const buildEl = document.getElementById("appBuildLabel");
   if (buildEl) buildEl.textContent = "Build " + APP_BUILD + " · Schema " + APP_VERSION;
+  // Inject the ensō-eye mark into the About card. Indigo ring + dot —
+  // "awareness, not surveillance" per the brand ETHOS.
+  const ensoEl = document.getElementById("aboutEnsoMark");
+  if (ensoEl && typeof paperEnso === "function") {
+    ensoEl.innerHTML = paperEnso(56, "#2B4A7A");
+  }
 
   // First-run or empty user list → prompt to create first user
   if (!s.users.length || !s.currentUserId) {
@@ -28876,6 +28935,23 @@ function paperInkBloom(rowEl) {
   }, 320);
 }
 
+// Ensō-eye mark: one brush-stroke ring + a single dot ("awareness, not
+// surveillance" per brand/ETHOS.md). Ai Indigo by default. The ring uses a
+// dash-array gap so it reads as a brush stroke rather than a closed circle.
+// roughen=true applies the paper-roughen displacement filter for hand-drawn
+// wobble — leave off for favicons / canvas / contexts without the filter def.
+function paperEnso(size, ink, roughen) {
+  size = size || 64;
+  ink = ink || '#2B4A7A';
+  const filt = (roughen === false) ? '' : ' style="filter:url(#paper-roughen);"';
+  return `<svg class="paper-enso" width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+    <circle cx="32" cy="32" r="22" fill="none" stroke="${ink}" stroke-width="2.4"
+      stroke-linecap="round" stroke-dasharray="128 10"
+      transform="rotate(-14 32 32)"${filt}/>
+    <circle cx="44" cy="27" r="2.6" fill="${ink}"/>
+  </svg>`;
+}
+
 // Rubber-stamp pill (e.g. "PR", "DONE", "All-time"). Default = red ink.
 function paperStamp(text, color, angle) {
   color = color || PAPER.inkRed;
@@ -29356,6 +29432,7 @@ try {
     window.paperWirePress = paperWirePress;
     window.paperInkBloom = paperInkBloom;
     window.paperStamp = paperStamp;
+    window.paperEnso = paperEnso;
     window.paperMarginNote = paperMarginNote;
     window.paperTape = paperTape;
     window.paperTornEdge = paperTornEdge;

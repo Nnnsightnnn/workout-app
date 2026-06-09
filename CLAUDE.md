@@ -1,6 +1,7 @@
 # Claude Context — K&N Lifts Workout App
 
-Essential project context.
+Essential project context. K&N Lifts is a nnnsightnnn product.
+**Ethos: stillness sharpens sight.** Every UI choice should quiet noise, not add it.
 
 ## Tech Stack
 HTML5 • CSS3 (variables, flexbox, grid) • Vanilla JS (ES6+) • LocalStorage • Web Audio API • Vibration API
@@ -162,6 +163,12 @@ Recovery from console: `restorePreMigrationBackup()`
 
 **Spec source of truth:** `/tmp/design-bundle/workout-app-notepad-look/` contains the full design bundle — `paper.jsx`, `paper-screens.jsx`, `paper-other-screens.jsx`. Read those when in doubt; they're the authoritative pixel-spec.
 > TRIGGER: When adding or styling any new UI, anywhere in the app
+
+### Ethos [ETHOS]
+**[ETHOS-00001]** Decision filter for any new feature, animation, sound, or notification: *does this quiet the noise and sharpen the sight, or add noise and force?* If it adds noise, cut it.
+**[ETHOS-00002]** Forbid by default: streaks, badges, leaderboards, push notifications, social/sharing surfaces, celebratory animations, dopamine-loop UI. Decline the engagement playbook — track showing up, not max numbers.
+**[ETHOS-00003]** Favor fewer things finished. Before adding scope, ask whether it's the one arrow worth loosing.
+> TRIGGER: Before proposing any new feature or animation
 
 ### Data [DATA]
 **[DATA-00001]** Storage key is `kn-lifts-v3` — never change. Schema version lives inside the data as `_schemaVersion`.
