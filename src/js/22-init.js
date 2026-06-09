@@ -3,31 +3,21 @@
 // INIT
 // ============================================================
 function setupPWA() {
-  // Generate app icon via canvas — ensō-eye on cream paper.
-  // Brush-stroke ring + single indigo dot ("awareness, not surveillance").
+  // Generate app icon via canvas
   const c = document.createElement("canvas");
   c.width = 180; c.height = 180;
   const x = c.getContext("2d");
   if (!x) return; // No canvas support (e.g. test environment)
-  // Cream paper background
-  x.fillStyle = "#f4ecd3";
+  x.fillStyle = "#0a0c12";
   x.fillRect(0, 0, 180, 180);
-  // Ensō ring — incomplete circle for the brush-stroke feel
-  x.strokeStyle = "#2B4A7A";
-  x.lineWidth = 6.5;
-  x.lineCap = "round";
-  x.beginPath();
-  // Start at ~ -90° + small offset, sweep ~340° clockwise — leaves a gap.
-  const cx = 90, cy = 90, r = 60;
-  const start = -Math.PI / 2 + 0.18;
-  const end   = start + Math.PI * 2 * (340 / 360);
-  x.arc(cx, cy, r, start, end);
-  x.stroke();
-  // The dot of awareness — slightly above-right of center
-  x.fillStyle = "#2B4A7A";
-  x.beginPath();
-  x.arc(124, 76, 7.5, 0, Math.PI * 2);
-  x.fill();
+  x.fillStyle = "#ff6b1f";
+  x.font = "900 52px system-ui";
+  x.textAlign = "center";
+  x.textBaseline = "middle";
+  x.fillText("K&N", 90, 72);
+  x.fillStyle = "#f2f2f7";
+  x.font = "700 20px system-ui";
+  x.fillText("LIFTS", 90, 115);
   const iconUrl = c.toDataURL("image/png");
 
   // Apple touch icon
@@ -40,7 +30,7 @@ function setupPWA() {
   const manifest = {
     name: "K&N Lifts", short_name: "K&N Lifts",
     display: "standalone", orientation: "portrait",
-    background_color: "#f4ecd3", theme_color: "#2B4A7A",
+    background_color: "#0a0c12", theme_color: "#ff6b1f",
     icons: [{ src: iconUrl, sizes: "180x180", type: "image/png", purpose: "any" }]
   };
   const mLink = document.createElement("link");
