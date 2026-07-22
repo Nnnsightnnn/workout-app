@@ -443,6 +443,65 @@ function openExerciseMenu(block, ex, bi, ei) {
   `;
   wrap.appendChild(fields);
 
+  // ---- Reverse Pyramid scheme (not applicable to time/distance work) ----
+  const canRpt = !ex.isTime && !ex.isDistance;
+  let rptOn = false;
+  if (canRpt) {
+    const cur = (typeof rptScheme === "function") ? rptScheme(ex) : null;
+    rptOn = !!cur;
+    const seed = cur || {
+      topRepsMin: Math.max(1, (parseInt(ex.reps) || 6) - 2),
+      topRepsMax: parseInt(ex.reps) || 6,
+      dropPct: 10,
+      repAdd: 1
+    };
+
+    const rptToggle = document.createElement("button");
+    rptToggle.type = "button";
+    rptToggle.className = "sheet-item";
+    rptToggle.id = "f-rpt-toggle";
+
+    const rptFields = document.createElement("div");
+    rptFields.id = "f-rpt-fields";
+    rptFields.innerHTML = `
+      <div class="field-row">
+        <div class="field"><label>Top reps min</label>
+          <div class="num-input-wrap"><button class="step" data-s="-1">−</button>
+          <input type="number" id="f-rpt-min" value="${seed.topRepsMin}" min="1"><button class="step" data-s="1">+</button></div>
+        </div>
+        <div class="field"><label>Top reps max</label>
+          <div class="num-input-wrap"><button class="step" data-s="-1">−</button>
+          <input type="number" id="f-rpt-max" value="${seed.topRepsMax}" min="1"><button class="step" data-s="1">+</button></div>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Weight drop % / set</label>
+          <div class="num-input-wrap"><button class="step" data-s="-5">−</button>
+          <input type="number" id="f-rpt-drop" value="${seed.dropPct}" min="1" max="50" step="5"><button class="step" data-s="5">+</button></div>
+        </div>
+        <div class="field"><label>Reps added / set</label>
+          <div class="num-input-wrap"><button class="step" data-s="-1">−</button>
+          <input type="number" id="f-rpt-add" value="${seed.repAdd}" min="0" max="5"><button class="step" data-s="1">+</button></div>
+        </div>
+      </div>
+      <p style="color:var(--text-dim);font-size:11px;margin:2px 0 10px;">
+        Heaviest set first. Back-off weights are suggested from the top set you actually log.
+      </p>
+    `;
+
+    function refreshRptUi() {
+      rptToggle.innerHTML = rptOn
+        ? `<span class="icon">▾</span> Reverse pyramid — on`
+        : `<span class="icon">▸</span> Reverse pyramid — off`;
+      rptFields.style.display = rptOn ? "" : "none";
+    }
+    rptToggle.onclick = () => { rptOn = !rptOn; refreshRptUi(); };
+    refreshRptUi();
+
+    wrap.appendChild(rptToggle);
+    wrap.appendChild(rptFields);
+  }
+
   const save = document.createElement("button");
   save.className = "sheet-item";
   save.innerHTML = `<span class="icon">✓</span> Save changes`;
@@ -454,6 +513,24 @@ function openExerciseMenu(block, ex, bi, ei) {
       e.rest = parseInt(document.getElementById("f-rest").value);
       e.tempo = document.getElementById("f-tempo").value;
       e.notes = document.getElementById("f-notes").value;
+      if (canRpt) {
+        if (rptOn) {
+          const min = parseInt(document.getElementById("f-rpt-min").value) || 1;
+          const max = Math.max(min, parseInt(document.getElementById("f-rpt-max").value) || min);
+          e.scheme = {
+            type: "rpt",
+            topRepsMin: min,
+            topRepsMax: max,
+            dropPct: Math.min(50, Math.max(1, parseInt(document.getElementById("f-rpt-drop").value) || 10)),
+            repAdd: Math.max(0, parseInt(document.getElementById("f-rpt-add").value) || 0)
+          };
+          // Keep the flat reps field aligned with the top-set target so
+          // generic paths (estimates, share, look-ahead) stay coherent.
+          e.reps = max;
+        } else if (e.scheme && e.scheme.type === "rpt") {
+          delete e.scheme;
+        }
+      }
     });
     closeSheet();
     renderWorkoutScreen();

@@ -1324,6 +1324,11 @@ function renderSetsTable(block, ex, bi, ei) {
     injectLinearProgressionHint(wrap, ex, block, ei);
   }
 
+  // RPT progression chip — top set hit the rep-range ceiling last time.
+  if (typeof injectRptHint === "function") {
+    injectRptHint(wrap, ex, block, ei);
+  }
+
   const last = getLastSetsFor(ex.exId || ex.name);
   const numSets = ex.sets || 3;
   const repsLabel = ex.isTime ? "s" : ex.isDistance ? "m" : "reps";
@@ -1335,8 +1340,11 @@ function renderSetsTable(block, ex, bi, ei) {
     const rkey = inputKey(block.id, ei, i, "r");
     const pkey = inputKey(block.id, ei, i, "p");
 
-    const curW = getInput(wkey, lastSet?.weight ?? ex.defaultWeight ?? 0);
-    const curR = getInput(rkey, lastSet?.reps ?? ex.reps);
+    // RPT scheme defaults — back-off weight derives from the actual top set.
+    const rptDef = (typeof rptPlannedSet === "function")
+      ? rptPlannedSet(block, ex, ei, i) : null;
+    const curW = getInput(wkey, rptDef && rptDef.weight != null ? rptDef.weight : (lastSet?.weight ?? ex.defaultWeight ?? 0));
+    const curR = getInput(rkey, rptDef ? rptDef.reps : (lastSet?.reps ?? ex.reps));
     const curP = getInput(pkey, 7);
 
     const chip = document.createElement("div");
@@ -1538,7 +1546,8 @@ function openSetEditor(block, ex, bi, ei, setIdx, bw) {
     // Compute suggested weight (RP A+ engine) as the default when user hasn't entered one
     let weightDefault = lastSet?.weight ?? ex.defaultWeight ?? 0;
     let rpSuggestion  = null;
-    if (typeof suggestedWeight === "function") {
+    const exHasRptScheme = (typeof rptScheme === "function") && !!rptScheme(ex);
+    if (typeof suggestedWeight === "function" && !exHasRptScheme) {
       const p = activeProgram();
       if (p && p.rp && p.rp.enabled && !bw) {
         const draft = getDraft();
@@ -1550,8 +1559,18 @@ function openSetEditor(block, ex, bi, ei, setIdx, bw) {
       }
     }
 
+    // RPT scheme: planned per-set targets override generic defaults —
+    // back-off weight derives from the actual top-set entry.
+    let repsDefault = lastSet?.reps ?? ex.reps;
+    const rptDef = (typeof rptPlannedSet === "function")
+      ? rptPlannedSet(block, ex, ei, si) : null;
+    if (rptDef) {
+      if (rptDef.weight != null) weightDefault = rptDef.weight;
+      repsDefault = rptDef.reps;
+    }
+
     let curW = getInput(wkey, weightDefault);
-    let curR = getInput(rkey, lastSet?.reps ?? ex.reps);
+    let curR = getInput(rkey, repsDefault);
     let curP = getInput(pkey, 7);
 
     const step = state.unit === "lbs" ? 5 : 2.5;
@@ -1866,15 +1885,18 @@ function openInlineEditor(anchorEl, field, block, ex, bi, ei, setIdx, bw) {
   const lastSet = last[setIdx] || last[last.length - 1];
   const key = inputKey(block.id, ei, setIdx, field);
 
+  const rptDef = (typeof rptPlannedSet === "function")
+    ? rptPlannedSet(block, ex, ei, setIdx) : null;
+
   let curVal, step, label, unitLabel, commonVals;
   if (field === "w") {
-    curVal = getInput(key, lastSet?.weight ?? ex.defaultWeight ?? 0);
+    curVal = getInput(key, rptDef && rptDef.weight != null ? rptDef.weight : (lastSet?.weight ?? ex.defaultWeight ?? 0));
     step = state.unit === "lbs" ? 5 : 2.5;
     label = `Weight (${state.unit})`;
     unitLabel = state.unit;
     commonVals = state.unit === "lbs" ? [45, 95, 135, 185, 225, 275, 315] : [20, 40, 60, 80, 100, 120, 140];
   } else {
-    curVal = getInput(key, lastSet?.reps ?? ex.reps);
+    curVal = getInput(key, (field === "r" && rptDef) ? rptDef.reps : (lastSet?.reps ?? ex.reps));
     step = ex.isTime ? 5 : ex.isDistance ? 10 : 1;
     label = ex.isTime ? "Time (sec)" : ex.isDistance ? "Distance (m)" : "Reps";
     unitLabel = ex.isTime ? "s" : ex.isDistance ? "m" : "reps";

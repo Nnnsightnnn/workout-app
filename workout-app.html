@@ -10844,6 +10844,51 @@ body[data-skin="paper"] .paper-empty-with-enso .paper-empty-msg strong {
   color: var(--paper-ink);
 }
 
+/* ── RPT scheme (reverse pyramid) — paper-skin surfaces ────────── */
+/* Progression hint chip, flattened for paper: no pillow, no radius —
+   a dashed ink line with a red stamp-style apply. */
+body[data-skin="paper"] .lp-hint-chip {
+  background: transparent;
+  border: 1px dashed var(--paper-ink-mist);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 7px 8px 6px 10px;
+  margin: 4px 0 8px;
+}
+body[data-skin="paper"] .lp-hint-chip .lp-hint-icon {
+  color: var(--paper-red);
+}
+body[data-skin="paper"] .lp-hint-chip .lp-hint-label {
+  font-family: var(--paper-form);
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .lp-hint-chip .lp-hint-text {
+  color: var(--paper-ink);
+  font-family: var(--paper-hand);
+}
+body[data-skin="paper"] .lp-hint-chip strong {
+  font-family: var(--paper-hand);
+  color: var(--paper-red);
+  font-size: 15px;
+}
+body[data-skin="paper"] .lp-hint-chip .lp-hint-apply {
+  background: transparent;
+  color: var(--paper-red);
+  border: 1.6px solid var(--paper-red);
+  border-radius: 0;
+  box-shadow: none;
+  font-family: var(--paper-form);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  transform: rotate(-1deg);
+}
+/* History log tag for rpt sessions — ink, not red, to read quieter
+   than the ad-hoc tag it shares chrome with. */
+body[data-skin="paper"] .log-entry-rpt-tag {
+  border-color: var(--paper-ink-soft);
+  color: var(--paper-ink-soft) !important;
+}
+
 </style>
 </head>
 <body>
@@ -11752,17 +11797,38 @@ function getLoading(style, phaseName, wip) {
   if (!scheme) return { s:3, r:10, rest:60, t:"", n:"" };
   var phase = scheme[phaseName] || scheme.Deload;
   var entry = phase[Math.min(wip, phase.length - 1)];
-  return { sets: entry.s, reps: entry.r, rest: entry.rest, tempo: entry.t || "", notes: entry.n || "" };
+  var result = { sets: entry.s, reps: entry.r, rest: entry.rest, tempo: entry.t || "", notes: entry.n || "" };
+  // Reverse Pyramid is a first-class scheme (11a-rpt-scheme.js): the
+  // prescription carries per-set semantics — top set at the rep target,
+  // back-offs drop 10% (from the actually-logged top set) and add a rep.
+  if (style === "rpt") {
+    result.scheme = {
+      type: "rpt",
+      topRepsMin: Math.max(1, entry.r - 2),
+      topRepsMax: entry.r,
+      dropPct: 10,
+      repAdd: 1
+    };
+  }
+  return result;
 }
 
 function adjustForExperience(loading, experience) {
   if (experience === "beginner") {
-    return Object.assign({}, loading, {
+    var adjusted = Object.assign({}, loading, {
       sets: Math.max(2, loading.sets - 1),
       reps: loading.reps + 2,
       rest: loading.rest + 30,
       notes: loading.notes + (loading.notes ? " " : "") + "Focus on form."
     });
+    // Keep an rpt scheme's rep range in step with the +2 reps shift.
+    if (loading.scheme && loading.scheme.type === "rpt") {
+      adjusted.scheme = Object.assign({}, loading.scheme, {
+        topRepsMin: loading.scheme.topRepsMin + 2,
+        topRepsMax: loading.scheme.topRepsMax + 2
+      });
+    }
+    return adjusted;
   }
   if (experience === "advanced") {
     return Object.assign({}, loading, { sets: loading.sets + 1 });
@@ -13582,8 +13648,8 @@ function switchUser(id) {
 // ============================================================
 // VERSION
 // ============================================================
-const APP_VERSION = 22;
-const APP_BUILD = "fc0e6e39";
+const APP_VERSION = 23;
+const APP_BUILD = "69665255";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -14004,6 +14070,37 @@ const MIGRATIONS = [
     migrate(store) {
       (store.users || []).forEach(u => {
         if (!Array.isArray(u.savedWorkouts)) u.savedWorkouts = [];
+      });
+      return store;
+    }
+  },
+  {
+    version: 23,
+    description: "Tag stored rpt3 program exercises with the first-class rpt scheme",
+    migrate(store) {
+      (store.users || []).forEach(u => {
+        (u.programs || []).forEach(entry => {
+          if (entry.templateId !== "rpt3") return;
+          (entry.program || []).forEach(day => {
+            (day.blocks || []).forEach(block => {
+              (block.exercises || []).forEach(ex => {
+                if (ex.isWarmup || ex.isTime || ex.isDistance) return;
+                if (ex.scheme) return;
+                // Only the RPT-loaded lifts (their notes carry the "RPT:"
+                // prefix from the periodization table), not warmup/finisher.
+                if (!/\bRPT\b/.test(String(ex.notes || ""))) return;
+                const reps = parseInt(ex.reps) || 6;
+                ex.scheme = {
+                  type: "rpt",
+                  topRepsMin: Math.max(1, reps - 2),
+                  topRepsMax: reps,
+                  dropPct: 10,
+                  repAdd: 1
+                };
+              });
+            });
+          });
+        });
       });
       return store;
     }
@@ -17208,6 +17305,11 @@ function renderSetsTable(block, ex, bi, ei) {
     injectLinearProgressionHint(wrap, ex, block, ei);
   }
 
+  // RPT progression chip — top set hit the rep-range ceiling last time.
+  if (typeof injectRptHint === "function") {
+    injectRptHint(wrap, ex, block, ei);
+  }
+
   const last = getLastSetsFor(ex.exId || ex.name);
   const numSets = ex.sets || 3;
   const repsLabel = ex.isTime ? "s" : ex.isDistance ? "m" : "reps";
@@ -17219,8 +17321,11 @@ function renderSetsTable(block, ex, bi, ei) {
     const rkey = inputKey(block.id, ei, i, "r");
     const pkey = inputKey(block.id, ei, i, "p");
 
-    const curW = getInput(wkey, lastSet?.weight ?? ex.defaultWeight ?? 0);
-    const curR = getInput(rkey, lastSet?.reps ?? ex.reps);
+    // RPT scheme defaults — back-off weight derives from the actual top set.
+    const rptDef = (typeof rptPlannedSet === "function")
+      ? rptPlannedSet(block, ex, ei, i) : null;
+    const curW = getInput(wkey, rptDef && rptDef.weight != null ? rptDef.weight : (lastSet?.weight ?? ex.defaultWeight ?? 0));
+    const curR = getInput(rkey, rptDef ? rptDef.reps : (lastSet?.reps ?? ex.reps));
     const curP = getInput(pkey, 7);
 
     const chip = document.createElement("div");
@@ -17422,7 +17527,8 @@ function openSetEditor(block, ex, bi, ei, setIdx, bw) {
     // Compute suggested weight (RP A+ engine) as the default when user hasn't entered one
     let weightDefault = lastSet?.weight ?? ex.defaultWeight ?? 0;
     let rpSuggestion  = null;
-    if (typeof suggestedWeight === "function") {
+    const exHasRptScheme = (typeof rptScheme === "function") && !!rptScheme(ex);
+    if (typeof suggestedWeight === "function" && !exHasRptScheme) {
       const p = activeProgram();
       if (p && p.rp && p.rp.enabled && !bw) {
         const draft = getDraft();
@@ -17434,8 +17540,18 @@ function openSetEditor(block, ex, bi, ei, setIdx, bw) {
       }
     }
 
+    // RPT scheme: planned per-set targets override generic defaults —
+    // back-off weight derives from the actual top-set entry.
+    let repsDefault = lastSet?.reps ?? ex.reps;
+    const rptDef = (typeof rptPlannedSet === "function")
+      ? rptPlannedSet(block, ex, ei, si) : null;
+    if (rptDef) {
+      if (rptDef.weight != null) weightDefault = rptDef.weight;
+      repsDefault = rptDef.reps;
+    }
+
     let curW = getInput(wkey, weightDefault);
-    let curR = getInput(rkey, lastSet?.reps ?? ex.reps);
+    let curR = getInput(rkey, repsDefault);
     let curP = getInput(pkey, 7);
 
     const step = state.unit === "lbs" ? 5 : 2.5;
@@ -17750,15 +17866,18 @@ function openInlineEditor(anchorEl, field, block, ex, bi, ei, setIdx, bw) {
   const lastSet = last[setIdx] || last[last.length - 1];
   const key = inputKey(block.id, ei, setIdx, field);
 
+  const rptDef = (typeof rptPlannedSet === "function")
+    ? rptPlannedSet(block, ex, ei, setIdx) : null;
+
   let curVal, step, label, unitLabel, commonVals;
   if (field === "w") {
-    curVal = getInput(key, lastSet?.weight ?? ex.defaultWeight ?? 0);
+    curVal = getInput(key, rptDef && rptDef.weight != null ? rptDef.weight : (lastSet?.weight ?? ex.defaultWeight ?? 0));
     step = state.unit === "lbs" ? 5 : 2.5;
     label = `Weight (${state.unit})`;
     unitLabel = state.unit;
     commonVals = state.unit === "lbs" ? [45, 95, 135, 185, 225, 275, 315] : [20, 40, 60, 80, 100, 120, 140];
   } else {
-    curVal = getInput(key, lastSet?.reps ?? ex.reps);
+    curVal = getInput(key, (field === "r" && rptDef) ? rptDef.reps : (lastSet?.reps ?? ex.reps));
     step = ex.isTime ? 5 : ex.isDistance ? 10 : 1;
     label = ex.isTime ? "Time (sec)" : ex.isDistance ? "Distance (m)" : "Reps";
     unitLabel = ex.isTime ? "s" : ex.isDistance ? "m" : "reps";
@@ -19087,6 +19206,181 @@ function injectLinearProgressionHint(wrap, ex, block, ei) {
 }
 
 // ============================================================
+// RPT SCHEME — Reverse Pyramid Training as a first-class scheme
+// ------------------------------------------------------------
+// An exercise prescription may carry an optional scheme object:
+//   scheme: { type:"rpt", topRepsMin:4, topRepsMax:6, dropPct:10, repAdd:1 }
+// ex.sets stays the total set count (top set + back-offs) and
+// ex.reps stays equal to topRepsMax so every generic code path
+// (estimates, share, look-ahead) keeps working. No scheme field
+// means straight sets — nothing changes for existing data.
+//
+// Live behavior: back-off weight suggestions derive from the
+// ACTUAL top-set weight logged this session (draft input for
+// set 0), compounding ×(1 − dropPct/100) per set, plate-rounded.
+// User-entered values always win over suggestions.
+// ============================================================
+
+// Returns a normalized rpt scheme for an exercise, or null.
+// Bodyweight-only / time / distance prescriptions never qualify —
+// there's no load to drop.
+function rptScheme(ex) {
+  if (!ex || !ex.scheme || ex.scheme.type !== "rpt") return null;
+  if (ex.isTime || ex.isDistance) return null;
+  const s = ex.scheme;
+  const topMax = Number(s.topRepsMax) || Number(ex.reps) || 6;
+  return {
+    type: "rpt",
+    topRepsMin: Math.max(1, Number(s.topRepsMin) || Math.max(1, topMax - 2)),
+    topRepsMax: topMax,
+    dropPct: Math.min(50, Math.max(1, Number(s.dropPct) || 10)),
+    repAdd: s.repAdd == null ? 1 : Math.max(0, Number(s.repAdd) || 0)
+  };
+}
+
+// Plate rounding — same increments the rest of the app uses.
+function rptRoundW(w) {
+  if (!w || w <= 0) return 0;
+  const incr = (typeof state !== "undefined" && state.unit === "kg") ? 2.5 : 5;
+  return Math.max(0, Math.round(w / incr) * incr);
+}
+
+// Pure back-off math: set 0 = top weight; set i = top × (1−drop)^i.
+function rptBackoffWeight(scheme, topWeight, setIdx) {
+  const w = Number(topWeight) || 0;
+  if (setIdx <= 0 || w <= 0) return rptRoundW(w);
+  const factor = Math.pow(1 - scheme.dropPct / 100, setIdx);
+  return rptRoundW(w * factor);
+}
+
+// Numeric rep target per set: top set aims at topRepsMax; each
+// back-off adds repAdd on top of that.
+function rptTargetReps(ex, setIdx) {
+  const s = rptScheme(ex);
+  if (!s) return Number(ex.reps) || 8;
+  return setIdx <= 0 ? s.topRepsMax : s.topRepsMax + s.repAdd * setIdx;
+}
+
+// Top-set weight for this exercise right now: the draft's set-0
+// entry first (drop % applies to the actual load, not the plan),
+// then last session's first logged set, then the prescription default.
+function rptResolveTopWeight(block, ex, ei) {
+  let topW = null;
+  if (typeof getInput === "function" && typeof inputKey === "function") {
+    const v = getInput(inputKey(block.id, ei, 0, "w"), null);
+    if (v != null && Number(v) > 0) topW = Number(v);
+  }
+  if (topW == null && typeof getLastSetsFor === "function") {
+    const last = getLastSetsFor(ex.exId || ex.name);
+    if (last.length && Number(last[0].weight) > 0) topW = Number(last[0].weight);
+  }
+  if (topW == null) topW = Number(ex.defaultWeight) || 0;
+  return topW;
+}
+
+// Planned { weight, reps } for one set of an rpt exercise, or null
+// when the exercise has no rpt scheme. weight is null for pure-
+// bodyweight moves (no load to drop — reps stepping still applies).
+function rptPlannedSet(block, ex, ei, setIdx) {
+  const s = rptScheme(ex);
+  if (!s) return null;
+  const reps = rptTargetReps(ex, setIdx);
+  if (ex.bodyweight && !(Number(ex.defaultWeight) > 0)) {
+    return { weight: null, reps: reps };
+  }
+  const topW = rptResolveTopWeight(block, ex, ei);
+  const weight = setIdx <= 0 ? rptRoundW(topW) : rptBackoffWeight(s, topW, setIdx);
+  return { weight: weight, reps: reps };
+}
+
+// Target-spec string for exercise heads, e.g. "rpt · top 4-6 · −10%".
+// Kept short — long specs collide with wrapped exercise names at 375px.
+function rptSpecText(ex) {
+  const s = rptScheme(ex);
+  if (!s) return null;
+  const range = s.topRepsMin === s.topRepsMax
+    ? String(s.topRepsMax) : s.topRepsMin + "-" + s.topRepsMax;
+  return "rpt &middot; top " + range + " &middot; &minus;" + s.dropPct + "%";
+}
+
+// Display label for a set's rep target: the top set shows the
+// range ("4-6"), back-offs show their stepped number.
+function rptRepsLabel(ex, setIdx) {
+  const s = rptScheme(ex);
+  if (!s) return null;
+  if (setIdx <= 0 && s.topRepsMin !== s.topRepsMax) {
+    return s.topRepsMin + "-" + s.topRepsMax;
+  }
+  return String(rptTargetReps(ex, setIdx));
+}
+
+// ------------------------------------------------------------
+// Linear progression for rpt: when last session's TOP set hit
+// the top of the rep range, suggest a load bump this session.
+// Same rule family as injectLinearProgressionHint, scoped to the
+// top set — back-offs re-derive from it automatically.
+// ------------------------------------------------------------
+
+// Returns { newTopWeight, lastTopWeight, lastTopReps } or null.
+function rptProgressionSuggestion(ex) {
+  const s = rptScheme(ex);
+  if (!s) return null;
+  if (typeof getLastSetsFor !== "function" || typeof state === "undefined") return null;
+  const last = getLastSetsFor(ex.exId || ex.name);
+  if (!last.length) return null;
+  const top = last[0];
+  const lastW = Number(top.weight) || 0;
+  const lastR = Number(top.reps) || 0;
+  if (lastW <= 0 || lastR < s.topRepsMax) return null;
+  const bump = state.unit === "kg" ? 2.5 : 5;
+  return { newTopWeight: lastW + bump, lastTopWeight: lastW, lastTopReps: lastR };
+}
+
+// Injects the rpt progression chip above the set list. Apply sets
+// only the top-set weight — the back-off suggestions cascade from
+// it on the re-render. Skips when the user already logged set 0
+// at or above the suggestion (they're ahead of us).
+function injectRptHint(wrap, ex, block, ei) {
+  const sug = rptProgressionSuggestion(ex);
+  if (!sug) return;
+  const set0Key = inputKey(block.id, ei, 0, "w");
+  const set0Cur = Number(getInput(set0Key, sug.lastTopWeight));
+  if (set0Cur > sug.lastTopWeight) return;
+
+  const chip = document.createElement("div");
+  chip.className = "lp-hint-chip rpt-hint-chip";
+  chip.innerHTML =
+    '<span class="lp-hint-icon">&uarr;</span>' +
+    '<span class="lp-hint-text"><span class="lp-hint-label">Top set hit ' + sug.lastTopReps + '</span>' +
+    ' <strong>' + sug.newTopWeight + ' ' + state.unit + '</strong></span>' +
+    '<button class="lp-hint-apply" type="button">Apply</button>';
+  chip.querySelector(".lp-hint-apply").addEventListener("click", (e) => {
+    e.stopPropagation();
+    saveInput(set0Key, sug.newTopWeight);
+    if (navigator.vibrate) navigator.vibrate(10);
+    if (typeof showToast === "function") showToast("Top set bumped to " + sug.newTopWeight + " " + state.unit);
+    if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
+  });
+  wrap.insertBefore(chip, wrap.firstChild);
+}
+
+// Expose for test harness (matches 25-rp-engine.js pattern).
+try {
+  if (typeof window !== "undefined") {
+    window.rptScheme = rptScheme;
+    window.rptRoundW = rptRoundW;
+    window.rptBackoffWeight = rptBackoffWeight;
+    window.rptTargetReps = rptTargetReps;
+    window.rptResolveTopWeight = rptResolveTopWeight;
+    window.rptPlannedSet = rptPlannedSet;
+    window.rptProgressionSuggestion = rptProgressionSuggestion;
+    window.rptSpecText = rptSpecText;
+    window.rptRepsLabel = rptRepsLabel;
+  }
+} catch (_) {}
+
+
+// ============================================================
 // BOTTOM SHEET (day picker, library, menus)
 // ============================================================
 function openSheet(html) {
@@ -19531,6 +19825,65 @@ function openExerciseMenu(block, ex, bi, ei) {
   `;
   wrap.appendChild(fields);
 
+  // ---- Reverse Pyramid scheme (not applicable to time/distance work) ----
+  const canRpt = !ex.isTime && !ex.isDistance;
+  let rptOn = false;
+  if (canRpt) {
+    const cur = (typeof rptScheme === "function") ? rptScheme(ex) : null;
+    rptOn = !!cur;
+    const seed = cur || {
+      topRepsMin: Math.max(1, (parseInt(ex.reps) || 6) - 2),
+      topRepsMax: parseInt(ex.reps) || 6,
+      dropPct: 10,
+      repAdd: 1
+    };
+
+    const rptToggle = document.createElement("button");
+    rptToggle.type = "button";
+    rptToggle.className = "sheet-item";
+    rptToggle.id = "f-rpt-toggle";
+
+    const rptFields = document.createElement("div");
+    rptFields.id = "f-rpt-fields";
+    rptFields.innerHTML = `
+      <div class="field-row">
+        <div class="field"><label>Top reps min</label>
+          <div class="num-input-wrap"><button class="step" data-s="-1">−</button>
+          <input type="number" id="f-rpt-min" value="${seed.topRepsMin}" min="1"><button class="step" data-s="1">+</button></div>
+        </div>
+        <div class="field"><label>Top reps max</label>
+          <div class="num-input-wrap"><button class="step" data-s="-1">−</button>
+          <input type="number" id="f-rpt-max" value="${seed.topRepsMax}" min="1"><button class="step" data-s="1">+</button></div>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Weight drop % / set</label>
+          <div class="num-input-wrap"><button class="step" data-s="-5">−</button>
+          <input type="number" id="f-rpt-drop" value="${seed.dropPct}" min="1" max="50" step="5"><button class="step" data-s="5">+</button></div>
+        </div>
+        <div class="field"><label>Reps added / set</label>
+          <div class="num-input-wrap"><button class="step" data-s="-1">−</button>
+          <input type="number" id="f-rpt-add" value="${seed.repAdd}" min="0" max="5"><button class="step" data-s="1">+</button></div>
+        </div>
+      </div>
+      <p style="color:var(--text-dim);font-size:11px;margin:2px 0 10px;">
+        Heaviest set first. Back-off weights are suggested from the top set you actually log.
+      </p>
+    `;
+
+    function refreshRptUi() {
+      rptToggle.innerHTML = rptOn
+        ? `<span class="icon">▾</span> Reverse pyramid — on`
+        : `<span class="icon">▸</span> Reverse pyramid — off`;
+      rptFields.style.display = rptOn ? "" : "none";
+    }
+    rptToggle.onclick = () => { rptOn = !rptOn; refreshRptUi(); };
+    refreshRptUi();
+
+    wrap.appendChild(rptToggle);
+    wrap.appendChild(rptFields);
+  }
+
   const save = document.createElement("button");
   save.className = "sheet-item";
   save.innerHTML = `<span class="icon">✓</span> Save changes`;
@@ -19542,6 +19895,24 @@ function openExerciseMenu(block, ex, bi, ei) {
       e.rest = parseInt(document.getElementById("f-rest").value);
       e.tempo = document.getElementById("f-tempo").value;
       e.notes = document.getElementById("f-notes").value;
+      if (canRpt) {
+        if (rptOn) {
+          const min = parseInt(document.getElementById("f-rpt-min").value) || 1;
+          const max = Math.max(min, parseInt(document.getElementById("f-rpt-max").value) || min);
+          e.scheme = {
+            type: "rpt",
+            topRepsMin: min,
+            topRepsMax: max,
+            dropPct: Math.min(50, Math.max(1, parseInt(document.getElementById("f-rpt-drop").value) || 10)),
+            repAdd: Math.max(0, parseInt(document.getElementById("f-rpt-add").value) || 0)
+          };
+          // Keep the flat reps field aligned with the top-set target so
+          // generic paths (estimates, share, look-ahead) stay coherent.
+          e.reps = max;
+        } else if (e.scheme && e.scheme.type === "rpt") {
+          delete e.scheme;
+        }
+      }
     });
     closeSheet();
     renderWorkoutScreen();
@@ -20144,10 +20515,16 @@ function completeCurrentBlock() {
       if (getInput(sKey, null) === "done" || getInput(sKey, null) === "skipped") continue;
       saveInput(sKey, "done");
       const lastSet = last[i] || last[last.length - 1];
+      // RPT scheme: fill untouched sets with planned targets (back-off
+      // weight from the actual top set) instead of flat last-time values.
+      // Ascending loop order means set 0's weight is persisted before
+      // rptPlannedSet derives the back-offs from it.
+      const rptDef = (typeof rptPlannedSet === "function")
+        ? rptPlannedSet(block, ex, ei, i) : null;
       const rkey = inputKey(block.id, ei, i, "r");
-      if (getInput(rkey, null) == null) saveInput(rkey, lastSet?.reps ?? ex.reps);
+      if (getInput(rkey, null) == null) saveInput(rkey, rptDef ? rptDef.reps : (lastSet?.reps ?? ex.reps));
       const wkey = inputKey(block.id, ei, i, "w");
-      if (getInput(wkey, null) == null) saveInput(wkey, lastSet?.weight ?? ex.defaultWeight ?? 0);
+      if (getInput(wkey, null) == null) saveInput(wkey, rptDef && rptDef.weight != null ? rptDef.weight : (lastSet?.weight ?? ex.defaultWeight ?? 0));
       const pkey = inputKey(block.id, ei, i, "p");
       if (getInput(pkey, null) == null) saveInput(pkey, 7);
     }
@@ -20309,6 +20686,17 @@ function finishWorkout(opts) {
     block.exercises.forEach((ex, ei) => {
       if (ex.isWarmup) return;
       const last = getLastSetsFor(ex.exId || ex.name);
+      // RPT scheme: resolve the top-set weight from this draft's local
+      // inputs map (getInput would re-read the store and miss the fills
+      // below), then derive back-off defaults from it.
+      const exRptScheme = (typeof rptScheme === "function") ? rptScheme(ex) : null;
+      let rptTopW = 0;
+      if (exRptScheme) {
+        const w0 = inputs[inputKey(block.id, ei, 0, "w")];
+        rptTopW = (w0 != null && Number(w0) > 0) ? Number(w0)
+          : (last.length && Number(last[0].weight) > 0 ? Number(last[0].weight)
+            : (Number(ex.defaultWeight) || 0));
+      }
       for (let i = 0; i < ex.sets; i++) {
         const sKey = inputKey(block.id, ei, i, "status");
         if (inputs[sKey] === "skipped") continue;
@@ -20318,9 +20706,15 @@ function finishWorkout(opts) {
         }
         const lastSet = last[i] || last[last.length - 1];
         const rkey = inputKey(block.id, ei, i, "r");
-        if (inputs[rkey] == null) inputs[rkey] = lastSet?.reps ?? ex.reps;
+        if (inputs[rkey] == null) {
+          inputs[rkey] = exRptScheme ? rptTargetReps(ex, i) : (lastSet?.reps ?? ex.reps);
+        }
         const wkey = inputKey(block.id, ei, i, "w");
-        if (inputs[wkey] == null) inputs[wkey] = lastSet?.weight ?? ex.defaultWeight ?? 0;
+        if (inputs[wkey] == null) {
+          inputs[wkey] = (exRptScheme && rptTopW > 0 && !ex.bodyweight)
+            ? rptBackoffWeight(exRptScheme, rptTopW, i)
+            : (lastSet?.weight ?? ex.defaultWeight ?? 0);
+        }
         const pkey = inputKey(block.id, ei, i, "p");
         if (inputs[pkey] == null) inputs[pkey] = 7;
       }
@@ -20338,7 +20732,7 @@ function finishWorkout(opts) {
         const p = inputs[inputKey(block.id, ei, i, "p")] ?? 7;
         if (r == null || r === 0) continue;
         if (inputs[inputKey(block.id, ei, i, "status")] === "skipped") continue;
-        sets.push({
+        const setRec = {
           exId: ex.exId || ex.name,
           exName: ex.name,
           muscles: ex.muscles || [],
@@ -20348,7 +20742,10 @@ function finishWorkout(opts) {
           rpe: p,
           bodyweight: !!ex.bodyweight,
           isPR: false
-        });
+        };
+        // Tag sets logged under a scheme so history can recognize them.
+        if (typeof rptScheme === "function" && rptScheme(ex)) setRec.scheme = "rpt";
+        sets.push(setRec);
       }
     });
   });
@@ -21130,8 +21527,10 @@ function _buildRecentEntries(entries) {
     html += '<div class="log-entry-date">' + dateStr + '</div>';
     html += '<div class="log-entry-bar" style="background:' + (color || "var(--text-faint)") + ';"></div>';
     const adhocTag = s.isAdhoc ? '<span class="log-entry-adhoc-tag">ad-hoc</span>' : '';
+    const rptTag = (s.sets || []).some(set => set.scheme === "rpt")
+      ? '<span class="log-entry-adhoc-tag log-entry-rpt-tag">rpt</span>' : '';
     const plannedTag = isPlanned ? '<span class="log-entry-adhoc-tag" style="background:var(--accent-dim,#2a2a3a);color:var(--accent);">planned</span>' : '';
-    html += '<div class="log-entry-info"><div class="name">' + (s.dayName || "Day " + s.dayId) + ' ' + adhocTag + plannedTag + editedMark + '</div>';
+    html += '<div class="log-entry-info"><div class="name">' + (s.dayName || "Day " + s.dayId) + ' ' + adhocTag + rptTag + plannedTag + editedMark + '</div>';
     html += '<div class="note' + (isPr ? " pr" : "") + '">' + prNote + (tappable ? ' <span class="log-entry-cue">tap to edit \u2192</span>' : '') + '</div></div>';
     html += '<div class="log-entry-vol">' + (s.volume > 0 ? s.volume.toLocaleString() : "\u2014") + '</div>';
     if (tappable) {
@@ -22435,6 +22834,8 @@ function _shareCleanExercise(ex) {
   if (ex.tempo) out.tempo = ex.tempo;
   if (ex.notes) out.notes = ex.notes;
   if (ex.isWarmup) out.isWarmup = true;
+  // Rep/weight scheme (e.g. rpt) travels with the shared workout.
+  if (ex.scheme && ex.scheme.type) out.scheme = JSON.parse(JSON.stringify(ex.scheme));
   return out;
 }
 
@@ -22895,7 +23296,8 @@ function _adaptImportedExercise(ex) {
     noRpe: !!(ex.noRpe || (libEx && libEx.noRpe)),
     tempo: ex.tempo || "",
     notes: ex.notes || "",
-    isWarmup: !!ex.isWarmup
+    isWarmup: !!ex.isWarmup,
+    scheme: (ex.scheme && ex.scheme.type) ? JSON.parse(JSON.stringify(ex.scheme)) : undefined
   });
 }
 
@@ -30505,8 +30907,9 @@ function paperRenderExercise(day, block, ex, bi, ei, isSuperset) {
 
   // Target spec: try to derive from ex (e.g. "4 × 1-5 @ RPE 8")
   const numSets = ex.sets || 3;
-  let targetSpec = `${numSets} &times; ${ex.reps || "?"}`;
-  if (ex.tempo) targetSpec += ` &middot; ${ex.tempo}`;
+  const rptSpec = (typeof rptSpecText === "function") ? rptSpecText(ex) : null;
+  let targetSpec = rptSpec || `${numSets} &times; ${ex.reps || "?"}`;
+  if (ex.tempo && !rptSpec) targetSpec += ` &middot; ${ex.tempo}`;
 
   head.innerHTML = `
     <div class="paper-ex-left">
@@ -30609,9 +31012,15 @@ function paperRenderSetsTable(block, ex, bi, ei) {
     }
   }
 
+  // RPT progression chip — top set hit the rep-range ceiling last time.
+  if (typeof injectRptHint === "function") {
+    injectRptHint(list, ex, block, ei);
+  }
+
   const numSets = ex.sets || 3;
   const repsLabel = ex.isTime ? "s" : ex.isDistance ? "m" : "reps";
   const last = (typeof getLastSetsFor === "function") ? getLastSetsFor(ex.exId || ex.name) : [];
+  const hasRpt = (typeof rptScheme === "function") && !!rptScheme(ex);
 
   for (let i = 0; i < numSets; i++) {
     const lastSet = last[i] || last[last.length - 1];
@@ -30620,8 +31029,13 @@ function paperRenderSetsTable(block, ex, bi, ei) {
     const pkey = inputKey(block.id, ei, i, "p");
     const statusKey = inputKey(block.id, ei, i, "status");
 
-    const curW = getInput(wkey, lastSet?.weight ?? ex.defaultWeight ?? 0);
-    const curR = getInput(rkey, lastSet?.reps ?? ex.reps);
+    // RPT: back-off defaults derive from the actual top-set weight,
+    // reps step up per drop. User input still wins via getInput.
+    const rptDef = hasRpt ? rptPlannedSet(block, ex, ei, i) : null;
+    const defW = rptDef ? (rptDef.weight ?? 0) : (lastSet?.weight ?? ex.defaultWeight ?? 0);
+    const defR = rptDef ? rptDef.reps : (lastSet?.reps ?? ex.reps);
+    const curW = getInput(wkey, defW);
+    const curR = getInput(rkey, defR);
     const curP = getInput(pkey, 7);
     const status = getInput(statusKey, null);
     const done = status === "done";
@@ -30651,6 +31065,9 @@ function paperRenderSetsTable(block, ex, bi, ei) {
       `<span class="paper-set-rpe-lbl">RPE</span>
        <span class="paper-set-rpe-val" data-field="p">${rpeDisp}</span>`;
 
+    // The rpt top set is row 1 by definition; the exercise head's spec
+    // line ("rpt · top 4-6 · −10%") carries the scheme — no per-row tag,
+    // which would force a wrap on 375px rows.
     row.innerHTML = `
       <span class="paper-set-idx">${i + 1}.</span>
       <span class="paper-set-box" role="checkbox" aria-checked="${done}">
@@ -31293,8 +31710,10 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi)
     const wkey = inputKey(block.id, activeExIdx, activeSetIdx, "w");
     const last = (typeof getLastSetsFor === "function") ? getLastSetsFor(ex.exId || ex.name) : [];
     const lastSet = last[activeSetIdx] || last[last.length - 1];
+    const rptDef = (typeof rptPlannedSet === "function")
+      ? rptPlannedSet(block, ex, activeExIdx, activeSetIdx) : null;
     const cur = (typeof getInput === "function")
-      ? getInput(wkey, lastSet?.weight ?? ex.defaultWeight ?? 0) : 0;
+      ? getInput(wkey, rptDef ? (rptDef.weight ?? 0) : (lastSet?.weight ?? ex.defaultWeight ?? 0)) : 0;
     wWrap.innerHTML = `
       <div class="pa-weight-label">Weight</div>
       <div class="pa-weight-row">
@@ -31588,8 +32007,9 @@ function paperRenderFocusView(container, day) {
     head.className = "paper-focus-ex-head";
     const numLabel = `${block.letter}${isSuperset ? (ei + 1) : ""}`;
     const nSets = ex.sets || 3;
-    let targetSpec = `${nSets} &times; ${ex.reps || "?"}`;
-    if (ex.tempo) targetSpec += ` &middot; ${ex.tempo}`;
+    const rptSpec = (typeof rptSpecText === "function") ? rptSpecText(ex) : null;
+    let targetSpec = rptSpec || `${nSets} &times; ${ex.reps || "?"}`;
+    if (ex.tempo && !rptSpec) targetSpec += ` &middot; ${ex.tempo}`;
     head.innerHTML = `
       <div class="paper-focus-ex-left">
         <span class="paper-focus-ex-no">${numLabel}</span>
@@ -33393,6 +33813,9 @@ function buildRpSuggestionChip(suggestion, unitStr) {
 function injectRpHint(wrap, ex, u) {
   const rp = _rpOf(u);
   if (!u || !rp || !rp.enabled) return;
+  // Scheme exercises (rpt) carry their own per-set weight logic —
+  // a generic RP suggestion on top of it is noise.
+  if (typeof rptScheme === "function" && rptScheme(ex)) return;
   const exId = ex ? (ex.exId || ex.name) : null;
   if (!exId) return;
   const lib = LIB_BY_ID[exId];

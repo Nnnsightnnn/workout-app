@@ -3507,8 +3507,8 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
   // ─────────────────────────────────────────────────────────────
   // Saved Workouts (v22) — save & repeat custom workouts
   // ─────────────────────────────────────────────────────────────
-  t("saved: schema version bumped to v22 and new user has empty savedWorkouts[]", () => {
-    eq(w.APP_VERSION, 22, "APP_VERSION should be 22");
+  t("saved: schema version covers v22 and new user has empty savedWorkouts[]", () => {
+    assert(w.APP_VERSION >= 22, "APP_VERSION should be >= 22");
     const u = w.userData();
     assert(u, "have a user");
     assert(Array.isArray(u.savedWorkouts), "u.savedWorkouts is an array");
@@ -3682,6 +3682,129 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
       .find(el => el.textContent.includes("Repeat a saved workout"));
     assert(savedRow, "Repeat row appears once saved workout exists");
     w.document.getElementById("sheetBg").classList.remove("active");
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // RPT scheme (v23) — reverse pyramid as a first-class scheme
+  // ─────────────────────────────────────────────────────────────
+  t("rpt: schema version bumped to v23", () => {
+    eq(w.APP_VERSION, 23, "APP_VERSION should be 23");
+  });
+
+  t("rpt: back-off weight math compounds drop and rounds to plates", () => {
+    const s = { type: "rpt", topRepsMin: 4, topRepsMax: 6, dropPct: 10, repAdd: 1 };
+    eq(w.rptBackoffWeight(s, 200, 0), 200, "top set unchanged");
+    eq(w.rptBackoffWeight(s, 200, 1), 180, "first back-off -10%");
+    eq(w.rptBackoffWeight(s, 200, 2), 160, "second back-off compounds (162 -> 160 rounded)");
+    eq(w.rptBackoffWeight(s, 100, 1), 90, "90 stays exact");
+  });
+
+  t("rpt: target reps step up per back-off, top set shows range", () => {
+    const ex = { exId: "bench", name: "Bench", reps: 6, sets: 3,
+                 scheme: { type: "rpt", topRepsMin: 4, topRepsMax: 6, dropPct: 10, repAdd: 1 } };
+    eq(w.rptTargetReps(ex, 0), 6, "top set targets range ceiling");
+    eq(w.rptTargetReps(ex, 1), 7, "first back-off +1");
+    eq(w.rptTargetReps(ex, 2), 8, "second back-off +2");
+    eq(w.rptRepsLabel(ex, 0), "4-6", "top set label shows the range");
+    eq(w.rptRepsLabel(ex, 2), "8", "back-off label is numeric");
+  });
+
+  t("rpt: scheme ignores time/distance prescriptions", () => {
+    const ex = { exId: "row_erg", name: "Row", reps: 300, isTime: true,
+                 scheme: { type: "rpt", topRepsMax: 6, dropPct: 10, repAdd: 1 } };
+    eq(w.rptScheme(ex), null, "no rpt for time-based work");
+  });
+
+  t("rpt: getLoading('rpt') carries a first-class scheme object", () => {
+    const l = w.getLoading("rpt", "Accumulation", 0);
+    assert(l.scheme, "loading has scheme");
+    eq(l.scheme.type, "rpt", "type");
+    eq(l.scheme.topRepsMax, l.reps, "topRepsMax matches flat reps");
+    eq(l.scheme.dropPct, 10, "default 10% drop");
+    eq(l.scheme.repAdd, 1, "default +1 rep per drop");
+  });
+
+  // e2e: attach a scheme to a live program exercise, log a top set,
+  // check back-off suggestions and the finished session record.
+  let _rptRef = null; // { block, ex, ei, exId }
+  t("rpt: back-off defaults derive from the actually-logged top set", () => {
+    w.state.adhocActive = false;
+    w.state.currentDayId = 1;
+    w.state.dayChosen = true;
+    // Clear any draft left over from earlier tests, attach the scheme.
+    w.updateActiveProgram(entry => {
+      entry.draft = null;
+      const day = entry.program.find(d => d.id === 1);
+      for (const b of day.blocks) {
+        for (const e2 of b.exercises) {
+          if (e2.isWarmup || e2.bodyweight || e2.isTime || e2.isDistance) continue;
+          e2.sets = 3;
+          e2.reps = 6;
+          e2.scheme = { type: "rpt", topRepsMin: 4, topRepsMax: 6, dropPct: 10, repAdd: 1 };
+          return;
+        }
+      }
+    });
+    const day = w.getCurrentDay();
+    outer:
+    for (const b of day.blocks) {
+      for (let i = 0; i < b.exercises.length; i++) {
+        if (b.exercises[i].scheme && b.exercises[i].scheme.type === "rpt") {
+          _rptRef = { block: b, ex: b.exercises[i], ei: i, exId: b.exercises[i].exId };
+          break outer;
+        }
+      }
+    }
+    assert(_rptRef, "scheme landed on a live program exercise");
+    const { block, ex, ei } = _rptRef;
+    // Log the top set at 200 — heavier than any plan.
+    w.saveInput(w.inputKey(block.id, ei, 0, "w"), 200);
+    w.saveInput(w.inputKey(block.id, ei, 0, "r"), 5);
+    w.saveInput(w.inputKey(block.id, ei, 0, "status"), "done");
+    const s1 = w.rptPlannedSet(block, ex, ei, 1);
+    const s2 = w.rptPlannedSet(block, ex, ei, 2);
+    eq(s1.weight, 180, "set 2 suggests -10% of actual top set");
+    eq(s1.reps, 7, "set 2 target reps stepped");
+    eq(s2.weight, 160, "set 3 compounds the drop");
+    eq(s2.reps, 8, "set 3 target reps stepped");
+  });
+
+  t("rpt: finishWorkout logs the pyramid and tags sets with scheme", () => {
+    assert(_rptRef, "previous test set up the draft");
+    const before = w.userData().sessions.length;
+    w.finishWorkout();
+    const u = w.userData();
+    eq(u.sessions.length, before + 1, "session saved");
+    const sess = u.sessions[u.sessions.length - 1];
+    const rptSets = sess.sets.filter(s => s.exId === _rptRef.exId);
+    eq(rptSets.length, 3, "three sets logged");
+    eq(rptSets[0].weight, 200, "top set as logged");
+    eq(rptSets[1].weight, 180, "back-off 1 auto-filled at -10%");
+    eq(rptSets[2].weight, 160, "back-off 2 compounds");
+    eq(rptSets[1].reps, 7, "back-off 1 reps stepped");
+    assert(rptSets.every(s => s.scheme === "rpt"), "all sets tagged scheme:rpt");
+  });
+
+  t("rpt: progression chip fires when the top set hits the range ceiling", () => {
+    assert(_rptRef, "ref exists");
+    const ex = _rptRef.ex;
+    // Last session top set was 200×5 (< topRepsMax 6): no suggestion yet.
+    assert(!w.rptProgressionSuggestion(ex), "no bump below the ceiling");
+    // Fabricate a session where the top set hit 6 reps.
+    w.updateUser(u => {
+      u.sessions.push({
+        id: "s-rpt-prog", dayId: 1, dayName: "T", startedAt: Date.now(), finishedAt: Date.now(),
+        duration: 60, volume: 0, prCount: 0,
+        sets: [
+          { exId: _rptRef.exId, exName: ex.name, setIdx: 1, weight: 200, reps: 6, rpe: 8, scheme: "rpt", isPR: false },
+          { exId: _rptRef.exId, exName: ex.name, setIdx: 2, weight: 180, reps: 7, rpe: 8, scheme: "rpt", isPR: false }
+        ]
+      });
+    });
+    const sug = w.rptProgressionSuggestion(ex);
+    assert(sug, "suggestion fires at the ceiling");
+    eq(sug.newTopWeight, 205, "suggests +5 lbs on the top set");
+    eq(sug.lastTopReps, 6, "reports last top reps");
   });
 
   console.log("\n===== RESULTS =====");

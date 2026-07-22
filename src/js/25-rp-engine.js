@@ -465,6 +465,9 @@ function buildRpSuggestionChip(suggestion, unitStr) {
 function injectRpHint(wrap, ex, u) {
   const rp = _rpOf(u);
   if (!u || !rp || !rp.enabled) return;
+  // Scheme exercises (rpt) carry their own per-set weight logic —
+  // a generic RP suggestion on top of it is noise.
+  if (typeof rptScheme === "function" && rptScheme(ex)) return;
   const exId = ex ? (ex.exId || ex.name) : null;
   if (!exId) return;
   const lib = LIB_BY_ID[exId];

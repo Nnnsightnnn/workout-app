@@ -284,8 +284,10 @@ function _buildRecentEntries(entries) {
     html += '<div class="log-entry-date">' + dateStr + '</div>';
     html += '<div class="log-entry-bar" style="background:' + (color || "var(--text-faint)") + ';"></div>';
     const adhocTag = s.isAdhoc ? '<span class="log-entry-adhoc-tag">ad-hoc</span>' : '';
+    const rptTag = (s.sets || []).some(set => set.scheme === "rpt")
+      ? '<span class="log-entry-adhoc-tag log-entry-rpt-tag">rpt</span>' : '';
     const plannedTag = isPlanned ? '<span class="log-entry-adhoc-tag" style="background:var(--accent-dim,#2a2a3a);color:var(--accent);">planned</span>' : '';
-    html += '<div class="log-entry-info"><div class="name">' + (s.dayName || "Day " + s.dayId) + ' ' + adhocTag + plannedTag + editedMark + '</div>';
+    html += '<div class="log-entry-info"><div class="name">' + (s.dayName || "Day " + s.dayId) + ' ' + adhocTag + rptTag + plannedTag + editedMark + '</div>';
     html += '<div class="note' + (isPr ? " pr" : "") + '">' + prNote + (tappable ? ' <span class="log-entry-cue">tap to edit \u2192</span>' : '') + '</div></div>';
     html += '<div class="log-entry-vol">' + (s.volume > 0 ? s.volume.toLocaleString() : "\u2014") + '</div>';
     if (tappable) {

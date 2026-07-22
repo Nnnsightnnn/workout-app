@@ -24,6 +24,8 @@ function _shareCleanExercise(ex) {
   if (ex.tempo) out.tempo = ex.tempo;
   if (ex.notes) out.notes = ex.notes;
   if (ex.isWarmup) out.isWarmup = true;
+  // Rep/weight scheme (e.g. rpt) travels with the shared workout.
+  if (ex.scheme && ex.scheme.type) out.scheme = JSON.parse(JSON.stringify(ex.scheme));
   return out;
 }
 
@@ -484,7 +486,8 @@ function _adaptImportedExercise(ex) {
     noRpe: !!(ex.noRpe || (libEx && libEx.noRpe)),
     tempo: ex.tempo || "",
     notes: ex.notes || "",
-    isWarmup: !!ex.isWarmup
+    isWarmup: !!ex.isWarmup,
+    scheme: (ex.scheme && ex.scheme.type) ? JSON.parse(JSON.stringify(ex.scheme)) : undefined
   });
 }
 

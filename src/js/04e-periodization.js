@@ -179,17 +179,38 @@ function getLoading(style, phaseName, wip) {
   if (!scheme) return { s:3, r:10, rest:60, t:"", n:"" };
   var phase = scheme[phaseName] || scheme.Deload;
   var entry = phase[Math.min(wip, phase.length - 1)];
-  return { sets: entry.s, reps: entry.r, rest: entry.rest, tempo: entry.t || "", notes: entry.n || "" };
+  var result = { sets: entry.s, reps: entry.r, rest: entry.rest, tempo: entry.t || "", notes: entry.n || "" };
+  // Reverse Pyramid is a first-class scheme (11a-rpt-scheme.js): the
+  // prescription carries per-set semantics — top set at the rep target,
+  // back-offs drop 10% (from the actually-logged top set) and add a rep.
+  if (style === "rpt") {
+    result.scheme = {
+      type: "rpt",
+      topRepsMin: Math.max(1, entry.r - 2),
+      topRepsMax: entry.r,
+      dropPct: 10,
+      repAdd: 1
+    };
+  }
+  return result;
 }
 
 function adjustForExperience(loading, experience) {
   if (experience === "beginner") {
-    return Object.assign({}, loading, {
+    var adjusted = Object.assign({}, loading, {
       sets: Math.max(2, loading.sets - 1),
       reps: loading.reps + 2,
       rest: loading.rest + 30,
       notes: loading.notes + (loading.notes ? " " : "") + "Focus on form."
     });
+    // Keep an rpt scheme's rep range in step with the +2 reps shift.
+    if (loading.scheme && loading.scheme.type === "rpt") {
+      adjusted.scheme = Object.assign({}, loading.scheme, {
+        topRepsMin: loading.scheme.topRepsMin + 2,
+        topRepsMax: loading.scheme.topRepsMax + 2
+      });
+    }
+    return adjusted;
   }
   if (experience === "advanced") {
     return Object.assign({}, loading, { sets: loading.sets + 1 });

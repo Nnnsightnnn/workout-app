@@ -110,8 +110,9 @@ function paperRenderExercise(day, block, ex, bi, ei, isSuperset) {
 
   // Target spec: try to derive from ex (e.g. "4 × 1-5 @ RPE 8")
   const numSets = ex.sets || 3;
-  let targetSpec = `${numSets} &times; ${ex.reps || "?"}`;
-  if (ex.tempo) targetSpec += ` &middot; ${ex.tempo}`;
+  const rptSpec = (typeof rptSpecText === "function") ? rptSpecText(ex) : null;
+  let targetSpec = rptSpec || `${numSets} &times; ${ex.reps || "?"}`;
+  if (ex.tempo && !rptSpec) targetSpec += ` &middot; ${ex.tempo}`;
 
   head.innerHTML = `
     <div class="paper-ex-left">
@@ -214,9 +215,15 @@ function paperRenderSetsTable(block, ex, bi, ei) {
     }
   }
 
+  // RPT progression chip — top set hit the rep-range ceiling last time.
+  if (typeof injectRptHint === "function") {
+    injectRptHint(list, ex, block, ei);
+  }
+
   const numSets = ex.sets || 3;
   const repsLabel = ex.isTime ? "s" : ex.isDistance ? "m" : "reps";
   const last = (typeof getLastSetsFor === "function") ? getLastSetsFor(ex.exId || ex.name) : [];
+  const hasRpt = (typeof rptScheme === "function") && !!rptScheme(ex);
 
   for (let i = 0; i < numSets; i++) {
     const lastSet = last[i] || last[last.length - 1];
@@ -225,8 +232,13 @@ function paperRenderSetsTable(block, ex, bi, ei) {
     const pkey = inputKey(block.id, ei, i, "p");
     const statusKey = inputKey(block.id, ei, i, "status");
 
-    const curW = getInput(wkey, lastSet?.weight ?? ex.defaultWeight ?? 0);
-    const curR = getInput(rkey, lastSet?.reps ?? ex.reps);
+    // RPT: back-off defaults derive from the actual top-set weight,
+    // reps step up per drop. User input still wins via getInput.
+    const rptDef = hasRpt ? rptPlannedSet(block, ex, ei, i) : null;
+    const defW = rptDef ? (rptDef.weight ?? 0) : (lastSet?.weight ?? ex.defaultWeight ?? 0);
+    const defR = rptDef ? rptDef.reps : (lastSet?.reps ?? ex.reps);
+    const curW = getInput(wkey, defW);
+    const curR = getInput(rkey, defR);
     const curP = getInput(pkey, 7);
     const status = getInput(statusKey, null);
     const done = status === "done";
@@ -256,6 +268,9 @@ function paperRenderSetsTable(block, ex, bi, ei) {
       `<span class="paper-set-rpe-lbl">RPE</span>
        <span class="paper-set-rpe-val" data-field="p">${rpeDisp}</span>`;
 
+    // The rpt top set is row 1 by definition; the exercise head's spec
+    // line ("rpt · top 4-6 · −10%") carries the scheme — no per-row tag,
+    // which would force a wrap on 375px rows.
     row.innerHTML = `
       <span class="paper-set-idx">${i + 1}.</span>
       <span class="paper-set-box" role="checkbox" aria-checked="${done}">
@@ -898,8 +913,10 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi)
     const wkey = inputKey(block.id, activeExIdx, activeSetIdx, "w");
     const last = (typeof getLastSetsFor === "function") ? getLastSetsFor(ex.exId || ex.name) : [];
     const lastSet = last[activeSetIdx] || last[last.length - 1];
+    const rptDef = (typeof rptPlannedSet === "function")
+      ? rptPlannedSet(block, ex, activeExIdx, activeSetIdx) : null;
     const cur = (typeof getInput === "function")
-      ? getInput(wkey, lastSet?.weight ?? ex.defaultWeight ?? 0) : 0;
+      ? getInput(wkey, rptDef ? (rptDef.weight ?? 0) : (lastSet?.weight ?? ex.defaultWeight ?? 0)) : 0;
     wWrap.innerHTML = `
       <div class="pa-weight-label">Weight</div>
       <div class="pa-weight-row">
@@ -1193,8 +1210,9 @@ function paperRenderFocusView(container, day) {
     head.className = "paper-focus-ex-head";
     const numLabel = `${block.letter}${isSuperset ? (ei + 1) : ""}`;
     const nSets = ex.sets || 3;
-    let targetSpec = `${nSets} &times; ${ex.reps || "?"}`;
-    if (ex.tempo) targetSpec += ` &middot; ${ex.tempo}`;
+    const rptSpec = (typeof rptSpecText === "function") ? rptSpecText(ex) : null;
+    let targetSpec = rptSpec || `${nSets} &times; ${ex.reps || "?"}`;
+    if (ex.tempo && !rptSpec) targetSpec += ` &middot; ${ex.tempo}`;
     head.innerHTML = `
       <div class="paper-focus-ex-left">
         <span class="paper-focus-ex-no">${numLabel}</span>

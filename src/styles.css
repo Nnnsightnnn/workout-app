@@ -10630,3 +10630,48 @@ body[data-skin="paper"] .paper-empty-with-enso .paper-empty-msg strong {
   font-size: 15px;
   color: var(--paper-ink);
 }
+
+/* ── RPT scheme (reverse pyramid) — paper-skin surfaces ────────── */
+/* Progression hint chip, flattened for paper: no pillow, no radius —
+   a dashed ink line with a red stamp-style apply. */
+body[data-skin="paper"] .lp-hint-chip {
+  background: transparent;
+  border: 1px dashed var(--paper-ink-mist);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 7px 8px 6px 10px;
+  margin: 4px 0 8px;
+}
+body[data-skin="paper"] .lp-hint-chip .lp-hint-icon {
+  color: var(--paper-red);
+}
+body[data-skin="paper"] .lp-hint-chip .lp-hint-label {
+  font-family: var(--paper-form);
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .lp-hint-chip .lp-hint-text {
+  color: var(--paper-ink);
+  font-family: var(--paper-hand);
+}
+body[data-skin="paper"] .lp-hint-chip strong {
+  font-family: var(--paper-hand);
+  color: var(--paper-red);
+  font-size: 15px;
+}
+body[data-skin="paper"] .lp-hint-chip .lp-hint-apply {
+  background: transparent;
+  color: var(--paper-red);
+  border: 1.6px solid var(--paper-red);
+  border-radius: 0;
+  box-shadow: none;
+  font-family: var(--paper-form);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  transform: rotate(-1deg);
+}
+/* History log tag for rpt sessions — ink, not red, to read quieter
+   than the ad-hoc tag it shares chrome with. */
+body[data-skin="paper"] .log-entry-rpt-tag {
+  border-color: var(--paper-ink-soft);
+  color: var(--paper-ink-soft) !important;
+}

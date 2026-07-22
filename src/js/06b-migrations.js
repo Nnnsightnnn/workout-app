@@ -418,6 +418,37 @@ const MIGRATIONS = [
       });
       return store;
     }
+  },
+  {
+    version: 23,
+    description: "Tag stored rpt3 program exercises with the first-class rpt scheme",
+    migrate(store) {
+      (store.users || []).forEach(u => {
+        (u.programs || []).forEach(entry => {
+          if (entry.templateId !== "rpt3") return;
+          (entry.program || []).forEach(day => {
+            (day.blocks || []).forEach(block => {
+              (block.exercises || []).forEach(ex => {
+                if (ex.isWarmup || ex.isTime || ex.isDistance) return;
+                if (ex.scheme) return;
+                // Only the RPT-loaded lifts (their notes carry the "RPT:"
+                // prefix from the periodization table), not warmup/finisher.
+                if (!/\bRPT\b/.test(String(ex.notes || ""))) return;
+                const reps = parseInt(ex.reps) || 6;
+                ex.scheme = {
+                  type: "rpt",
+                  topRepsMin: Math.max(1, reps - 2),
+                  topRepsMax: reps,
+                  dropPct: 10,
+                  repAdd: 1
+                };
+              });
+            });
+          });
+        });
+      });
+      return store;
+    }
   }
 ];
 

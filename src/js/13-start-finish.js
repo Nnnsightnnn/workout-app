@@ -96,10 +96,16 @@ function completeCurrentBlock() {
       if (getInput(sKey, null) === "done" || getInput(sKey, null) === "skipped") continue;
       saveInput(sKey, "done");
       const lastSet = last[i] || last[last.length - 1];
+      // RPT scheme: fill untouched sets with planned targets (back-off
+      // weight from the actual top set) instead of flat last-time values.
+      // Ascending loop order means set 0's weight is persisted before
+      // rptPlannedSet derives the back-offs from it.
+      const rptDef = (typeof rptPlannedSet === "function")
+        ? rptPlannedSet(block, ex, ei, i) : null;
       const rkey = inputKey(block.id, ei, i, "r");
-      if (getInput(rkey, null) == null) saveInput(rkey, lastSet?.reps ?? ex.reps);
+      if (getInput(rkey, null) == null) saveInput(rkey, rptDef ? rptDef.reps : (lastSet?.reps ?? ex.reps));
       const wkey = inputKey(block.id, ei, i, "w");
-      if (getInput(wkey, null) == null) saveInput(wkey, lastSet?.weight ?? ex.defaultWeight ?? 0);
+      if (getInput(wkey, null) == null) saveInput(wkey, rptDef && rptDef.weight != null ? rptDef.weight : (lastSet?.weight ?? ex.defaultWeight ?? 0));
       const pkey = inputKey(block.id, ei, i, "p");
       if (getInput(pkey, null) == null) saveInput(pkey, 7);
     }
@@ -261,6 +267,17 @@ function finishWorkout(opts) {
     block.exercises.forEach((ex, ei) => {
       if (ex.isWarmup) return;
       const last = getLastSetsFor(ex.exId || ex.name);
+      // RPT scheme: resolve the top-set weight from this draft's local
+      // inputs map (getInput would re-read the store and miss the fills
+      // below), then derive back-off defaults from it.
+      const exRptScheme = (typeof rptScheme === "function") ? rptScheme(ex) : null;
+      let rptTopW = 0;
+      if (exRptScheme) {
+        const w0 = inputs[inputKey(block.id, ei, 0, "w")];
+        rptTopW = (w0 != null && Number(w0) > 0) ? Number(w0)
+          : (last.length && Number(last[0].weight) > 0 ? Number(last[0].weight)
+            : (Number(ex.defaultWeight) || 0));
+      }
       for (let i = 0; i < ex.sets; i++) {
         const sKey = inputKey(block.id, ei, i, "status");
         if (inputs[sKey] === "skipped") continue;
@@ -270,9 +287,15 @@ function finishWorkout(opts) {
         }
         const lastSet = last[i] || last[last.length - 1];
         const rkey = inputKey(block.id, ei, i, "r");
-        if (inputs[rkey] == null) inputs[rkey] = lastSet?.reps ?? ex.reps;
+        if (inputs[rkey] == null) {
+          inputs[rkey] = exRptScheme ? rptTargetReps(ex, i) : (lastSet?.reps ?? ex.reps);
+        }
         const wkey = inputKey(block.id, ei, i, "w");
-        if (inputs[wkey] == null) inputs[wkey] = lastSet?.weight ?? ex.defaultWeight ?? 0;
+        if (inputs[wkey] == null) {
+          inputs[wkey] = (exRptScheme && rptTopW > 0 && !ex.bodyweight)
+            ? rptBackoffWeight(exRptScheme, rptTopW, i)
+            : (lastSet?.weight ?? ex.defaultWeight ?? 0);
+        }
         const pkey = inputKey(block.id, ei, i, "p");
         if (inputs[pkey] == null) inputs[pkey] = 7;
       }
@@ -290,7 +313,7 @@ function finishWorkout(opts) {
         const p = inputs[inputKey(block.id, ei, i, "p")] ?? 7;
         if (r == null || r === 0) continue;
         if (inputs[inputKey(block.id, ei, i, "status")] === "skipped") continue;
-        sets.push({
+        const setRec = {
           exId: ex.exId || ex.name,
           exName: ex.name,
           muscles: ex.muscles || [],
@@ -300,7 +323,10 @@ function finishWorkout(opts) {
           rpe: p,
           bodyweight: !!ex.bodyweight,
           isPR: false
-        });
+        };
+        // Tag sets logged under a scheme so history can recognize them.
+        if (typeof rptScheme === "function" && rptScheme(ex)) setRec.scheme = "rpt";
+        sets.push(setRec);
       }
     });
   });
