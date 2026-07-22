@@ -40,6 +40,13 @@ The v21 migration replaced the single-active-slot per-user with `u.programs[]` +
 - **Rename undo / delete undo.** Library rename + delete fire immediately. A soft-undo toast (5s) would prevent fat-finger losses.
 - **Recompute meso state across non-active programs.** `recomputeMesocycleState` walks every entry now, but multi-RP-program users might hit edge cases when sessions belong to an archived entry. Worth checking once anyone actually carries two RP programs.
 
+## Noticed during RPT work (7/22) — pre-existing, needs triage
+
+- **Paper skin never shows the linear-progression / RP hint chips.** `injectLinearProgressionHint` and `injectRpHint` are only called from the chunky `renderSetsTable` (`10-render-workout.js`), which is dead under the unconditional paper skin — `paperRenderSetsTable` doesn't call them. The new RPT chip is wired into both paths; the older chips should be too.
+- **Exercise-head spec overlaps long wrapped names.** In `.paper-exercise-head` / `.paper-focus-ex-head`, a 2–3-line handwritten name (e.g. "Smith Machine Squat") collides with the right-aligned target spec. Affects all specs, not just rpt.
+- **rpt3 week 1 resolves to the Deload loading row.** Fresh rpt3 programs show "RPT DELOAD: Light top set" with 2×8 in week 1 ("Base" phase) — phase allocation maps week 1 to a phase name that falls through to `scheme.Deload` in `getLoading`. May be intentional (light intro week) but reads odd.
+- **Focus-view action bar says "workout complete · N/M" when only the block is complete.** `paperBuildActionBar` receives block-level `allDone` in focus view but labels it as workout-wide.
+
 ## Closed
 
 - ~~Day-of-week selector~~ — already implemented (onboarding step 6, `selectedDays`)
