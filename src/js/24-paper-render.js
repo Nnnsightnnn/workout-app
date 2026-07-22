@@ -110,7 +110,7 @@ function paperRenderExercise(day, block, ex, bi, ei, isSuperset) {
 
   // Target spec: try to derive from ex (e.g. "4 × 1-5 @ RPE 8")
   const numSets = ex.sets || 3;
-  const rptSpec = (typeof rptSpecText === "function") ? rptSpecText(ex) : null;
+  const rptSpec = (typeof rptSpecText === "function") ? rptSpecText(ex, block, ei) : null;
   let targetSpec = rptSpec || `${numSets} &times; ${ex.reps || "?"}`;
   if (ex.tempo && !rptSpec) targetSpec += ` &middot; ${ex.tempo}`;
 
@@ -169,6 +169,15 @@ function paperRenderExercise(day, block, ex, bi, ei, isSuperset) {
   });
   wrap.appendChild(head);
 
+  // Session-only scheme badge — this session's exercise differs from
+  // the program template. Own line to dodge the head's name/spec overlap.
+  if (typeof rptSessionOverride === "function" && rptSessionOverride(block, ei)) {
+    const badge = document.createElement("div");
+    badge.className = "paper-rpt-session-badge";
+    badge.textContent = "rpt · session only";
+    wrap.appendChild(badge);
+  }
+
   // Margin note for ex.notes — handwritten in red with scribbled arrow
   if (ex.notes) {
     const noteWrap = document.createElement("div");
@@ -223,7 +232,7 @@ function paperRenderSetsTable(block, ex, bi, ei) {
   const numSets = ex.sets || 3;
   const repsLabel = ex.isTime ? "s" : ex.isDistance ? "m" : "reps";
   const last = (typeof getLastSetsFor === "function") ? getLastSetsFor(ex.exId || ex.name) : [];
-  const hasRpt = (typeof rptScheme === "function") && !!rptScheme(ex);
+  const hasRpt = (typeof rptEffectiveScheme === "function") && !!rptEffectiveScheme(block, ex, ei);
 
   for (let i = 0; i < numSets; i++) {
     const lastSet = last[i] || last[last.length - 1];
@@ -1210,7 +1219,7 @@ function paperRenderFocusView(container, day) {
     head.className = "paper-focus-ex-head";
     const numLabel = `${block.letter}${isSuperset ? (ei + 1) : ""}`;
     const nSets = ex.sets || 3;
-    const rptSpec = (typeof rptSpecText === "function") ? rptSpecText(ex) : null;
+    const rptSpec = (typeof rptSpecText === "function") ? rptSpecText(ex, block, ei) : null;
     let targetSpec = rptSpec || `${nSets} &times; ${ex.reps || "?"}`;
     if (ex.tempo && !rptSpec) targetSpec += ` &middot; ${ex.tempo}`;
     head.innerHTML = `
@@ -1267,6 +1276,14 @@ function paperRenderFocusView(container, day) {
       });
     }
     exWrap.appendChild(head);
+
+    // Session-only scheme badge (mirrors paperRenderExercise)
+    if (typeof rptSessionOverride === "function" && rptSessionOverride(block, ei)) {
+      const badge = document.createElement("div");
+      badge.className = "paper-rpt-session-badge";
+      badge.textContent = "rpt · session only";
+      exWrap.appendChild(badge);
+    }
 
     if (ex.notes) {
       const noteWrap = document.createElement("div");

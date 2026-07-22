@@ -395,6 +395,55 @@ function openExerciseMenu(block, ex, bi, ei) {
     wrap.appendChild(demo);
   }
 
+  // ---- Mid-workout scheme conversion (session only) ----
+  // Only offered while a live draft exists: the override lives on the
+  // draft, dies with the session, and never touches the program template.
+  const liveDraft = (typeof getDraft === "function") && getDraft();
+  if (liveDraft && typeof rptSessionOverride === "function") {
+    const ov = rptSessionOverride(block, ei);
+    if (ov) {
+      const undo = document.createElement("button");
+      undo.className = "sheet-item";
+      undo.innerHTML = `<span class="icon">↺</span> Undo reverse pyramid <span class="meta" style="color:var(--text-dim);">session only</span>`;
+      undo.onclick = () => {
+        rptSetSessionOverride(block, ei, null);
+        closeSheet();
+        renderWorkoutScreen();
+        showToast("Back to the program's scheme", "success");
+      };
+      wrap.appendChild(undo);
+    } else {
+      const can = rptCanConvertNow(block, ex, ei);
+      if (can.ok || can.reason === "back-off sets already logged") {
+        const conv = document.createElement("button");
+        conv.className = "sheet-item";
+        if (can.ok) {
+          conv.innerHTML = `<span class="icon">▽</span> Convert to reverse pyramid <span class="meta" style="color:var(--text-dim);">session only</span>`;
+          conv.onclick = () => {
+            const reps = parseInt(ex.reps) || 6;
+            rptSetSessionOverride(block, ei, {
+              type: "rpt",
+              topRepsMin: Math.max(1, reps - 2),
+              topRepsMax: reps,
+              dropPct: 10,
+              repAdd: 1
+            });
+            closeSheet();
+            renderWorkoutScreen();
+            showToast("Reverse pyramid for this session", "success");
+          };
+        } else {
+          // Sets beyond the top set are already logged under the current
+          // scheme — converting now would misrepresent what happened.
+          conv.disabled = true;
+          conv.style.opacity = "0.5";
+          conv.innerHTML = `<span class="icon">▽</span> Convert to reverse pyramid <span class="meta" style="color:var(--text-dim);">${can.reason}</span>`;
+        }
+        wrap.appendChild(conv);
+      }
+    }
+  }
+
   // Rename exercise
   const renameRow = document.createElement("div");
   renameRow.className = "field";

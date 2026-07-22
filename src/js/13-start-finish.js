@@ -269,8 +269,11 @@ function finishWorkout(opts) {
       const last = getLastSetsFor(ex.exId || ex.name);
       // RPT scheme: resolve the top-set weight from this draft's local
       // inputs map (getInput would re-read the store and miss the fills
-      // below), then derive back-off defaults from it.
-      const exRptScheme = (typeof rptScheme === "function") ? rptScheme(ex) : null;
+      // below), then derive back-off defaults from it. Session overrides
+      // live on this same local draft — resolve from it, not the store.
+      const _rptOv = draft.schemeOverrides && draft.schemeOverrides[block.id + "|" + ei];
+      const exRptScheme = (typeof rptNormalizeScheme === "function")
+        ? (_rptOv ? rptNormalizeScheme(ex, _rptOv) : rptScheme(ex)) : null;
       let rptTopW = 0;
       if (exRptScheme) {
         const w0 = inputs[inputKey(block.id, ei, 0, "w")];
@@ -288,7 +291,7 @@ function finishWorkout(opts) {
         const lastSet = last[i] || last[last.length - 1];
         const rkey = inputKey(block.id, ei, i, "r");
         if (inputs[rkey] == null) {
-          inputs[rkey] = exRptScheme ? rptTargetReps(ex, i) : (lastSet?.reps ?? ex.reps);
+          inputs[rkey] = exRptScheme ? rptTargetRepsFor(exRptScheme, i) : (lastSet?.reps ?? ex.reps);
         }
         const wkey = inputKey(block.id, ei, i, "w");
         if (inputs[wkey] == null) {
@@ -307,6 +310,10 @@ function finishWorkout(opts) {
   day.blocks.forEach(block => {
     block.exercises.forEach((ex, ei) => {
       if (ex.isWarmup) return;
+      // Effective scheme for tagging — session override (local draft) wins.
+      const _setOv = draft.schemeOverrides && draft.schemeOverrides[block.id + "|" + ei];
+      const _setScheme = (typeof rptNormalizeScheme === "function")
+        ? (_setOv ? rptNormalizeScheme(ex, _setOv) : rptScheme(ex)) : null;
       for (let i = 0; i < ex.sets; i++) {
         const w = inputs[inputKey(block.id, ei, i, "w")] ?? 0;
         const r = inputs[inputKey(block.id, ei, i, "r")];
@@ -325,7 +332,7 @@ function finishWorkout(opts) {
           isPR: false
         };
         // Tag sets logged under a scheme so history can recognize them.
-        if (typeof rptScheme === "function" && rptScheme(ex)) setRec.scheme = "rpt";
+        if (_setScheme) setRec.scheme = "rpt";
         sets.push(setRec);
       }
     });

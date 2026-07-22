@@ -10675,3 +10675,18 @@ body[data-skin="paper"] .log-entry-rpt-tag {
   border-color: var(--paper-ink-soft);
   color: var(--paper-ink-soft) !important;
 }
+
+/* Session-only scheme badge — this session's exercise differs from
+   the program template. Dashed ink tag, typewriter, no chrome. */
+body[data-skin="paper"] .paper-rpt-session-badge {
+  display: inline-block;
+  margin: 2px 0 4px 26px;
+  padding: 1px 7px 0;
+  border: 1px dashed var(--paper-ink-soft);
+  font-family: var(--paper-form);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--paper-ink-soft);
+  transform: rotate(-0.6deg);
+}

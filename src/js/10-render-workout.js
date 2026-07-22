@@ -1546,7 +1546,7 @@ function openSetEditor(block, ex, bi, ei, setIdx, bw) {
     // Compute suggested weight (RP A+ engine) as the default when user hasn't entered one
     let weightDefault = lastSet?.weight ?? ex.defaultWeight ?? 0;
     let rpSuggestion  = null;
-    const exHasRptScheme = (typeof rptScheme === "function") && !!rptScheme(ex);
+    const exHasRptScheme = (typeof rptEffectiveScheme === "function") && !!rptEffectiveScheme(block, ex, ei);
     if (typeof suggestedWeight === "function" && !exHasRptScheme) {
       const p = activeProgram();
       if (p && p.rp && p.rp.enabled && !bw) {

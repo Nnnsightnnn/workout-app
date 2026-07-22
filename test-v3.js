@@ -3807,6 +3807,91 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     eq(sug.lastTopReps, 6, "reports last top reps");
   });
 
+  // ─────────────────────────────────────────────────────────────
+  // RPT session override — mid-workout "convert to reverse pyramid"
+  // ─────────────────────────────────────────────────────────────
+  let _sesRef = null; // { block, ex, ei, exId }
+  t("rpt-session: convert mid-workout overrides scheme without touching the template", () => {
+    w.state.adhocActive = false;
+    w.state.currentDayId = 1;
+    w.state.dayChosen = true;
+    w.updateActiveProgram(entry => { entry.draft = null; });
+    // Find a straight-sets, weighted exercise on day 1
+    const day = w.getCurrentDay();
+    outer:
+    for (const b of day.blocks) {
+      for (let i = 0; i < b.exercises.length; i++) {
+        const e2 = b.exercises[i];
+        if (e2.isWarmup || e2.bodyweight || e2.isTime || e2.isDistance || e2.scheme) continue;
+        _sesRef = { block: b, ex: e2, ei: i, exId: e2.exId };
+        break outer;
+      }
+    }
+    assert(_sesRef, "found a straight-sets exercise");
+    const { block, ex, ei } = _sesRef;
+    // Live draft + top set logged at 100
+    w.saveInput(w.inputKey(block.id, ei, 0, "w"), 100);
+    w.saveInput(w.inputKey(block.id, ei, 0, "status"), "done");
+    // Convertible (only the top set is logged), then convert
+    const can = w.rptCanConvertNow(block, ex, ei);
+    assert(can.ok, "convertible while only the top set is logged: " + can.reason);
+    w.rptSetSessionOverride(block, ei, { type: "rpt", topRepsMin: 4, topRepsMax: 6, dropPct: 10, repAdd: 1 });
+    assert(w.rptSessionOverride(block, ei), "override stored on the draft");
+    const s1 = w.rptPlannedSet(block, ex, ei, 1);
+    eq(s1.weight, 90, "back-off derives from the logged top set");
+    eq(s1.reps, 7, "back-off reps stepped");
+    // Template untouched
+    const ap = w.activeProgram();
+    const tplDay = ap.program.find(d => d.id === 1);
+    const tplEx = tplDay.blocks.find(b => b.id === block.id).exercises[ei];
+    assert(!tplEx.scheme, "program template exercise has no scheme");
+  });
+
+  t("rpt-session: conversion is blocked once back-off sets are logged", () => {
+    assert(_sesRef, "ref exists");
+    const { block, ex, ei } = _sesRef;
+    // Temporarily clear the override to test the guard on a clean slate
+    w.rptSetSessionOverride(block, ei, null);
+    w.saveInput(w.inputKey(block.id, ei, 1, "status"), "done");
+    const can = w.rptCanConvertNow(block, ex, ei);
+    assert(!can.ok, "blocked with a back-off set logged");
+    eq(can.reason, "back-off sets already logged", "reason names the conflict");
+    // Undo the probe state, restore the override
+    w.saveInput(w.inputKey(block.id, ei, 1, "status"), null);
+    w.rptSetSessionOverride(block, ei, { type: "rpt", topRepsMin: 4, topRepsMax: 6, dropPct: 10, repAdd: 1 });
+  });
+
+  t("rpt-session: undo removes the override and reverts to straight sets", () => {
+    assert(_sesRef, "ref exists");
+    const { block, ex, ei } = _sesRef;
+    w.rptSetSessionOverride(block, ei, null);
+    assert(!w.rptSessionOverride(block, ei), "override gone");
+    assert(!w.rptPlannedSet(block, ex, ei, 1), "planned-set logic back to straight sets");
+    // Re-convert for the finish test
+    w.rptSetSessionOverride(block, ei, { type: "rpt", topRepsMin: 4, topRepsMax: 6, dropPct: 10, repAdd: 1 });
+  });
+
+  t("rpt-session: finishWorkout logs the converted pyramid, tags sets, override dies with the draft", () => {
+    assert(_sesRef, "ref exists");
+    const { block, ei, exId } = _sesRef;
+    const before = w.userData().sessions.length;
+    w.finishWorkout();
+    const u = w.userData();
+    eq(u.sessions.length, before + 1, "session saved");
+    const sess = u.sessions[u.sessions.length - 1];
+    const exSets = sess.sets.filter(s => s.exId === exId);
+    assert(exSets.length >= 2, "top + back-off sets logged");
+    eq(exSets[0].weight, 100, "top set as logged");
+    eq(exSets[1].weight, 90, "back-off auto-filled at -10% of actual top");
+    assert(exSets.every(s => s.scheme === "rpt"), "converted sets tagged scheme:rpt");
+    // Draft cleared -> override gone; template still clean
+    assert(!w.rptSessionOverride(block, ei), "override died with the draft");
+    const ap = w.activeProgram();
+    const tplDay = ap.program.find(d => d.id === 1);
+    const tplEx = tplDay.blocks.find(b => b.id === block.id).exercises[ei];
+    assert(!tplEx.scheme, "program template still has no scheme");
+  });
+
   console.log("\n===== RESULTS =====");
   let pass = 0, fail = 0;
   for (const [n, s, e] of results) {

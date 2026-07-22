@@ -40,6 +40,10 @@ The v21 migration replaced the single-active-slot per-user with `u.programs[]` +
 - **Rename undo / delete undo.** Library rename + delete fire immediately. A soft-undo toast (5s) would prevent fat-finger losses.
 - **Recompute meso state across non-active programs.** `recomputeMesocycleState` walks every entry now, but multi-RP-program users might hit edge cases when sessions belong to an archived entry. Worth checking once anyone actually carries two RP programs.
 
+## RPT followups (7/22)
+
+- **Save-back flow for session RPT conversions.** Mid-workout "Convert to reverse pyramid" is session-only by design (override on `draft.schemeOverrides`, dies at finish). If Kenny wants a converted exercise to stick, add a "keep in program" affordance — likely a post-finish prompt or a second menu item that also writes `ex.scheme` via `mutateDay`. Deliberately not built yet.
+
 ## Noticed during RPT work (7/22) — pre-existing, needs triage
 
 - **Paper skin never shows the linear-progression / RP hint chips.** `injectLinearProgressionHint` and `injectRpHint` are only called from the chunky `renderSetsTable` (`10-render-workout.js`), which is dead under the unconditional paper skin — `paperRenderSetsTable` doesn't call them. The new RPT chip is wired into both paths; the older chips should be too.

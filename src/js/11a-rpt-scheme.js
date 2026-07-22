@@ -14,21 +14,85 @@
 // User-entered values always win over suggestions.
 // ============================================================
 
-// Returns a normalized rpt scheme for an exercise, or null.
-// Bodyweight-only / time / distance prescriptions never qualify —
-// there's no load to drop.
-function rptScheme(ex) {
-  if (!ex || !ex.scheme || ex.scheme.type !== "rpt") return null;
+// Normalizes a raw scheme object against an exercise, or returns null.
+// Time / distance prescriptions never qualify — there's no load to drop.
+function rptNormalizeScheme(ex, raw) {
+  if (!ex || !raw || raw.type !== "rpt") return null;
   if (ex.isTime || ex.isDistance) return null;
-  const s = ex.scheme;
-  const topMax = Number(s.topRepsMax) || Number(ex.reps) || 6;
+  const topMax = Number(raw.topRepsMax) || Number(ex.reps) || 6;
   return {
     type: "rpt",
-    topRepsMin: Math.max(1, Number(s.topRepsMin) || Math.max(1, topMax - 2)),
+    topRepsMin: Math.max(1, Number(raw.topRepsMin) || Math.max(1, topMax - 2)),
     topRepsMax: topMax,
-    dropPct: Math.min(50, Math.max(1, Number(s.dropPct) || 10)),
-    repAdd: s.repAdd == null ? 1 : Math.max(0, Number(s.repAdd) || 0)
+    dropPct: Math.min(50, Math.max(1, Number(raw.dropPct) || 10)),
+    repAdd: raw.repAdd == null ? 1 : Math.max(0, Number(raw.repAdd) || 0)
   };
+}
+
+// Program-level scheme for an exercise, or null.
+function rptScheme(ex) {
+  return ex ? rptNormalizeScheme(ex, ex.scheme) : null;
+}
+
+// ------------------------------------------------------------
+// SESSION OVERRIDE — mid-workout "convert to reverse pyramid".
+// Lives on the draft (entry.draft.schemeOverrides, keyed
+// "<blockId>|<ei>") so it dies with the session and never touches
+// the program template. Undo = delete the key; the program's own
+// scheme (if any) resumes.
+// ------------------------------------------------------------
+
+function _rptOverrideKey(block, ei) {
+  return block.id + "|" + ei;
+}
+
+// Raw session override for an exercise slot, or null.
+function rptSessionOverride(block, ei) {
+  const draft = (typeof getDraft === "function") ? getDraft() : null;
+  if (!draft || !draft.schemeOverrides) return null;
+  return draft.schemeOverrides[_rptOverrideKey(block, ei)] || null;
+}
+
+// The scheme actually in effect for this exercise right now:
+// session override first, then the program prescription.
+function rptEffectiveScheme(block, ex, ei) {
+  const ov = rptSessionOverride(block, ei);
+  if (ov) return rptNormalizeScheme(ex, ov);
+  return rptScheme(ex);
+}
+
+// Write / clear a session override. Mirrors saveInput's store walk —
+// draft mutations must go through the store, not a stale reference.
+function rptSetSessionOverride(block, ei, schemeOrNull) {
+  if (typeof ensureDraft === "function") ensureDraft();
+  const s = loadStore();
+  const user = s.users.find(u => u.id === state.userId);
+  if (!user) return;
+  const entry = activeProgramOf(user);
+  if (!entry || !entry.draft) return;
+  if (!entry.draft.schemeOverrides) entry.draft.schemeOverrides = {};
+  const key = _rptOverrideKey(block, ei);
+  if (schemeOrNull) entry.draft.schemeOverrides[key] = schemeOrNull;
+  else delete entry.draft.schemeOverrides[key];
+  saveStore(s);
+}
+
+// Can this exercise be converted right now? Conversion is clean while
+// the top set is still the working set — set 0 may already be logged
+// (it just becomes the top-set anchor), but back-off sets logged under
+// a different scheme would make the pyramid lie about what happened.
+// Returns { ok, reason }.
+function rptCanConvertNow(block, ex, ei) {
+  if (ex.isTime || ex.isDistance) return { ok: false, reason: "not a load-based exercise" };
+  if (rptScheme(ex)) return { ok: false, reason: "already reverse pyramid" };
+  const nSets = ex.sets || 3;
+  for (let i = 1; i < nSets; i++) {
+    const st = getInput(inputKey(block.id, ei, i, "status"), null);
+    if (st === "done" || st === "skipped") {
+      return { ok: false, reason: "back-off sets already logged" };
+    }
+  }
+  return { ok: true, reason: null };
 }
 
 // Plate rounding — same increments the rest of the app uses.
@@ -46,12 +110,18 @@ function rptBackoffWeight(scheme, topWeight, setIdx) {
   return rptRoundW(w * factor);
 }
 
-// Numeric rep target per set: top set aims at topRepsMax; each
-// back-off adds repAdd on top of that.
+// Numeric rep target per set for a normalized scheme: top set aims at
+// topRepsMax; each back-off adds repAdd on top of that.
+function rptTargetRepsFor(scheme, setIdx) {
+  return setIdx <= 0 ? scheme.topRepsMax : scheme.topRepsMax + scheme.repAdd * setIdx;
+}
+
+// Rep target from the exercise's program scheme (session overrides are
+// resolved by rptPlannedSet / finishWorkout, which pass the scheme in).
 function rptTargetReps(ex, setIdx) {
   const s = rptScheme(ex);
   if (!s) return Number(ex.reps) || 8;
-  return setIdx <= 0 ? s.topRepsMax : s.topRepsMax + s.repAdd * setIdx;
+  return rptTargetRepsFor(s, setIdx);
 }
 
 // Top-set weight for this exercise right now: the draft's set-0
@@ -72,12 +142,13 @@ function rptResolveTopWeight(block, ex, ei) {
 }
 
 // Planned { weight, reps } for one set of an rpt exercise, or null
-// when the exercise has no rpt scheme. weight is null for pure-
-// bodyweight moves (no load to drop — reps stepping still applies).
+// when no rpt scheme is in effect (program or session override).
+// weight is null for pure-bodyweight moves (no load to drop — reps
+// stepping still applies).
 function rptPlannedSet(block, ex, ei, setIdx) {
-  const s = rptScheme(ex);
+  const s = rptEffectiveScheme(block, ex, ei);
   if (!s) return null;
-  const reps = rptTargetReps(ex, setIdx);
+  const reps = rptTargetRepsFor(s, setIdx);
   if (ex.bodyweight && !(Number(ex.defaultWeight) > 0)) {
     return { weight: null, reps: reps };
   }
@@ -88,8 +159,10 @@ function rptPlannedSet(block, ex, ei, setIdx) {
 
 // Target-spec string for exercise heads, e.g. "rpt · top 4-6 · −10%".
 // Kept short — long specs collide with wrapped exercise names at 375px.
-function rptSpecText(ex) {
-  const s = rptScheme(ex);
+// Pass block/ei to resolve a session override; ex-only uses the program.
+function rptSpecText(ex, block, ei) {
+  const s = (block != null && ei != null)
+    ? rptEffectiveScheme(block, ex, ei) : rptScheme(ex);
   if (!s) return null;
   const range = s.topRepsMin === s.topRepsMax
     ? String(s.topRepsMax) : s.topRepsMin + "-" + s.topRepsMax;
@@ -115,8 +188,10 @@ function rptRepsLabel(ex, setIdx) {
 // ------------------------------------------------------------
 
 // Returns { newTopWeight, lastTopWeight, lastTopReps } or null.
-function rptProgressionSuggestion(ex) {
-  const s = rptScheme(ex);
+// Pass block/ei so a session override's rep range is respected.
+function rptProgressionSuggestion(ex, block, ei) {
+  const s = (block != null && ei != null)
+    ? rptEffectiveScheme(block, ex, ei) : rptScheme(ex);
   if (!s) return null;
   if (typeof getLastSetsFor !== "function" || typeof state === "undefined") return null;
   const last = getLastSetsFor(ex.exId || ex.name);
@@ -134,7 +209,7 @@ function rptProgressionSuggestion(ex) {
 // it on the re-render. Skips when the user already logged set 0
 // at or above the suggestion (they're ahead of us).
 function injectRptHint(wrap, ex, block, ei) {
-  const sug = rptProgressionSuggestion(ex);
+  const sug = rptProgressionSuggestion(ex, block, ei);
   if (!sug) return;
   const set0Key = inputKey(block.id, ei, 0, "w");
   const set0Cur = Number(getInput(set0Key, sug.lastTopWeight));
@@ -161,13 +236,19 @@ function injectRptHint(wrap, ex, block, ei) {
 try {
   if (typeof window !== "undefined") {
     window.rptScheme = rptScheme;
+    window.rptNormalizeScheme = rptNormalizeScheme;
     window.rptRoundW = rptRoundW;
     window.rptBackoffWeight = rptBackoffWeight;
     window.rptTargetReps = rptTargetReps;
+    window.rptTargetRepsFor = rptTargetRepsFor;
     window.rptResolveTopWeight = rptResolveTopWeight;
     window.rptPlannedSet = rptPlannedSet;
     window.rptProgressionSuggestion = rptProgressionSuggestion;
     window.rptSpecText = rptSpecText;
     window.rptRepsLabel = rptRepsLabel;
+    window.rptSessionOverride = rptSessionOverride;
+    window.rptEffectiveScheme = rptEffectiveScheme;
+    window.rptSetSessionOverride = rptSetSessionOverride;
+    window.rptCanConvertNow = rptCanConvertNow;
   }
 } catch (_) {}

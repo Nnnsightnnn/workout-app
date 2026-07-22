@@ -10889,6 +10889,21 @@ body[data-skin="paper"] .log-entry-rpt-tag {
   color: var(--paper-ink-soft) !important;
 }
 
+/* Session-only scheme badge — this session's exercise differs from
+   the program template. Dashed ink tag, typewriter, no chrome. */
+body[data-skin="paper"] .paper-rpt-session-badge {
+  display: inline-block;
+  margin: 2px 0 4px 26px;
+  padding: 1px 7px 0;
+  border: 1px dashed var(--paper-ink-soft);
+  font-family: var(--paper-form);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--paper-ink-soft);
+  transform: rotate(-0.6deg);
+}
+
 </style>
 </head>
 <body>
@@ -13649,7 +13664,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 23;
-const APP_BUILD = "69665255";
+const APP_BUILD = "6ad8caae";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -17527,7 +17542,7 @@ function openSetEditor(block, ex, bi, ei, setIdx, bw) {
     // Compute suggested weight (RP A+ engine) as the default when user hasn't entered one
     let weightDefault = lastSet?.weight ?? ex.defaultWeight ?? 0;
     let rpSuggestion  = null;
-    const exHasRptScheme = (typeof rptScheme === "function") && !!rptScheme(ex);
+    const exHasRptScheme = (typeof rptEffectiveScheme === "function") && !!rptEffectiveScheme(block, ex, ei);
     if (typeof suggestedWeight === "function" && !exHasRptScheme) {
       const p = activeProgram();
       if (p && p.rp && p.rp.enabled && !bw) {
@@ -19221,21 +19236,85 @@ function injectLinearProgressionHint(wrap, ex, block, ei) {
 // User-entered values always win over suggestions.
 // ============================================================
 
-// Returns a normalized rpt scheme for an exercise, or null.
-// Bodyweight-only / time / distance prescriptions never qualify —
-// there's no load to drop.
-function rptScheme(ex) {
-  if (!ex || !ex.scheme || ex.scheme.type !== "rpt") return null;
+// Normalizes a raw scheme object against an exercise, or returns null.
+// Time / distance prescriptions never qualify — there's no load to drop.
+function rptNormalizeScheme(ex, raw) {
+  if (!ex || !raw || raw.type !== "rpt") return null;
   if (ex.isTime || ex.isDistance) return null;
-  const s = ex.scheme;
-  const topMax = Number(s.topRepsMax) || Number(ex.reps) || 6;
+  const topMax = Number(raw.topRepsMax) || Number(ex.reps) || 6;
   return {
     type: "rpt",
-    topRepsMin: Math.max(1, Number(s.topRepsMin) || Math.max(1, topMax - 2)),
+    topRepsMin: Math.max(1, Number(raw.topRepsMin) || Math.max(1, topMax - 2)),
     topRepsMax: topMax,
-    dropPct: Math.min(50, Math.max(1, Number(s.dropPct) || 10)),
-    repAdd: s.repAdd == null ? 1 : Math.max(0, Number(s.repAdd) || 0)
+    dropPct: Math.min(50, Math.max(1, Number(raw.dropPct) || 10)),
+    repAdd: raw.repAdd == null ? 1 : Math.max(0, Number(raw.repAdd) || 0)
   };
+}
+
+// Program-level scheme for an exercise, or null.
+function rptScheme(ex) {
+  return ex ? rptNormalizeScheme(ex, ex.scheme) : null;
+}
+
+// ------------------------------------------------------------
+// SESSION OVERRIDE — mid-workout "convert to reverse pyramid".
+// Lives on the draft (entry.draft.schemeOverrides, keyed
+// "<blockId>|<ei>") so it dies with the session and never touches
+// the program template. Undo = delete the key; the program's own
+// scheme (if any) resumes.
+// ------------------------------------------------------------
+
+function _rptOverrideKey(block, ei) {
+  return block.id + "|" + ei;
+}
+
+// Raw session override for an exercise slot, or null.
+function rptSessionOverride(block, ei) {
+  const draft = (typeof getDraft === "function") ? getDraft() : null;
+  if (!draft || !draft.schemeOverrides) return null;
+  return draft.schemeOverrides[_rptOverrideKey(block, ei)] || null;
+}
+
+// The scheme actually in effect for this exercise right now:
+// session override first, then the program prescription.
+function rptEffectiveScheme(block, ex, ei) {
+  const ov = rptSessionOverride(block, ei);
+  if (ov) return rptNormalizeScheme(ex, ov);
+  return rptScheme(ex);
+}
+
+// Write / clear a session override. Mirrors saveInput's store walk —
+// draft mutations must go through the store, not a stale reference.
+function rptSetSessionOverride(block, ei, schemeOrNull) {
+  if (typeof ensureDraft === "function") ensureDraft();
+  const s = loadStore();
+  const user = s.users.find(u => u.id === state.userId);
+  if (!user) return;
+  const entry = activeProgramOf(user);
+  if (!entry || !entry.draft) return;
+  if (!entry.draft.schemeOverrides) entry.draft.schemeOverrides = {};
+  const key = _rptOverrideKey(block, ei);
+  if (schemeOrNull) entry.draft.schemeOverrides[key] = schemeOrNull;
+  else delete entry.draft.schemeOverrides[key];
+  saveStore(s);
+}
+
+// Can this exercise be converted right now? Conversion is clean while
+// the top set is still the working set — set 0 may already be logged
+// (it just becomes the top-set anchor), but back-off sets logged under
+// a different scheme would make the pyramid lie about what happened.
+// Returns { ok, reason }.
+function rptCanConvertNow(block, ex, ei) {
+  if (ex.isTime || ex.isDistance) return { ok: false, reason: "not a load-based exercise" };
+  if (rptScheme(ex)) return { ok: false, reason: "already reverse pyramid" };
+  const nSets = ex.sets || 3;
+  for (let i = 1; i < nSets; i++) {
+    const st = getInput(inputKey(block.id, ei, i, "status"), null);
+    if (st === "done" || st === "skipped") {
+      return { ok: false, reason: "back-off sets already logged" };
+    }
+  }
+  return { ok: true, reason: null };
 }
 
 // Plate rounding — same increments the rest of the app uses.
@@ -19253,12 +19332,18 @@ function rptBackoffWeight(scheme, topWeight, setIdx) {
   return rptRoundW(w * factor);
 }
 
-// Numeric rep target per set: top set aims at topRepsMax; each
-// back-off adds repAdd on top of that.
+// Numeric rep target per set for a normalized scheme: top set aims at
+// topRepsMax; each back-off adds repAdd on top of that.
+function rptTargetRepsFor(scheme, setIdx) {
+  return setIdx <= 0 ? scheme.topRepsMax : scheme.topRepsMax + scheme.repAdd * setIdx;
+}
+
+// Rep target from the exercise's program scheme (session overrides are
+// resolved by rptPlannedSet / finishWorkout, which pass the scheme in).
 function rptTargetReps(ex, setIdx) {
   const s = rptScheme(ex);
   if (!s) return Number(ex.reps) || 8;
-  return setIdx <= 0 ? s.topRepsMax : s.topRepsMax + s.repAdd * setIdx;
+  return rptTargetRepsFor(s, setIdx);
 }
 
 // Top-set weight for this exercise right now: the draft's set-0
@@ -19279,12 +19364,13 @@ function rptResolveTopWeight(block, ex, ei) {
 }
 
 // Planned { weight, reps } for one set of an rpt exercise, or null
-// when the exercise has no rpt scheme. weight is null for pure-
-// bodyweight moves (no load to drop — reps stepping still applies).
+// when no rpt scheme is in effect (program or session override).
+// weight is null for pure-bodyweight moves (no load to drop — reps
+// stepping still applies).
 function rptPlannedSet(block, ex, ei, setIdx) {
-  const s = rptScheme(ex);
+  const s = rptEffectiveScheme(block, ex, ei);
   if (!s) return null;
-  const reps = rptTargetReps(ex, setIdx);
+  const reps = rptTargetRepsFor(s, setIdx);
   if (ex.bodyweight && !(Number(ex.defaultWeight) > 0)) {
     return { weight: null, reps: reps };
   }
@@ -19295,8 +19381,10 @@ function rptPlannedSet(block, ex, ei, setIdx) {
 
 // Target-spec string for exercise heads, e.g. "rpt · top 4-6 · −10%".
 // Kept short — long specs collide with wrapped exercise names at 375px.
-function rptSpecText(ex) {
-  const s = rptScheme(ex);
+// Pass block/ei to resolve a session override; ex-only uses the program.
+function rptSpecText(ex, block, ei) {
+  const s = (block != null && ei != null)
+    ? rptEffectiveScheme(block, ex, ei) : rptScheme(ex);
   if (!s) return null;
   const range = s.topRepsMin === s.topRepsMax
     ? String(s.topRepsMax) : s.topRepsMin + "-" + s.topRepsMax;
@@ -19322,8 +19410,10 @@ function rptRepsLabel(ex, setIdx) {
 // ------------------------------------------------------------
 
 // Returns { newTopWeight, lastTopWeight, lastTopReps } or null.
-function rptProgressionSuggestion(ex) {
-  const s = rptScheme(ex);
+// Pass block/ei so a session override's rep range is respected.
+function rptProgressionSuggestion(ex, block, ei) {
+  const s = (block != null && ei != null)
+    ? rptEffectiveScheme(block, ex, ei) : rptScheme(ex);
   if (!s) return null;
   if (typeof getLastSetsFor !== "function" || typeof state === "undefined") return null;
   const last = getLastSetsFor(ex.exId || ex.name);
@@ -19341,7 +19431,7 @@ function rptProgressionSuggestion(ex) {
 // it on the re-render. Skips when the user already logged set 0
 // at or above the suggestion (they're ahead of us).
 function injectRptHint(wrap, ex, block, ei) {
-  const sug = rptProgressionSuggestion(ex);
+  const sug = rptProgressionSuggestion(ex, block, ei);
   if (!sug) return;
   const set0Key = inputKey(block.id, ei, 0, "w");
   const set0Cur = Number(getInput(set0Key, sug.lastTopWeight));
@@ -19368,14 +19458,20 @@ function injectRptHint(wrap, ex, block, ei) {
 try {
   if (typeof window !== "undefined") {
     window.rptScheme = rptScheme;
+    window.rptNormalizeScheme = rptNormalizeScheme;
     window.rptRoundW = rptRoundW;
     window.rptBackoffWeight = rptBackoffWeight;
     window.rptTargetReps = rptTargetReps;
+    window.rptTargetRepsFor = rptTargetRepsFor;
     window.rptResolveTopWeight = rptResolveTopWeight;
     window.rptPlannedSet = rptPlannedSet;
     window.rptProgressionSuggestion = rptProgressionSuggestion;
     window.rptSpecText = rptSpecText;
     window.rptRepsLabel = rptRepsLabel;
+    window.rptSessionOverride = rptSessionOverride;
+    window.rptEffectiveScheme = rptEffectiveScheme;
+    window.rptSetSessionOverride = rptSetSessionOverride;
+    window.rptCanConvertNow = rptCanConvertNow;
   }
 } catch (_) {}
 
@@ -19775,6 +19871,55 @@ function openExerciseMenu(block, ex, bi, ei) {
     demo.innerHTML = `<span class="icon">▶</span> Watch Demo`;
     demo.onclick = () => window.open(libRef.demoUrl, "_blank");
     wrap.appendChild(demo);
+  }
+
+  // ---- Mid-workout scheme conversion (session only) ----
+  // Only offered while a live draft exists: the override lives on the
+  // draft, dies with the session, and never touches the program template.
+  const liveDraft = (typeof getDraft === "function") && getDraft();
+  if (liveDraft && typeof rptSessionOverride === "function") {
+    const ov = rptSessionOverride(block, ei);
+    if (ov) {
+      const undo = document.createElement("button");
+      undo.className = "sheet-item";
+      undo.innerHTML = `<span class="icon">↺</span> Undo reverse pyramid <span class="meta" style="color:var(--text-dim);">session only</span>`;
+      undo.onclick = () => {
+        rptSetSessionOverride(block, ei, null);
+        closeSheet();
+        renderWorkoutScreen();
+        showToast("Back to the program's scheme", "success");
+      };
+      wrap.appendChild(undo);
+    } else {
+      const can = rptCanConvertNow(block, ex, ei);
+      if (can.ok || can.reason === "back-off sets already logged") {
+        const conv = document.createElement("button");
+        conv.className = "sheet-item";
+        if (can.ok) {
+          conv.innerHTML = `<span class="icon">▽</span> Convert to reverse pyramid <span class="meta" style="color:var(--text-dim);">session only</span>`;
+          conv.onclick = () => {
+            const reps = parseInt(ex.reps) || 6;
+            rptSetSessionOverride(block, ei, {
+              type: "rpt",
+              topRepsMin: Math.max(1, reps - 2),
+              topRepsMax: reps,
+              dropPct: 10,
+              repAdd: 1
+            });
+            closeSheet();
+            renderWorkoutScreen();
+            showToast("Reverse pyramid for this session", "success");
+          };
+        } else {
+          // Sets beyond the top set are already logged under the current
+          // scheme — converting now would misrepresent what happened.
+          conv.disabled = true;
+          conv.style.opacity = "0.5";
+          conv.innerHTML = `<span class="icon">▽</span> Convert to reverse pyramid <span class="meta" style="color:var(--text-dim);">${can.reason}</span>`;
+        }
+        wrap.appendChild(conv);
+      }
+    }
   }
 
   // Rename exercise
@@ -20688,8 +20833,11 @@ function finishWorkout(opts) {
       const last = getLastSetsFor(ex.exId || ex.name);
       // RPT scheme: resolve the top-set weight from this draft's local
       // inputs map (getInput would re-read the store and miss the fills
-      // below), then derive back-off defaults from it.
-      const exRptScheme = (typeof rptScheme === "function") ? rptScheme(ex) : null;
+      // below), then derive back-off defaults from it. Session overrides
+      // live on this same local draft — resolve from it, not the store.
+      const _rptOv = draft.schemeOverrides && draft.schemeOverrides[block.id + "|" + ei];
+      const exRptScheme = (typeof rptNormalizeScheme === "function")
+        ? (_rptOv ? rptNormalizeScheme(ex, _rptOv) : rptScheme(ex)) : null;
       let rptTopW = 0;
       if (exRptScheme) {
         const w0 = inputs[inputKey(block.id, ei, 0, "w")];
@@ -20707,7 +20855,7 @@ function finishWorkout(opts) {
         const lastSet = last[i] || last[last.length - 1];
         const rkey = inputKey(block.id, ei, i, "r");
         if (inputs[rkey] == null) {
-          inputs[rkey] = exRptScheme ? rptTargetReps(ex, i) : (lastSet?.reps ?? ex.reps);
+          inputs[rkey] = exRptScheme ? rptTargetRepsFor(exRptScheme, i) : (lastSet?.reps ?? ex.reps);
         }
         const wkey = inputKey(block.id, ei, i, "w");
         if (inputs[wkey] == null) {
@@ -20726,6 +20874,10 @@ function finishWorkout(opts) {
   day.blocks.forEach(block => {
     block.exercises.forEach((ex, ei) => {
       if (ex.isWarmup) return;
+      // Effective scheme for tagging — session override (local draft) wins.
+      const _setOv = draft.schemeOverrides && draft.schemeOverrides[block.id + "|" + ei];
+      const _setScheme = (typeof rptNormalizeScheme === "function")
+        ? (_setOv ? rptNormalizeScheme(ex, _setOv) : rptScheme(ex)) : null;
       for (let i = 0; i < ex.sets; i++) {
         const w = inputs[inputKey(block.id, ei, i, "w")] ?? 0;
         const r = inputs[inputKey(block.id, ei, i, "r")];
@@ -20744,7 +20896,7 @@ function finishWorkout(opts) {
           isPR: false
         };
         // Tag sets logged under a scheme so history can recognize them.
-        if (typeof rptScheme === "function" && rptScheme(ex)) setRec.scheme = "rpt";
+        if (_setScheme) setRec.scheme = "rpt";
         sets.push(setRec);
       }
     });
@@ -30907,7 +31059,7 @@ function paperRenderExercise(day, block, ex, bi, ei, isSuperset) {
 
   // Target spec: try to derive from ex (e.g. "4 × 1-5 @ RPE 8")
   const numSets = ex.sets || 3;
-  const rptSpec = (typeof rptSpecText === "function") ? rptSpecText(ex) : null;
+  const rptSpec = (typeof rptSpecText === "function") ? rptSpecText(ex, block, ei) : null;
   let targetSpec = rptSpec || `${numSets} &times; ${ex.reps || "?"}`;
   if (ex.tempo && !rptSpec) targetSpec += ` &middot; ${ex.tempo}`;
 
@@ -30966,6 +31118,15 @@ function paperRenderExercise(day, block, ex, bi, ei, isSuperset) {
   });
   wrap.appendChild(head);
 
+  // Session-only scheme badge — this session's exercise differs from
+  // the program template. Own line to dodge the head's name/spec overlap.
+  if (typeof rptSessionOverride === "function" && rptSessionOverride(block, ei)) {
+    const badge = document.createElement("div");
+    badge.className = "paper-rpt-session-badge";
+    badge.textContent = "rpt · session only";
+    wrap.appendChild(badge);
+  }
+
   // Margin note for ex.notes — handwritten in red with scribbled arrow
   if (ex.notes) {
     const noteWrap = document.createElement("div");
@@ -31020,7 +31181,7 @@ function paperRenderSetsTable(block, ex, bi, ei) {
   const numSets = ex.sets || 3;
   const repsLabel = ex.isTime ? "s" : ex.isDistance ? "m" : "reps";
   const last = (typeof getLastSetsFor === "function") ? getLastSetsFor(ex.exId || ex.name) : [];
-  const hasRpt = (typeof rptScheme === "function") && !!rptScheme(ex);
+  const hasRpt = (typeof rptEffectiveScheme === "function") && !!rptEffectiveScheme(block, ex, ei);
 
   for (let i = 0; i < numSets; i++) {
     const lastSet = last[i] || last[last.length - 1];
@@ -32007,7 +32168,7 @@ function paperRenderFocusView(container, day) {
     head.className = "paper-focus-ex-head";
     const numLabel = `${block.letter}${isSuperset ? (ei + 1) : ""}`;
     const nSets = ex.sets || 3;
-    const rptSpec = (typeof rptSpecText === "function") ? rptSpecText(ex) : null;
+    const rptSpec = (typeof rptSpecText === "function") ? rptSpecText(ex, block, ei) : null;
     let targetSpec = rptSpec || `${nSets} &times; ${ex.reps || "?"}`;
     if (ex.tempo && !rptSpec) targetSpec += ` &middot; ${ex.tempo}`;
     head.innerHTML = `
@@ -32064,6 +32225,14 @@ function paperRenderFocusView(container, day) {
       });
     }
     exWrap.appendChild(head);
+
+    // Session-only scheme badge (mirrors paperRenderExercise)
+    if (typeof rptSessionOverride === "function" && rptSessionOverride(block, ei)) {
+      const badge = document.createElement("div");
+      badge.className = "paper-rpt-session-badge";
+      badge.textContent = "rpt · session only";
+      exWrap.appendChild(badge);
+    }
 
     if (ex.notes) {
       const noteWrap = document.createElement("div");
