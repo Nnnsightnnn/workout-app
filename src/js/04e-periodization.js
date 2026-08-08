@@ -26,7 +26,13 @@ function phaseForWeek(phases, wk) {
 
 function weekInPhase(phases, wk) {
   var p = phaseForWeek(phases, wk);
-  return p ? p.weeks.indexOf(wk) : 0;
+  if (!p) return 0;
+  var i = p.weeks.indexOf(wk);
+  if (i >= 0) return i;
+  // advanceWeek lets currentWeek reach totalWeeks + 1, and that week belongs to
+  // no phase. phaseForWeek falls back to the last phase, so hold at its final
+  // entry — returning -1 here made getLoading read phase[-1] and throw.
+  return Math.max(0, p.weeks.length - 1);
 }
 
 // --- Rotation helpers ---
@@ -250,9 +256,11 @@ LOADING.mn1h_pump = mn1hStyle([[2,10],[2,10],[2,10],[2,10]], 90,
 
 function getLoading(style, phaseName, wip) {
   var scheme = LOADING[style];
-  if (!scheme) return { s:3, r:10, rest:60, t:"", n:"" };
+  // Callers spread this straight into mkSets, which keys off sets/reps/tempo/
+  // notes — returning the raw s/r/t/n shape here silently dropped the default.
+  if (!scheme) return { sets:3, reps:10, rest:60, tempo:"", notes:"" };
   var phase = scheme[phaseName] || scheme.Deload;
-  var entry = phase[Math.min(wip, phase.length - 1)];
+  var entry = phase[Math.max(0, Math.min(wip, phase.length - 1))];
   var result = { sets: entry.s, reps: entry.r, rest: entry.rest, tempo: entry.t || "", notes: entry.n || "" };
   // Reverse Pyramid is a first-class scheme (11a-rpt-scheme.js): the
   // prescription carries per-set semantics — top set at the rep target,

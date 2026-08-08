@@ -390,6 +390,35 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
 
   // ---- Phase -> loading resolution ----
 
+  t("getLoading falls back with the shape mkSets expects", () => {
+    const fb = w.getLoading("no_such_style", "Accumulation", 0);
+    assert(fb.sets === 3 && fb.reps === 10, `expected sets/reps keys, got ${JSON.stringify(fb)}`);
+    // mkSets keys off sets/reps; the raw s/r shape used to be silently dropped.
+    const built = w.mkSets(w.LIB_BY_ID.backsquat, fb);
+    assert(built.sets === 3 && built.reps === 10,
+      `fallback should reach mkSets, got ${built.sets}x${built.reps}`);
+  });
+
+  t("generation survives the week past the end of the program", () => {
+    // advanceWeek lets currentWeek reach totalWeeks + 1; that week is in no
+    // phase, so weekInPhase used to return -1 and getLoading threw on phase[-1].
+    Object.keys(w.PROGRAM_CONFIGS).forEach(id => {
+      const dpw = (w.PROGRAM_CONFIGS[id].days || []).length || 3;
+      [13, 14].forEach(wk => {
+        let days;
+        try {
+          days = w.generateWeek(id, wk, 12, dpw);
+        } catch (e) {
+          assert(false, `${id} week ${wk} threw: ${e && e.message}`);
+        }
+        assert(days && days.length > 0, `${id} week ${wk} produced no days`);
+        days.forEach(d => d.blocks.filter(b => b.type !== "warmup").forEach(b =>
+          b.exercises.forEach(e => assert(e.sets > 0 && e.reps > 0,
+            `${id} week ${wk} ${e.exId} has ${e.sets}x${e.reps}`))));
+      });
+    });
+  });
+
   t("allocatePhases carries loadingPhase through to the allocated phase", () => {
     const missing = [];
     Object.keys(w.PROGRAM_CONFIGS).forEach(id => {
