@@ -12,7 +12,9 @@ function allocatePhases(totalWeeks, config) {
     var n = isLast ? totalWeeks - used : Math.max(1, Math.round(totalWeeks * p.ratio));
     var weeks = [];
     for (var w = used + 1; w <= Math.min(used + n, totalWeeks); w++) weeks.push(w);
-    phases.push({ name: p.name, weeks: weeks, color: p.color, description: p.description });
+    // loadingPhase must survive: it maps a display phase name ("5s Week") onto
+    // a real LOADING key. Without it getLoading falls through to scheme.Deload.
+    phases.push({ name: p.name, loadingPhase: p.loadingPhase, weeks: weeks, color: p.color, description: p.description });
     used += weeks.length;
   });
   return phases;

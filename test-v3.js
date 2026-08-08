@@ -388,6 +388,41 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     assert(budget.adjustedMin < current, `adjusted ${budget.adjustedMin} should be less than ${current}`);
   });
 
+  // ---- Phase -> loading resolution ----
+
+  t("allocatePhases carries loadingPhase through to the allocated phase", () => {
+    const missing = [];
+    Object.keys(w.PROGRAM_CONFIGS).forEach(id => {
+      const cfg = w.PROGRAM_CONFIGS[id];
+      const allocated = w.allocatePhases(12, cfg.phaseConfig);
+      cfg.phaseConfig.forEach((declared, i) => {
+        if (declared.loadingPhase && allocated[i].loadingPhase !== declared.loadingPhase) {
+          missing.push(`${id}.${declared.name}`);
+        }
+      });
+    });
+    assert(missing.length === 0, `loadingPhase dropped for: ${missing.join(", ")}`);
+  });
+
+  t("no program serves its deload prescription outside a deload phase", () => {
+    // Regression guard: a custom phase name whose loadingPhase is lost falls
+    // through to scheme.Deload, quietly making most of a program a deload.
+    const leaking = [];
+    Object.keys(w.PROGRAM_CONFIGS).forEach(id => {
+      const phases = w.getPhasesForTemplate(id, 12);
+      phases.forEach(p => {
+        if (/deload/i.test(p.name)) return;
+        const days = w.generateWeek(id, p.weeks[0], 12);
+        if (!days) return;
+        days.forEach(d => d.blocks.filter(b => b.type !== "warmup").forEach(b =>
+          b.exercises.forEach(e => {
+            if (/DELOAD/.test(e.notes || "")) leaking.push(`${id} wk${p.weeks[0]} (${p.name}) ${e.exId}`);
+          })));
+      });
+    });
+    assert(leaking.length === 0, `deload prescription leaked into ${leaking.length} slots: ${leaking.slice(0, 5).join("; ")}`);
+  });
+
   // ---- Warmup & cooldown variation ----
 
   t("warmup variation: different days in same week get different warmups", () => {
