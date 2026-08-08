@@ -423,6 +423,84 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     assert(leaking.length === 0, `deload prescription leaked into ${leaking.length} slots: ${leaking.slice(0, 5).join("; ")}`);
   });
 
+  // ---- MN1H program fidelity ----
+
+  // Every main-lift cell of the author's spreadsheet, cycle 1 (weeks 1-4):
+  // [week][day] -> [pull, press, legs] as "exId sets x reps".
+  // This pins both the A/B family alternation (which the engine produces via
+  // weekly pool rotation) and the undulating rep wave. If a block is added to
+  // or moved within mn1h3's day config, the families desynchronise and this
+  // test is what catches it.
+  const MN1H_EXPECTED = {
+    1: {
+      1: ["weightedpullup 3x7", "pikepress 3x7",  "backsquat 3x7"],
+      2: ["flrow 3x7",          "dipweighted 3x7", "deadlift 3x5"],
+      3: ["weightedpullup 4x3", "pikepress 4x3",  "backsquat 4x3"]
+    },
+    2: {
+      1: ["flrow 4x3",          "dipweighted 4x3", "deadlift 3x3"],
+      2: ["weightedpullup 3x8", "pikepress 3x8",  "backsquat 3x8"],
+      3: ["flrow 3x8",          "dipweighted 3x8", "deadlift 4x5"]
+    },
+    3: {
+      1: ["weightedpullup 3x4", "pikepress 3x4",  "backsquat 3x4"],
+      2: ["flrow 3x4",          "dipweighted 3x4", "deadlift 4x3"],
+      3: ["weightedpullup 3x9", "pikepress 3x9",  "backsquat 3x9"]
+    },
+    4: {
+      1: ["flrow 3x9",          "dipweighted 3x9", "deadlift 4x6"],
+      2: ["weightedpullup 3x5", "pikepress 3x5",  "backsquat 3x5"],
+      3: ["flrow 3x5",          "dipweighted 3x5", "deadlift 3x4"]
+    }
+  };
+
+  t("mn1h3: main lifts match the source spreadsheet for a full cycle", () => {
+    for (let wk = 1; wk <= 4; wk++) {
+      const days = w.generateWeek("mn1h3", wk, 12, 3);
+      assert(days && days.length === 3, `week ${wk} generated 3 days, got ${days && days.length}`);
+      days.forEach((d, di) => {
+        const actual = ["a1", "a2", "a3"].map(letter => {
+          const b = d.blocks.find(x => (x.letter || "").toLowerCase() === letter);
+          assert(b, `week ${wk} day ${di + 1} has block ${letter}`);
+          assert(b.exercises.length === 1, `week ${wk} day ${di + 1} block ${letter} has one exercise`);
+          const ex = b.exercises[0];
+          return `${ex.exId} ${ex.sets}x${ex.reps}`;
+        });
+        const expected = MN1H_EXPECTED[wk][di + 1];
+        assert(JSON.stringify(actual) === JSON.stringify(expected),
+          `week ${wk} day ${di + 1}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
+      });
+    }
+  });
+
+  t("mn1h3: accessories alternate with the main-lift family", () => {
+    const days = w.generateWeek("mn1h3", 1, 12, 3);
+    const accIds = days.map(d =>
+      ["b", "c", "d", "e"].flatMap(letter => {
+        const b = d.blocks.find(x => (x.letter || "").toLowerCase() === letter);
+        return b ? b.exercises.map(e => e.exId) : [];
+      })
+    );
+    // Week 1: sessions 1 and 3 are the A family, session 2 is the B family.
+    const A = ["dbbench", "cablerow", "legcurl", "lsit", "dbcurl", "pushdown"];
+    const B = ["cablerow", "inclinedb", "frontsquat", "hanglegr", "hammer", "ohtri"];
+    assert(JSON.stringify(accIds[0]) === JSON.stringify(A), `day 1 accessories: got ${JSON.stringify(accIds[0])}`);
+    assert(JSON.stringify(accIds[1]) === JSON.stringify(B), `day 2 accessories: got ${JSON.stringify(accIds[1])}`);
+    assert(JSON.stringify(accIds[2]) === JSON.stringify(A), `day 3 accessories: got ${JSON.stringify(accIds[2])}`);
+  });
+
+  t("mn1h3: cycle 2 realigns to the same wave one step heavier", () => {
+    const wk1 = w.generateWeek("mn1h3", 1, 12, 3);
+    const wk5 = w.generateWeek("mn1h3", 5, 12, 3);
+    const sig = ds => ds.map(d => ["a1", "a2", "a3"].map(l => {
+      const b = d.blocks.find(x => (x.letter || "").toLowerCase() === l);
+      return `${b.exercises[0].exId} ${b.exercises[0].sets}x${b.exercises[0].reps}`;
+    }).join("|")).join(" / ");
+    assert(sig(wk1) === sig(wk5), `week 5 should repeat week 1's wave: ${sig(wk1)} vs ${sig(wk5)}`);
+    const note = wk5[0].blocks.find(x => (x.letter || "").toLowerCase() === "a1").exercises[0].notes || "";
+    assert(/Cycle 2/.test(note), `week 5 should carry the cycle-2 load note, got: ${note}`);
+  });
+
   // ---- Warmup & cooldown variation ----
 
   t("warmup variation: different days in same week get different warmups", () => {

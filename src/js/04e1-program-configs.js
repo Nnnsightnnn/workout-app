@@ -986,5 +986,57 @@ var PROGRAM_CONFIGS = {
         { letter:"C",  name:"Shoulders + Core", slots:[{ pool:"delt", loading:"isolation" }, { pool:"core", loading:"accessory" }] }
       ]}
     ]
+  },
+
+  // ---- 3-Day MN1H / Marcelo's Intermediate Weights + Calisthenics ----
+  // Faithful port of the r/bodyweightfitness routine by @marceloqm96.
+  // Two movement families alternate session to session (A-B-A one week, B-A-B
+  // the next). That alternation is produced by the engine's weekly pool
+  // rotation rather than by distinct day configs, so all three days share one
+  // block layout and differ only in which rung of the rep wave they carry.
+  // The block order below is what aligns each pool's pair with its family —
+  // inserting or moving a block will desynchronise them. See the mn1h_* pools
+  // and waves in 04e-periodization.js, and the smoke test in test-v3.js.
+  mn1h3: {
+    phaseConfig: [
+      { name:"Accumulation",    ratio:0.34, color:"#ff6b1f", description:"Cycle 1 — establish opening loads across the 4-week wave" },
+      { name:"Intensification", ratio:0.33, color:"#e2443a", description:"Cycle 2 — same wave, +2.5 kg / 5 lb on every main lift" },
+      { name:"Peak",            ratio:0.33, color:"#bf5af2", description:"Cycle 3 — +2.5 kg / 5 lb again. Rest 4-7 days only if RPE has crept up" }
+    ],
+    days: [
+      { name:"Session 1 — Full Body", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A1", name:"Main — Vertical Pull", slots:[{ pool:"mn1h_pull_main", loading:"mn1h_up1" }] },
+        { letter:"A2", name:"Main — Press", slots:[{ pool:"mn1h_press_main", loading:"mn1h_up1" }] },
+        { letter:"A3", name:"Main — Legs", slots:[{ pool:"mn1h_leg_main", loading:"mn1h_leg1" }] },
+        { letter:"B",  name:"Press + Row", slots:[{ pool:"mn1h_acc_press", loading:"mn1h_acc" }, { pool:"mn1h_acc_row", loading:"mn1h_acc" }] },
+        { letter:"C",  name:"Legs", slots:[{ pool:"mn1h_acc_leg", loading:"mn1h_acc" }] },
+        { letter:"D",  name:"Core", slots:[{ pool:"mn1h_core", loading:"mn1h_pump" }] },
+        { letter:"E",  name:"Arms", slots:[{ pool:"mn1h_bicep", loading:"mn1h_pump" }, { pool:"mn1h_tricep", loading:"mn1h_pump" }] },
+        { letter:"F",  name:"Optional — Rear Delts", slots:[{ pool:"mn1h_rear_delt", loading:"mn1h_pump" }] }
+      ]},
+      { name:"Session 2 — Full Body", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A1", name:"Main — Vertical Pull", slots:[{ pool:"mn1h_pull_main", loading:"mn1h_up2" }] },
+        { letter:"A2", name:"Main — Press", slots:[{ pool:"mn1h_press_main", loading:"mn1h_up2" }] },
+        { letter:"A3", name:"Main — Legs", slots:[{ pool:"mn1h_leg_main", loading:"mn1h_leg2" }] },
+        { letter:"B",  name:"Press + Row", slots:[{ pool:"mn1h_acc_press", loading:"mn1h_acc" }, { pool:"mn1h_acc_row", loading:"mn1h_acc" }] },
+        { letter:"C",  name:"Legs", slots:[{ pool:"mn1h_acc_leg", loading:"mn1h_acc" }] },
+        { letter:"D",  name:"Core", slots:[{ pool:"mn1h_core", loading:"mn1h_pump" }] },
+        { letter:"E",  name:"Arms", slots:[{ pool:"mn1h_bicep", loading:"mn1h_pump" }, { pool:"mn1h_tricep", loading:"mn1h_pump" }] },
+        { letter:"F",  name:"Optional — Rear Delts", slots:[{ pool:"mn1h_rear_delt", loading:"mn1h_pump" }] }
+      ]},
+      { name:"Session 3 — Full Body", blocks:[
+        { letter:"WU", name:"Warm-Up", type:"warmup" },
+        { letter:"A1", name:"Main — Vertical Pull", slots:[{ pool:"mn1h_pull_main", loading:"mn1h_up3" }] },
+        { letter:"A2", name:"Main — Press", slots:[{ pool:"mn1h_press_main", loading:"mn1h_up3" }] },
+        { letter:"A3", name:"Main — Legs", slots:[{ pool:"mn1h_leg_main", loading:"mn1h_leg3" }] },
+        { letter:"B",  name:"Press + Row", slots:[{ pool:"mn1h_acc_press", loading:"mn1h_acc" }, { pool:"mn1h_acc_row", loading:"mn1h_acc" }] },
+        { letter:"C",  name:"Legs", slots:[{ pool:"mn1h_acc_leg", loading:"mn1h_acc" }] },
+        { letter:"D",  name:"Core", slots:[{ pool:"mn1h_core", loading:"mn1h_pump" }] },
+        { letter:"E",  name:"Arms", slots:[{ pool:"mn1h_bicep", loading:"mn1h_pump" }, { pool:"mn1h_tricep", loading:"mn1h_pump" }] },
+        { letter:"F",  name:"Optional — Rear Delts", slots:[{ pool:"mn1h_rear_delt", loading:"mn1h_pump" }] }
+      ]}
+    ]
   }
 };

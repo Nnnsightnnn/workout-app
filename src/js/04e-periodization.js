@@ -56,7 +56,30 @@ var POOLS = {
   conditioning:    { full:["assaultbike","echobike","rower","wallball","burpee","boxjump","medballslam","kbswing","sledpush","battlerope","dballovershoulder","thruster","manmaker","devilspress","ropeclimb"], barbell:["rower","burpee","boxjump","kbswing","thruster","devilspress"], bodyweight:["burpee","boxjump","jumpsquat","ropeclimb"] },
   power:           { full:["hangpowerclean","pushpress","boxjump","jumpsquat","medballslam","kbswing","thruster","devilspress"], barbell:["pushpress","boxjump","jumpsquat","kbswing","thruster"], bodyweight:["boxjump","jumpsquat","burpee"] },
   kot:             { full:["tibraise","atgsplit","slantboardsquat","poliquat","reversesled","nordiccurl","calfraise"], barbell:["tibraise","atgsplit","slantboardsquat","poliquat","nordiccurl","calfraise"], bodyweight:["tibraise","atgsplit","slantboardsquat","poliquat","nordiccurl"] },
-  warmup_cardio:   { full:["rower","bikerg","skierg","stairmaster","jumprope","elliptical","versaclimber"], barbell:["rower","bikerg","treadmill","jumprope","elliptical"], bodyweight:["treadmill","jumpsquat","burpee","jogplace","jumprope"] }
+  warmup_cardio:   { full:["rower","bikerg","skierg","stairmaster","jumprope","elliptical","versaclimber"], barbell:["rower","bikerg","treadmill","jumprope","elliptical"], bodyweight:["treadmill","jumpsquat","burpee","jogplace","jumprope"] },
+
+  // MN1H (Marcelo's weighted-cali) pools. Each is an ordered PAIR: the two
+  // movement families the routine alternates between. buildDayFromConfig's
+  // per-week rotation walks the pair one step every week, and its day offset
+  // (dayId*7) is odd for days 1 and 3 and even for day 2 — so a 3-day week
+  // lands on A-B-A, then B-A-B, which is exactly the routine's schedule.
+  // Which index lands on session 1 depends on that slot's own block/slot
+  // offset, so the A-movement is index 0 in some pairs and index 1 in others.
+  // Both the order and the block position in mn1h3's day config are therefore
+  // load-bearing: reordering either desynchronises the families. The smoke
+  // test in test-v3.js pins every slot against the author's spreadsheet.
+  // The barbell/bodyweight variants use the counterparts the author lists as
+  // interchangeable (front lever ↔ Pendlay row, HSPU ↔ overhead press, etc.).
+  mn1h_pull_main:  { full:["weightedpullup","flrow"], barbell:["weightedpullup","pendlayrow"], bodyweight:["pullup","ringrow"] },
+  mn1h_press_main: { full:["dipweighted","pikepress"], barbell:["dipweighted","strictpress"], bodyweight:["dip","pikepress"] },
+  mn1h_leg_main:   { full:["backsquat","deadlift"], barbell:["backsquat","deadlift"], bodyweight:["pistolsquat","nordiccurl"] },
+  mn1h_acc_press:  { full:["cablerow","dbbench"], barbell:["bbrow","bench"], bodyweight:["ringrow","pushup"] },
+  mn1h_acc_row:    { full:["cablerow","inclinedb"], barbell:["bbrow","incbench"], bodyweight:["ringrow","archerpushup"] },
+  mn1h_acc_leg:    { full:["legcurl","frontsquat"], barbell:["rdl","frontsquat"], bodyweight:["nordiccurl","bulgarian"] },
+  mn1h_core:       { full:["hanglegr","lsit"], barbell:["hanglegr","lsit"], bodyweight:["hanglegr","lsit"] },
+  mn1h_bicep:      { full:["dbcurl","hammer"], barbell:["bbcurl","hammer"], bodyweight:["chinup","bandrow"] },
+  mn1h_tricep:     { full:["ohtri","pushdown"], barbell:["dbtri","skullcrusher"], bodyweight:["closegripdip","diamondpushup"] },
+  mn1h_rear_delt:  { full:["facepull"], barbell:["facepull"], bodyweight:["bandpullapart"] }
 };
 
 // --- Pool access with equipment + injury filtering ---
@@ -175,6 +198,55 @@ var LOADING = {
     Deload:          [{ s:6, r:10, rest:60, t:"4-0-2-0", n:"GVT DELOAD: 6×10 @50%. Easy movement." }]
   }
 };
+
+// --- MN1H (Marcelo's) loading waves ---
+// The routine runs 4-week cycles back to back. Within a cycle the twelve
+// sessions step through one shared rep wave — 3x7, 4x3, 3x8, 3x4, 3x9, 3x5 —
+// and each of the two movement families sees every rung once. Because the
+// families alternate day to day, a given weekday inherits a different rung
+// each week, so each of the three sessions gets its own four-week wave.
+// The wave itself is identical in every cycle; only the load climbs (+2.5 kg /
+// 5 lb per cycle), which is what the per-phase note carries.
+
+var MN1H_CYCLE_NOTE = {
+  Accumulation:    "Cycle 1 — set your opening loads.",
+  Intensification: "Cycle 2 — add 2.5 kg / 5 lb to every main-lift set.",
+  Peak:            "Cycle 3 — add 2.5 kg / 5 lb again."
+};
+
+// wave: [sets, reps] per week of the cycle. deload is the safety fallback for
+// any phase name the config doesn't define.
+function mn1hStyle(wave, rest, note, deload) {
+  var style = { Deload: [deload] };
+  Object.keys(MN1H_CYCLE_NOTE).forEach(function(phase) {
+    style[phase] = wave.map(function(w) {
+      return { s:w[0], r:w[1], rest:rest, t:"", n:note + " " + MN1H_CYCLE_NOTE[phase] };
+    });
+  });
+  return style;
+}
+
+var MN1H_MAIN_NOTE = "Rest 3-5 min. Stay 2-3 reps shy of failure early in the cycle.";
+var MN1H_MAIN_DELOAD = { s:2, r:8, rest:180, t:"", n:"DELOAD: ~70% of your working load. Leave 4+ in reserve." };
+
+// Upper mains (vertical pull + press), one wave per session slot.
+LOADING.mn1h_up1 = mn1hStyle([[3,7],[4,3],[3,4],[3,9]], 240, MN1H_MAIN_NOTE, MN1H_MAIN_DELOAD);
+LOADING.mn1h_up2 = mn1hStyle([[3,7],[3,8],[3,4],[3,5]], 240, MN1H_MAIN_NOTE, MN1H_MAIN_DELOAD);
+LOADING.mn1h_up3 = mn1hStyle([[4,3],[3,8],[3,9],[3,5]], 240, MN1H_MAIN_NOTE, MN1H_MAIN_DELOAD);
+
+// Leg mains run a lower-volume wave of their own — the squat rungs track the
+// upper wave, the deadlift rungs sit a step behind it to cap fatigue.
+LOADING.mn1h_leg1 = mn1hStyle([[3,7],[3,3],[3,4],[4,6]], 240, MN1H_MAIN_NOTE, MN1H_MAIN_DELOAD);
+LOADING.mn1h_leg2 = mn1hStyle([[3,5],[3,8],[4,3],[3,5]], 240, MN1H_MAIN_NOTE, MN1H_MAIN_DELOAD);
+LOADING.mn1h_leg3 = mn1hStyle([[4,3],[4,5],[3,9],[3,4]], 240, MN1H_MAIN_NOTE, MN1H_MAIN_DELOAD);
+
+// Accessories are unperiodised: 2 x 8-12 all cycle, autoregulated by RIR.
+LOADING.mn1h_acc = mn1hStyle([[2,10],[2,10],[2,10],[2,10]], 150,
+  "8-12 reps @ 1-3 RIR. Don't take compounds to failure.",
+  { s:2, r:12, rest:120, t:"", n:"DELOAD: light. 4+ reps in reserve." });
+LOADING.mn1h_pump = mn1hStyle([[2,10],[2,10],[2,10],[2,10]], 90,
+  "8-12 reps. Isolation work can go near or to failure. Holds: 8-12 seconds.",
+  { s:2, r:12, rest:60, t:"", n:"DELOAD: light pump work." });
 
 function getLoading(style, phaseName, wip) {
   var scheme = LOADING[style];
