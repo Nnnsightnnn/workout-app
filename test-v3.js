@@ -388,6 +388,42 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     assert(budget.adjustedMin < current, `adjusted ${budget.adjustedMin} should be less than ${current}`);
   });
 
+  // ---- Running a program day as a one-off ----
+
+  t("mkSets: cloning a prescription keeps sets/reps instead of blanking them", () => {
+    const presc = w.mkSets(w.LIB_BY_ID.backsquat, { sets: 4, reps: 3, rest: 240 });
+    // Passing a prescription where a LIBRARY entry is expected used to read
+    // defaultSets/defaultReps/id off it and produce undefined for all three.
+    const clone = w.mkSets(presc);
+    assert(clone.exId === "backsquat", `exId lost: ${clone.exId}`);
+    assert(clone.sets === 4 && clone.reps === 3, `got ${clone.sets}x${clone.reps}, want 4x3`);
+    assert(clone.rest === 240, `rest lost: ${clone.rest}`);
+  });
+
+  t("_beginAdhocFromTemplateDay preserves every prescription", () => {
+    const snapshot = JSON.stringify(w.loadStore());
+    const keep = ["adhocActive", "adhocDay", "adhocCustomName", "adhocExercises",
+      "adhocStartedAt", "adhocInputs", "dayChosen", "workoutView"];
+    const prev = {};
+    keep.forEach(k => { prev[k] = w.state[k]; });
+    try {
+      if (!w.userData()) w.addUser("AdhocFixture");
+      const day = w.generateWeek("mn1h3", 1, 12, 3)[0];
+      const expected = day.blocks.flatMap(b => b.exercises)
+        .map(e => `${e.exId} ${e.sets}x${e.reps}`);
+      w._beginAdhocFromTemplateDay(day, "MN1H");
+      const got = (w.state.adhocDay.blocks || []).flatMap(b => b.exercises)
+        .map(e => `${e.exId} ${e.sets}x${e.reps}`);
+      assert(JSON.stringify(got) === JSON.stringify(expected),
+        `one-off day lost its prescriptions:\n  want ${JSON.stringify(expected.slice(0, 3))}\n  got  ${JSON.stringify(got.slice(0, 3))}`);
+      const blank = got.filter(s => /undefined/.test(s));
+      assert(!blank.length, `${blank.length} exercises came through blank: ${blank.slice(0, 3).join(", ")}`);
+    } finally {
+      w.saveStore(JSON.parse(snapshot));
+      keep.forEach(k => { w.state[k] = prev[k]; });
+    }
+  });
+
   // ---- Add Day ----
 
   t("paperBuildActionBar tolerates a day with no blocks", () => {

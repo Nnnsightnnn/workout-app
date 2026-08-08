@@ -1368,7 +1368,13 @@ function _beginAdhocFromTemplateDay(day, tplName) {
     name: b.name || "",
     type: b.type || null,
     blockType: b.blockType || "strength",
-    exercises: (b.exercises || []).map(e => (typeof mkSets === "function") ? mkSets(e) : Object.assign({}, e))
+    // These are already prescriptions from the periodization engine, not
+    // library entries — resolve each back to its library entry and keep the
+    // prescription (sets/reps/rest/tempo/notes) as the overrides.
+    exercises: (b.exercises || []).map(e => {
+      const lib = (typeof LIB_BY_ID !== "undefined") ? LIB_BY_ID[e.exId] : null;
+      return (lib && typeof mkSets === "function") ? mkSets(lib, e) : Object.assign({}, e);
+    })
   }));
 
   state.adhocActive = true;
