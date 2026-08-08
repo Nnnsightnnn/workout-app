@@ -1937,7 +1937,16 @@ function renderChaptersView(container, day) {
     // Day-wide action bar — mirrors focus view, tracks first not-done set
     // across the entire day. Always shown on chapters view; reaching this
     // path already implies an opened day or a live draft.
-    if (typeof paperFindDayActiveSet === "function"
+    // A newly added day has no blocks until the user builds it out. Say so
+    // rather than rendering a blank page.
+    if (!day.blocks.length) {
+      const empty = document.createElement("div");
+      empty.className = "paper-day-empty";
+      empty.textContent = "No blocks yet — open the menu and choose “Customize day” to add one.";
+      wrap.appendChild(empty);
+    }
+    if (day.blocks.length
+        && typeof paperFindDayActiveSet === "function"
         && typeof paperBuildActionBar === "function") {
       const active = paperFindDayActiveSet(day);
       const activeBlock = day.blocks[active.bi] || day.blocks[0];

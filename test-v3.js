@@ -388,6 +388,49 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     assert(budget.adjustedMin < current, `adjusted ${budget.adjustedMin} should be less than ${current}`);
   });
 
+  // ---- Add Day ----
+
+  t("paperBuildActionBar tolerates a day with no blocks", () => {
+    // The crash: renderChaptersView resolves day.blocks[active.bi] ||
+    // day.blocks[0], which is undefined for a day added via addTrainingDay,
+    // then paperBuildActionBar dereferenced block.exercises and took the whole
+    // workout render down.
+    const emptyDay = { id: 99, name: "Day 99", blocks: [], isCustom: true };
+    let bar;
+    try {
+      bar = w.paperBuildActionBar(emptyDay, undefined, 0, 0, false, 0);
+    } catch (e) {
+      assert(false, `threw on a blockless day: ${e && e.message}`);
+    }
+    assert(bar && bar.className === "paper-action-bar", "returned an inert action bar");
+    assert(!bar.textContent.trim(), `inert bar should be empty, got "${bar.textContent}"`);
+  });
+
+  t("addTrainingDay: appends a blockless day and renders an empty state", () => {
+    const snapshot = JSON.stringify(w.loadStore());
+    const prevDay = w.state.currentDayId, prevChosen = w.state.dayChosen;
+    try {
+      if (!w.userData()) w.addUser("AddDayFixture");
+      w.applyProgramSwitch(w.PROGRAM_TEMPLATES.find(x => x.id === "mn1h3"), 12, 3);
+      assert(w.activeProgram(), "fixture program is active");
+      const before = w.activeProgram().program.length;
+      w.addTrainingDay();
+      const after = w.activeProgram();
+      const newDay = after.program[after.program.length - 1];
+      assert(after.program.length === before + 1, "a day was appended");
+      assert(newDay.blocks.length === 0, "the new day starts with no blocks");
+      w.state.currentDayId = newDay.id;
+      w.state.dayChosen = true;
+      w.renderWorkoutScreen();
+      assert(/No blocks yet/.test(w.document.body.textContent || ""),
+        "empty-day state is shown instead of a blank screen");
+    } finally {
+      w.saveStore(JSON.parse(snapshot));
+      w.state.currentDayId = prevDay;
+      w.state.dayChosen = prevChosen;
+    }
+  });
+
   // ---- Phase -> loading resolution ----
 
   t("getLoading falls back with the shape mkSets expects", () => {

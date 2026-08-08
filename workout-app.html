@@ -9886,6 +9886,15 @@ body[data-skin="paper"] .paper-action-bar {
 body[data-skin="paper"] .paper-chapters-view:has(> .paper-action-bar) {
   padding-bottom: 24px;
 }
+/* Empty state for a day that has no blocks yet (freshly added via Add Day). */
+body[data-skin="paper"] .paper-day-empty {
+  padding: 28px 12px;
+  font-family: var(--paper-hand);
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--paper-ink-faint);
+  text-align: center;
+}
 body[data-skin="paper"] .paper-action-edit-label {
   display: flex;
   align-items: center;
@@ -13800,7 +13809,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 23;
-const APP_BUILD = "1264327f";
+const APP_BUILD = "b72270e6";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -18069,7 +18078,16 @@ function renderChaptersView(container, day) {
     // Day-wide action bar — mirrors focus view, tracks first not-done set
     // across the entire day. Always shown on chapters view; reaching this
     // path already implies an opened day or a live draft.
-    if (typeof paperFindDayActiveSet === "function"
+    // A newly added day has no blocks until the user builds it out. Say so
+    // rather than rendering a blank page.
+    if (!day.blocks.length) {
+      const empty = document.createElement("div");
+      empty.className = "paper-day-empty";
+      empty.textContent = "No blocks yet — open the menu and choose “Customize day” to add one.";
+      wrap.appendChild(empty);
+    }
+    if (day.blocks.length
+        && typeof paperFindDayActiveSet === "function"
         && typeof paperBuildActionBar === "function") {
       const active = paperFindDayActiveSet(day);
       const activeBlock = day.blocks[active.bi] || day.blocks[0];
@@ -31927,6 +31945,11 @@ function paperFindDayActiveSet(day) {
 function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi) {
   const bar = document.createElement("div");
   bar.className = "paper-action-bar";
+
+  // A day added via addTrainingDay starts with no blocks, so callers can hand
+  // us nothing to act on. Return the inert bar rather than dereferencing it —
+  // this used to throw and take the whole workout render down with it.
+  if (!block || !block.exercises || !block.exercises.length) return bar;
 
   const ex = block.exercises[activeExIdx] || block.exercises[0];
   const lib = (typeof LIB_BY_ID !== "undefined") ? (LIB_BY_ID[ex.exId] || ex) : ex;

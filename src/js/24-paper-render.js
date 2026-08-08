@@ -843,6 +843,11 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi)
   const bar = document.createElement("div");
   bar.className = "paper-action-bar";
 
+  // A day added via addTrainingDay starts with no blocks, so callers can hand
+  // us nothing to act on. Return the inert bar rather than dereferencing it —
+  // this used to throw and take the whole workout render down with it.
+  if (!block || !block.exercises || !block.exercises.length) return bar;
+
   const ex = block.exercises[activeExIdx] || block.exercises[0];
   const lib = (typeof LIB_BY_ID !== "undefined") ? (LIB_BY_ID[ex.exId] || ex) : ex;
   const bw = lib.bodyweight;

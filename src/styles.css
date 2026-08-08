@@ -9673,6 +9673,15 @@ body[data-skin="paper"] .paper-action-bar {
 body[data-skin="paper"] .paper-chapters-view:has(> .paper-action-bar) {
   padding-bottom: 24px;
 }
+/* Empty state for a day that has no blocks yet (freshly added via Add Day). */
+body[data-skin="paper"] .paper-day-empty {
+  padding: 28px 12px;
+  font-family: var(--paper-hand);
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--paper-ink-faint);
+  text-align: center;
+}
 body[data-skin="paper"] .paper-action-edit-label {
   display: flex;
   align-items: center;
