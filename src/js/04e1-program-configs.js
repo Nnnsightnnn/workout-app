@@ -1038,5 +1038,47 @@ var PROGRAM_CONFIGS = {
         { letter:"F",  name:"Optional — Rear Delts", slots:[{ pool:"mn1h_rear_delt", loading:"mn1h_pump" }] }
       ]}
     ]
+  },
+
+  // ---- 4-Day Jacklete (Chris Bumstead / Justin King, STNDRD) ----
+  // Built from the free Jacklete sessions in The Standard newsletter. Every
+  // slot is pinned: its pool and loading share a key generated from JK_SLOTS
+  // in 04e-periodization.js, where the per-session sources are listed. Each
+  // day opens with the newsletter's own prep block instead of the generic
+  // warm-up builder. Six weeks as two 3-week waves; no scheduled deload,
+  // matching the published program.
+  jacklete4: {
+    phaseConfig: [
+      { name:"Wave 1", loadingPhase:"Accumulation",    ratio:0.5, color:"#ff6b35", description:"Weeks 1-3: set loads, add 2-5% in week 2, lengthen iso holds in week 3" },
+      { name:"Wave 2", loadingPhase:"Intensification", ratio:0.5, color:"#ff2d55", description:"Weeks 4-6: same sessions, a little heavier. Finish on perfect reps" }
+    ],
+    days: [
+      { name:"Upper A: Strength + Symmetry", blocks:[
+        { letter:"P", name:"Prep", slots:[{ pool:"jk_ua_p1", loading:"jk_ua_p1" }, { pool:"jk_ua_p2", loading:"jk_ua_p2" }, { pool:"jk_ua_p3", loading:"jk_ua_p3" }] },
+        { letter:"A", name:"Strength + Symmetry", slots:[{ pool:"jk_ua_a1", loading:"jk_ua_a1" }, { pool:"jk_ua_a2", loading:"jk_ua_a2" }] },
+        { letter:"B", name:"Horizontal Press + Pull", slots:[{ pool:"jk_ua_b1", loading:"jk_ua_b1" }, { pool:"jk_ua_b2", loading:"jk_ua_b2" }] },
+        { letter:"C", name:"Shoulder Health + Shape", slots:[{ pool:"jk_ua_c1", loading:"jk_ua_c1" }, { pool:"jk_ua_c2", loading:"jk_ua_c2" }] }
+      ]},
+      { name:"Lower: Power + Legs", blocks:[
+        { letter:"P", name:"Prep", slots:[{ pool:"jk_lo_p1", loading:"jk_lo_p1" }] },
+        { letter:"A", name:"Power Primer", slots:[{ pool:"jk_lo_a1", loading:"jk_lo_a1" }] },
+        { letter:"B", name:"Strength", slots:[{ pool:"jk_lo_b1", loading:"jk_lo_b1" }, { pool:"jk_lo_b2", loading:"jk_lo_b2" }] },
+        { letter:"C", name:"Hypertrophy", slots:[{ pool:"jk_lo_c1", loading:"jk_lo_c1" }, { pool:"jk_lo_c2", loading:"jk_lo_c2" }] },
+        { letter:"D", name:"Calves + Sled", slots:[{ pool:"jk_lo_d1", loading:"jk_lo_d1" }, { pool:"jk_lo_d2", loading:"jk_lo_d2" }] }
+      ]},
+      { name:"Upper B: Size + Power", blocks:[
+        { letter:"P", name:"Prep", slots:[{ pool:"jk_ub_p1", loading:"jk_ub_p1" }, { pool:"jk_ub_p2", loading:"jk_ub_p2" }, { pool:"jk_ub_p3", loading:"jk_ub_p3" }] },
+        { letter:"A", name:"Chest + Back Isometrics", slots:[{ pool:"jk_ub_a1", loading:"jk_ub_a1" }, { pool:"jk_ub_a2", loading:"jk_ub_a2" }] },
+        { letter:"B", name:"Arm Superset", slots:[{ pool:"jk_ub_b1", loading:"jk_ub_b1" }, { pool:"jk_ub_b2", loading:"jk_ub_b2" }] },
+        { letter:"C", name:"Shortened-Range Ladders", slots:[{ pool:"jk_ub_c1", loading:"jk_ub_c1" }, { pool:"jk_ub_c2", loading:"jk_ub_c2" }] },
+        { letter:"D", name:"Scapular Stability", slots:[{ pool:"jk_ub_d1", loading:"jk_ub_d1" }, { pool:"jk_ub_d2", loading:"jk_ub_d2" }, { pool:"jk_ub_d3", loading:"jk_ub_d3" }] }
+      ]},
+      { name:"Total Body: (Re)Set", blocks:[
+        { letter:"A", name:"Build the Base", slots:[{ pool:"jk_tb_a1", loading:"jk_tb_a1" }, { pool:"jk_tb_a2", loading:"jk_tb_a2" }] },
+        { letter:"B", name:"Build the Body", slots:[{ pool:"jk_tb_b1", loading:"jk_tb_b1" }, { pool:"jk_tb_b2", loading:"jk_tb_b2" }] },
+        { letter:"C", name:"10-Min Density Block", slots:[{ pool:"jk_tb_c1", loading:"jk_tb_c1" }, { pool:"jk_tb_c2", loading:"jk_tb_c2" }, { pool:"jk_tb_c3", loading:"jk_tb_c3" }] },
+        { letter:"D", name:"Carry + Core", slots:[{ pool:"jk_tb_d1", loading:"jk_tb_d1" }, { pool:"jk_tb_d2", loading:"jk_tb_d2" }] }
+      ]}
+    ]
   }
 };

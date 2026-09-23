@@ -609,6 +609,32 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     assert(/Cycle 2/.test(note), `week 5 should carry the cycle-2 load note, got: ${note}`);
   });
 
+  // ---- Jacklete program fidelity ----
+
+  t("jacklete4: every slot is pinned to the published session", () => {
+    const days = w.generateWeek("jacklete4", 1, 6, 4);
+    assert(days && days.length === 4, `expected 4 days, got ${days && days.length}`);
+    const sig = d => d.blocks.map(b => b.letter + ":" + b.exercises.map(e => `${e.exId} ${e.sets}x${e.reps}`).join(",")).join(" | ");
+    const expected = [
+      "P:bandpullapart 2x15,scappushup 2x10,shoulderpassthru 1x10 | A:dbshoulder 6x12,pulldown 6x12 | B:dbbench 4x12,csrow 4x12 | C:cableextrot 4x12,latraise 4x12",
+      "P:reversesled 3x20 | A:jumpsquat 3x3 | B:rdl 4x6,legpress 4x10 | C:splitsquat 3x10,seatedlegcurl 4x10 | D:calfraise 3x12,sledpush 3x20",
+      "P:bandpullapart 1x15,scappushup 1x10,cablerow 1x12 | A:dbbench 3x8,csrow 3x8 | B:dbtri 3x12,dbcurl 3x12 | C:cablefly 5x5,overheadcableext 5x5 | D:facepull 2x10,straightarmpd 2x10,bandpullapart 2x12",
+      "A:trapbar 4x5,cablerow 4x10 | B:inclinedb 3x10,bulgarian 3x8 | C:kbswing 4x15,pushup 4x12,goblet 4x10 | D:farmers 3x50,pallof 3x10"
+    ];
+    days.forEach((d, i) => assert(sig(d) === expected[i], `day ${i + 1}: got ${sig(d)}`));
+  });
+
+  t("jacklete4: same sessions every week, wave notes advance", () => {
+    const wk1 = w.generateWeek("jacklete4", 1, 6, 4);
+    const wk4 = w.generateWeek("jacklete4", 4, 6, 4);
+    const ids = ds => ds.map(d => d.blocks.map(b => b.exercises.map(e => e.exId + e.sets + "x" + e.reps).join()).join()).join();
+    assert(ids(wk1) === ids(wk4), "week 4 should repeat week 1's sessions");
+    const a1 = ds => ds[0].blocks.find(b => b.letter === "A").exercises[0];
+    assert(/Wave 1, wk 1/.test(a1(wk1).notes), `week 1 note: ${a1(wk1).notes}`);
+    assert(/Wave 2, wk 4/.test(a1(wk4).notes), `week 4 note: ${a1(wk4).notes}`);
+    assert(a1(wk1).tempo === "4-0-1-0", `A1 tempo: ${a1(wk1).tempo}`);
+  });
+
   // ---- Warmup & cooldown variation ----
 
   t("warmup variation: different days in same week get different warmups", () => {

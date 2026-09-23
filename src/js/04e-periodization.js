@@ -254,6 +254,105 @@ LOADING.mn1h_pump = mn1hStyle([[2,10],[2,10],[2,10],[2,10]], 90,
   "8-12 reps. Isolation work can go near or to failure. Holds: 8-12 seconds.",
   { s:2, r:12, rest:60, t:"", n:"DELOAD: light pump work." });
 
+// --- Jacklete (Chris Bumstead / Justin King, STNDRD) ---
+// Every slot is pinned to the exact exercise and prescription published in
+// The Standard newsletter, so each slot gets a one-exercise pool and its own
+// loading style, both generated from the table below. The published sessions
+// don't change sets or reps week to week; progression is load and iso-hold
+// time, which is what the per-week note carries. Two 3-week waves, the second
+// starting a little heavier ("repeat slightly heavier", Oct 23 2025 issue).
+// Sources:
+//   Upper A  "Train Like a Jacklete" (Oct 23 2025), Beginner Upper Day from
+//            the STNDRD Jacklete Program.
+//   Upper B  "Build Muscle + Mobility That Lasts" (Dec 11 2025), Jacklete
+//            Size + Power, "your second upper-body day each week".
+//   Lower    Lower half of "The Secret to Massive Gains" (Dec 4 2025) plus
+//            Justin King's leg-day staples from "Bulletproof Your Legs"
+//            (Mar 13 2025). The newsletter never published a standalone
+//            Jacklete lower day, so this one is assembled.
+//   Total    "(Re)Set Your Standard" from "Lessons I'm Taking Into 2026"
+//            (Jan 8 2026).
+
+var JK_WEEK_NOTE = {
+  Accumulation: [
+    "Wave 1, wk 1: set opening loads, 1-2 reps in reserve.",
+    "Wave 1, wk 2: add 2-5% where last week's reps were clean.",
+    "Wave 1, wk 3: hold load. Add 5-10 s to iso holds, own every eccentric."
+  ],
+  Intensification: [
+    "Wave 2, wk 4: restart a little heavier than week 1.",
+    "Wave 2, wk 5: add 2-5% again if form held.",
+    "Wave 2, wk 6: same load, perfect reps only."
+  ]
+};
+
+// [exId, sets, reps, rest, tempo, note]
+var JK_SLOTS = {
+  // Upper A: Strength + Symmetry
+  jk_ua_p1: ["bandpullapart",    2, 15, 0,  "",        "Prep."],
+  jk_ua_p2: ["scappushup",       2, 10, 0,  "",        "Prep."],
+  jk_ua_p3: ["shoulderpassthru", 1, 10, 0,  "",        "Prep: shoulder dislocates. Then 1 light set of 12-15 on the A-series."],
+  jk_ua_a1: ["dbshoulder",       6, 12, 75, "4-0-1-0", "Unsupported (no back pad), neutral grip. Sets: 6, 4, then 12, 12, 12, 12."],
+  jk_ua_a2: ["pulldown",         6, 12, 75, "4-0-1-0", "Single-arm, supinated grip, per arm. Sets: 6, 4, then 12, 12, 12, 12."],
+  jk_ua_b1: ["dbbench",          4, 12, 60, "4-0-1-0", "Flat, neutral grip. Sets: 6, then 12, 12, 12. Big stretch at the bottom."],
+  jk_ua_b2: ["csrow",            4, 12, 60, "3-0-1-0", "Incline bench, neutral grip. Sets: 6, then 12, 12, 12."],
+  jk_ua_c1: ["cableextrot",      4, 12, 45, "3-0-1-0", "Rope, supinated grip. 12-15 reps."],
+  jk_ua_c2: ["latraise",         4, 12, 45, "3-0-1-0", "Bent-over, chest supported, single arm, supinated. 12-15 reps."],
+
+  // Lower: Power + Legs
+  jk_lo_p1: ["reversesled",      3, 20, 30, "",        "Prep: 2-3 minutes of backward drags. Knee health."],
+  jk_lo_a1: ["jumpsquat",        3, 3,  45, "",        "Bodyweight. Smooth landings, soft knees."],
+  jk_lo_b1: ["rdl",              4, 6,  90, "4-0-1-0", "Dumbbells. Own the negative."],
+  jk_lo_b2: ["legpress",         4, 10, 90, "3-0-1-0", "Deep range, slow. Last 2 sets close stance for quads."],
+  jk_lo_c1: ["splitsquat",       3, 10, 60, "3-0-1-1", "Deficit (front foot raised), BW or DB. Start with your weaker side."],
+  jk_lo_c2: ["seatedlegcurl",    4, 10, 60, "",        "Last set: 15-rep drop set."],
+  jk_lo_d1: ["calfraise",        3, 12, 45, "4-0-1-0", "Single leg, slow eccentric. 12-15 reps."],
+  jk_lo_d2: ["sledpush",         3, 20, 90, "",        "Heavy resistance."],
+
+  // Upper B: Size + Power
+  jk_ub_p1: ["bandpullapart",    1, 15, 0,  "",        "Prep."],
+  jk_ub_p2: ["scappushup",       1, 10, 0,  "",        "Prep."],
+  jk_ub_p3: ["cablerow",         1, 12, 0,  "",        "Prep: light high-pulley row. Then 20 s chest opener stretch."],
+  jk_ub_a1: ["dbbench",          3, 8,  90, "3-0-1-1", "Rep 9: pause mid-range and hold until form breaks. Optional drop: -20%, 5-6 reps. Athletic option: 3x3 speed press."],
+  jk_ub_a2: ["csrow",            3, 8,  90, "3-1-1-1", "Straps on. Scaps down and in, then hold the midpoint as long as you can."],
+  jk_ub_b1: ["dbtri",            3, 12, 75, "3-0-1-1", "Decline bench. Long stretch, no elbow flare. 10-12 reps."],
+  jk_ub_b2: ["dbcurl",           3, 12, 75, "2-0-1-1", "Standing. Cheat the last 1-2 reps if needed. 10-12 reps."],
+  jk_ub_c1: ["cablefly",         5, 5,  60, "",        "Shortened-range ladder: 5 reps + 5 s squeeze, 4 + 4 s, 3 + 3 s, 2 + 2 s, 1 + 1 s."],
+  jk_ub_c2: ["overheadcableext", 5, 5,  60, "",        "Rope, shortened-range ladder: 5 reps + 5 s hold down to 1 + 1 s."],
+  jk_ub_d1: ["facepull",         2, 10, 0,  "",        "High pulley. 8-10 reps. Double these if a shoulder feels unstable."],
+  jk_ub_d2: ["straightarmpd",    2, 10, 0,  "",        "Pullover row, same rope and height. 8-10 reps."],
+  jk_ub_d3: ["bandpullapart",    2, 12, 45, "",        "High-pulley external pull-apart (cable or band). 10-12 reps. Move through D1-D3 with minimal rest."],
+
+  // Total Body: (Re)Set
+  jk_tb_a1: ["trapbar",          4, 5,  105, "",       "Strong, not grinding. Leave a rep or two in the tank."],
+  jk_tb_a2: ["cablerow",         4, 10, 60, "",        "Half-kneeling, single arm, per side. 8-10 reps. Stay tall."],
+  jk_tb_b1: ["inclinedb",        3, 10, 75, "",        "Full range. 8-10 reps."],
+  jk_tb_b2: ["bulgarian",        3, 8,  75, "",        "Rear foot elevated. 6-8 reps per side."],
+  jk_tb_c1: ["kbswing",          4, 15, 0,  "",        "10-minute density block: rotate swings x15, push-ups x10-15, goblet squats x10. Log each round as a set."],
+  jk_tb_c2: ["pushup",           4, 12, 0,  "",        "Density block. 10-15 reps."],
+  jk_tb_c3: ["goblet",           4, 10, 0,  "",        "Density block. Breathe hard, never ragged."],
+  jk_tb_d1: ["farmers",          3, 50, 90, "",        "Heavy, 40-60 yards. Walk tall."],
+  jk_tb_d2: ["pallof",           3, 10, 60, "",        "Or dead bug. 8-10 per side. Brace hard."]
+};
+
+function jkStyle(s, r, rest, t, note) {
+  var style = {
+    Deload: [{ s:Math.max(1, s - 1), r:r, rest:rest, t:t, n:"DELOAD: same movements, ~60% load." }]
+  };
+  Object.keys(JK_WEEK_NOTE).forEach(function(phase) {
+    style[phase] = JK_WEEK_NOTE[phase].map(function(weekNote) {
+      return { s:s, r:r, rest:rest, t:t, n:note + " " + weekNote };
+    });
+  });
+  return style;
+}
+
+Object.keys(JK_SLOTS).forEach(function(key) {
+  var rx = JK_SLOTS[key];
+  POOLS[key] = { full:[rx[0]] };
+  LOADING[key] = jkStyle(rx[1], rx[2], rx[3], rx[4], rx[5]);
+});
+
 function getLoading(style, phaseName, wip) {
   var scheme = LOADING[style];
   // Callers spread this straight into mkSets, which keys off sets/reps/tempo/
