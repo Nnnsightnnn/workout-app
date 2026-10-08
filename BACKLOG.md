@@ -5,6 +5,12 @@ Delegation prompts with full context live in **TASKS.md** (say "do #N" to execut
 
 ---
 
+## Open bugs
+
+- **Boot crash on Nick's phone (2026-10-08).** App froze on the bare template (placeholder "Max Effort Lower", "User" chip, no paper skin), meaning init() threw at startup. Not reproducible on fresh data in Chromium or WebKit 26.4, so it is data-dependent. Boot guard now shows a rescue screen with the error; fix the root cause once Nick sends the details.
+
+---
+
 ## Active Tasks (see TASKS.md)
 
 | # | Type | Name | Conflicts with |

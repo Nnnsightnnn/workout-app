@@ -14,6 +14,104 @@
 /* {{FONTS}} */
 /* {{CSS}} */
 </style>
+<script>
+/* ── Boot guard ────────────────────────────────────────────────
+   Lives in its own <script> so it survives a syntax error in the
+   main bundle. If init() throws, or never finishes, the user gets a
+   rescue screen instead of the bare template: reload, save a copy
+   of their data, or send Kenny the exact error. Plain DOM only; it
+   cannot depend on anything in the app bundle. */
+(function () {
+  var errors = [];
+  window.__knBooted = false;
+  window.addEventListener("error", function (e) {
+    errors.push((e.message || "error") + (e.lineno ? " @" + e.lineno + ":" + (e.colno || 0) : ""));
+  });
+  window.addEventListener("unhandledrejection", function (e) {
+    errors.push("promise: " + (e.reason && e.reason.message || e.reason));
+  });
+
+  function storedSchema() {
+    try { return (JSON.parse(localStorage.getItem("kn-lifts-v3") || "{}") || {})._schemaVersion; }
+    catch (e) { return "unreadable"; }
+  }
+
+  function details(err) {
+    var lines = [];
+    if (err) lines.push(String(err.message || err));
+    if (err && err.stack) lines.push(String(err.stack).split("\n").slice(0, 6).join("\n"));
+    errors.forEach(function (m) { lines.push(m); });
+    lines.push("build " + (typeof APP_BUILD !== "undefined" ? APP_BUILD : "?") +
+      " · schema app " + (typeof APP_VERSION !== "undefined" ? APP_VERSION : "?") +
+      " / stored " + storedSchema());
+    lines.push(navigator.userAgent);
+    return lines.join("\n");
+  }
+
+  function share(payload, fallbackMsg, btn) {
+    if (navigator.share) {
+      navigator.share(payload).catch(function () {});
+      return;
+    }
+    var text = payload.text || "";
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(function () { btn.textContent = fallbackMsg; });
+    }
+  }
+
+  window.__knShowRescue = function (err) {
+    if (document.getElementById("knRescue")) return;
+    var info = details(err);
+    var wrap = document.createElement("div");
+    wrap.id = "knRescue";
+    wrap.style.cssText = "position:fixed;inset:0;z-index:99999;overflow:auto;background:#f4ecd3;color:#1e3a72;" +
+      "font-family:'Special Elite','Courier Prime',monospace;padding:calc(env(safe-area-inset-top) + 28px) 20px 32px;";
+    var btnCss = "display:block;width:100%;min-height:48px;margin:0 0 12px;background:none;color:#1e3a72;" +
+      "border:1.4px solid #1e3a72;border-radius:0;font:inherit;font-size:15px;letter-spacing:.08em;text-transform:uppercase;";
+    wrap.innerHTML =
+      '<div style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;opacity:.6;">K&amp;N Lifts</div>' +
+      '<h1 style="font-size:24px;margin:8px 0 12px;font-weight:normal;">The app hit a snag opening.</h1>' +
+      '<p style="font-size:15px;line-height:1.5;margin:0 0 20px;">Your workouts are still saved on this phone. ' +
+      'Try reloading first. If it happens again, send Kenny the details so he can fix it.</p>' +
+      '<button id="knRescueReload" style="' + btnCss + 'background:#a83a2a;color:#f4ecd3;border-color:#a83a2a;">Reload</button>' +
+      '<button id="knRescueSend" style="' + btnCss + '">Send Kenny the details</button>' +
+      '<button id="knRescueSave" style="' + btnCss + '">Save a copy of my data</button>' +
+      '<pre id="knRescueInfo" style="white-space:pre-wrap;word-break:break-word;font-size:11px;line-height:1.4;' +
+      'margin-top:20px;padding-top:12px;border-top:1px dashed rgba(40,30,15,.3);opacity:.7;"></pre>';
+    document.body.appendChild(wrap);
+    document.getElementById("knRescueInfo").textContent = info;
+    document.getElementById("knRescueReload").onclick = function () { location.reload(); };
+    var sendBtn = document.getElementById("knRescueSend");
+    sendBtn.onclick = function () {
+      share({ title: "K&N Lifts error", text: "K&N Lifts wouldn't open:\n\n" + info }, "Copied, paste it to Kenny", sendBtn);
+    };
+    var saveBtn = document.getElementById("knRescueSave");
+    saveBtn.onclick = function () {
+      var raw = "";
+      try { raw = localStorage.getItem("kn-lifts-v3") || ""; } catch (e) {}
+      var name = "kn-lifts-backup-" + new Date().toISOString().slice(0, 10) + ".json";
+      try {
+        var file = new File([raw], name, { type: "application/json" });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          navigator.share({ files: [file], title: name }).catch(function () {});
+          return;
+        }
+      } catch (e) {}
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([raw], { type: "application/json" }));
+      a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+    };
+  };
+
+  // Safety net: a syntax error in the bundle means init() never runs at all.
+  window.addEventListener("load", function () {
+    setTimeout(function () {
+      if (!window.__knBooted) window.__knShowRescue(null);
+    }, 2500);
+  });
+})();
+</script>
 </head>
 <body>
 

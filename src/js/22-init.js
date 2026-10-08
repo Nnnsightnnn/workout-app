@@ -313,7 +313,7 @@ function initInfoGuide() {
   });
 }
 
-function init() {
+function _initApp() {
   runMigrations();
   const s = loadStore();
 
@@ -428,6 +428,20 @@ function init() {
     if (pendingChangelog) {
       setTimeout(() => showChangelogSheet(pendingChangelog), 800);
     }
+  }
+}
+
+// ── Boot wrapper ──────────────────────────────────────────────
+// Any throw during startup lands on the rescue screen (template.html
+// boot guard) instead of leaving the bare HTML skeleton on screen.
+function init() {
+  try {
+    _initApp();
+    window.__knBooted = true;
+  } catch (err) {
+    window.__knBooted = true; // rescue is shown now; stop the load-time fallback
+    console.error("KN Lifts: boot failed", err);
+    if (typeof window.__knShowRescue === "function") window.__knShowRescue(err);
   }
 }
 
