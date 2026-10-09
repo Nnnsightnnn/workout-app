@@ -4178,6 +4178,95 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     b.remove();
   });
 
+  // ── Report a problem ─────────────────────────────────────────────
+  // The reporter must tell Kenny where/what/which build, and never leak
+  // logged weights or reps.
+  await (async () => {
+    if (!w.userData()) w.addUser("Reporter");
+    w.updateUser(u => {
+      u.sessions = (u.sessions || []).concat([{ id: "rp-s1", finishedAt: Date.now(), notes: "felt 987.5 heavy",
+        sets: [{ exId: "bench", weight: 987.5, reps: 13, rpe: 9 }] }]);
+    });
+    w.showScreen("history");
+    const tapA = w.document.createElement("button");
+    tapA.textContent = "Open swap sheet";
+    w.document.body.appendChild(tapA);
+    tapA.click();
+    const row = w.document.createElement("div");
+    row.className = "paper-set-row";
+    const tapB = w.document.createElement("button");
+    tapB.textContent = "987.5 × 13";
+    row.appendChild(tapB);
+    w.document.body.appendChild(row);
+    tapB.click();
+    const field = w.document.createElement("input");
+    field.id = "rpWeightField";
+    field.value = "987.5";
+    w.document.body.appendChild(field);
+    field.click();
+    tapA.remove(); row.remove(); field.remove();
+
+    // Inject a runtime error through the real window listener, then drop it
+    // from the harness's own error list so the run still exits clean.
+    const boom = new Error("RP_INJECTED_BOOM");
+    w.dispatchEvent(new w.ErrorEvent("error", { message: "RP_INJECTED_BOOM", filename: "http://localhost/x.js", lineno: 7, colno: 3, error: boom }));
+    for (let i = errors.length - 1; i >= 0; i--) if (/RP_INJECTED_BOOM/.test(errors[i].msg)) errors.splice(i, 1);
+
+    const text = w.buildProblemReport("sheet looked frozen");
+    t("report: includes note, build, schema and screen", () => {
+      assert(text.includes("sheet looked frozen"), "note present");
+      assert(text.includes("build: " + w.eval("APP_BUILD")) && !/build: \?/.test(text), "APP_BUILD present");
+      assert(text.includes("app schema: " + w.eval("APP_VERSION")), "APP_VERSION present");
+      assert(text.includes("stored schema: " + w.loadStore()._schemaVersion), "stored schema present");
+      assert(text.includes("screen: screen-history"), "active screen present");
+      assert(/sessions: \d+/.test(text), "sessions count present");
+    });
+    t("report: lists recent tap labels", () => {
+      assert(text.includes('button "Open swap sheet"'), "tap label recorded");
+      assert(text.includes("input(text)#rpWeightField"), "input identified by id only");
+    });
+    t("report: never contains logged weights, reps or notes", () => {
+      assert(!text.includes("987.5"), "distinctive weight leaked");
+      assert(!text.includes("987"), "weight fragment leaked");
+      assert(!text.includes("felt"), "session note leaked");
+    });
+    t("report: injected runtime error appears with its source", () => {
+      assert(text.includes("RP_INJECTED_BOOM"), "error message present");
+      assert(text.includes("x.js:7:3"), "error location present");
+    });
+
+    // Delivery without navigator.share: clipboard path, then manual <pre>.
+    let copied = null, threw = null, how = null;
+    Object.defineProperty(w.navigator, "clipboard", { configurable: true, value: { writeText: async (s) => { copied = s; } } });
+    try { how = await w.sendProblemReport(text); } catch (e) { threw = e; }
+    t("report: clipboard fallback works when navigator.share is absent", () => {
+      eq(typeof w.navigator.share, "undefined", "jsdom has no share");
+      eq(threw, null, "no throw");
+      eq(how, "clipboard", "took clipboard path");
+      eq(copied, text, "copied full report");
+      assert(/Copied/.test(w.document.getElementById("toast").textContent), "toast shown");
+    });
+    Object.defineProperty(w.navigator, "clipboard", { configurable: true, value: undefined });
+    threw = null;
+    w.openReportProblem();
+    try { how = await w.sendProblemReport(text); } catch (e) { threw = e; }
+    t("report: manual <pre> fallback when share and clipboard are missing", () => {
+      eq(threw, null, "no throw");
+      eq(how, "manual", "took manual path");
+      const pre = w.document.querySelector("#sheetContent .report-problem-pre");
+      assert(pre && pre.textContent === text, "report shown in <pre>");
+    });
+    w.closeSheet();
+    t("report: paper menu offers Report a problem", () => {
+      w.paperOpenNavMenu();
+      const btn = w.document.querySelector("#sheetContent .paper-menu-report");
+      assert(btn, "menu item present");
+      btn.click();
+      assert(w.document.querySelector("#sheetContent .report-problem-send"), "reporter sheet opened");
+      w.closeSheet();
+    });
+  })();
+
   // Regression: a stored injury used to brick boot. The stock programs are
   // generated at script load and read INJURY_EXERCISE_MAP before its const
   // initialized (TDZ ReferenceError on every launch). Boot a fresh window

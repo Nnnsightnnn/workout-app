@@ -523,13 +523,14 @@ function paperOpenNavMenu() {
       <button class="paper-menu-sheet-close" type="button" aria-label="Close menu">&times;</button>
     </div>
     <div class="paper-menu-list">${exitItem}${items}</div>
+    <button class="paper-menu-report" data-paper-menu-action="report" type="button">Report a problem</button>
   `;
   openSheet(wrap);
 
   wrap.querySelector(".paper-menu-sheet-close")
       .addEventListener("click", () => closeSheet());
 
-  wrap.querySelectorAll(".paper-menu-item").forEach(btn => {
+  wrap.querySelectorAll(".paper-menu-item, .paper-menu-report").forEach(btn => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       const screen = btn.dataset.paperMenuScreen;
@@ -541,6 +542,8 @@ function paperOpenNavMenu() {
         openStandaloneTimer();
       } else if (action === "exit" && typeof openExitWorkoutSheet === "function") {
         openExitWorkoutSheet();
+      } else if (action === "report" && typeof openReportProblem === "function") {
+        openReportProblem();
       }
       if (navigator.vibrate) navigator.vibrate(10);
     });

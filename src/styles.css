@@ -10781,3 +10781,148 @@ body[data-skin="paper"] .sheet .sheet-actions:last-child {
 :where(body[data-skin="paper"] button:not(:disabled)):active {
   background-image: linear-gradient(var(--paper-marker-soft), var(--paper-marker-soft));
 }
+
+/* ============================================================ */
+/* REPORT A PROBLEM — quiet menu foot-link + reporter sheet     */
+/* ============================================================ */
+body[data-skin="paper"] .sheet button.paper-menu-report {
+  align-self: flex-start;
+  background: transparent;
+  border: none;
+  padding: 14px 10px 6px;
+  min-height: 44px;
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: lowercase;
+  color: var(--paper-ink-faint);
+  text-decoration: underline dotted;
+  text-decoration-color: var(--paper-ink-mist);
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+body[data-skin="paper"] .sheet button.paper-menu-report:active {
+  background: var(--paper-marker-soft);
+}
+body[data-skin="paper"] .sheet .report-problem {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 4px 8px;
+}
+body[data-skin="paper"] .sheet .report-problem-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px dotted var(--paper-ink-mist);
+}
+body[data-skin="paper"] .sheet .report-problem-kicker {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .sheet button.report-problem-close {
+  background: transparent;
+  border: none;
+  color: var(--paper-ink-faint);
+  font-family: var(--paper-form);
+  font-size: 22px;
+  line-height: 1;
+  min-width: 44px;
+  min-height: 44px;
+  cursor: pointer;
+}
+body[data-skin="paper"] .sheet .report-problem-title {
+  margin: 4px 0 0;
+  font-family: var(--paper-hand);
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .sheet .report-problem-lede {
+  margin: 0;
+  font-family: var(--paper-hand);
+  font-size: 17px;
+  line-height: 1.4;
+  color: var(--paper-ink-soft);
+}
+body[data-skin="paper"] .sheet .report-problem-label {
+  margin-top: 6px;
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .sheet .report-problem-label span {
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+}
+body[data-skin="paper"] .sheet .report-problem-note {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  background: transparent;
+  border: none;
+  border-bottom: 1.4px solid var(--paper-ink-soft);
+  border-radius: 0;
+  padding: 6px 2px;
+  font-family: var(--paper-hand);
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--paper-ink);
+  outline: none;
+}
+body[data-skin="paper"] .sheet .report-problem-note::placeholder {
+  color: var(--paper-ink-mist);
+}
+body[data-skin="paper"] .sheet .report-problem-note:focus {
+  background: var(--paper-marker-soft);
+}
+body[data-skin="paper"] .sheet .report-problem-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+body[data-skin="paper"] .sheet button.report-problem-cancel {
+  background: transparent;
+  border: 1.4px solid var(--paper-ink-soft);
+  border-radius: 0;
+  color: var(--paper-ink-soft);
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 10px 16px;
+  min-height: 44px;
+  cursor: pointer;
+}
+body[data-skin="paper"] .sheet button.report-problem-send {
+  min-height: 44px;
+}
+body[data-skin="paper"] .sheet button.report-problem-send:disabled {
+  opacity: 0.6;
+}
+body[data-skin="paper"] .sheet .report-problem-pre {
+  margin: 0;
+  max-height: 46vh;
+  overflow: auto;
+  padding: 10px 2px;
+  border-top: 1px dashed var(--paper-ink-mist);
+  border-bottom: 1px dashed var(--paper-ink-mist);
+  font-family: var(--paper-form);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--paper-ink);
+  white-space: pre-wrap;
+  word-break: break-word;
+  -webkit-user-select: text;
+  user-select: text;
+}
