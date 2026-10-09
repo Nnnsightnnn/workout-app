@@ -467,19 +467,10 @@ function paperRebuildBottomNav() {
   if (!handle || handle.dataset.paperBuilt === "1") return;
   handle.addEventListener("click", (e) => {
     e.stopPropagation();
-    // Toggle: if any menu surface is open (bottom sheet OR side library),
-    // tapping the MENU sticky closes it. Otherwise open the paper nav menu.
-    const sheetBg = document.getElementById("sheetBg");
-    const sidebarBg = document.getElementById("sidebarBg");
-    const sheetOpen = sheetBg && sheetBg.classList.contains("active");
-    const sidebarOpen = sidebarBg && sidebarBg.classList.contains("active");
-    if (sheetOpen) {
-      closeSheet();
-    } else if (sidebarOpen) {
-      closeSidebar();
-    } else {
-      paperOpenNavMenu();
-    }
+    // The FAB hides itself while any sheet/overlay is open (CSS :has in
+    // styles.css), so every tap here means "open the nav menu". Closing
+    // belongs to each overlay's own X, which also runs its save path.
+    paperOpenNavMenu();
     if (navigator.vibrate) navigator.vibrate(8);
   });
   handle.dataset.paperBuilt = "1";

@@ -8272,6 +8272,13 @@ body[data-skin="paper"] .paper-menu-fab-screen {
   white-space: nowrap;
 }
 body[data-skin="paper"] .paper-menu-fab-screen:empty { display: none; }
+/* Step aside while any sheet or overlay is open: its own X owns the corner. */
+body[data-skin="paper"]:has(.sheet-bg.active, .sidebar-bg.active,
+  .info-guide-overlay.active, .onboarding-overlay.active,
+  .tutorial-overlay.active) .paper-menu-fab {
+  visibility: hidden;
+  pointer-events: none;
+}
 
 /* Paper menu sheet — handwritten destinations list with squiggle. */
 body[data-skin="paper"] .paper-menu-sheet {
@@ -10911,6 +10918,36 @@ body[data-skin="paper"] .paper-rpt-session-badge {
   text-transform: uppercase;
   color: var(--paper-ink-soft);
   transform: rotate(-0.6deg);
+}
+
+/* ── Sheet reachability + selected state (Nick, 2026-10-09) ──────
+   1. The generic paper sheet-button rule above out-specifies
+      .schedule-day-btn.selected, so a picked day/week looked identical
+      to the rest: taps worked but nothing visibly changed.
+   2. 85vh ignores Safari's toolbars and the safe-area inset was 0, so the
+      Cancel/Add row could sit under the toolbar or home indicator. Use the
+      dynamic viewport, a real bottom gutter, and pin the actions row. */
+body[data-skin="paper"] .sheet .schedule-day-btn.selected {
+  background: var(--paper-ink);
+  color: var(--paper-bg);
+  border-color: var(--paper-ink);
+  border-width: 2px;
+}
+body[data-skin="paper"] .sheet {
+  max-height: 85vh;
+  max-height: 85dvh;
+  overscroll-behavior: contain;
+  padding-bottom: max(28px, calc(16px + env(safe-area-inset-bottom)));
+}
+body[data-skin="paper"] .sheet > .sheet-actions,
+body[data-skin="paper"] .sheet .sheet-actions:last-child {
+  position: sticky;
+  bottom: calc(-1 * max(28px, calc(16px + env(safe-area-inset-bottom))));
+  background: var(--paper-bg);
+  padding-top: 10px;
+  padding-bottom: max(28px, calc(16px + env(safe-area-inset-bottom)));
+  margin-bottom: calc(-1 * max(28px, calc(16px + env(safe-area-inset-bottom))));
+  z-index: 1;
 }
 
 </style>
@@ -14084,7 +14121,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 23;
-const APP_BUILD = "3c601950";
+const APP_BUILD = "0a80ee8d";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -31853,19 +31890,10 @@ function paperRebuildBottomNav() {
   if (!handle || handle.dataset.paperBuilt === "1") return;
   handle.addEventListener("click", (e) => {
     e.stopPropagation();
-    // Toggle: if any menu surface is open (bottom sheet OR side library),
-    // tapping the MENU sticky closes it. Otherwise open the paper nav menu.
-    const sheetBg = document.getElementById("sheetBg");
-    const sidebarBg = document.getElementById("sidebarBg");
-    const sheetOpen = sheetBg && sheetBg.classList.contains("active");
-    const sidebarOpen = sidebarBg && sidebarBg.classList.contains("active");
-    if (sheetOpen) {
-      closeSheet();
-    } else if (sidebarOpen) {
-      closeSidebar();
-    } else {
-      paperOpenNavMenu();
-    }
+    // The FAB hides itself while any sheet/overlay is open (CSS :has in
+    // styles.css), so every tap here means "open the nav menu". Closing
+    // belongs to each overlay's own X, which also runs its save path.
+    paperOpenNavMenu();
     if (navigator.vibrate) navigator.vibrate(8);
   });
   handle.dataset.paperBuilt = "1";
