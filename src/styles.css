@@ -10926,3 +10926,43 @@ body[data-skin="paper"] .sheet .report-problem-pre {
   -webkit-user-select: text;
   user-select: text;
 }
+
+/* ── Sheet toggles + menu restore (UI invariants, 2026-10-09) ─────
+   The generic paper sheet-button rule (.sheet button:not(.primary)) resets
+   background/colour/border/font on EVERY button in a sheet, which erased
+   each toggle's own "selected" look (library categories, look-ahead mode,
+   rest pills) and shrank the 34px handwritten nav-menu items to 11px
+   typewriter. One shared selected state, and the menu gets its type back. */
+body[data-skin="paper"] .sheet button:is(.selected, .active, [aria-pressed="true"]):not(.primary):not(.paper-menu-item) {
+  background: var(--paper-ink);
+  color: var(--paper-bg);
+  border-color: var(--paper-ink);
+}
+body[data-skin="paper"] .sheet .paper-menu-sheet button.paper-menu-item {
+  background: transparent;
+  color: var(--paper-ink-faint);
+  border: none;
+  border-bottom: 1px dotted var(--paper-ink-mist);
+  border-radius: 0;
+  font-family: var(--paper-hand);
+  font-size: 34px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  padding: 18px 10px;
+  box-shadow: none;
+}
+body[data-skin="paper"] .sheet .paper-menu-sheet button.paper-menu-item.active {
+  color: var(--paper-ink);
+  font-weight: 700;
+}
+body[data-skin="paper"] .sheet .paper-menu-sheet button.paper-menu-item:active {
+  background: var(--paper-marker-soft);
+}
+/* Settings > Notebook style ink row was 1px wider than a 320px screen. */
+.paper-pref-ink-row { min-width: 0; }
+.paper-pref-ink-btn { min-width: 0; }
+@media (max-width: 340px) {
+  .paper-pref-ink-row { gap: 4px; }
+  .paper-pref-ink-btn { letter-spacing: 0.06em; }
+}

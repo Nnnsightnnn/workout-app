@@ -24,3 +24,7 @@ debt-destroyer.html
 
 # Local Antigravity bridge — keep local
 AGENTS.md
+
+# Playwright output (screenshots are uploaded as a CI artifact)
+test-results/ui/
+playwright-report/

@@ -88,21 +88,8 @@ const STALE_SCROLL =
 // out-specifying each toggle's own selected rule — the same bug that hid
 // .schedule-day-btn.selected (fixed at src/styles.css:10717).
 const KNOWN_BUGS = {
-  "selected|*|*|library":
-    ".lib-cat-btn.active (src/styles.css:1159) loses to src/styles.css:9174 inside a sheet; the active category looks like the rest",
-  "selected|*|*|adhoc":
-    ".lib-cat-btn.active (src/styles.css:1159) loses to src/styles.css:9174 inside a sheet; the active category looks like the rest",
-  "selected|*|*|look-ahead":
-    ".la-mode-btn.active (src/styles.css:5274) loses to src/styles.css:9174; the active view-mode toggle looks like the other",
-  "selected|*|*|rest-timer":
-    "body[data-skin=paper] .rest-pill.active (src/styles.css:9254) loses to src/styles.css:9174; the chosen rest pill looks like the rest",
-  "selected|*|*|nav-menu":
-    "body[data-skin=paper] .paper-menu-item.active colour (src/styles.css:8124) loses to src/styles.css:9174, which also shrinks the 34px handwritten items to 11px typewriter; only the squiggle marks the current screen",
-  // Not the sheet rule:
-  "screens|*|320x568|settings":
-    "Settings > Notebook style ink row (.paper-pref-ink-row, src/styles.css:6981; four fixed-label buttons) is 1px wider than a 320px screen, so the page scrolls sideways",
-  "stale-scroll|*|320x568|day-picker": STALE_SCROLL,
-  "stale-scroll|*|375x667|day-picker": STALE_SCROLL
+  // Empty: every case found on 2026-10-09 is fixed (sheet toggle selected
+  // state, nav-menu type, Settings ink row at 320px, stale sheet scroll).
 };
 
 // UI_RUN_KNOWN_BUGS=1 runs the fixme'd cases anyway (to confirm a fix).

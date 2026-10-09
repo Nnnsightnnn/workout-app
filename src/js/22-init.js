@@ -135,6 +135,12 @@ function openAddUserDialog(isFirstRun) {
     if (!name) { input.focus(); return; }
     const tplId = document.getElementById("newUserTpl").value;
     const u = addUser(name, tplId);
+    // These two have no stock program: newUserRecord() leaves it empty, so
+    // without this the new user saw a rest day every day with no Start.
+    if (tplId === "rp-hypertrophy" && typeof startMesocycle === "function") {
+      const _tpl = PROGRAM_TEMPLATES.find(t => t.id === tplId);
+      startMesocycle({ daysPerWeek: (_tpl && _tpl.daysPerWeek) || 4 });
+    }
     state.currentDayId = determineDefaultDay();
     closeSheet();
     if (typeof applyPaperSkin === "function") applyPaperSkin();
@@ -142,6 +148,7 @@ function openAddUserDialog(isFirstRun) {
     renderUserSection();
     renderWorkoutScreen();
     showToast(`Welcome, ${u.name}`, "success");
+    if (tplId === "custom" && typeof openProgramBuilder === "function") openProgramBuilder();
   };
   input.addEventListener("keydown", e => { if (e.key === "Enter") save(); });
   document.getElementById("saveAddBtn").onclick = save;

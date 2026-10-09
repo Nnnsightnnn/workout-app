@@ -8,6 +8,11 @@ function openSheet(html) {
   } else {
     document.getElementById("sheetContent").appendChild(html);
   }
+  // A new sheet always starts at the top. .sheet is reused between sheets and
+  // only fades, so without this a sheet opened after scrolling another one
+  // inherited its scroll position, with the ✕ off-screen.
+  const _sheetEl = document.getElementById("sheet");
+  if (_sheetEl) _sheetEl.scrollTop = 0;
   document.getElementById("sheetBg").classList.add("active");
 }
 function closeSheet() {

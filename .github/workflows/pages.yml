@@ -46,6 +46,25 @@ jobs:
         # Tests read the built workout-app.html, so build must come first.
         run: npm test
 
+      - name: Install browser engines for the e2e checks
+        run: npx playwright install --with-deps webkit chromium
+
+      - name: Browser checks (WebKit personas + UI invariants)
+        # Real Safari engine at iPhone sizes, cream and dark: stored-data
+        # personas (injuries, 300-session history, mid-workout, every program)
+        # and layout rules (close X reachable, primary action on screen,
+        # selected toggles look selected, no sideways scroll). A failure here
+        # blocks the deploy just like the unit tests.
+        run: npx playwright test
+
+      - name: Upload screenshots for eyeballing
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-screenshots
+          path: test-results/
+          retention-days: 14
+
       - name: Stage deployable files into dist/
         # Publish only what the app needs. Source, tests, node_modules stay out.
         run: |

@@ -198,18 +198,34 @@ test.describe("personas", () => {
     });
   });
 
-  // Known bug, kept visible: the first-run "who's training?" sheet
-  // (openAddUserDialog, src/js/22-init.js) lists every template, but
-  // addUser() → newUserRecord() builds an empty program for "custom" and
-  // "rp-hypertrophy" (no startMesocycle), so that user lands on a rest-day
-  // card every day with no Start button. test.fail() flips red once fixed —
-  // then delete the annotation.
+  // Regression (2026-10-09): the first-run "who's training?" sheet
+  // (openAddUserDialog, src/js/22-init.js) lists every template. "custom"
+  // and "rp-hypertrophy" have no stock program, so Create must start the
+  // mesocycle (rp) or open the builder (custom) — otherwise the new user
+  // lands on a rest-day card every day with no Start button.
   test("add-user sheet: every offered template yields a startable program", async ({ page }) => {
-    test.fail(true, "custom / rp-hypertrophy create an empty program via addUser()");
     await P.openFresh(page);
-    const empty = await page.evaluate(() => PROGRAM_TEMPLATES
-      .filter(t => !newUserRecord("x", t.id).programs[0].program.length)
-      .map(t => t.id));
-    expect(empty).toEqual([]);
+    const results = await page.evaluate(() => {
+      // Skip onboarding; drive the real "Add a new user" sheet + Create.
+      try { closeOnboarding(); } catch (e) {}
+      const out = {};
+      for (const t of PROGRAM_TEMPLATES) {
+        openAddUserDialog(false);
+        document.getElementById("newUserName").value = "T-" + t.id;
+        const opt = document.querySelector('.tpl-option[data-tpl="' + t.id + '"]');
+        selectNewUserTpl(opt, t.id);
+        document.getElementById("saveAddBtn").click();
+        const ap = activeProgram();
+        const days = ap && Array.isArray(ap.program) ? ap.program.length : 0;
+        const builderOpen = document.getElementById("sheetBg").classList.contains("active")
+          && typeof _builderStep !== "undefined" && _builderStep === 1;
+        out[t.id] = days > 0 ? "program" : (builderOpen ? "builder" : "EMPTY");
+        try { closeSheet(); } catch (e) {}
+      }
+      return out;
+    });
+    const empty = Object.entries(results).filter(([, v]) => v === "EMPTY").map(([k]) => k);
+    expect(empty, JSON.stringify(results)).toEqual([]);
+    expect(results.custom).toBe("builder");
   });
 });
