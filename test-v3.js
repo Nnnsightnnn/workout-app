@@ -4139,6 +4139,45 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     assert(!tplEx.scheme, "program template still has no scheme");
   });
 
+  // Regression: userData() re-parsed the whole store on every call, so
+  // Start Workout parsed it ~680 times (15 s freeze at ~300 sessions).
+  t("perf: startWorkout parses the store a handful of times, not hundreds", () => {
+    if (!w.state.userId) w.addUser("PerfUser");
+    w.state.dayChosen = true;
+    w.state.workoutStartedAt = null;
+    w.renderWorkoutScreen();
+    const jp = w.JSON.parse; let n = 0;
+    w.JSON.parse = function (...a) { n++; return jp.apply(this, a); };
+    try { w.startWorkout(); } finally { w.JSON.parse = jp; }
+    assert(n < 25, "JSON.parse calls during startWorkout: " + n);
+  });
+
+  t("read cache: sees saves, outside writes, and stays private to writers", () => {
+    if (!w.state.userId) w.addUser("CacheUser");
+    const before = w.userData();
+    assert(w.userData() === before, "repeat reads reuse one parsed copy");
+    w.updateUser(u => { u._cacheProbe = 1; });
+    eq(w.userData()._cacheProbe, 1, "a save is visible on the next read");
+    const raw = JSON.parse(w.localStorage.getItem("kn-lifts-v3"));
+    raw.users.find(u => u.id === w.state.userId)._cacheProbe = 2;
+    w.localStorage.setItem("kn-lifts-v3", JSON.stringify(raw));
+    eq(w.userData()._cacheProbe, 2, "a raw write (import, other tab) is visible");
+    w.updateUser(u => { delete u._cacheProbe; });
+    const fresh = w.loadStore();
+    assert(fresh.users !== w.getAllUsers(), "loadStore() still hands writers a private copy");
+  });
+
+  t("busy: a double tap on a busy button runs its handler once", () => {
+    const b = w.document.createElement("button");
+    b.dataset.busy = "1";
+    let runs = 0;
+    b.onclick = () => { runs++; };
+    w.document.body.appendChild(b);
+    b.click(); b.click(); b.click();
+    eq(runs, 1, "handler runs once inside the guard window");
+    b.remove();
+  });
+
   // Regression: a stored injury used to brick boot. The stock programs are
   // generated at script load and read INJURY_EXERCISE_MAP before its const
   // initialized (TDZ ReferenceError on every launch). Boot a fresh window

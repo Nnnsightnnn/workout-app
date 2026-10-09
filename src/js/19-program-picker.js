@@ -465,6 +465,7 @@ function openDurationPicker(templateId) {
 
   const startBtn = document.createElement("button");
   startBtn.className = "primary";
+  startBtn.dataset.busy = "1";
   function updateStartBtn() {
     startBtn.textContent = "Add " + selectedDays + "d × " + selectedWeeks + "wk Program";
   }
@@ -551,6 +552,7 @@ function openWeekControl() {
   if (ap.currentWeek < (ap.totalWeeks || 12)) {
     const fwdBtn = document.createElement("button");
     fwdBtn.className = "sheet-item";
+    fwdBtn.dataset.busy = "1";
     fwdBtn.innerHTML = '<span class="icon">→</span><span>Skip to Week ' + (ap.currentWeek + 1) + '</span>';
     fwdBtn.onclick = function() { advanceWeek(); closeSheet(); renderProgramPicker(); renderWorkoutScreen(); };
     actions.appendChild(fwdBtn);

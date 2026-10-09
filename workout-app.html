@@ -10950,6 +10950,51 @@ body[data-skin="paper"] .sheet .sheet-actions:last-child {
   z-index: 1;
 }
 
+/* ── Busy + press feedback (20a-busy.js) ─────────────────────────
+   Ink line along the top while real work runs; tapped button dims; every
+   other button gets a quiet highlighter wash while pressed. :where() keeps
+   the wash at near-zero specificity so any button with its own :active
+   styling keeps it. */
+#knBusyBar {
+  position: fixed;
+  left: 0; right: 0;
+  top: env(safe-area-inset-top, 0px);
+  height: 3px;
+  z-index: 5000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--paper-ink, #1e3a72) 22%, transparent);
+}
+#knBusyBar::before {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0;
+  left: -10%;
+  width: 30%;
+  background: var(--paper-ink, #1e3a72);
+  opacity: 0.8;
+  animation: kn-busy-ink 0.9s ease-in-out infinite;
+}
+#knBusyBar.active { opacity: 1; }
+@keyframes kn-busy-ink {
+  0%   { left: -10%; width: 30%; }
+  60%  { width: 45%; }
+  100% { left: 100%; width: 30%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #knBusyBar::before { animation: none; left: 0; width: 100%; opacity: 0.45; }
+}
+.kn-busy {
+  opacity: 0.55 !important;
+  pointer-events: none;
+  cursor: progress;
+}
+:where(body[data-skin="paper"] button:not(:disabled)):active {
+  background-image: linear-gradient(var(--paper-marker-soft), var(--paper-marker-soft));
+}
+
 </style>
 <script>
 /* ── Boot guard ────────────────────────────────────────────────
@@ -13988,8 +14033,27 @@ function saveStore(s) {
   }
 }
 
+// ── Read cache ────────────────────────────────────────────────
+// userData() is the hot path: starting a workout used to call it ~680 times,
+// and each call re-parsed the whole store. With ~300 sessions that was a
+// 15-second freeze on Start. Reads now reuse one parsed copy until the raw
+// string in localStorage changes (any writer, any tab), which costs one
+// getItem + string compare. Writers still go through loadStore() for a fresh,
+// private copy, so updateUser()/saveStore() semantics are unchanged.
+// Treat what userData()/activeProgram()/getDraft() return as READ-ONLY;
+// mutate through updateUser()/updateActiveProgram().
+let _readCacheRaw = null, _readCacheStore = null;
+function _readStore() {
+  let raw = null;
+  try { raw = localStorage.getItem(STORAGE_KEY); } catch (_) {}
+  if (raw === null || raw !== _readCacheRaw || !_readCacheStore) {
+    _readCacheStore = loadStore();
+    _readCacheRaw = raw;
+  }
+  return _readCacheStore;
+}
 function userData() {
-  const s = loadStore();
+  const s = _readStore();
   return s.users.find(u => u.id === state.userId) || null;
 }
 function updateUser(fn) {
@@ -13998,7 +14062,7 @@ function updateUser(fn) {
   if (!u) return;
   fn(u); saveStore(s);
 }
-function getAllUsers() { return loadStore().users; }
+function getAllUsers() { return _readStore().users; }
 
 function addUser(name, templateId) {
   const s = loadStore();
@@ -14121,7 +14185,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 23;
-const APP_BUILD = "0a80ee8d";
+const APP_BUILD = "016653dd";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -21275,7 +21339,10 @@ function finishWorkout(opts) {
   const autoCompleteUntouched = !opts || opts.autoCompleteUntouched !== false;
   // Ad-hoc sessions have their own finish flow
   if (state.adhocActive) { finishAdhocWorkout(); return; }
-  const draft = getDraft();
+  // Private copy: the defaults filled in below are scratch work, and getDraft()
+  // now returns the shared read-cache object (see _readStore in 06-state-storage).
+  const _draftRead = getDraft();
+  const draft = _draftRead ? deepClone(_draftRead) : null;
   if (!draft) {
     showToast("Nothing to save");
     return;
@@ -25652,6 +25719,7 @@ function openDurationPicker(templateId) {
 
   const startBtn = document.createElement("button");
   startBtn.className = "primary";
+  startBtn.dataset.busy = "1";
   function updateStartBtn() {
     startBtn.textContent = "Add " + selectedDays + "d × " + selectedWeeks + "wk Program";
   }
@@ -25738,6 +25806,7 @@ function openWeekControl() {
   if (ap.currentWeek < (ap.totalWeeks || 12)) {
     const fwdBtn = document.createElement("button");
     fwdBtn.className = "sheet-item";
+    fwdBtn.dataset.busy = "1";
     fwdBtn.innerHTML = '<span class="icon">→</span><span>Skip to Week ' + (ap.currentWeek + 1) + '</span>';
     fwdBtn.onclick = function() { advanceWeek(); closeSheet(); renderProgramPicker(); renderWorkoutScreen(); };
     actions.appendChild(fwdBtn);
@@ -25897,6 +25966,137 @@ function showScreen(name) {
   if (name === "body") renderBodyScreen();
   if (name === "prs") { _prDetailExId = null; renderPRScreen(); }
 }
+
+// ============================================================
+// BUSY FEEDBACK — "something is running"
+// ============================================================
+// One quiet signal for every action that does real work (start, finish,
+// add program, import, week skip): a thin ink line drawn along the top of
+// the page while it runs, the tapped button dims, and a second tap while
+// it's working is ignored.
+//
+// Heavy handlers here are synchronous, so the line has to be on screen
+// BEFORE the click runs. We show it on pointerdown (the finger lands one or
+// more frames before click fires), let the click run untouched — no
+// re-dispatch, so audio unlock / user-activation stays intact — and hide it
+// once the handler has returned, holding it at least MIN_MS so a fast
+// action still reads as "done" rather than a flicker.
+//
+// Opt in a button with data-busy, or list it in KN_BUSY_SELECTOR.
+
+const KN_BUSY_SELECTOR = [
+  "[data-busy]",
+  ".tb-start-btn",
+  "#headerFinishBtn",
+  ".paper-action-finish",
+  "#importConfirm"
+].join(",");
+
+const knBusy = (function () {
+  const MIN_MS = 320;       // shortest time the line stays up
+  const GUARD_MS = 700;     // repeat taps on the same button are swallowed
+  const ORPHAN_MS = 1200;   // pointerdown with no click (a scroll) — clean up
+  let bar = null, shownAt = 0, hideTimer = null, orphanTimer = null, depth = 0;
+
+  function ensureBar() {
+    if (bar) return bar;
+    bar = document.createElement("div");
+    bar.id = "knBusyBar";
+    bar.setAttribute("role", "progressbar");
+    bar.setAttribute("aria-label", "Working");
+    bar.setAttribute("aria-hidden", "true");
+    document.body.appendChild(bar);
+    return bar;
+  }
+
+  function show() {
+    clearTimeout(hideTimer);
+    depth++;
+    const b = ensureBar();
+    if (!b.classList.contains("active")) shownAt = performance.now();
+    b.classList.add("active");
+    b.setAttribute("aria-hidden", "false");
+    document.body.setAttribute("aria-busy", "true");
+  }
+
+  function hide() {
+    depth = Math.max(0, depth - 1);
+    if (depth > 0 || !bar) return;
+    const wait = Math.max(0, MIN_MS - (performance.now() - shownAt));
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => {
+      if (depth > 0) return;
+      bar.classList.remove("active");
+      bar.setAttribute("aria-hidden", "true");
+      document.body.removeAttribute("aria-busy");
+      document.querySelectorAll(".kn-busy").forEach(el => el.classList.remove("kn-busy"));
+    }, wait);
+  }
+
+  // Wrap any piece of work (sync or promise-returning) in the signal.
+  function run(fn) {
+    show();
+    let out;
+    try { out = fn(); }
+    catch (e) { hide(); throw e; }
+    if (out && typeof out.then === "function") {
+      return out.then(v => { hide(); return v; }, e => { hide(); throw e; });
+    }
+    setTimeout(hide, 0);
+    return out;
+  }
+
+  function wire() {
+    let pending = null; // button that got a pointerdown and may get a click
+
+    document.addEventListener("pointerdown", (e) => {
+      const btn = e.target.closest && e.target.closest(KN_BUSY_SELECTOR);
+      if (!btn || btn.disabled || btn.classList.contains("kn-busy")) return;
+      pending = btn;
+      show();
+      clearTimeout(orphanTimer);
+      orphanTimer = setTimeout(() => {
+        if (pending === btn) { pending = null; hide(); }
+      }, ORPHAN_MS);
+    }, true);
+
+    document.addEventListener("pointercancel", () => {
+      if (pending) { pending = null; clearTimeout(orphanTimer); hide(); }
+    }, true);
+
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest && e.target.closest(KN_BUSY_SELECTOR);
+      if (!btn) return;
+      const last = Number(btn.dataset.busyAt || 0);
+      if (Date.now() - last < GUARD_MS || btn.classList.contains("kn-busy")) {
+        // Double tap while the first one is still being handled.
+        if (pending === btn) { pending = null; clearTimeout(orphanTimer); hide(); }
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return;
+      }
+      btn.dataset.busyAt = String(Date.now());
+      btn.classList.add("kn-busy");
+      if (pending === btn) {
+        pending = null;
+        clearTimeout(orphanTimer);
+      } else {
+        show(); // keyboard / programmatic click: no pointerdown came first
+      }
+      // Runs after every click handler on this event has returned.
+      setTimeout(hide, 0);
+    }, true);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", wire);
+  } else {
+    wire();
+  }
+
+  return { show, hide, run };
+})();
+
 
 // ============================================================
 // BENTO SIDEBAR

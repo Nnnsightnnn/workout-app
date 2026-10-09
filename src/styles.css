@@ -10736,3 +10736,48 @@ body[data-skin="paper"] .sheet .sheet-actions:last-child {
   margin-bottom: calc(-1 * max(28px, calc(16px + env(safe-area-inset-bottom))));
   z-index: 1;
 }
+
+/* ── Busy + press feedback (20a-busy.js) ─────────────────────────
+   Ink line along the top while real work runs; tapped button dims; every
+   other button gets a quiet highlighter wash while pressed. :where() keeps
+   the wash at near-zero specificity so any button with its own :active
+   styling keeps it. */
+#knBusyBar {
+  position: fixed;
+  left: 0; right: 0;
+  top: env(safe-area-inset-top, 0px);
+  height: 3px;
+  z-index: 5000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--paper-ink, #1e3a72) 22%, transparent);
+}
+#knBusyBar::before {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0;
+  left: -10%;
+  width: 30%;
+  background: var(--paper-ink, #1e3a72);
+  opacity: 0.8;
+  animation: kn-busy-ink 0.9s ease-in-out infinite;
+}
+#knBusyBar.active { opacity: 1; }
+@keyframes kn-busy-ink {
+  0%   { left: -10%; width: 30%; }
+  60%  { width: 45%; }
+  100% { left: 100%; width: 30%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #knBusyBar::before { animation: none; left: 0; width: 100%; opacity: 0.45; }
+}
+.kn-busy {
+  opacity: 0.55 !important;
+  pointer-events: none;
+  cursor: progress;
+}
+:where(body[data-skin="paper"] button:not(:disabled)):active {
+  background-image: linear-gradient(var(--paper-marker-soft), var(--paper-marker-soft));
+}

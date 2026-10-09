@@ -283,8 +283,27 @@ function saveStore(s) {
   }
 }
 
+// ── Read cache ────────────────────────────────────────────────
+// userData() is the hot path: starting a workout used to call it ~680 times,
+// and each call re-parsed the whole store. With ~300 sessions that was a
+// 15-second freeze on Start. Reads now reuse one parsed copy until the raw
+// string in localStorage changes (any writer, any tab), which costs one
+// getItem + string compare. Writers still go through loadStore() for a fresh,
+// private copy, so updateUser()/saveStore() semantics are unchanged.
+// Treat what userData()/activeProgram()/getDraft() return as READ-ONLY;
+// mutate through updateUser()/updateActiveProgram().
+let _readCacheRaw = null, _readCacheStore = null;
+function _readStore() {
+  let raw = null;
+  try { raw = localStorage.getItem(STORAGE_KEY); } catch (_) {}
+  if (raw === null || raw !== _readCacheRaw || !_readCacheStore) {
+    _readCacheStore = loadStore();
+    _readCacheRaw = raw;
+  }
+  return _readCacheStore;
+}
 function userData() {
-  const s = loadStore();
+  const s = _readStore();
   return s.users.find(u => u.id === state.userId) || null;
 }
 function updateUser(fn) {
@@ -293,7 +312,7 @@ function updateUser(fn) {
   if (!u) return;
   fn(u); saveStore(s);
 }
-function getAllUsers() { return loadStore().users; }
+function getAllUsers() { return _readStore().users; }
 
 function addUser(name, templateId) {
   const s = loadStore();

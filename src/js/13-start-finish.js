@@ -245,7 +245,10 @@ function finishWorkout(opts) {
   const autoCompleteUntouched = !opts || opts.autoCompleteUntouched !== false;
   // Ad-hoc sessions have their own finish flow
   if (state.adhocActive) { finishAdhocWorkout(); return; }
-  const draft = getDraft();
+  // Private copy: the defaults filled in below are scratch work, and getDraft()
+  // now returns the shared read-cache object (see _readStore in 06-state-storage).
+  const _draftRead = getDraft();
+  const draft = _draftRead ? deepClone(_draftRead) : null;
   if (!draft) {
     showToast("Nothing to save");
     return;
