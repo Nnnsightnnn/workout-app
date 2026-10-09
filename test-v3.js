@@ -4139,6 +4139,32 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     assert(!tplEx.scheme, "program template still has no scheme");
   });
 
+  // Regression: a stored injury used to brick boot. The stock programs are
+  // generated at script load and read INJURY_EXERCISE_MAP before its const
+  // initialized (TDZ ReferenceError on every launch). Boot a fresh window
+  // with an injury already in storage and require a clean start.
+  await (async () => {
+    const seed = JSON.stringify({ _schemaVersion: w.APP_VERSION, unit: "lbs", users: [], currentUserId: null,
+      onboarding: { completedAt: Date.now(), injuries: ["knees", "lowerback"] } });
+    const bootErrors = [];
+    const d2 = new JSDOM(html, {
+      runScripts: "dangerously", pretendToBeVisual: true, url: "http://localhost/",
+      beforeParse(win) {
+        win.localStorage.setItem("kn-lifts-v3", seed);
+        win.AudioContext = w.AudioContext;
+        win.addEventListener("error", e => bootErrors.push(e.message));
+      }
+    });
+    await wait(100);
+    const w2 = d2.window;
+    t("boot: stored injuries do not crash startup (TDZ regression)", () => {
+      eq(bootErrors.filter(m => /INJURY_EXERCISE_MAP/.test(m)).length, 0, bootErrors.join(" | "));
+      eq(typeof w2.init, "function", "bundle evaluated to the end");
+      assert(w2.getInjuredExercises(["knees"]).has("backsquat"), "injury filter reads the map at load time");
+    });
+    d2.window.close();
+  })();
+
   console.log("\n===== RESULTS =====");
   let pass = 0, fail = 0;
   for (const [n, s, e] of results) {

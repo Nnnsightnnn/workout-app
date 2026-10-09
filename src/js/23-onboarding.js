@@ -2,18 +2,6 @@
 // ONBOARDING
 // ============================================================
 
-// Exercise IDs flagged per injury category (warning chip shown, nothing removed)
-const INJURY_EXERCISE_MAP = {
-  lowerback: ["deadlift","sumo","trapbar","rdl","slrdl","goodmorning","kbswing",
-               "backsquat","frontsquat","ssbsquat","pausesquat"],
-  knees:     ["backsquat","frontsquat","pausesquat","ssbsquat","ohsquat","goblet",
-               "bulgarian","stepup"],
-  shoulders: ["strictpress","pushpress","logpress","bench","incbench","tempobench",
-               "cgbench","floorpress","dbbench","inclinedb","dbshoulder","hkpress",
-               "arnold","pushup","dip","pullup","weightedpullup","chinup",
-               "pulldown","facepull"]
-};
-
 const ONBOARDING_STEPS = [
   {
     id: "goals",
