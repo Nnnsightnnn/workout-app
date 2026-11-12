@@ -65,9 +65,14 @@ test.describe("onboarding smoke", () => {
     await page.locator("#obContinueBtn").click();
 
     // Step 11: age — skippable
+    await expect(page.locator(".ob-title")).toContainText("Age range");
     await page.locator("#obSkipBtn").click();
 
-    // Step 12: bodyWeight — skippable
+    // Step 12: bodyWeight — skippable. Wait for its title first: steps 11 and
+    // 12 share #obSkipBtn, and _obTransition ignores clicks during its 180ms
+    // exit, so an unguarded second click could hit step 11's outgoing button
+    // and leave the flow on body weight (intermittent failure, 2026-11-12).
+    await expect(page.locator(".ob-title")).toContainText("body weight");
     await page.locator("#obSkipBtn").click();
 
     // Step 13 (final required for first-run): smartSuggestions
