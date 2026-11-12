@@ -12,6 +12,6 @@
     "jsdom": "^29.0.2"
   },
   "devDependencies": {
-    "@playwright/test": "^1.56.0"
+    "@playwright/test": "^1.65.0"
   }
 }
