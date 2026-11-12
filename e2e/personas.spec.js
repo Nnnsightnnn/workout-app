@@ -161,6 +161,45 @@ test.describe("personas", () => {
     });
   }
 
+  // Regression (2026-11-12): in focus view, logging the last set of one
+  // block turned the stamp into Finish ("workout complete · 4/28"), and that
+  // Finish saved every untouched set of the day as lifted. Real taps only:
+  // the stamp must lead on to the next block with sets left, and nothing is
+  // saved until the whole day is done or the lifter chooses Save & exit.
+  test("focus view: finishing one block leads on to the next and saves nothing", async ({ page }) => {
+    test.setTimeout(60_000);
+    const errors = await P.instrument(page);
+    await P.seedUser(page, { name: "Focus", templateId: "upperlower4" });
+    await P.startToday(page);
+    const plan = await page.evaluate(() => {
+      const day = getCurrentDay();
+      const open = day.blocks.map((b, i) => i).filter(i => calcBlockProgress(day.blocks[i]).total > 0);
+      state.workoutView = "focus";
+      state.focusBlockIdx = open[0];
+      state.focusExIdx = 0;
+      renderWorkoutScreen();
+      return { open, sets: calcBlockProgress(day.blocks[open[0]]).total, sessions: userData().sessions.length };
+    });
+    expect(plan.open.length, "day has at least two blocks with sets").toBeGreaterThan(1);
+
+    const stamp = page.locator(".paper-focus-view .paper-action-log");
+    for (let i = 1; i <= plan.sets; i++) {
+      await expect(stamp).toBeEnabled();
+      await stamp.tap();
+      await page.waitForFunction(a => calcBlockProgress(getCurrentDay().blocks[a.bi]).done >= a.want,
+        { bi: plan.open[0], want: i });
+    }
+
+    await expect(stamp).toBeEnabled();
+    await expect(stamp, "Finish offered with one block done").not.toHaveClass(/paper-action-finish/);
+    await expect(page.locator(".paper-focus-view .paper-action-edit-label")).not.toContainText(/workout complete/i);
+    await stamp.tap();
+    await page.waitForFunction(bi => state.focusBlockIdx === bi, plan.open[1]);
+    const after = await page.evaluate(() => ({ sessions: userData().sessions.length, draft: !!getDraft(), view: state.workoutView }));
+    expect(after, "no session saved; still in the workout, on the next block").toEqual({ sessions: plan.sessions, draft: true, view: "focus" });
+    expect(errors, "page errors / console.error").toEqual([]);
+  });
+
   test.describe("program templates", () => {
     // "custom" has no stock program — the picker routes it to the program
     // builder, so it isn't a switchable/seedable template. "rp-hypertrophy"

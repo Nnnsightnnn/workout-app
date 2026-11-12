@@ -442,6 +442,82 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     assert(!bar.textContent.trim(), `inert bar should be empty, got "${bar.textContent}"`);
   });
 
+  // ---- Focus view: a finished block is not a finished workout ----
+  // The log damage (2026-11-12): in focus view the bar took the focused
+  // block's allDone for the day's, showed "workout complete · 4/28" with a
+  // Finish stamp, and that Finish saved all 28 sets, 24 of them never lifted.
+  const _focusFixture = (name) => {
+    w.localStorage.clear();
+    w.addUser(name);
+    w.state.currentDayId = 1;
+    w.state.dayChosen = true;
+    w.ensureDraft();
+    w.state.workoutStartedAt = Date.now();
+    w.state.workoutView = "focus";
+    w.state.focusExIdx = 0;
+    const day = w.getCurrentDay();
+    const open = day.blocks.map((b, i) => i).filter(i => w.calcBlockProgress(day.blocks[i]).total > 0);
+    assert(open.length >= 2, "fixture day needs two blocks with sets");
+    return { day, open };
+  };
+  const _markBlockDone = (block) => {
+    block.exercises.forEach((ex, ei) => {
+      if (ex.isWarmup) return;
+      for (let si = 0; si < (ex.sets || 3); si++) w.saveInput(w.inputKey(block.id, ei, si, "status"), "done");
+    });
+  };
+  const _focusStamp = () => w.document.querySelector(".paper-focus-view .paper-action-log");
+
+  t("focus view: a finished block leads to the next block, never to Finish", () => {
+    const { day, open } = _focusFixture("FocusBlockDone");
+    const bi = open[0];
+    _markBlockDone(day.blocks[bi]);
+    w.state.focusBlockIdx = bi;
+    w.renderWorkoutScreen();
+    const stamp = _focusStamp();
+    assert(stamp, "focus view renders the action bar stamp");
+    assert(!stamp.classList.contains("paper-action-finish"), "Finish shown with only one block done");
+    const label = w.document.querySelector(".paper-focus-view .paper-action-edit-label").textContent;
+    assert(!/workout complete/i.test(label), `label claims the workout is complete: "${label}"`);
+    const nextLetter = day.blocks[open[1]].letter;
+    assert(new RegExp("next: " + nextLetter).test(label), `label should name the next block ${nextLetter}: "${label}"`);
+    assert(w.document.querySelector(".paper-focus-view .paper-action-exit"), "Save & exit stays while the day is open");
+
+    const sessionsBefore = w.userData().sessions.length;
+    stamp.click();
+    eq(w.userData().sessions.length, sessionsBefore, "tapping the stamp saved a session");
+    assert(w.getDraft(), "the workout is still in progress");
+    eq(w.state.focusBlockIdx, open[1], "stamp moves focus to the next block with sets left");
+    eq(w.state.workoutView, "focus", "still in focus view");
+  });
+
+  t("focus view: the stamp wraps back to an earlier block left open", () => {
+    const { day, open } = _focusFixture("FocusWrap");
+    // Everything done except the first open block; focus the last one.
+    open.slice(1).forEach(i => _markBlockDone(day.blocks[i]));
+    w.state.focusBlockIdx = open[open.length - 1];
+    w.renderWorkoutScreen();
+    const stamp = _focusStamp();
+    assert(stamp && !stamp.classList.contains("paper-action-finish"), "no Finish while a block is still open");
+    stamp.click();
+    eq(w.state.focusBlockIdx, open[0], "wrapped to the block that is still open");
+    assert(w.getDraft(), "the workout is still in progress");
+  });
+
+  t("focus view: Finish appears once every set of the day is done", () => {
+    const { day } = _focusFixture("FocusDayDone");
+    day.blocks.forEach(_markBlockDone);
+    w.state.focusBlockIdx = day.blocks.length - 1;
+    w.renderWorkoutScreen();
+    const stamp = _focusStamp();
+    assert(stamp && stamp.classList.contains("paper-action-finish"), "Finish stamp when the whole day is done");
+    assert(!w.document.querySelector(".paper-focus-view .paper-action-exit"), "no Save & exit beside Finish");
+    const sessionsBefore = w.userData().sessions.length;
+    stamp.click();
+    eq(w.userData().sessions.length, sessionsBefore + 1, "Finish saves the session");
+    eq(w.getDraft(), null, "draft cleared");
+  });
+
   t("addTrainingDay: appends a blockless day and renders an empty state", () => {
     const snapshot = JSON.stringify(w.loadStore());
     const prevDay = w.state.currentDayId, prevChosen = w.state.dayChosen;
