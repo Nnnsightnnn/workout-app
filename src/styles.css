@@ -8974,6 +8974,22 @@ body[data-skin="paper"] .sheet p {
   font-family: var(--paper-hand);
   color: var(--paper-ink-soft);
 }
+/* "What's new" sheet: flat ruled lines in ink. The base rule's dark rounded
+   cards left paper ink on navy, unreadable on cream. */
+body[data-skin="paper"] .changelog-list li {
+  background: transparent;
+  border: none;
+  border-bottom: 1px dotted var(--paper-ink-mist);
+  border-radius: 0;
+  box-shadow: none;
+  margin-bottom: 0;
+  font-family: var(--paper-hand);
+  font-size: 16px;
+  color: var(--paper-ink);
+}
+body[data-skin="paper"] .changelog-list li::before {
+  color: var(--paper-red);
+}
 body[data-skin="paper"] .sheet input[type="text"],
 body[data-skin="paper"] .sheet input[type="number"],
 body[data-skin="paper"] .sheet textarea,

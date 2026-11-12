@@ -811,6 +811,20 @@ function paperFindNextBlockIdx(day, bi, dir) {
   return null;
 }
 
+// The next block, after bi and wrapping round, that still has a set to log.
+// null when every block is done. Used by the action bar so a finished block
+// leads the lifter on to the work that is left rather than to Finish.
+function paperFindNextOpenBlockIdx(day, bi) {
+  if (!day || !day.blocks || !day.blocks.length) return null;
+  const n = day.blocks.length;
+  const start = (bi != null && bi >= 0) ? bi + 1 : 0;
+  for (let k = 0; k < n; k++) {
+    const i = (start + k) % n;
+    if (!paperFindActiveSet(day.blocks[i]).allDone) return i;
+  }
+  return null;
+}
+
 // Day-wide active set finder — first not-done, non-warmup set across all blocks.
 // Used by the chapters/overview action bar so logging follows the workout's
 // next-to-do set, regardless of where the user has scrolled.
@@ -868,11 +882,23 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi)
     }
   }
 
+  // Focus view passes the focused block's own allDone. Only the whole day
+  // may offer Finish: finishWorkout() fills every untouched set with
+  // defaults, so a Finish shown after one block saved sets nobody lifted.
+  // When this block is done and others still have sets, the stamp carries
+  // the lifter to the next of those blocks instead.
+  const dayDone = allDone && _daySetsDone >= _daySetsTotal;
+  const nextOpenBi = (allDone && !dayDone) ? paperFindNextOpenBlockIdx(day, bi) : null;
+  const nextOpenBlock = nextOpenBi != null ? day.blocks[nextOpenBi] : null;
+
   // Quiet label — the breathing active-set row above narrates context;
   // here we only echo "set n of total" so the bar stays informative but quiet.
   const lbl = document.createElement("div");
   lbl.className = "paper-action-edit-label";
-  if (allDone) {
+  if (nextOpenBlock) {
+    const nextName = nextOpenBlock.name ? ` &middot; ${escapeHtml(nextOpenBlock.name)}` : "";
+    lbl.innerHTML = `<span class="pa-label-target">${escapeHtml(block.letter || "block")} done &middot; next: ${escapeHtml(nextOpenBlock.letter || "")}${nextName}</span>`;
+  } else if (allDone) {
     lbl.innerHTML = `<span class="pa-label-target">workout complete &middot; ${_daySetsDone}/${_daySetsTotal}</span>`;
   } else {
     const totalSets = (ex.sets || 3);
@@ -979,14 +1005,22 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi)
   // finishWorkout() path (with autoCompleteUntouched, so any sets the user
   // marked done without filling values get the prescribed defaults).
   const logBtn = document.createElement("button");
-  logBtn.className = "paper-action-log" + (allDone ? " paper-action-finish" : "");
-  logBtn.innerHTML = allDone ? `
+  logBtn.className = "paper-action-log"
+    + (dayDone ? " paper-action-finish" : nextOpenBlock ? " paper-action-next" : "");
+  logBtn.innerHTML = dayDone ? `
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
          stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M4 12 l4 4 L14 8"/>
       <path d="M10 12 l4 4 L20 6"/>
     </svg>
     <span>Finish</span>
+  ` : nextOpenBlock ? `
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 12 H19"/>
+      <path d="M13 6 L19 12 L13 18"/>
+    </svg>
+    <span>Next: ${escapeHtml(nextOpenBlock.letter || "")}</span>
   ` : `
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
          stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -996,7 +1030,16 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi)
   `;
   logBtn.addEventListener("click", (e) => {
     e.stopPropagation();
-    if (allDone) {
+    if (nextOpenBlock) {
+      // Same move as the focus view's next chevron, aimed at open work.
+      state.workoutView = "focus";
+      state.focusBlockIdx = nextOpenBi;
+      state.focusExIdx = 0;
+      if (navigator.vibrate) navigator.vibrate(10);
+      if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
+      return;
+    }
+    if (dayDone) {
       // Reset dayChosen so finishWorkout()'s render lands on the day picker
       // (home) instead of the rotated next-day's empty chapters view.
       // Mirrors exitWorkout()'s behavior in 13-start-finish.js.
@@ -1035,7 +1078,9 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi)
   // day is complete, Finish IS the resolution, so we don't show a parallel
   // exit affordance. Mirrors the "Save & exit workout" item in the paper
   // menu sheet so users have two paths to the same openExitWorkoutSheet().
-  if (!allDone) {
+  // Keyed on the day, not the block: ending early after one block is a
+  // Save & exit (logged sets only), never a Finish.
+  if (!dayDone) {
     const exitRow = document.createElement("div");
     exitRow.className = "paper-action-exit-row";
     const exitBtn = document.createElement("button");

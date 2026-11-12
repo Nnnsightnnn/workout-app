@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.17",
+    "date": "2026-11-12",
+    "title": "Finishing a block no longer ends your workout",
+    "items": [
+      "In the one-block view, the red stamp used to say Finish as soon as one block was done. Tapping it saved the whole day, including sets you never did. Now it says Next and takes you to the next block with sets left.",
+      "Finish only appears once every set of the day is logged. To stop early, use Save & exit, which saves only the sets you logged.",
+      "If you used Finish mid-workout before this, check History for sets you didn't do and edit or delete that session."
+    ]
+  },
+  {
     "version": "0.16",
     "date": "2026-04-28",
     "title": "Equipment filter & ad-hoc workouts",
