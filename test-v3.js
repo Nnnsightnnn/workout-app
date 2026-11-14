@@ -518,6 +518,51 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     eq(w.getDraft(), null, "draft cleared");
   });
 
+  // ---- Returning open: Start is on the hero card, not in the closed panel ----
+  // From 2026-05-12 to 2026-11-14 the only Start lived inside the "adjust
+  // time" panel, which never opens in paper (zero height), so the unmarked
+  // card was the only way in. The lead Start must sit outside that panel and
+  // start today's plan as written, without rewriting the stored program.
+  t("day picker: the hero leads with a Start outside the adjust-time panel", () => {
+    w.localStorage.clear();
+    w.addUser("HeroStart");
+    w.updateActiveProgram(p => { p.weeklySchedule = [1, 1, 1, 1, 1, 1, 1]; });
+    w.state.dayChosen = false;
+    w.renderWorkoutScreen();
+    const hero = w.document.querySelector("#blocksContainer .paper-day-card-hero");
+    assert(hero, "hero day card rendered");
+    const leads = [...hero.querySelectorAll("button")]
+      .filter(b => /^start/i.test(b.textContent.trim()) && !b.closest(".dpc-controls-outer"));
+    eq(leads.length, 1, "Starts outside the collapsed panel");
+    const programBefore = JSON.stringify(w.activeProgram().program);
+    leads[0].click();
+    assert(w.getDraft(), "Start opened today's workout");
+    eq(JSON.stringify(w.activeProgram().program), programBefore, "Start left the stored program as written");
+  });
+
+  // Rounding the default time target to the nearest 5 put a 41-minute day at
+  // 40, below its own estimate, so the card loaded in "adjusted" mode and its
+  // time line read ~39 beside Est. 41.
+  t("day picker: every card's time line matches its own estimate", () => {
+    let checked = 0, roundsDown = 0;
+    const off = [];
+    w.PROGRAM_TEMPLATES.forEach(tpl => {
+      const days = w.resolveWeekProgram(tpl.id, 1, 10, tpl.daysPerWeek) || [];
+      days.forEach(day => {
+        if (!day || !day.blocks || !day.blocks.length) return;
+        const card = w.paperBuildDayCard(day, true);
+        const est = Number(card.querySelectorAll(".paper-day-metric-val")[2].textContent);
+        const line = card.querySelector(".picker-duration").textContent;
+        checked++;
+        if (est % 5 === 1 || est % 5 === 2) roundsDown++;
+        if (line.indexOf("~" + est + " min") < 0) off.push(`${tpl.id} ${day.name}: Est. ${est}, line "${line}"`);
+      });
+    });
+    assert(checked > 20, `fixture covers enough days (${checked})`);
+    assert(roundsDown > 0, "fixture covers a day whose estimate used to round down");
+    eq(off.length, 0, off.slice(0, 3).join(" | "));
+  });
+
   t("addTrainingDay: appends a blockless day and renders an empty state", () => {
     const snapshot = JSON.stringify(w.loadStore());
     const prevDay = w.state.currentDayId, prevChosen = w.state.dayChosen;

@@ -8562,6 +8562,21 @@ body[data-skin="paper"] .paper-day-card.expanded .dpc-chevron {
   transform: rotate(180deg);
 }
 
+/* Bottom row of a day card: "adjust time" on the left and, on today's hero,
+   the Start stamp on the right, so Start is on the first screen instead of
+   inside the collapsed time panel. */
+body[data-skin="paper"] .paper-day-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+}
+body[data-skin="paper"] .paper-day-start {
+  min-height: 44px;
+  flex: 0 0 auto;
+}
+
 /* Time-budget controls (paper-toned form underlines + stamp Start). */
 body[data-skin="paper"] .paper-day-card .dpc-controls-outer {
   max-height: 0;
@@ -11640,6 +11655,15 @@ body[data-skin="paper"] .sheet .paper-menu-sheet button.paper-menu-item:active {
 // === Inlined from src/changelog.json ===
 const CHANGELOG = [
   {
+    "version": "0.18",
+    "date": "2026-11-14",
+    "title": "A Start button on today's workout",
+    "items": [
+      "Today's workout now has a red Start workout stamp on the card itself. The old Start was tucked inside the adjust time panel, which never opened, so the only way in was to tap the card.",
+      "The time under today's workout now matches its estimate. Some days showed a few minutes less than the Est. figure above it."
+    ]
+  },
+  {
     "version": "0.17",
     "date": "2026-11-12",
     "title": "Finishing a block no longer ends your workout",
@@ -14397,7 +14421,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 23;
-const APP_BUILD = "0a270285";
+const APP_BUILD = "09bab252";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -32872,7 +32896,18 @@ function paperBuildDayCard(d, isHero) {
     </div>
   ` : "";
 
-  const defaultTarget = Math.round(breakdown.totalMin / 5) * 5;
+  // Round UP to the 5-minute step. Rounding to nearest put a 41-minute day's
+  // target at 40, below the estimate, so every such card loaded in
+  // "adjusted" mode: the time line read ~39 beside an Est. of 41.
+  const defaultTarget = Math.ceil(breakdown.totalMin / 5) * 5;
+
+  // The hero's Start sits on the first screen, beside "adjust time". It used
+  // to exist only inside the collapsed time panel, where no one could reach
+  // it, so the unmarked card was the only way in. Starts the day as planned,
+  // exactly like tapping the card; data-busy gives it the busy line.
+  const leadStartHtml = isHero
+    ? `<button class="paper-start-stamp paper-day-start" data-busy data-day-id="${d.id}">Start workout</button>`
+    : "";
 
   card.innerHTML = `
     ${todayKicker}
@@ -32884,9 +32919,12 @@ function paperBuildDayCard(d, isHero) {
       <span class="paper-day-card-time-total picker-duration">⏱ ~${breakdown.totalMin} min</span>
       <span class="paper-day-card-time-split picker-breakdown">WU ${wuMin}m &middot; Work ${wkMin}m &middot; CD ${cdMin}m</span>
     </div>
-    <button class="paper-day-card-expand dpc-expand-hint">
-      <span class="dpc-chevron">▾</span> adjust time
-    </button>
+    <div class="paper-day-card-actions">
+      <button class="paper-day-card-expand dpc-expand-hint">
+        <span class="dpc-chevron">▾</span> adjust time
+      </button>
+      ${leadStartHtml}
+    </div>
     <div class="dpc-controls-outer">
       <div class="dpc-controls-inner">
         <div class="tb-target-row paper-tb-row" data-day-id="${d.id}">
@@ -32911,6 +32949,16 @@ function paperBuildDayCard(d, isHero) {
     state.dayChosen = true;
     if (typeof openWorkout === "function") openWorkout();
   });
+
+  const leadStart = card.querySelector(".paper-day-start");
+  if (leadStart) {
+    leadStart.addEventListener("click", (e) => {
+      e.stopPropagation();
+      state.currentDayId = d.id;
+      state.dayChosen = true;
+      if (typeof openWorkout === "function") openWorkout();
+    });
+  }
 
   // "Adjust time" link toggles the config panel
   const expand = card.querySelector(".dpc-expand-hint");
