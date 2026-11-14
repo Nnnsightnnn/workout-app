@@ -724,7 +724,18 @@ function paperBuildDayCard(d, isHero) {
     </div>
   ` : "";
 
-  const defaultTarget = Math.round(breakdown.totalMin / 5) * 5;
+  // Round UP to the 5-minute step. Rounding to nearest put a 41-minute day's
+  // target at 40, below the estimate, so every such card loaded in
+  // "adjusted" mode: the time line read ~39 beside an Est. of 41.
+  const defaultTarget = Math.ceil(breakdown.totalMin / 5) * 5;
+
+  // The hero's Start sits on the first screen, beside "adjust time". It used
+  // to exist only inside the collapsed time panel, where no one could reach
+  // it, so the unmarked card was the only way in. Starts the day as planned,
+  // exactly like tapping the card; data-busy gives it the busy line.
+  const leadStartHtml = isHero
+    ? `<button class="paper-start-stamp paper-day-start" data-busy data-day-id="${d.id}">Start workout</button>`
+    : "";
 
   card.innerHTML = `
     ${todayKicker}
@@ -736,9 +747,12 @@ function paperBuildDayCard(d, isHero) {
       <span class="paper-day-card-time-total picker-duration">⏱ ~${breakdown.totalMin} min</span>
       <span class="paper-day-card-time-split picker-breakdown">WU ${wuMin}m &middot; Work ${wkMin}m &middot; CD ${cdMin}m</span>
     </div>
-    <button class="paper-day-card-expand dpc-expand-hint">
-      <span class="dpc-chevron">▾</span> adjust time
-    </button>
+    <div class="paper-day-card-actions">
+      <button class="paper-day-card-expand dpc-expand-hint">
+        <span class="dpc-chevron">▾</span> adjust time
+      </button>
+      ${leadStartHtml}
+    </div>
     <div class="dpc-controls-outer">
       <div class="dpc-controls-inner">
         <div class="tb-target-row paper-tb-row" data-day-id="${d.id}">
@@ -763,6 +777,16 @@ function paperBuildDayCard(d, isHero) {
     state.dayChosen = true;
     if (typeof openWorkout === "function") openWorkout();
   });
+
+  const leadStart = card.querySelector(".paper-day-start");
+  if (leadStart) {
+    leadStart.addEventListener("click", (e) => {
+      e.stopPropagation();
+      state.currentDayId = d.id;
+      state.dayChosen = true;
+      if (typeof openWorkout === "function") openWorkout();
+    });
+  }
 
   // "Adjust time" link toggles the config panel
   const expand = card.querySelector(".dpc-expand-hint");

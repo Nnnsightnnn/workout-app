@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.18",
+    "date": "2026-11-14",
+    "title": "A Start button on today's workout",
+    "items": [
+      "Today's workout now has a red Start workout stamp on the card itself. The old Start was tucked inside the adjust time panel, which never opened, so the only way in was to tap the card.",
+      "The time under today's workout now matches its estimate. Some days showed a few minutes less than the Est. figure above it."
+    ]
+  },
+  {
     "version": "0.17",
     "date": "2026-11-12",
     "title": "Finishing a block no longer ends your workout",

@@ -8349,6 +8349,21 @@ body[data-skin="paper"] .paper-day-card.expanded .dpc-chevron {
   transform: rotate(180deg);
 }
 
+/* Bottom row of a day card: "adjust time" on the left and, on today's hero,
+   the Start stamp on the right, so Start is on the first screen instead of
+   inside the collapsed time panel. */
+body[data-skin="paper"] .paper-day-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+}
+body[data-skin="paper"] .paper-day-start {
+  min-height: 44px;
+  flex: 0 0 auto;
+}
+
 /* Time-budget controls (paper-toned form underlines + stamp Start). */
 body[data-skin="paper"] .paper-day-card .dpc-controls-outer {
   max-height: 0;

@@ -200,6 +200,42 @@ test.describe("personas", () => {
     expect(errors, "page errors / console.error").toEqual([]);
   });
 
+  // Regression (2026-11-14): from 2026-05-12 the returning lifter's only
+  // Start sat inside the collapsed "adjust time" panel, which never opens in
+  // paper. The gate missed it because startToday() used a JS click. A lifter
+  // with history opens the app: Start is wholly on the first screen at
+  // 390x844, a real tap starts today's workout, and the plan is untouched.
+  test("returning open: Start is on the first screen and starts the plan as written", async ({ page }) => {
+    test.setTimeout(60_000);
+    const errors = await P.instrument(page);
+    await P.seedUser(page, { name: "Returning", templateId: "upperlower4" });
+    await P.ensureTrainingToday(page);
+    await P.startToday(page);
+    await P.markSetsDone(page, 4);
+    await P.finishToday(page);
+    // Move that session two days back, so today opens like a normal returning day.
+    await page.evaluate(key => {
+      const s = JSON.parse(localStorage.getItem(key));
+      const u = s.users.find(x => x.id === s.currentUserId);
+      u.sessions.forEach(x => {
+        x.startedAt -= 2 * 86400000; x.finishedAt -= 2 * 86400000;
+        x.date = new Date(x.startedAt).toISOString();
+      });
+      localStorage.setItem(key, JSON.stringify(s));
+    }, P.STORE_KEY);
+    await page.reload();
+    await P.waitForBoot(page);
+    await P.ensureTrainingToday(page);
+
+    const start = P.leadStart(page);
+    await expect(start, "Start is wholly on the first screen").toBeInViewport({ ratio: 1 });
+    const programBefore = await page.evaluate(() => JSON.stringify(activeProgram().program));
+    await start.tap();
+    await page.waitForFunction(() => !!getDraft());
+    expect(await page.evaluate(() => JSON.stringify(activeProgram().program)), "Start rewrote the stored program").toBe(programBefore);
+    expect(errors, "page errors / console.error").toEqual([]);
+  });
+
   test.describe("program templates", () => {
     // "custom" has no stock program — the picker routes it to the program
     // builder, so it isn't a switchable/seedable template. "rp-hypertrophy"

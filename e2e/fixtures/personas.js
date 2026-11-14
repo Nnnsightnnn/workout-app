@@ -135,19 +135,37 @@ async function ensureTrainingToday(page) {
   });
 }
 
-// Click today's visible Start button (element.click(): the page scrolls an
-// inner container, so Playwright's tap is unreliable here). Returns the
-// synchronous handler time in ms, or null if a workout was already open.
+// The Start a lifter would tap on today's hero card. Visible only: a button
+// with no size (the old Start inside the collapsed time panel) never matches.
+function leadStart(page) {
+  return page.locator(".paper-day-card-hero")
+    .getByRole("button", { name: /^start/i })
+    .filter({ visible: true })
+    .first();
+}
+
+// Tap today's Start the way a person does. This used element.click(), which
+// reached a Start nobody could see for six months (LESSONS L-003 in the
+// Director's notes); a real tap fails on a hidden or covered button.
+// Returns the click handler's time in ms (from the click to the next task,
+// so it includes the synchronous re-render), or null if a workout was
+// already open.
 async function startToday(page) {
-  return page.evaluate(() => {
-    if (getDraft()) return null; // mid-workout persona resumes straight in
-    const btn = [...document.querySelectorAll(".tb-start-btn.primary")]
-      .find(b => b.getBoundingClientRect().width > 0);
-    if (!btn) throw new Error("no visible .tb-start-btn.primary on the day picker");
-    const t0 = performance.now();
-    btn.click();
-    return performance.now() - t0;
+  if (await page.evaluate(() => !!getDraft())) return null; // mid-workout persona resumes straight in
+  await page.evaluate(() => {
+    // @ts-ignore
+    window.__knStartMs = null;
+    window.addEventListener("click", () => {
+      const t0 = performance.now();
+      // @ts-ignore
+      setTimeout(() => { window.__knStartMs = performance.now() - t0; }, 0);
+    }, { capture: true, once: true });
   });
+  await leadStart(page).tap({ timeout: 5000 });
+  // @ts-ignore
+  await page.waitForFunction(() => window.__knStartMs != null);
+  // @ts-ignore
+  return page.evaluate(() => window.__knStartMs);
 }
 
 // Tick the first n not-yet-done set checkboxes. Returns done-status count.
@@ -273,5 +291,5 @@ const PERSONAS = [
 module.exports = {
   APP_URL, STORE_KEY, LONG_HISTORY_SESSIONS, BUDGETS, PERSONAS,
   instrument, openFresh, waitForBoot, seedUser, buildStores, openWithStore, ensureTrainingToday,
-  startToday, markSetsDone, finishToday, cloneHistory, bootHealth
+  leadStart, startToday, markSetsDone, finishToday, cloneHistory, bootHealth
 };
