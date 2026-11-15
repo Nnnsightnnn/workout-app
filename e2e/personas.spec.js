@@ -236,6 +236,45 @@ test.describe("personas", () => {
     expect(errors, "page errors / console.error").toEqual([]);
   });
 
+  // Regression (2026-11-15): the rest countdown lived only in a header pill
+  // the paper skin hides, so the bar's rest cell sat still through every
+  // rest, and the 0s warm-up's pending hide cancelled the first working
+  // rest outright. Real taps through the warm-up, then the first working
+  // set: its rest must count down in the bar and still be running after
+  // the old 2s cancel window.
+  test("rest: the first working set's rest counts down in the bar", async ({ page }) => {
+    test.setTimeout(60_000);
+    const errors = await P.instrument(page);
+    await P.seedUser(page, { name: "Rest", templateId: "upperlower4" });
+    await P.ensureTrainingToday(page);
+    await P.startToday(page);
+    const stamp = page.locator(".paper-action-bar .paper-action-log");
+    const restVal = page.locator(".paper-action-bar .paper-action-rest .pa-rest-val");
+    const doneCount = () => page.evaluate(() => Object.values(getDraft().inputs).filter(v => v === "done").length);
+    // Follow the lead through the no-rest warm-up sets.
+    let taps = 0;
+    while (/^(none|0s)$/.test((await restVal.textContent() || "").trim()) && taps < 15) {
+      const n = await doneCount();
+      await expect(stamp).toBeEnabled();
+      await stamp.tap();
+      await page.waitForFunction(want => Object.values(getDraft().inputs).filter(v => v === "done").length >= want, n + 1);
+      await expect(stamp).toBeEnabled();
+      taps++;
+    }
+    const planned = (await restVal.textContent() || "").trim();
+    const toSec = s => { const m = /^(\d+):(\d\d)$/.exec(s); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
+    expect(toSec(planned), `working set shows its rest length, got "${planned}"`).toBeGreaterThan(0);
+    await stamp.tap();
+    await page.waitForTimeout(2600);
+    const t1 = toSec((await restVal.textContent() || "").trim());
+    await expect(page.locator(".paper-action-bar .paper-action-rest"), "running rest is marked").toHaveClass(/is-resting/);
+    expect(t1, "rest still running 2.6s in, and counting down").toBeLessThan(toSec(planned));
+    await page.waitForTimeout(1100);
+    const t2 = toSec((await restVal.textContent() || "").trim());
+    expect(t2, "the countdown keeps moving").toBeLessThan(t1);
+    expect(errors, "page errors / console.error").toEqual([]);
+  });
+
   test.describe("program templates", () => {
     // "custom" has no stock program — the picker routes it to the program
     // builder, so it isn't a switchable/seedable template. "rp-hypertrophy"
