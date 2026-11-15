@@ -47,8 +47,7 @@ function paperRenderBlock(day, block, bi) {
   if (restBtnEl) {
     restBtnEl.addEventListener("click", (e) => {
       e.stopPropagation();
-      if (typeof showHeaderRest === "function") showHeaderRest(blockRestSec);
-      if (typeof openRestSheet === "function") openRestSheet();
+      if (typeof openStandaloneTimer === "function") openStandaloneTimer(blockRestSec);
       if (navigator.vibrate) navigator.vibrate(10);
     });
   }
@@ -346,7 +345,7 @@ function paperWireSetRow(row, block, ex, bi, ei, setIdx, bw) {
     if (!wasDone) {
       row.classList.add("set-done");
       if (state.workoutStartedAt && typeof showHeaderRest === "function") {
-        showHeaderRest(90);
+        showHeaderRest(paperRestSecFor(block, ex));
       }
     }
     saveInput(statusKey, wasDone ? null : "done");
@@ -397,7 +396,7 @@ function paperWireSetRow(row, block, ex, bi, ei, setIdx, bw) {
         row.classList.remove("set-done", "set-skipped");
         if (!was) {
           row.classList.add("set-done");
-          if (state.workoutStartedAt && typeof showHeaderRest === "function") showHeaderRest(90);
+          if (state.workoutStartedAt && typeof showHeaderRest === "function") showHeaderRest(paperRestSecFor(block, ex));
         }
         saveInput(statusKey, was ? null : "done");
         if (navigator.vibrate) navigator.vibrate(10);
@@ -871,6 +870,47 @@ function paperFindDayActiveSet(day) {
   return { bi: 0, exIdx: 0, setIdx: 0, allDone: true };
 }
 
+// ── Rest cell ──────────────────────────────────────────────────
+// The rest a logged set starts: the exercise's own, else the block lead's,
+// else 1:30. One rule for the Log set stamp and the set checkboxes (the
+// checkboxes used to start a flat 1:30 whatever the plan said).
+function paperRestSecFor(block, ex) {
+  if (ex && ex.rest != null) return ex.rest;
+  const lead = block && block.exercises && block.exercises[0];
+  return (lead && lead.rest != null) ? lead.rest : 90;
+}
+
+// Always m:ss, so a short rest can't read as another number in the hand
+// font ("0s" looked like "05").
+function paperRestClock(sec) {
+  const s = Math.max(0, Math.round(sec));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+
+// While a rest runs the cell reads "Resting 2:24" in red and counts down;
+// at zero it reads "Rest done" until the rest clears; otherwise it shows
+// the set's rest length (data-rest-label).
+function paperPaintRestCell(btn) {
+  const val = btn.querySelector(".pa-rest-val");
+  const lbl = btn.querySelector(".pa-rest-lbl");
+  if (!val) return;
+  if (state.restEndsAt) {
+    const rem = Math.max(0, Math.ceil((state.restEndsAt - Date.now()) / 1000));
+    btn.classList.add("is-resting");
+    btn.classList.toggle("is-rest-done", rem === 0);
+    if (lbl) lbl.textContent = rem > 0 ? "Resting" : "Rest";
+    val.textContent = rem > 0 ? paperRestClock(rem) : "done";
+  } else {
+    btn.classList.remove("is-resting", "is-rest-done");
+    if (lbl) lbl.textContent = "Rest";
+    val.textContent = btn.dataset.restLabel || "";
+  }
+}
+
+function paperPaintRestCells() {
+  document.querySelectorAll(".paper-action-rest").forEach(paperPaintRestCell);
+}
+
 function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi) {
   const bar = document.createElement("div");
   bar.className = "paper-action-bar";
@@ -933,13 +973,13 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi)
   const row = document.createElement("div");
   row.className = "paper-action-row";
 
-  // REST button
+  // REST button — shows this set's rest length, and counts down while a
+  // rest runs (paperPaintRestCell).
   const restBtn = document.createElement("button");
   restBtn.className = "paper-action-rest";
-  const restSec = (ex.rest != null ? ex.rest
-                    : (block.exercises[0] && block.exercises[0].rest != null
-                       ? block.exercises[0].rest : 90));
-  const restStr = (typeof formatRest === "function") ? formatRest(restSec) : (restSec + "s");
+  const restSec = paperRestSecFor(block, ex);
+  const restStr = restSec > 0 ? paperRestClock(restSec) : "none";
+  restBtn.dataset.restLabel = restStr;
   restBtn.innerHTML = `
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
          stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
@@ -952,10 +992,10 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi)
     <span class="pa-rest-lbl">Rest</span>
     <span class="pa-rest-val">${restStr}</span>
   `;
+  paperPaintRestCell(restBtn);
   restBtn.addEventListener("click", (e) => {
     e.stopPropagation();
-    if (typeof showHeaderRest === "function") showHeaderRest(restSec);
-    if (typeof openRestSheet === "function") openRestSheet();
+    if (typeof openStandaloneTimer === "function") openStandaloneTimer(restSec);
     if (navigator.vibrate) navigator.vibrate(10);
   });
   if (typeof paperWirePress === "function") paperWirePress(restBtn);
@@ -1266,8 +1306,7 @@ function paperRenderFocusView(container, day) {
   restLine.setAttribute("aria-label", "Open rest timer");
   restLine.addEventListener("click", (e) => {
     e.stopPropagation();
-    if (typeof showHeaderRest === "function") showHeaderRest(restSec);
-    if (typeof openRestSheet === "function") openRestSheet();
+    if (typeof openStandaloneTimer === "function") openStandaloneTimer(restSec);
     if (navigator.vibrate) navigator.vibrate(10);
   });
   if (typeof paperWirePress === "function") paperWirePress(restLine);

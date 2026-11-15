@@ -101,8 +101,27 @@ function playBeep() {
 
 const _restCircumference = 2 * Math.PI * 12; // r=12 from SVG
 
+// A rest that reaches zero hides itself two seconds later. That hide must
+// die with its rest: left pending, the one from a 0s warm-up rest used to
+// cancel the first working rest it ran into, so that rest never beeped.
+let _restHideTimer = null;
+function _clearRestHideTimer() {
+  if (_restHideTimer) clearTimeout(_restHideTimer);
+  _restHideTimer = null;
+}
+
+// The paper skin hides the header that holds the rest pill, so the action
+// bar's rest cell is where a lifter sees the countdown. Repaint it on every
+// tick and whenever a rest starts or ends.
+function _paintRestCells() {
+  if (typeof paperPaintRestCells === "function") paperPaintRestCells();
+}
+
 function showHeaderRest(seconds) {
   hideHeaderRest();
+  // No rest (warm-ups, the first half of a superset) means go straight on:
+  // no countdown, and no beep announcing a rest that never happened.
+  if (!(seconds > 0)) return;
   _resumeAudioCtx();
 
   state.restEndsAt = Date.now() + seconds * 1000;
@@ -121,6 +140,7 @@ function showHeaderRest(seconds) {
     timeEl.textContent = formatRest(rem);
     const frac = state.restTotal > 0 ? rem / state.restTotal : 0;
     arc.style.strokeDashoffset = _restCircumference * (1 - frac);
+    _paintRestCells();
 
     if (rem === 0) {
       clearInterval(state.restIntervalId);
@@ -128,7 +148,7 @@ function showHeaderRest(seconds) {
       pill.classList.add("done");
       playBeep();
       if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-      setTimeout(hideHeaderRest, 2000);
+      _restHideTimer = setTimeout(hideHeaderRest, 2000);
     }
   };
   tick();
@@ -138,12 +158,15 @@ function showHeaderRest(seconds) {
 function hideHeaderRest() {
   if (state.restIntervalId) clearInterval(state.restIntervalId);
   state.restIntervalId = null;
+  _clearRestHideTimer();
   state.restEndsAt = null;
   const pill = document.getElementById("restPill");
   pill.classList.remove("active", "done");
+  _paintRestCells();
 }
 
 function setRestDuration(seconds) {
+  _clearRestHideTimer();
   state.restEndsAt = Date.now() + seconds * 1000;
   state.restTotal = seconds;
   state.restActiveSec = seconds;
@@ -161,13 +184,14 @@ function setRestDuration(seconds) {
       timeEl.textContent = formatRest(rem);
       const frac = state.restTotal > 0 ? rem / state.restTotal : 0;
       arc.style.strokeDashoffset = _restCircumference * (1 - frac);
+      _paintRestCells();
       if (rem === 0) {
         clearInterval(state.restIntervalId);
         state.restIntervalId = null;
         pill.classList.add("done");
         playBeep();
         if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-        setTimeout(hideHeaderRest, 2000);
+        _restHideTimer = setTimeout(hideHeaderRest, 2000);
       }
     };
     tick();
@@ -308,10 +332,12 @@ function openRestSheet() {
   });
 }
 
-function openStandaloneTimer() {
+// Opening the timer mid-rest shows the rest that is running; it never
+// restarts it. With no rest running it starts `seconds` (default 1:30).
+function openStandaloneTimer(seconds) {
   _resumeAudioCtx();
   if (!state.restEndsAt || state.restEndsAt <= Date.now()) {
-    showHeaderRest(90);
+    showHeaderRest(seconds > 0 ? seconds : 90);
   }
   openRestSheet();
 }

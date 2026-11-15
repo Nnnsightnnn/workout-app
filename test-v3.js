@@ -518,6 +518,80 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     eq(w.getDraft(), null, "draft cleared");
   });
 
+  // ---- Rest: the countdown is on screen, and a 0s rest can't cancel the next ----
+  // Until 2026-11-15 the only countdown lived in the header pill, which the
+  // paper skin hides, so the bar's "Rest 2:30" sat still through every rest.
+  // A 0s warm-up rest also "ended" at once (beep) and its pending 2s hide
+  // cancelled the first working rest, so that rest never beeped. Tapping the
+  // rest cell mid-rest restarted the rest from full.
+  {
+    w.hideHeaderRest();
+    w.showHeaderRest(0);
+    const zeroStarted = w.state.restEndsAt != null;
+    w.showHeaderRest(150);
+    await wait(2300);
+    const left = w.state.restEndsAt ? Math.round((w.state.restEndsAt - Date.now()) / 1000) : null;
+    w.hideHeaderRest();
+    t("rest: a 0s rest starts nothing and can't cancel the next rest", () => {
+      assert(!zeroStarted, "a 0s rest started a countdown (and beeped at once)");
+      assert(left != null, "the 150s rest was cancelled within 2.3s");
+      assert(left >= 146 && left <= 148, `the 150s rest should have ~147s left, got ${left}`);
+    });
+  }
+  {
+    const { day, open } = _focusFixture("RestBar");
+    const bi = open[0];
+    // Pin the block's rest: the stock day opens on a superset whose first
+    // exercise rests 0s (go straight to its partner).
+    w.updateActiveProgram(p => {
+      p.program.find(d => d.id === day.id).blocks[bi].exercises.forEach(e => { e.rest = 150; });
+    });
+    const sec = w.getCurrentDay().blocks[bi].exercises[0].rest;
+    w.state.focusBlockIdx = bi;
+    w.renderWorkoutScreen();
+    const cell = () => w.document.querySelector(".paper-focus-view .paper-action-rest");
+    const val = () => (cell() ? cell().querySelector(".pa-rest-val").textContent.trim() : null);
+    const clock = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+    const before = val();
+    _focusStamp().click();
+    await wait(1400);
+    const running = { text: val(), cls: cell() ? cell().className : "" };
+    const endsBefore = w.state.restEndsAt;
+    cell().click();
+    const endsAfter = w.state.restEndsAt;
+    if (typeof w.closeSheet === "function") w.closeSheet();
+    w.hideHeaderRest();
+    const after = val();
+    t("rest: the bar counts a running rest down, and opening it doesn't restart it", () => {
+      assert(sec > 0, "fixture block needs a rest");
+      eq(before, clock(sec), "before logging, the cell shows the set's rest length");
+      assert([clock(sec - 1), clock(sec - 2)].includes(running.text),
+        `1.4s into a ${clock(sec)} rest the cell should read ${clock(sec - 1)}, got "${running.text}"`);
+      assert(/is-resting/.test(running.cls), "a running rest is marked on the cell");
+      assert(endsBefore != null, "logging the set started its rest");
+      eq(endsAfter, endsBefore, "opening the rest timer mid-rest restarted the rest");
+      eq(after, clock(sec), "after the rest clears, the cell shows the rest length again");
+    });
+  }
+  {
+    const { day, open } = _focusFixture("RestCheckbox");
+    const bi = open[0];
+    w.updateActiveProgram(p => {
+      p.program.find(d => d.id === day.id).blocks[bi].exercises.forEach(e => { e.rest = 150; });
+    });
+    w.state.workoutView = "chapters";
+    w.hideHeaderRest();
+    w.renderWorkoutScreen();
+    const box = w.document.querySelector(`.paper-block[data-bi="${bi}"] .paper-set-row .paper-set-box`);
+    if (box) box.click();
+    const left = w.state.restEndsAt ? Math.round((w.state.restEndsAt - Date.now()) / 1000) : null;
+    w.hideHeaderRest();
+    t("rest: ticking a set's checkbox starts that set's rest, not a flat 1:30", () => {
+      assert(box, "list view renders the block's set checkboxes");
+      eq(left, 150, "checkbox rest length");
+    });
+  }
+
   // ---- Returning open: Start is on the hero card, not in the closed panel ----
   // From 2026-05-12 to 2026-11-14 the only Start lived inside the "adjust
   // time" panel, which never opens in paper (zero height), so the unmarked

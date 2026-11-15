@@ -9770,6 +9770,17 @@ body[data-skin="paper"] .paper-action-rest .pa-rest-val {
   letter-spacing: 0;
   text-transform: none;
   margin-top: 1px;
+  /* Fixed line so the bar keeps its height when a rest starts and ends. */
+  line-height: 22px;
+}
+/* A running rest reads as a clock, not a setting: stamp red ("now"),
+   the number a size up. */
+body[data-skin="paper"] .paper-action-rest.is-resting .pa-rest-lbl,
+body[data-skin="paper"] .paper-action-rest.is-resting .pa-rest-val {
+  color: var(--paper-red);
+}
+body[data-skin="paper"] .paper-action-rest.is-resting .pa-rest-val {
+  font-size: 17px;
 }
 
 body[data-skin="paper"] .paper-action-weight {

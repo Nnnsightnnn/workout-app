@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.19",
+    "date": "2026-11-15",
+    "title": "Your rest counts down where you can see it",
+    "items": [
+      "After you log a set, the Rest box at the bottom now counts down in red. It used to show the rest length and never move, so you had to time your own rest.",
+      "The rest after your first working set no longer stops itself two seconds in, so its end beep now plays.",
+      "Warm-up sets with no rest no longer beep the moment you log them, and their Rest box now says none.",
+      "Tapping Rest during a rest opens the timer without starting it over. Ticking a set's box starts that set's own rest instead of a flat 1:30."
+    ]
+  },
+  {
     "version": "0.18",
     "date": "2026-11-14",
     "title": "A Start button on today's workout",
