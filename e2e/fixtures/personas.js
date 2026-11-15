@@ -161,7 +161,29 @@ async function startToday(page) {
       setTimeout(() => { window.__knStartMs = performance.now() - t0; }, 0);
     }, { capture: true, once: true });
   });
-  await leadStart(page).tap({ timeout: 5000 });
+  // 15s, not 5s: on 2026-11-15 the first test in three CI workers waited
+  // more than 5s for the Start stamp to read as "stable" on a cold runner
+  // (the same tests took ~10s whole in the previous green run, ~3s on a Mac),
+  // and no local run could reproduce it. A slow boot is not what this tap
+  // tests. If it still times out, report what the stamp's box was doing.
+  try {
+    await leadStart(page).tap({ timeout: 15000 });
+  } catch (e) {
+    const probe = await page.evaluate(() => new Promise(res => {
+      const out = []; const t0 = performance.now();
+      const step = () => {
+        const b = [...document.querySelectorAll(".paper-day-card-hero button")]
+          .find(x => /^start/i.test(x.textContent.trim()));
+        const r = b ? b.getBoundingClientRect() : null;
+        out.push({ t: Math.round(performance.now() - t0), box: r ? [r.x, r.y, r.width, r.height].map(v => +v.toFixed(1)) : null });
+        if (out.length < 10) requestAnimationFrame(step); else res(out);
+      };
+      requestAnimationFrame(step);
+      setTimeout(() => res(out.length ? out : "no animation frames in 3s"), 3000);
+    })).catch(err => "probe failed: " + err.message);
+    e.message += "\nStart stamp over the next frames: " + JSON.stringify(probe);
+    throw e;
+  }
   // @ts-ignore
   await page.waitForFunction(() => window.__knStartMs != null);
   // @ts-ignore
