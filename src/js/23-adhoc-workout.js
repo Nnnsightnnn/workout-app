@@ -349,67 +349,74 @@ function _paperBuildAdhocActionBar(day, block, activeExIdx, activeSetIdx, allDon
   if (typeof paperWirePress === "function") paperWirePress(restBtn);
   row.appendChild(restBtn);
 
-  // WEIGHT stepper (skip for bodyweight)
-  const wWrap = document.createElement("div");
-  wWrap.className = "paper-action-weight";
+  // The set this bar logs; the Log set stamp below writes to it too.
   const sKeyActive = `adhoc|${bi}|${activeExIdx}|${activeSetIdx}`;
-  if (bw) {
-    wWrap.classList.add("paper-action-weight-bw");
-    wWrap.innerHTML = `<div class="pa-weight-label">Weight</div><div class="pa-weight-bw">BW</div>`;
-  } else {
-    const last = (typeof getLastSetsFor === "function") ? getLastSetsFor(ex.exId || ex.name) : [];
-    const lastSet = last[activeSetIdx] || last[last.length - 1];
-    const existing = state.adhocInputs[sKeyActive] || {};
-    const cur = existing.w != null ? existing.w
-      : (lastSet ? lastSet.weight : (ex.defaultWeight || 0));
-    wWrap.innerHTML = `
-      <div class="pa-weight-label">Weight</div>
-      <div class="pa-weight-row">
-        <button class="pa-weight-step pa-weight-minus" aria-label="Decrease weight">&minus;</button>
-        <div class="pa-weight-val"><span class="pa-weight-num">${cur}</span><span class="pa-weight-unit">${unit}</span></div>
-        <button class="pa-weight-step pa-weight-plus" aria-label="Increase weight">+</button>
-      </div>
-    `;
-    const minus = wWrap.querySelector(".pa-weight-minus");
-    const plus = wWrap.querySelector(".pa-weight-plus");
-    const apply = (delta) => {
-      const v = Math.max(0, Number(cur) + delta);
-      if (!state.adhocInputs[sKeyActive]) state.adhocInputs[sKeyActive] = {};
-      state.adhocInputs[sKeyActive].w = v;
-      if (navigator.vibrate) navigator.vibrate(5);
-      renderAdhocScreen();
-    };
-    minus.addEventListener("click", (e) => { e.stopPropagation(); apply(-step); });
-    plus.addEventListener("click", (e) => { e.stopPropagation(); apply(+step); });
-    if (typeof paperWirePress === "function") {
-      paperWirePress(minus);
-      paperWirePress(plus);
-    }
-  }
-  row.appendChild(wWrap);
 
-  // SWAP
-  const swapBtn = document.createElement("button");
-  swapBtn.className = "paper-action-swap";
-  swapBtn.innerHTML = `
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
-         style="filter:url(#paper-roughen);">
-      <path d="M3 7 L17 7 L13 3"/>
-      <path d="M21 17 L7 17 L11 21"/>
-    </svg>
-    <span>Swap</span>
-  `;
-  swapBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    if (typeof openSidebar === "function") {
-      const libEx = (typeof LIB_BY_ID !== "undefined") ? LIB_BY_ID[ex.exId] : null;
-      const cat = libEx ? libEx.cat : null;
-      openSidebar(cat, bi, activeExIdx);
+  // Stepper and Swap only while a set is left to log; once the day is done
+  // they fell back to set 1 of the first block, already logged (see
+  // paperBuildActionBar).
+  if (!allDone) {
+    // WEIGHT stepper (skip for bodyweight)
+    const wWrap = document.createElement("div");
+    wWrap.className = "paper-action-weight";
+    if (bw) {
+      wWrap.classList.add("paper-action-weight-bw");
+      wWrap.innerHTML = `<div class="pa-weight-label">Weight</div><div class="pa-weight-bw">BW</div>`;
+    } else {
+      const last = (typeof getLastSetsFor === "function") ? getLastSetsFor(ex.exId || ex.name) : [];
+      const lastSet = last[activeSetIdx] || last[last.length - 1];
+      const existing = state.adhocInputs[sKeyActive] || {};
+      const cur = existing.w != null ? existing.w
+        : (lastSet ? lastSet.weight : (ex.defaultWeight || 0));
+      wWrap.innerHTML = `
+        <div class="pa-weight-label">Weight</div>
+        <div class="pa-weight-row">
+          <button class="pa-weight-step pa-weight-minus" aria-label="Decrease weight">&minus;</button>
+          <div class="pa-weight-val"><span class="pa-weight-num">${cur}</span><span class="pa-weight-unit">${unit}</span></div>
+          <button class="pa-weight-step pa-weight-plus" aria-label="Increase weight">+</button>
+        </div>
+      `;
+      const minus = wWrap.querySelector(".pa-weight-minus");
+      const plus = wWrap.querySelector(".pa-weight-plus");
+      const apply = (delta) => {
+        const v = Math.max(0, Number(cur) + delta);
+        if (!state.adhocInputs[sKeyActive]) state.adhocInputs[sKeyActive] = {};
+        state.adhocInputs[sKeyActive].w = v;
+        if (navigator.vibrate) navigator.vibrate(5);
+        renderAdhocScreen();
+      };
+      minus.addEventListener("click", (e) => { e.stopPropagation(); apply(-step); });
+      plus.addEventListener("click", (e) => { e.stopPropagation(); apply(+step); });
+      if (typeof paperWirePress === "function") {
+        paperWirePress(minus);
+        paperWirePress(plus);
+      }
     }
-  });
-  if (typeof paperWirePress === "function") paperWirePress(swapBtn);
-  row.appendChild(swapBtn);
+    row.appendChild(wWrap);
+
+    // SWAP
+    const swapBtn = document.createElement("button");
+    swapBtn.className = "paper-action-swap";
+    swapBtn.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+           style="filter:url(#paper-roughen);">
+        <path d="M3 7 L17 7 L13 3"/>
+        <path d="M21 17 L7 17 L11 21"/>
+      </svg>
+      <span>Swap</span>
+    `;
+    swapBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (typeof openSidebar === "function") {
+        const libEx = (typeof LIB_BY_ID !== "undefined") ? LIB_BY_ID[ex.exId] : null;
+        const cat = libEx ? libEx.cat : null;
+        openSidebar(cat, bi, activeExIdx);
+      }
+    });
+    if (typeof paperWirePress === "function") paperWirePress(swapBtn);
+    row.appendChild(swapBtn);
+  }
 
   // LOG SET / FINISH
   const logBtn = document.createElement("button");

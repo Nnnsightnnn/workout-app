@@ -200,6 +200,56 @@ test.describe("personas", () => {
     expect(errors, "page errors / console.error").toEqual([]);
   });
 
+  // Regression (2026-11-17): with a block done in focus view, the bar kept a
+  // live weight stepper and Swap aimed at that block's first set, already
+  // logged. A "+" meant for the next lift rewrote it (walked: Back Squat
+  // lifted at 135 saved as 140 and flagged a PR). Real taps: log a block led
+  // by a weighted lift; then nothing on the bar can change those sets, and
+  // the stamp still holds the bar's right edge.
+  test("focus view: a finished block's logged sets can't be changed from the bar", async ({ page }) => {
+    test.setTimeout(60_000);
+    const errors = await P.instrument(page);
+    await P.seedUser(page, { name: "Stepper", templateId: "upperlower4" });
+    await P.startToday(page);
+    const plan = await page.evaluate(() => {
+      const day = getCurrentDay();
+      const bwLed = b => { const e = b.exercises[0]; return !!((LIB_BY_ID[e.exId] || e).bodyweight); };
+      const bi = day.blocks.findIndex(b => calcBlockProgress(b).total > 0 && !bwLed(b));
+      state.workoutView = "focus";
+      state.focusBlockIdx = bi;
+      state.focusExIdx = 0;
+      renderWorkoutScreen();
+      const b = day.blocks[bi];
+      return { bi, id: b && b.id, sets: b ? calcBlockProgress(b).total : 0 };
+    });
+    expect(plan.bi, "day has a block led by a weighted lift").toBeGreaterThan(-1);
+
+    const bar = page.locator(".paper-focus-view .paper-action-bar");
+    await expect(bar.locator(".pa-weight-plus"), "stepper while the block has a set to log").toBeVisible();
+    const stamp = bar.locator(".paper-action-log");
+    for (let i = 1; i <= plan.sets; i++) {
+      await expect(stamp).toBeEnabled();
+      await stamp.tap();
+      await page.waitForFunction(a => calcBlockProgress(getCurrentDay().blocks[a.bi]).done >= a.want,
+        { bi: plan.bi, want: i });
+    }
+    await expect(stamp, "the stamp leads on to the next block").toHaveClass(/paper-action-next/);
+
+    // What a lifter would press for the next lift's weight, if it were there.
+    const plus = bar.locator(".pa-weight-plus");
+    if (await plus.count()) await plus.tap();
+    const w = await page.evaluate(id => getInput(inputKey(id, 0, 0, "w"), null), plan.id);
+    expect(w, "a + on the finished block rewrote its logged set 1").toBeNull();
+    await expect(bar.locator(".paper-action-weight"), "weight cell on a finished block").toHaveCount(0);
+    await expect(bar.locator(".paper-action-swap"), "Swap on a finished block").toHaveCount(0);
+
+    const s = await stamp.boundingBox();
+    const b = await bar.boundingBox();
+    expect(s && b && (b.x + b.width) - (s.x + s.width) < 30, "stamp holds the bar's right edge").toBe(true);
+    expect(s.y + s.height <= 844, "stamp wholly in view").toBe(true);
+    expect(errors, "page errors / console.error").toEqual([]);
+  });
+
   // Regression (2026-11-14): from 2026-05-12 the returning lifter's only
   // Start sat inside the collapsed "adjust time" panel, which never opens in
   // paper. The gate missed it because startToday() used a JS click. A lifter

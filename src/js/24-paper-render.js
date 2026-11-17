@@ -1001,68 +1001,76 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi)
   if (typeof paperWirePress === "function") paperWirePress(restBtn);
   row.appendChild(restBtn);
 
-  // WEIGHT stepper (skip for bodyweight)
-  const wWrap = document.createElement("div");
-  wWrap.className = "paper-action-weight";
-  if (bw) {
-    wWrap.classList.add("paper-action-weight-bw");
-    wWrap.innerHTML = `<div class="pa-weight-label">Weight</div><div class="pa-weight-bw">BW</div>`;
-  } else {
-    const wkey = inputKey(block.id, activeExIdx, activeSetIdx, "w");
-    const last = (typeof getLastSetsFor === "function") ? getLastSetsFor(ex.exId || ex.name) : [];
-    const lastSet = last[activeSetIdx] || last[last.length - 1];
-    const rptDef = (typeof rptPlannedSet === "function")
-      ? rptPlannedSet(block, ex, activeExIdx, activeSetIdx) : null;
-    const cur = (typeof getInput === "function")
-      ? getInput(wkey, rptDef ? (rptDef.weight ?? 0) : (lastSet?.weight ?? ex.defaultWeight ?? 0)) : 0;
-    wWrap.innerHTML = `
-      <div class="pa-weight-label">Weight</div>
-      <div class="pa-weight-row">
-        <button class="pa-weight-step pa-weight-minus" aria-label="Decrease weight">&minus;</button>
-        <div class="pa-weight-val"><span class="pa-weight-num">${cur}</span><span class="pa-weight-unit">${unit}</span></div>
-        <button class="pa-weight-step pa-weight-plus" aria-label="Increase weight">+</button>
-      </div>
-    `;
-    const minus = wWrap.querySelector(".pa-weight-minus");
-    const plus = wWrap.querySelector(".pa-weight-plus");
-    const apply = (delta) => {
-      const v = Math.max(0, Number(cur) + delta);
-      if (typeof saveInput === "function") saveInput(wkey, v);
-      if (navigator.vibrate) navigator.vibrate(5);
-      if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
-    };
-    minus.addEventListener("click", (e) => { e.stopPropagation(); apply(-step); });
-    plus.addEventListener("click", (e) => { e.stopPropagation(); apply(+step); });
-    if (typeof paperWirePress === "function") {
-      paperWirePress(minus);
-      paperWirePress(plus);
+  // The weight stepper and Swap act on the set this bar would log next. Once
+  // there is none (this block done in focus view, or the whole day done)
+  // they used to fall back to set 1 of a block already logged: a "+" meant
+  // for the next lift rewrote that set's saved weight, and could mark it a
+  // PR. So draw them only while a set is left to log. A logged set is still
+  // changed from its own row.
+  if (!allDone) {
+    // WEIGHT stepper (skip for bodyweight)
+    const wWrap = document.createElement("div");
+    wWrap.className = "paper-action-weight";
+    if (bw) {
+      wWrap.classList.add("paper-action-weight-bw");
+      wWrap.innerHTML = `<div class="pa-weight-label">Weight</div><div class="pa-weight-bw">BW</div>`;
+    } else {
+      const wkey = inputKey(block.id, activeExIdx, activeSetIdx, "w");
+      const last = (typeof getLastSetsFor === "function") ? getLastSetsFor(ex.exId || ex.name) : [];
+      const lastSet = last[activeSetIdx] || last[last.length - 1];
+      const rptDef = (typeof rptPlannedSet === "function")
+        ? rptPlannedSet(block, ex, activeExIdx, activeSetIdx) : null;
+      const cur = (typeof getInput === "function")
+        ? getInput(wkey, rptDef ? (rptDef.weight ?? 0) : (lastSet?.weight ?? ex.defaultWeight ?? 0)) : 0;
+      wWrap.innerHTML = `
+        <div class="pa-weight-label">Weight</div>
+        <div class="pa-weight-row">
+          <button class="pa-weight-step pa-weight-minus" aria-label="Decrease weight">&minus;</button>
+          <div class="pa-weight-val"><span class="pa-weight-num">${cur}</span><span class="pa-weight-unit">${unit}</span></div>
+          <button class="pa-weight-step pa-weight-plus" aria-label="Increase weight">+</button>
+        </div>
+      `;
+      const minus = wWrap.querySelector(".pa-weight-minus");
+      const plus = wWrap.querySelector(".pa-weight-plus");
+      const apply = (delta) => {
+        const v = Math.max(0, Number(cur) + delta);
+        if (typeof saveInput === "function") saveInput(wkey, v);
+        if (navigator.vibrate) navigator.vibrate(5);
+        if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
+      };
+      minus.addEventListener("click", (e) => { e.stopPropagation(); apply(-step); });
+      plus.addEventListener("click", (e) => { e.stopPropagation(); apply(+step); });
+      if (typeof paperWirePress === "function") {
+        paperWirePress(minus);
+        paperWirePress(plus);
+      }
     }
-  }
-  row.appendChild(wWrap);
+    row.appendChild(wWrap);
 
-  // SWAP button
-  const swapBtn = document.createElement("button");
-  swapBtn.className = "paper-action-swap";
-  swapBtn.innerHTML = `
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
-         style="filter:url(#paper-roughen);">
-      <path d="M3 7 L17 7 L13 3"/>
-      <path d="M21 17 L7 17 L11 21"/>
-    </svg>
-    <span>Swap</span>
-  `;
-  swapBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    if (typeof openSidebar === "function") {
-      const libEx = (typeof LIB_BY_ID !== "undefined") ? LIB_BY_ID[ex.exId] : null;
-      const cat = libEx ? libEx.cat : (block.type === "warmup" ? "Warmup" : null);
-      const swapBi = (bi != null) ? bi : state.focusBlockIdx;
-      openSidebar(cat, swapBi, activeExIdx);
-    }
-  });
-  if (typeof paperWirePress === "function") paperWirePress(swapBtn);
-  row.appendChild(swapBtn);
+    // SWAP button
+    const swapBtn = document.createElement("button");
+    swapBtn.className = "paper-action-swap";
+    swapBtn.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+           style="filter:url(#paper-roughen);">
+        <path d="M3 7 L17 7 L13 3"/>
+        <path d="M21 17 L7 17 L11 21"/>
+      </svg>
+      <span>Swap</span>
+    `;
+    swapBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (typeof openSidebar === "function") {
+        const libEx = (typeof LIB_BY_ID !== "undefined") ? LIB_BY_ID[ex.exId] : null;
+        const cat = libEx ? libEx.cat : (block.type === "warmup" ? "Warmup" : null);
+        const swapBi = (bi != null) ? bi : state.focusBlockIdx;
+        openSidebar(cat, swapBi, activeExIdx);
+      }
+    });
+    if (typeof paperWirePress === "function") paperWirePress(swapBtn);
+    row.appendChild(swapBtn);
+  }
 
   // LOG SET / FINISH — primary stamp. When the day is done, the same red
   // stamp slot becomes the finish action — saves the session via the canonical

@@ -9848,6 +9848,9 @@ body[data-skin="paper"] .pa-weight-bw {
 
 body[data-skin="paper"] .paper-action-log {
   flex: 0 0 auto;
+  /* Holds the right edge, where the thumb expects it, when the bar has no
+     stepper or Swap to fill the row (nothing left to log). */
+  margin-left: auto;
   padding: 10px 14px;
   border: 2px solid var(--paper-red);
   background: var(--paper-red);

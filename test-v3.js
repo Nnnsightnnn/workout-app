@@ -518,6 +518,72 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     eq(w.getDraft(), null, "draft cleared");
   });
 
+  // ---- The bar's stepper and Swap can't reach a logged set ----
+  // Until 2026-11-17, with nothing left to log the bar's weight stepper and
+  // Swap fell back to set 1 of a block already logged. In focus view, after
+  // "A done · next: B", a "+" meant for the next lift rewrote A's first set
+  // (walked: Back Squat lifted at 135 saved as 140 and flagged a PR).
+  const _isBwLed = (block) => {
+    const ex = block.exercises[0];
+    return !!((w.LIB_BY_ID[ex.exId] || ex).bodyweight);
+  };
+
+  t("focus view: a finished block offers no stepper or Swap to change its logged sets", () => {
+    const { day, open } = _focusFixture("FocusStepper");
+    const bi = open.find(i => !_isBwLed(day.blocks[i]));
+    assert(bi != null, "fixture day needs a block led by a weighted lift");
+    const block = day.blocks[bi];
+    w.state.focusBlockIdx = bi;
+    w.renderWorkoutScreen();
+    const q = (s) => w.document.querySelector(".paper-focus-view .paper-action-bar " + s);
+    assert(q(".pa-weight-plus") && q(".paper-action-swap"), "stepper and Swap while the block has a set to log");
+
+    _markBlockDone(block);
+    w.renderWorkoutScreen();
+    const wkey = w.inputKey(block.id, 0, 0, "w");
+    const plus = q(".pa-weight-plus");
+    if (plus) plus.click();
+    eq(w.getInput(wkey, null), null, "a + on the finished block rewrote its logged set 1");
+    assert(!q(".paper-action-weight"), "weight cell still drawn on a finished block");
+    assert(!q(".paper-action-swap"), "Swap still drawn on a finished block");
+    assert(q(".paper-action-rest") && q(".paper-action-next"), "Rest and the Next stamp stay");
+  });
+
+  t("list view: with the day done, the bar offers Finish without a stepper or Swap", () => {
+    const { day } = _focusFixture("ListDayDone");
+    w.state.workoutView = "chapters";
+    day.blocks.forEach(_markBlockDone);
+    w.renderWorkoutScreen();
+    const bar = w.document.querySelector(".paper-chapters-view .paper-action-bar");
+    assert(bar, "list view renders the bar");
+    assert(bar.querySelector(".paper-action-finish"), "Finish when the whole day is done");
+    assert(!bar.querySelector(".paper-action-weight"), "weight cell drawn beside Finish");
+    assert(!bar.querySelector(".paper-action-swap"), "Swap drawn beside Finish");
+  });
+
+  t("one-off workout: the bar logs the open set, and offers no stepper or Swap once done", () => {
+    const prev = w.state.adhocInputs;
+    try {
+      w.state.adhocInputs = {};
+      const ex = w.mkSets(w.LIB_BY_ID.backsquat, { sets: 2, reps: 5, rest: 90 });
+      const day = { blocks: [{ exercises: [ex] }] };
+      const open = w._paperBuildAdhocActionBar(day, day.blocks[0], 0, 1, false, 0);
+      assert(open.querySelector(".pa-weight-plus") && open.querySelector(".paper-action-swap"),
+        "stepper and Swap while a set is open");
+      open.querySelector(".paper-action-log").click();
+      w.hideHeaderRest();
+      eq((w.state.adhocInputs["adhoc|0|0|1"] || {}).status, "done", "Log set marks the open set done");
+
+      w.state.adhocInputs = { "adhoc|0|0|0": { status: "done" }, "adhoc|0|0|1": { status: "done" } };
+      const done = w._paperBuildAdhocActionBar(day, day.blocks[0], 0, 0, true, 0);
+      assert(done.querySelector(".paper-action-finish"), "Finish when every set is done");
+      assert(!done.querySelector(".paper-action-weight"), "weight cell drawn beside Finish");
+      assert(!done.querySelector(".paper-action-swap"), "Swap drawn beside Finish");
+    } finally {
+      w.state.adhocInputs = prev;
+    }
+  });
+
   // ---- Rest: the countdown is on screen, and a 0s rest can't cancel the next ----
   // Until 2026-11-15 the only countdown lived in the header pill, which the
   // paper skin hides, so the bar's "Rest 2:30" sat still through every rest.
