@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.20",
+    "date": "2026-11-17",
+    "title": "Sets you've logged stay as you logged them",
+    "items": [
+      "Once a block is done, the bar at the bottom no longer shows a weight stepper or Swap. They still pointed at that block's first set, so a + meant for your next lift quietly changed a set you had already logged, and could count it as a PR.",
+      "When the whole workout is done, the bar shows just Rest and Finish. To change a set you've logged, tap its weight or reps on the set's own line."
+    ]
+  },
+  {
     "version": "0.19",
     "date": "2026-11-15",
     "title": "Your rest counts down where you can see it",
