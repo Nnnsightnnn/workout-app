@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.21",
+    "date": "2026-11-19",
+    "title": "Short on time? Shorten today only",
+    "items": [
+      "Adjust time on today's workout now opens. Tap 30 or 45, or step the minutes, and it lists what it would cut to fit. The red Start then runs that shorter version.",
+      "The cuts are for today only. Your program stays as written, so the next time this day comes around it is back in full.",
+      "Changed your mind? Tap adjust time again to close it, and Start runs the full day."
+    ]
+  },
+  {
     "version": "0.20",
     "date": "2026-11-17",
     "title": "Sets you've logged stay as you logged them",

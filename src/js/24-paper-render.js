@@ -312,7 +312,7 @@ function paperRenderSetsTable(block, ex, bi, ei) {
       if (typeof updateActiveProgram !== "function") return;
       const lastIdx = numSets - 1;
       updateActiveProgram(entry => {
-        const day = entry.program.find(d => d.id === state.currentDayId);
+        const day = sessionDayOf(entry) || entry.program.find(d => d.id === state.currentDayId);
         if (day) {
           const e = day.blocks[bi].exercises[ei];
           e.sets = Math.max(1, (e.sets || 1) - 1);
@@ -723,15 +723,21 @@ function paperBuildDayCard(d, isHero) {
     </div>
   ` : "";
 
-  // Round UP to the 5-minute step. Rounding to nearest put a 41-minute day's
-  // target at 40, below the estimate, so every such card loaded in
-  // "adjusted" mode: the time line read ~39 beside an Est. of 41.
-  const defaultTarget = Math.ceil(breakdown.totalMin / 5) * 5;
+  // The target starts at the estimate itself. Below it, the card loads in
+  // "adjusted" mode (rounding to nearest once put a 41-minute day at 40, and
+  // its time line read ~39 beside Est. 41); rounded up, it read 50 beside
+  // Est. 48 and lifters couldn't tell which counted. The stepper moves to
+  // 5-minute marks from here.
+  const defaultTarget = breakdown.totalMin;
+  // Quick picks for the common short days; only the ones that would cut.
+  const picksHtml = [30, 45].filter(m => m < breakdown.totalMin)
+    .map(m => `<button class="paper-tb-pick" data-min="${m}">${m}</button>`).join("");
 
   // The hero's Start sits on the first screen, beside "adjust time". It used
   // to exist only inside the collapsed time panel, where no one could reach
   // it, so the unmarked card was the only way in. Starts the day as planned,
-  // exactly like tapping the card; data-busy gives it the busy line.
+  // like tapping the card, or the cut day while "adjust time" holds one;
+  // data-busy gives it the busy line.
   const leadStartHtml = isHero
     ? `<button class="paper-start-stamp paper-day-start" data-busy data-day-id="${d.id}">Start workout</button>`
     : "";
@@ -756,6 +762,8 @@ function paperBuildDayCard(d, isHero) {
       <div class="dpc-controls-inner">
         <div class="tb-target-row paper-tb-row" data-day-id="${d.id}">
           <span class="tb-target-label">Target</span>
+          ${picksHtml}
+          <span class="paper-tb-gap"></span>
           <button class="tb-step tb-down paper-tb-step" data-dir="-1">−</button>
           <span class="tb-target-val paper-tb-val">${defaultTarget}</span>
           <span class="tb-target-unit">min</span>
@@ -772,20 +780,18 @@ function paperBuildDayCard(d, isHero) {
   // Tapping the card opens the workout (unless the tap was on the time-budget controls or the expand hint)
   card.addEventListener("click", (e) => {
     if (e.target.closest(".dpc-controls-inner") || e.target.closest(".dpc-expand-hint")) return;
+    // On today's card a tap anywhere does what its Start does: the plan, or
+    // the cut day the time panel holds. The stamp stops its own click, so
+    // this doesn't run twice.
+    const lead = card.querySelector(".paper-day-start");
+    if (lead) { lead.click(); return; }
     state.currentDayId = d.id;
     state.dayChosen = true;
     if (typeof openWorkout === "function") openWorkout();
   });
 
-  const leadStart = card.querySelector(".paper-day-start");
-  if (leadStart) {
-    leadStart.addEventListener("click", (e) => {
-      e.stopPropagation();
-      state.currentDayId = d.id;
-      state.dayChosen = true;
-      if (typeof openWorkout === "function") openWorkout();
-    });
-  }
+  // The hero's Start stamp is wired in _wireTimeBudgetCard below: it starts
+  // the day as planned, or the cut day while the time panel holds one.
 
   // "Adjust time" link toggles the config panel
   const expand = card.querySelector(".dpc-expand-hint");
