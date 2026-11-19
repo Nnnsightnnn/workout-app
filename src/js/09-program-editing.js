@@ -3,7 +3,9 @@
 // ============================================================
 function mutateDay(fn) {
   updateActiveProgram(entry => {
-    const day = entry.program.find(d => d.id === state.currentDayId);
+    // In a shortened session the edit lands on the day on screen, whose
+    // indices it was made against; the stored day stays as written.
+    const day = sessionDayOf(entry) || entry.program.find(d => d.id === state.currentDayId);
     if (day) fn(day);
   });
 }

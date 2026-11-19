@@ -1,11 +1,16 @@
 // ============================================================
 // START / FINISH WORKOUT
 // ============================================================
-function openWorkout() {
+// sessionDay: a shortened copy of today's day from "adjust time", run for
+// this session only. It is held on the draft, so finishing, exiting or a
+// week turn (all of which clear the draft) drop it, and the stored program
+// is never written. Without one, the day opens as planned.
+function openWorkout(sessionDay) {
   if (state.adhocActive) return;
   state.trimmedBlocks = null;
   state.previewBlockIdx = null;
   ensureDraft();
+  _holdSessionDay(sessionDay && Array.isArray(sessionDay.blocks) ? sessionDay : null);
   if (state.autoTimer) {
     state.workoutStartedAt = getDraft().startedAt;
     startSessionTimer();
@@ -14,6 +19,19 @@ function openWorkout() {
   updateFinishButton();
   showToast(getRandomQuote(), "quote", 3500);
   renderWorkoutScreen();
+}
+
+// A planned start drops a shortened day left on a draft only while nothing
+// has been logged in it; once sets are logged, reopening is a resume and the
+// session keeps the day those sets belong to.
+function _holdSessionDay(sessionDay) {
+  const d = getDraft();
+  if (!d) return;
+  if (sessionDay) {
+    updateActiveProgram(entry => { if (entry.draft) entry.draft.sessionDay = deepClone(sessionDay); });
+  } else if (d.sessionDay && !Object.keys(d.inputs || {}).length) {
+    updateActiveProgram(entry => { if (entry.draft) delete entry.draft.sessionDay; });
+  }
 }
 
 function startWorkout() {

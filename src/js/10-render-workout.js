@@ -70,7 +70,10 @@ const CD_COMBOS = [
 ];
 function getCooldownExercises(dayId) {
   var p = (typeof activeProgram === "function") ? activeProgram() : null;
-  var day = (p && p.program) ? p.program.find(function(d) { return d.id === dayId; }) : null;
+  // Today's day comes through getCurrentDay(), so a cooldown swap made in a
+  // shortened session (written to that session's day) shows up.
+  var day = (dayId === state.currentDayId && typeof getCurrentDay === "function") ? getCurrentDay()
+    : ((p && p.program) ? p.program.find(function(d) { return d.id === dayId; }) : null);
   var overrides = (day && day.cooldownOverrides) || {};
   var idx = ((dayId || 1) - 1) % CD_COMBOS.length;
   return CD_COMBOS[idx].map(function(i, ci) {
@@ -488,13 +491,36 @@ function _wireTimeBudgetCard(card, day, breakdown) {
   const startRow = card.querySelector(".tb-start-row");
   const durationEl = card.querySelector(".picker-duration");
   const breakdownEl = card.querySelector(".picker-breakdown");
-  let currentTarget = parseInt(valEl.textContent, 10);
+  // The paper hero's Start stamp. While the panel holds a cut it starts the
+  // cut day, so the card's one Start always does what its time line says.
+  const lead = card.querySelector(".paper-day-start");
+  const paper = card.classList.contains("paper-day-card");
+  const picks = card.querySelectorAll(".paper-tb-pick");
+  const defaultTarget = parseInt(valEl.textContent, 10);
+  let currentTarget = defaultTarget;
   let lastBudget = null;
+
+  // The paper hero's Sets / Blocks / Est. follow the day Start will run, so
+  // a cut never sits under the planned day's numbers.
+  const metricVals = card.querySelectorAll(".paper-day-metric-val");
+  const metricSubs = card.querySelectorAll(".paper-day-metric-sub");
+  function showMetrics(d, totalMin) {
+    if (metricVals.length < 3 || metricSubs.length < 2) return;
+    const sets = d.blocks.reduce((n, b) => n + b.exercises.reduce((s, ex) => s + (ex.sets || 0), 0), 0);
+    metricVals[0].textContent = String(sets).padStart(2, "0");
+    metricSubs[0].textContent = `${d.blocks.length} blocks`;
+    metricVals[1].textContent = String(d.blocks.length).padStart(2, "0");
+    metricSubs[1].textContent = d.blocks.map(b => b.letter).join(" ");
+    metricVals[2].textContent = totalMin;
+  }
 
   function updateAdjustments() {
     if (currentTarget >= breakdown.totalMin) {
+      lastBudget = null;
+      showMetrics(day, breakdown.totalMin);
       adjPreview.innerHTML = "";
-      startRow.innerHTML = `<button class="tb-start-btn primary" data-action="start">Start ~${currentTarget} min</button>`;
+      startRow.innerHTML = lead ? ""
+        : `<button class="tb-start-btn primary${paper ? " paper-start-stamp" : ""}" data-action="start">Start ~${breakdown.totalMin} min</button>`;
       durationEl.textContent = `⏱ ~${breakdown.totalMin} min`;
       const wuMin = Math.round(breakdown.warmupSec / 60);
       const wkMin = Math.round(breakdown.workingSec / 60);
@@ -505,57 +531,100 @@ function _wireTimeBudgetCard(card, day, breakdown) {
       let adjHtml = "";
       if (lastBudget.adjustments.length) {
         const savedMin = Math.round(lastBudget.adjustments.reduce((s, a) => s + a.savedSec, 0) / 60);
-        adjHtml += `<div class="tb-adj-header">Adjustments to save ~${savedMin} min</div>`;
+        adjHtml += `<div class="tb-adj-header">Cut for today · saves ~${savedMin} min</div>`;
         lastBudget.adjustments.forEach(a => {
           adjHtml += `<div class="tb-adj-item">${a.description}</div>`;
         });
       }
       if (!lastBudget.achievable) {
-        adjHtml += `<div class="tb-adj-warn">Can't reach ${currentTarget} min — minimum ~${lastBudget.adjustedMin} min</div>`;
+        adjHtml += `<div class="tb-adj-warn">~${lastBudget.adjustedMin} min is as short as this day goes</div>`;
       }
       adjPreview.innerHTML = adjHtml;
       const adjMin = lastBudget.adjustedMin;
-      startRow.innerHTML = `<button class="tb-start-btn primary" data-action="adjusted">Start adjusted ~${adjMin} min</button>`
+      startRow.innerHTML = lead ? ""
+        : `<button class="tb-start-btn primary${paper ? " paper-start-stamp" : ""}" data-action="adjusted">Start adjusted ~${adjMin} min</button>`
         + `<button class="tb-start-btn secondary" data-action="start">Start as-is ~${breakdown.totalMin} min</button>`;
       const adjBreakdown = getSessionBreakdown(lastBudget.adjustedDay);
+      showMetrics(lastBudget.adjustedDay, adjBreakdown.totalMin);
       durationEl.textContent = `⏱ ~${adjBreakdown.totalMin} min`;
       const wuMin = Math.round(adjBreakdown.warmupSec / 60);
       const wkMin = Math.round(adjBreakdown.workingSec / 60);
       const cdMin = Math.round(adjBreakdown.cooldownSec / 60);
       breakdownEl.textContent = `WU ${wuMin}m · Work ${wkMin}m · CD ${cdMin}m`;
     }
+    if (lead) {
+      lead.textContent = lastBudget ? `Start ~${lastBudget.adjustedMin} min` : "Start workout";
+      lead.dataset.action = lastBudget ? "adjusted" : "start";
+    }
+    picks.forEach(b => b.classList.toggle("active", Number(b.dataset.min) === currentTarget));
     wireStartButtons();
+  }
+
+  // The cut day runs for this session only: it rides on the draft and is
+  // gone when the session ends. Until 2026-11-19 it was written over the
+  // stored day, so the sets cut today stayed cut every week after.
+  function start(action) {
+    state.currentDayId = day.id;
+    state.dayChosen = true;
+    openWorkout(action === "adjusted" && lastBudget ? lastBudget.adjustedDay : null);
   }
 
   function wireStartButtons() {
     startRow.querySelectorAll(".tb-start-btn").forEach(btn => {
       btn.addEventListener("click", e => {
         e.stopPropagation();
-        if (btn.dataset.action === "adjusted" && lastBudget) {
-          // Apply adjustments to the real program
-          const p = activeProgram();
-          const dayIdx = p ? p.program.findIndex(dd => dd.id === day.id) : -1;
-          if (dayIdx >= 0) {
-            updateActiveProgram(entry => { entry.program[dayIdx] = lastBudget.adjustedDay; });
-          }
-        }
-        state.currentDayId = day.id;
-        state.dayChosen = true;
-        openWorkout();
+        start(btn.dataset.action);
       });
     });
+  }
+  if (lead) {
+    lead.addEventListener("click", e => {
+      e.stopPropagation();
+      start(lead.dataset.action);
+    });
+  }
+
+  function setTarget(min) {
+    currentTarget = Math.max(10, Math.min(180, min));
+    valEl.textContent = currentTarget;
+    updateAdjustments();
+    // Bring the list of cuts into view; it grows below the fold on a phone.
+    const outer = card.querySelector(".dpc-controls-outer");
+    if (card.classList.contains("expanded") && outer && typeof outer.scrollIntoView === "function") {
+      outer.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
   }
 
   // Stepper buttons
   card.querySelectorAll(".tb-step").forEach(btn => {
     btn.addEventListener("click", e => {
       e.stopPropagation();
-      const dir = parseInt(btn.dataset.dir, 10);
-      currentTarget = Math.max(10, Math.min(180, currentTarget + dir * 5));
-      valEl.textContent = currentTarget;
-      updateAdjustments();
+      setTarget(currentTarget + parseInt(btn.dataset.dir, 10) * 5);
     });
   });
+
+  // Quick picks (30, 45): one tap to a common target.
+  picks.forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      setTarget(parseInt(btn.dataset.min, 10));
+    });
+  });
+
+  // Closing the panel puts the day back as planned, so a cut never hides
+  // behind a closed panel. Opening it brings it up off the bottom edge, where
+  // it would otherwise appear on a phone. The card's own toggle runs first.
+  const expandHint = card.querySelector(".dpc-expand-hint");
+  if (expandHint) {
+    expandHint.addEventListener("click", () => {
+      if (!card.classList.contains("expanded")) {
+        if (currentTarget !== defaultTarget) setTarget(defaultTarget);
+        return;
+      }
+      const outer = card.querySelector(".dpc-controls-outer");
+      if (outer && typeof outer.scrollIntoView === "function") outer.scrollIntoView({ block: "center", behavior: "smooth" });
+    });
+  }
 
   // Initial wiring
   updateAdjustments();
@@ -1387,7 +1456,7 @@ function renderSetsTable(block, ex, bi, ei) {
     rmBtn.onclick = () => {
       const lastIdx = numSets - 1;
       updateActiveProgram(entry => {
-        const day = entry.program.find(d => d.id === state.currentDayId);
+        const day = sessionDayOf(entry) || entry.program.find(d => d.id === state.currentDayId);
         if (day) {
           const e = day.blocks[bi].exercises[ei];
           e.sets = Math.max(1, (e.sets || 1) - 1);

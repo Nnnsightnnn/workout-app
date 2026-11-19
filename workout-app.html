@@ -8586,8 +8586,12 @@ body[data-skin="paper"] .paper-day-card .dpc-controls-outer {
   border: none;
   box-shadow: none;
 }
+/* The base rule holds the panel's grid row at 0fr; only the pre-paper card
+   ever switched it to 1fr, so from 2026-05-12 to 2026-11-19 the panel opened
+   to zero height in paper. No max-height: a long list of cuts must not clip. */
 body[data-skin="paper"] .paper-day-card.expanded .dpc-controls-outer {
-  max-height: 320px;
+  grid-template-rows: 1fr;
+  max-height: none;
   padding-top: 6px;
 }
 body[data-skin="paper"] .paper-day-card .dpc-controls-inner {
@@ -8600,7 +8604,7 @@ body[data-skin="paper"] .paper-day-card .dpc-controls-inner {
 }
 body[data-skin="paper"] .paper-tb-row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
   font-family: var(--paper-hand);
   font-size: 18px;
@@ -8648,14 +8652,85 @@ body[data-skin="paper"] .paper-tb-row .tb-target-unit {
   color: var(--paper-ink-faint);
   text-transform: uppercase;
 }
+/* Quick picks: handwritten minutes on the line, 44px hit area, the chosen
+   one washed with highlighter. */
+body[data-skin="paper"] .paper-tb-pick {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 6px;
+  background: transparent;
+  border: none;
+  border-bottom: 1.2px dashed var(--paper-ink-mist);
+  border-radius: 0;
+  box-shadow: none;
+  font-family: var(--paper-hand);
+  font-size: 22px;
+  color: var(--paper-ink);
+  cursor: pointer;
+}
+body[data-skin="paper"] .paper-tb-pick.active {
+  background: var(--paper-marker-soft);
+  border-bottom: 1.4px solid var(--paper-ink);
+}
+body[data-skin="paper"] .paper-tb-gap { flex: 1 1 auto; }
 body[data-skin="paper"] .tb-adj-preview {
   font-family: var(--paper-hand);
   font-size: 14px;
   color: var(--paper-ink-soft);
+  margin-top: 0;
+}
+body[data-skin="paper"] .tb-adj-header {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--paper-ink-faint);
+  margin-bottom: 2px;
+}
+body[data-skin="paper"] .tb-adj-item {
+  font-family: var(--paper-hand);
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--paper-ink);
+  padding: 3px 0;
+  border-bottom: 1px dotted var(--paper-ink-mist);
+}
+body[data-skin="paper"] .tb-adj-item:last-child { border-bottom: none; }
+body[data-skin="paper"] .tb-adj-warn {
+  font-family: var(--paper-hand);
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--paper-ink-soft);
+  margin-top: 4px;
 }
 body[data-skin="paper"] .paper-tb-start-row {
   display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
+  gap: 12px;
+}
+body[data-skin="paper"] .paper-tb-start-row:empty { display: none; }
+/* Other days' cards keep their Starts in the panel: the stamp for the lead,
+   a flat ink outline for "as-is". */
+body[data-skin="paper"] .paper-day-card .tb-start-btn {
+  width: auto;
+  min-height: 44px;
+}
+body[data-skin="paper"] .paper-day-card .tb-start-btn.secondary {
+  background: transparent;
+  color: var(--paper-ink);
+  border: 1.4px solid var(--paper-ink);
+  border-radius: 0;
+  box-shadow: none;
+  font-family: var(--paper-form);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 8px 12px;
 }
 body[data-skin="paper"] .paper-start-stamp {
   background: var(--paper-red);
@@ -11669,6 +11744,16 @@ body[data-skin="paper"] .sheet .paper-menu-sheet button.paper-menu-item:active {
 // === Inlined from src/changelog.json ===
 const CHANGELOG = [
   {
+    "version": "0.21",
+    "date": "2026-11-19",
+    "title": "Short on time? Shorten today only",
+    "items": [
+      "Adjust time on today's workout now opens. Tap 30 or 45, or step the minutes, and it lists what it would cut to fit. The red Start then runs that shorter version.",
+      "The cuts are for today only. Your program stays as written, so the next time this day comes around it is back in full.",
+      "Changed your mind? Tap adjust time again to close it, and Start runs the full day."
+    ]
+  },
+  {
     "version": "0.20",
     "date": "2026-11-17",
     "title": "Sets you've logged stay as you logged them",
@@ -14455,7 +14540,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 23;
-const APP_BUILD = "78d347cf";
+const APP_BUILD = "a2538b17";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -15311,10 +15396,20 @@ function determineDefaultDay() {
   return (last % p.program.length) + 1;
 }
 
+// A shortened day started from "adjust time" rides on the draft
+// (draft.sessionDay) and stands in for the stored day until the draft ends,
+// so the stored program is never rewritten. Drafts without one, including
+// every draft saved before 2026-11-19, run the stored day as always.
+function sessionDayOf(entry) {
+  if (!entry || !entry.draft || entry.draft.dayId !== state.currentDayId) return null;
+  const sd = entry.draft.sessionDay;
+  return (sd && Array.isArray(sd.blocks)) ? sd : null;
+}
+
 function getCurrentDay() {
   const p = activeProgram();
   if (!p) return null;
-  return p.program.find(d => d.id === state.currentDayId);
+  return sessionDayOf(p) || p.program.find(d => d.id === state.currentDayId);
 }
 
 // Check if week needs to roll over and regenerate program
@@ -15574,7 +15669,9 @@ function triggerCelebration() {
 // ============================================================
 function mutateDay(fn) {
   updateActiveProgram(entry => {
-    const day = entry.program.find(d => d.id === state.currentDayId);
+    // In a shortened session the edit lands on the day on screen, whose
+    // indices it was made against; the stored day stays as written.
+    const day = sessionDayOf(entry) || entry.program.find(d => d.id === state.currentDayId);
     if (day) fn(day);
   });
 }
@@ -16857,7 +16954,10 @@ const CD_COMBOS = [
 ];
 function getCooldownExercises(dayId) {
   var p = (typeof activeProgram === "function") ? activeProgram() : null;
-  var day = (p && p.program) ? p.program.find(function(d) { return d.id === dayId; }) : null;
+  // Today's day comes through getCurrentDay(), so a cooldown swap made in a
+  // shortened session (written to that session's day) shows up.
+  var day = (dayId === state.currentDayId && typeof getCurrentDay === "function") ? getCurrentDay()
+    : ((p && p.program) ? p.program.find(function(d) { return d.id === dayId; }) : null);
   var overrides = (day && day.cooldownOverrides) || {};
   var idx = ((dayId || 1) - 1) % CD_COMBOS.length;
   return CD_COMBOS[idx].map(function(i, ci) {
@@ -17275,13 +17375,36 @@ function _wireTimeBudgetCard(card, day, breakdown) {
   const startRow = card.querySelector(".tb-start-row");
   const durationEl = card.querySelector(".picker-duration");
   const breakdownEl = card.querySelector(".picker-breakdown");
-  let currentTarget = parseInt(valEl.textContent, 10);
+  // The paper hero's Start stamp. While the panel holds a cut it starts the
+  // cut day, so the card's one Start always does what its time line says.
+  const lead = card.querySelector(".paper-day-start");
+  const paper = card.classList.contains("paper-day-card");
+  const picks = card.querySelectorAll(".paper-tb-pick");
+  const defaultTarget = parseInt(valEl.textContent, 10);
+  let currentTarget = defaultTarget;
   let lastBudget = null;
+
+  // The paper hero's Sets / Blocks / Est. follow the day Start will run, so
+  // a cut never sits under the planned day's numbers.
+  const metricVals = card.querySelectorAll(".paper-day-metric-val");
+  const metricSubs = card.querySelectorAll(".paper-day-metric-sub");
+  function showMetrics(d, totalMin) {
+    if (metricVals.length < 3 || metricSubs.length < 2) return;
+    const sets = d.blocks.reduce((n, b) => n + b.exercises.reduce((s, ex) => s + (ex.sets || 0), 0), 0);
+    metricVals[0].textContent = String(sets).padStart(2, "0");
+    metricSubs[0].textContent = `${d.blocks.length} blocks`;
+    metricVals[1].textContent = String(d.blocks.length).padStart(2, "0");
+    metricSubs[1].textContent = d.blocks.map(b => b.letter).join(" ");
+    metricVals[2].textContent = totalMin;
+  }
 
   function updateAdjustments() {
     if (currentTarget >= breakdown.totalMin) {
+      lastBudget = null;
+      showMetrics(day, breakdown.totalMin);
       adjPreview.innerHTML = "";
-      startRow.innerHTML = `<button class="tb-start-btn primary" data-action="start">Start ~${currentTarget} min</button>`;
+      startRow.innerHTML = lead ? ""
+        : `<button class="tb-start-btn primary${paper ? " paper-start-stamp" : ""}" data-action="start">Start ~${breakdown.totalMin} min</button>`;
       durationEl.textContent = `⏱ ~${breakdown.totalMin} min`;
       const wuMin = Math.round(breakdown.warmupSec / 60);
       const wkMin = Math.round(breakdown.workingSec / 60);
@@ -17292,57 +17415,100 @@ function _wireTimeBudgetCard(card, day, breakdown) {
       let adjHtml = "";
       if (lastBudget.adjustments.length) {
         const savedMin = Math.round(lastBudget.adjustments.reduce((s, a) => s + a.savedSec, 0) / 60);
-        adjHtml += `<div class="tb-adj-header">Adjustments to save ~${savedMin} min</div>`;
+        adjHtml += `<div class="tb-adj-header">Cut for today · saves ~${savedMin} min</div>`;
         lastBudget.adjustments.forEach(a => {
           adjHtml += `<div class="tb-adj-item">${a.description}</div>`;
         });
       }
       if (!lastBudget.achievable) {
-        adjHtml += `<div class="tb-adj-warn">Can't reach ${currentTarget} min — minimum ~${lastBudget.adjustedMin} min</div>`;
+        adjHtml += `<div class="tb-adj-warn">~${lastBudget.adjustedMin} min is as short as this day goes</div>`;
       }
       adjPreview.innerHTML = adjHtml;
       const adjMin = lastBudget.adjustedMin;
-      startRow.innerHTML = `<button class="tb-start-btn primary" data-action="adjusted">Start adjusted ~${adjMin} min</button>`
+      startRow.innerHTML = lead ? ""
+        : `<button class="tb-start-btn primary${paper ? " paper-start-stamp" : ""}" data-action="adjusted">Start adjusted ~${adjMin} min</button>`
         + `<button class="tb-start-btn secondary" data-action="start">Start as-is ~${breakdown.totalMin} min</button>`;
       const adjBreakdown = getSessionBreakdown(lastBudget.adjustedDay);
+      showMetrics(lastBudget.adjustedDay, adjBreakdown.totalMin);
       durationEl.textContent = `⏱ ~${adjBreakdown.totalMin} min`;
       const wuMin = Math.round(adjBreakdown.warmupSec / 60);
       const wkMin = Math.round(adjBreakdown.workingSec / 60);
       const cdMin = Math.round(adjBreakdown.cooldownSec / 60);
       breakdownEl.textContent = `WU ${wuMin}m · Work ${wkMin}m · CD ${cdMin}m`;
     }
+    if (lead) {
+      lead.textContent = lastBudget ? `Start ~${lastBudget.adjustedMin} min` : "Start workout";
+      lead.dataset.action = lastBudget ? "adjusted" : "start";
+    }
+    picks.forEach(b => b.classList.toggle("active", Number(b.dataset.min) === currentTarget));
     wireStartButtons();
+  }
+
+  // The cut day runs for this session only: it rides on the draft and is
+  // gone when the session ends. Until 2026-11-19 it was written over the
+  // stored day, so the sets cut today stayed cut every week after.
+  function start(action) {
+    state.currentDayId = day.id;
+    state.dayChosen = true;
+    openWorkout(action === "adjusted" && lastBudget ? lastBudget.adjustedDay : null);
   }
 
   function wireStartButtons() {
     startRow.querySelectorAll(".tb-start-btn").forEach(btn => {
       btn.addEventListener("click", e => {
         e.stopPropagation();
-        if (btn.dataset.action === "adjusted" && lastBudget) {
-          // Apply adjustments to the real program
-          const p = activeProgram();
-          const dayIdx = p ? p.program.findIndex(dd => dd.id === day.id) : -1;
-          if (dayIdx >= 0) {
-            updateActiveProgram(entry => { entry.program[dayIdx] = lastBudget.adjustedDay; });
-          }
-        }
-        state.currentDayId = day.id;
-        state.dayChosen = true;
-        openWorkout();
+        start(btn.dataset.action);
       });
     });
+  }
+  if (lead) {
+    lead.addEventListener("click", e => {
+      e.stopPropagation();
+      start(lead.dataset.action);
+    });
+  }
+
+  function setTarget(min) {
+    currentTarget = Math.max(10, Math.min(180, min));
+    valEl.textContent = currentTarget;
+    updateAdjustments();
+    // Bring the list of cuts into view; it grows below the fold on a phone.
+    const outer = card.querySelector(".dpc-controls-outer");
+    if (card.classList.contains("expanded") && outer && typeof outer.scrollIntoView === "function") {
+      outer.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
   }
 
   // Stepper buttons
   card.querySelectorAll(".tb-step").forEach(btn => {
     btn.addEventListener("click", e => {
       e.stopPropagation();
-      const dir = parseInt(btn.dataset.dir, 10);
-      currentTarget = Math.max(10, Math.min(180, currentTarget + dir * 5));
-      valEl.textContent = currentTarget;
-      updateAdjustments();
+      setTarget(currentTarget + parseInt(btn.dataset.dir, 10) * 5);
     });
   });
+
+  // Quick picks (30, 45): one tap to a common target.
+  picks.forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      setTarget(parseInt(btn.dataset.min, 10));
+    });
+  });
+
+  // Closing the panel puts the day back as planned, so a cut never hides
+  // behind a closed panel. Opening it brings it up off the bottom edge, where
+  // it would otherwise appear on a phone. The card's own toggle runs first.
+  const expandHint = card.querySelector(".dpc-expand-hint");
+  if (expandHint) {
+    expandHint.addEventListener("click", () => {
+      if (!card.classList.contains("expanded")) {
+        if (currentTarget !== defaultTarget) setTarget(defaultTarget);
+        return;
+      }
+      const outer = card.querySelector(".dpc-controls-outer");
+      if (outer && typeof outer.scrollIntoView === "function") outer.scrollIntoView({ block: "center", behavior: "smooth" });
+    });
+  }
 
   // Initial wiring
   updateAdjustments();
@@ -18174,7 +18340,7 @@ function renderSetsTable(block, ex, bi, ei) {
     rmBtn.onclick = () => {
       const lastIdx = numSets - 1;
       updateActiveProgram(entry => {
-        const day = entry.program.find(d => d.id === state.currentDayId);
+        const day = sessionDayOf(entry) || entry.program.find(d => d.id === state.currentDayId);
         if (day) {
           const e = day.blocks[bi].exercises[ei];
           e.sets = Math.max(1, (e.sets || 1) - 1);
@@ -21370,11 +21536,16 @@ function getRandomQuote() {
 // ============================================================
 // START / FINISH WORKOUT
 // ============================================================
-function openWorkout() {
+// sessionDay: a shortened copy of today's day from "adjust time", run for
+// this session only. It is held on the draft, so finishing, exiting or a
+// week turn (all of which clear the draft) drop it, and the stored program
+// is never written. Without one, the day opens as planned.
+function openWorkout(sessionDay) {
   if (state.adhocActive) return;
   state.trimmedBlocks = null;
   state.previewBlockIdx = null;
   ensureDraft();
+  _holdSessionDay(sessionDay && Array.isArray(sessionDay.blocks) ? sessionDay : null);
   if (state.autoTimer) {
     state.workoutStartedAt = getDraft().startedAt;
     startSessionTimer();
@@ -21383,6 +21554,19 @@ function openWorkout() {
   updateFinishButton();
   showToast(getRandomQuote(), "quote", 3500);
   renderWorkoutScreen();
+}
+
+// A planned start drops a shortened day left on a draft only while nothing
+// has been logged in it; once sets are logged, reopening is a resume and the
+// session keeps the day those sets belong to.
+function _holdSessionDay(sessionDay) {
+  const d = getDraft();
+  if (!d) return;
+  if (sessionDay) {
+    updateActiveProgram(entry => { if (entry.draft) entry.draft.sessionDay = deepClone(sessionDay); });
+  } else if (d.sessionDay && !Object.keys(d.inputs || {}).length) {
+    updateActiveProgram(entry => { if (entry.draft) delete entry.draft.sessionDay; });
+  }
 }
 
 function startWorkout() {
@@ -32551,7 +32735,7 @@ function paperRenderSetsTable(block, ex, bi, ei) {
       if (typeof updateActiveProgram !== "function") return;
       const lastIdx = numSets - 1;
       updateActiveProgram(entry => {
-        const day = entry.program.find(d => d.id === state.currentDayId);
+        const day = sessionDayOf(entry) || entry.program.find(d => d.id === state.currentDayId);
         if (day) {
           const e = day.blocks[bi].exercises[ei];
           e.sets = Math.max(1, (e.sets || 1) - 1);
@@ -32966,11 +33150,15 @@ function paperBuildDayCard(d, isHero) {
   // target at 40, below the estimate, so every such card loaded in
   // "adjusted" mode: the time line read ~39 beside an Est. of 41.
   const defaultTarget = Math.ceil(breakdown.totalMin / 5) * 5;
+  // Quick picks for the common short days; only the ones that would cut.
+  const picksHtml = [30, 45].filter(m => m < breakdown.totalMin)
+    .map(m => `<button class="paper-tb-pick" data-min="${m}">${m}</button>`).join("");
 
   // The hero's Start sits on the first screen, beside "adjust time". It used
   // to exist only inside the collapsed time panel, where no one could reach
   // it, so the unmarked card was the only way in. Starts the day as planned,
-  // exactly like tapping the card; data-busy gives it the busy line.
+  // like tapping the card, or the cut day while "adjust time" holds one;
+  // data-busy gives it the busy line.
   const leadStartHtml = isHero
     ? `<button class="paper-start-stamp paper-day-start" data-busy data-day-id="${d.id}">Start workout</button>`
     : "";
@@ -32995,6 +33183,8 @@ function paperBuildDayCard(d, isHero) {
       <div class="dpc-controls-inner">
         <div class="tb-target-row paper-tb-row" data-day-id="${d.id}">
           <span class="tb-target-label">Target</span>
+          ${picksHtml}
+          <span class="paper-tb-gap"></span>
           <button class="tb-step tb-down paper-tb-step" data-dir="-1">−</button>
           <span class="tb-target-val paper-tb-val">${defaultTarget}</span>
           <span class="tb-target-unit">min</span>
@@ -33011,20 +33201,18 @@ function paperBuildDayCard(d, isHero) {
   // Tapping the card opens the workout (unless the tap was on the time-budget controls or the expand hint)
   card.addEventListener("click", (e) => {
     if (e.target.closest(".dpc-controls-inner") || e.target.closest(".dpc-expand-hint")) return;
+    // On today's card a tap anywhere does what its Start does: the plan, or
+    // the cut day the time panel holds. The stamp stops its own click, so
+    // this doesn't run twice.
+    const lead = card.querySelector(".paper-day-start");
+    if (lead) { lead.click(); return; }
     state.currentDayId = d.id;
     state.dayChosen = true;
     if (typeof openWorkout === "function") openWorkout();
   });
 
-  const leadStart = card.querySelector(".paper-day-start");
-  if (leadStart) {
-    leadStart.addEventListener("click", (e) => {
-      e.stopPropagation();
-      state.currentDayId = d.id;
-      state.dayChosen = true;
-      if (typeof openWorkout === "function") openWorkout();
-    });
-  }
+  // The hero's Start stamp is wired in _wireTimeBudgetCard below: it starts
+  // the day as planned, or the cut day while the time panel holds one.
 
   // "Adjust time" link toggles the config panel
   const expand = card.querySelector(".dpc-expand-hint");

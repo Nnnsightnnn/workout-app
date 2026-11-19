@@ -19,10 +19,20 @@ function determineDefaultDay() {
   return (last % p.program.length) + 1;
 }
 
+// A shortened day started from "adjust time" rides on the draft
+// (draft.sessionDay) and stands in for the stored day until the draft ends,
+// so the stored program is never rewritten. Drafts without one, including
+// every draft saved before 2026-11-19, run the stored day as always.
+function sessionDayOf(entry) {
+  if (!entry || !entry.draft || entry.draft.dayId !== state.currentDayId) return null;
+  const sd = entry.draft.sessionDay;
+  return (sd && Array.isArray(sd.blocks)) ? sd : null;
+}
+
 function getCurrentDay() {
   const p = activeProgram();
   if (!p) return null;
-  return p.program.find(d => d.id === state.currentDayId);
+  return sessionDayOf(p) || p.program.find(d => d.id === state.currentDayId);
 }
 
 // Check if week needs to roll over and regenerate program

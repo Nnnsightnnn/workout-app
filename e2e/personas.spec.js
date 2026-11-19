@@ -286,6 +286,45 @@ test.describe("personas", () => {
     expect(errors, "page errors / console.error").toEqual([]);
   });
 
+  // Regression (2026-11-19): from 2026-05-12 "adjust time" opened to zero
+  // height in paper, and behind it "Start adjusted" wrote the cut day over
+  // the stored program, so the cut stayed every week after. Real taps:
+  // adjust time, 30, the card's Start; the cut day runs, and a logged set
+  // and Finish leave the stored program as written.
+  test("adjust time: three real taps start a 30-minute day for this session only", async ({ page }) => {
+    test.setTimeout(60_000);
+    const errors = await P.instrument(page);
+    await P.seedUser(page, { name: "Adjust", templateId: "upperlower4" });
+    await P.ensureTrainingToday(page);
+    const hero = page.locator(".paper-day-card-hero");
+    const before = await page.evaluate(() => {
+      const id = Number(document.querySelector(".paper-day-card-hero").dataset.dayId);
+      const d = activeProgram().program.find(x => x.id === id);
+      return { program: JSON.stringify(activeProgram().program), sets: d.blocks.reduce((n, b) => n + b.exercises.reduce((s, e) => s + (e.sets || 0), 0), 0) };
+    });
+
+    await hero.locator(".dpc-expand-hint").tap({ timeout: 15000 });
+    const pick = hero.locator('.paper-tb-pick[data-min="30"]');
+    await expect(pick, "30 is on screen once adjust time is tapped").toBeInViewport({ ratio: 1 });
+    await pick.tap({ timeout: 15000 });
+    await expect(hero.locator(".tb-adj-item").first(), "the cuts are listed").toBeInViewport();
+    const start = P.leadStart(page);
+    await expect(start).toHaveText(/start ~\d+ min/i);
+    await expect(start, "the card's Start stays on screen beside the cuts").toBeInViewport({ ratio: 1 });
+    await start.tap({ timeout: 15000 });
+    await page.waitForFunction(() => !!getDraft());
+
+    const cut = await page.evaluate(() => getCurrentDay().blocks.reduce((n, b) => n + b.exercises.reduce((s, e) => s + (e.sets || 0), 0), 0));
+    expect(cut, "the session runs the cut day").toBeLessThan(before.sets);
+    await page.locator(".paper-action-log").first().tap({ timeout: 15000 });
+    await page.waitForFunction(() => Object.values(getDraft().inputs).indexOf("done") >= 0);
+    await P.finishToday(page);
+    const after = await page.evaluate(() => ({ program: JSON.stringify(activeProgram().program), draft: activeProgram().draft }));
+    expect(after.program, "the stored program after a cut session").toBe(before.program);
+    expect(after.draft, "the cut day went with the draft").toBeNull();
+    expect(errors, "page errors / console.error").toEqual([]);
+  });
+
   // Regression (2026-11-15): the rest countdown lived only in a header pill
   // the paper skin hides, so the bar's rest cell sat still through every
   // rest, and the 0s warm-up's pending hide cancelled the first working

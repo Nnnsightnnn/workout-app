@@ -703,6 +703,149 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     eq(off.length, 0, off.slice(0, 3).join(" | "));
   });
 
+  // ---- "Adjust time": a shorter day for this session only (2026-11-19) ----
+  // From 2026-05-12 the panel opened to zero height in paper, and behind it
+  // "Start adjusted" wrote the cut day over the stored program, so sets cut
+  // for one short day stayed cut every week after. The cut day now rides on
+  // the draft (draft.sessionDay) and the stored program is never written.
+  const _setsIn = d => d.blocks.reduce((n, b) => n + b.exercises.reduce((s, e) => s + (e.sets || 0), 0), 0);
+  const _adjustFixture = (name) => {
+    w.localStorage.clear();
+    w.addUser(name, "upperlower4");
+    w.updateActiveProgram(p => { p.weeklySchedule = [1, 1, 1, 1, 1, 1, 1]; p.draft = null; });
+    // Reload from the stored JSON, the shape a lifter's phone holds.
+    const raw = w.localStorage.getItem("kn-lifts-v3");
+    w.localStorage.clear();
+    w.localStorage.setItem("kn-lifts-v3", raw);
+    w.state.dayChosen = false;
+    w.state.workoutStartedAt = null;
+    w.state.adhocActive = false;
+    w.renderWorkoutScreen();
+    const hero = w.document.querySelector("#blocksContainer .paper-day-card-hero");
+    assert(hero, "hero card rendered");
+    const stored = w.activeProgram().program.find(d => String(d.id) === hero.dataset.dayId);
+    const est = Number(hero.querySelectorAll(".paper-day-metric-val")[2].textContent);
+    assert(est > 35, `fixture day runs well over 30 min (${est})`);
+    return { hero, stored, full: _setsIn(stored) };
+  };
+  // The − stepper exists on both sides of this fix, so these tests fail on
+  // the old build for what it stored, not for a missing control.
+  const _stepTo30 = (hero) => {
+    const down = hero.querySelector(".tb-down");
+    for (let i = 0; i < 40 && Number(hero.querySelector(".tb-target-val").textContent) > 30; i++) down.click();
+    const start = hero.querySelector('[data-action="adjusted"]');
+    assert(start, "a Start for the cut day");
+    return start;
+  };
+
+  t("adjust time: an adjusted start, a logged set and a finish leave the stored program byte-identical", () => {
+    const { hero, full } = _adjustFixture("AdjustKeep");
+    const programBefore = JSON.stringify(w.activeProgram().program);
+    _stepTo30(hero).click();
+    assert(w.getDraft(), "the adjusted start opened today's workout");
+    const cut = _setsIn(w.getCurrentDay());
+    assert(cut < full, `the session runs the cut day (${cut} of ${full} sets)`);
+    const log = w.document.querySelector(".paper-action-log");
+    assert(log, "the bar's Log set");
+    log.click();
+    w.hideHeaderRest();
+    assert(Object.values(w.getDraft().inputs).indexOf("done") >= 0, "a set was logged");
+    w.finishWorkout();
+    eq(JSON.stringify(w.activeProgram().program), programBefore, "stored program after adjusted start, a logged set and finish");
+    eq(w.activeProgram().draft, null, "the cut day went with the draft");
+    const saved = w.userData().sessions.slice(-1)[0];
+    assert(saved && saved.sets.length > 0 && saved.sets.length < full, `the session saved the cut day (${saved && saved.sets.length} sets)`);
+  });
+
+  t("adjust time: one tap on 30 lists the cuts and puts them on the card's one Start", () => {
+    const { hero } = _adjustFixture("AdjustPick");
+    const est = Number(hero.querySelectorAll(".paper-day-metric-val")[2].textContent);
+    const picks = [...hero.querySelectorAll(".paper-tb-pick")].map(b => Number(b.dataset.min));
+    assert(picks.indexOf(30) >= 0, "a 30-minute quick pick");
+    assert(picks.every(m => m < est), `only picks that cut (${picks.join(", ")} for ${est})`);
+    hero.querySelector('.paper-tb-pick[data-min="30"]').click();
+    assert(hero.querySelectorAll(".tb-adj-item").length > 0, "the cuts are listed");
+    const lead = hero.querySelector(".paper-day-start");
+    assert(/^Start ~\d+ min$/.test(lead.textContent.trim()), `the card's Start reads "${lead.textContent.trim()}"`);
+    eq(lead.dataset.action, "adjusted", "the card's Start runs the cut day");
+    eq(hero.querySelectorAll(".tb-start-btn").length, 0, "Starts left in the panel");
+    assert(hero.querySelector(".picker-duration").textContent.indexOf("~" + est + " min") < 0, "the time line shows the cut day");
+    const vals = () => [...hero.querySelectorAll(".paper-day-metric-val")].map(v => v.textContent.trim());
+    const [cutSets, , cutEst] = vals();
+    assert(hero.querySelector(".picker-duration").textContent.indexOf("~" + cutEst + " min") >= 0,
+      `Est. ${cutEst} follows the cut day's time line`);
+    assert(Number(cutSets) < _setsIn(w.activeProgram().program.find(d => String(d.id) === hero.dataset.dayId)),
+      `Sets ${cutSets} follows the cut day`);
+    const hint = hero.querySelector(".dpc-expand-hint");
+    hint.click(); // open
+    hint.click(); // close: the plan comes back
+    eq(lead.textContent.trim(), "Start workout", "the card's Start after closing the panel");
+    eq(lead.dataset.action, "start", "closing the panel drops the cut");
+    eq(vals()[2], String(est), "Est. after closing the panel");
+    // A tap on the card itself does what its Start says.
+    hero.querySelector('.paper-tb-pick[data-min="30"]').click();
+    const full = _setsIn(w.activeProgram().program.find(d => String(d.id) === hero.dataset.dayId));
+    hero.querySelector(".paper-day-card-name").click();
+    assert(w.getDraft(), "a tap on the card opened today's workout");
+    assert(_setsIn(w.getCurrentDay()) < full, "a tap on the card ran the cut day its Start offered");
+  });
+
+  t("adjust time: backing out before logging, the planned Start runs the full day", () => {
+    const { hero, full } = _adjustFixture("AdjustBack");
+    _stepTo30(hero).click();
+    assert(_setsIn(w.getCurrentDay()) < full, "the cut session opened");
+    // Home with nothing logged and no clock running lands on the picker.
+    w.state.dayChosen = false;
+    w.state.workoutStartedAt = null;
+    w.renderDayPicker();
+    const lead = w.document.querySelector("#blocksContainer .paper-day-card-hero .paper-day-start");
+    eq(lead.textContent.trim(), "Start workout", "the card offers the plan");
+    lead.click();
+    eq(_setsIn(w.getCurrentDay()), full, "sets in the session the planned Start opened");
+  });
+
+  t("adjust time: an edit in a cut session lands on that session, and a resume keeps the cut", () => {
+    const { hero } = _adjustFixture("AdjustEdit");
+    const programBefore = JSON.stringify(w.activeProgram().program);
+    _stepTo30(hero).click();
+    const cut = _setsIn(w.getCurrentDay());
+    w.mutateDay(d => { d.blocks[1].exercises[0].sets++; });
+    eq(_setsIn(w.getCurrentDay()), cut + 1, "the + add set shows in the session");
+    eq(JSON.stringify(w.activeProgram().program), programBefore, "stored program after an edit in a cut session");
+    const b1 = w.getCurrentDay().blocks[1];
+    w.saveInput(w.inputKey(b1.id, 0, 0, "status"), "done");
+    w.openWorkout();
+    eq(_setsIn(w.getCurrentDay()), cut + 1, "sets after reopening a session with a logged set");
+    w.finishWorkout({ autoCompleteUntouched: false });
+    eq(JSON.stringify(w.activeProgram().program), programBefore, "stored program after the cut session ended");
+  });
+
+  t("adjust time: a draft saved before sessionDay existed still runs and saves the stored day", () => {
+    w.localStorage.clear();
+    w.addUser("OldDraft", "upperlower4");
+    const s = JSON.parse(w.localStorage.getItem("kn-lifts-v3"));
+    const u = s.users.find(x => x.id === s.currentUserId);
+    const entry = u.programs.find(p => p.id === u.activeProgramId);
+    const day = entry.program[0];
+    const blk = day.blocks.find(b => b.type !== "warmup" && b.exercises[0] && !b.exercises[0].bodyweight);
+    // A mid-workout draft in the shape every phone held before 2026-11-19.
+    entry.draft = { dayId: day.id, startedAt: Date.now() - 600000, pausedAt: null,
+      inputs: { [`${blk.id}|0|0|status`]: "done", [`${blk.id}|0|0|w`]: 95, [`${blk.id}|0|0|r`]: 8 } };
+    w.localStorage.setItem("kn-lifts-v3", JSON.stringify(s));
+    const programBefore = JSON.stringify(w.activeProgram().program);
+    w.state.currentDayId = day.id;
+    w.state.dayChosen = true;
+    eq(JSON.stringify(w.getCurrentDay()), JSON.stringify(w.activeProgram().program.find(d => d.id === day.id)),
+      "the day an old draft runs (the stored day, as loaded)");
+    w.renderWorkoutScreen();
+    assert(w.document.querySelector("#blocksContainer .paper-block"), "the workout renders");
+    w.finishWorkout({ autoCompleteUntouched: false });
+    const saved = w.userData().sessions.slice(-1)[0];
+    eq(saved.sets.length, 1, "sets saved from the old draft");
+    eq(saved.sets[0].weight, 95, "the logged weight");
+    eq(JSON.stringify(w.activeProgram().program), programBefore, "stored program after finishing an old draft");
+  });
+
   t("addTrainingDay: appends a blockless day and renders an empty state", () => {
     const snapshot = JSON.stringify(w.loadStore());
     const prevDay = w.state.currentDayId, prevChosen = w.state.dayChosen;

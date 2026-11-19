@@ -8373,8 +8373,12 @@ body[data-skin="paper"] .paper-day-card .dpc-controls-outer {
   border: none;
   box-shadow: none;
 }
+/* The base rule holds the panel's grid row at 0fr; only the pre-paper card
+   ever switched it to 1fr, so from 2026-05-12 to 2026-11-19 the panel opened
+   to zero height in paper. No max-height: a long list of cuts must not clip. */
 body[data-skin="paper"] .paper-day-card.expanded .dpc-controls-outer {
-  max-height: 320px;
+  grid-template-rows: 1fr;
+  max-height: none;
   padding-top: 6px;
 }
 body[data-skin="paper"] .paper-day-card .dpc-controls-inner {
@@ -8387,7 +8391,7 @@ body[data-skin="paper"] .paper-day-card .dpc-controls-inner {
 }
 body[data-skin="paper"] .paper-tb-row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
   font-family: var(--paper-hand);
   font-size: 18px;
@@ -8435,14 +8439,85 @@ body[data-skin="paper"] .paper-tb-row .tb-target-unit {
   color: var(--paper-ink-faint);
   text-transform: uppercase;
 }
+/* Quick picks: handwritten minutes on the line, 44px hit area, the chosen
+   one washed with highlighter. */
+body[data-skin="paper"] .paper-tb-pick {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 6px;
+  background: transparent;
+  border: none;
+  border-bottom: 1.2px dashed var(--paper-ink-mist);
+  border-radius: 0;
+  box-shadow: none;
+  font-family: var(--paper-hand);
+  font-size: 22px;
+  color: var(--paper-ink);
+  cursor: pointer;
+}
+body[data-skin="paper"] .paper-tb-pick.active {
+  background: var(--paper-marker-soft);
+  border-bottom: 1.4px solid var(--paper-ink);
+}
+body[data-skin="paper"] .paper-tb-gap { flex: 1 1 auto; }
 body[data-skin="paper"] .tb-adj-preview {
   font-family: var(--paper-hand);
   font-size: 14px;
   color: var(--paper-ink-soft);
+  margin-top: 0;
+}
+body[data-skin="paper"] .tb-adj-header {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--paper-ink-faint);
+  margin-bottom: 2px;
+}
+body[data-skin="paper"] .tb-adj-item {
+  font-family: var(--paper-hand);
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--paper-ink);
+  padding: 3px 0;
+  border-bottom: 1px dotted var(--paper-ink-mist);
+}
+body[data-skin="paper"] .tb-adj-item:last-child { border-bottom: none; }
+body[data-skin="paper"] .tb-adj-warn {
+  font-family: var(--paper-hand);
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--paper-ink-soft);
+  margin-top: 4px;
 }
 body[data-skin="paper"] .paper-tb-start-row {
   display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
+  gap: 12px;
+}
+body[data-skin="paper"] .paper-tb-start-row:empty { display: none; }
+/* Other days' cards keep their Starts in the panel: the stamp for the lead,
+   a flat ink outline for "as-is". */
+body[data-skin="paper"] .paper-day-card .tb-start-btn {
+  width: auto;
+  min-height: 44px;
+}
+body[data-skin="paper"] .paper-day-card .tb-start-btn.secondary {
+  background: transparent;
+  color: var(--paper-ink);
+  border: 1.4px solid var(--paper-ink);
+  border-radius: 0;
+  box-shadow: none;
+  font-family: var(--paper-form);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 8px 12px;
 }
 body[data-skin="paper"] .paper-start-stamp {
   background: var(--paper-red);
