@@ -723,10 +723,12 @@ function paperBuildDayCard(d, isHero) {
     </div>
   ` : "";
 
-  // Round UP to the 5-minute step. Rounding to nearest put a 41-minute day's
-  // target at 40, below the estimate, so every such card loaded in
-  // "adjusted" mode: the time line read ~39 beside an Est. of 41.
-  const defaultTarget = Math.ceil(breakdown.totalMin / 5) * 5;
+  // The target starts at the estimate itself. Below it, the card loads in
+  // "adjusted" mode (rounding to nearest once put a 41-minute day at 40, and
+  // its time line read ~39 beside Est. 41); rounded up, it read 50 beside
+  // Est. 48 and lifters couldn't tell which counted. The stepper moves to
+  // 5-minute marks from here.
+  const defaultTarget = breakdown.totalMin;
   // Quick picks for the common short days; only the ones that would cut.
   const picksHtml = [30, 45].filter(m => m < breakdown.totalMin)
     .map(m => `<button class="paper-tb-pick" data-min="${m}">${m}</button>`).join("");

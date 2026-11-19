@@ -504,7 +504,12 @@ function _wireTimeBudgetCard(card, day, breakdown) {
   // a cut never sits under the planned day's numbers.
   const metricVals = card.querySelectorAll(".paper-day-metric-val");
   const metricSubs = card.querySelectorAll(".paper-day-metric-sub");
+  const blockList = card.querySelector(".paper-day-block-list");
   function showMetrics(d, totalMin) {
+    if (blockList && typeof escapeHtml === "function") {
+      blockList.innerHTML = d.blocks.map(b =>
+        `<span class="paper-day-block-tag">${b.letter} &middot; ${escapeHtml(b.name)}</span>`).join("");
+    }
     if (metricVals.length < 3 || metricSubs.length < 2) return;
     const sets = d.blocks.reduce((n, b) => n + b.exercises.reduce((s, ex) => s + (ex.sets || 0), 0), 0);
     metricVals[0].textContent = String(sets).padStart(2, "0");
@@ -529,15 +534,17 @@ function _wireTimeBudgetCard(card, day, breakdown) {
     } else {
       lastBudget = computeTimeBudget(day, currentTarget);
       let adjHtml = "";
+      // First, so a target the day can't reach doesn't read as a pick that
+      // didn't take.
+      if (!lastBudget.achievable) {
+        adjHtml += `<div class="tb-adj-warn">~${lastBudget.adjustedMin} min is as short as this day goes</div>`;
+      }
       if (lastBudget.adjustments.length) {
         const savedMin = Math.round(lastBudget.adjustments.reduce((s, a) => s + a.savedSec, 0) / 60);
         adjHtml += `<div class="tb-adj-header">Cut for today · saves ~${savedMin} min</div>`;
         lastBudget.adjustments.forEach(a => {
           adjHtml += `<div class="tb-adj-item">${a.description}</div>`;
         });
-      }
-      if (!lastBudget.achievable) {
-        adjHtml += `<div class="tb-adj-warn">~${lastBudget.adjustedMin} min is as short as this day goes</div>`;
       }
       adjPreview.innerHTML = adjHtml;
       const adjMin = lastBudget.adjustedMin;
@@ -599,7 +606,9 @@ function _wireTimeBudgetCard(card, day, breakdown) {
   card.querySelectorAll(".tb-step").forEach(btn => {
     btn.addEventListener("click", e => {
       e.stopPropagation();
-      setTarget(currentTarget + parseInt(btn.dataset.dir, 10) * 5);
+      // Step to the next 5-minute mark from the day's own estimate (48 → 45 or 50).
+      const dir = parseInt(btn.dataset.dir, 10);
+      setTarget(dir < 0 ? Math.ceil(currentTarget / 5) * 5 - 5 : Math.floor(currentTarget / 5) * 5 + 5);
     });
   });
 

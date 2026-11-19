@@ -776,6 +776,8 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
       `Est. ${cutEst} follows the cut day's time line`);
     assert(Number(cutSets) < _setsIn(w.activeProgram().program.find(d => String(d.id) === hero.dataset.dayId)),
       `Sets ${cutSets} follows the cut day`);
+    eq(hero.querySelectorAll(".paper-day-block-tag").length, Number(vals()[1]), "block names listed match the Blocks count");
+    eq(hero.querySelector(".tb-target-val").textContent, "30", "the target reads the pick");
     const hint = hero.querySelector(".dpc-expand-hint");
     hint.click(); // open
     hint.click(); // close: the plan comes back

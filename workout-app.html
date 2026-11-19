@@ -14540,7 +14540,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 23;
-const APP_BUILD = "a2538b17";
+const APP_BUILD = "fd10a9bc";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -17388,7 +17388,12 @@ function _wireTimeBudgetCard(card, day, breakdown) {
   // a cut never sits under the planned day's numbers.
   const metricVals = card.querySelectorAll(".paper-day-metric-val");
   const metricSubs = card.querySelectorAll(".paper-day-metric-sub");
+  const blockList = card.querySelector(".paper-day-block-list");
   function showMetrics(d, totalMin) {
+    if (blockList && typeof escapeHtml === "function") {
+      blockList.innerHTML = d.blocks.map(b =>
+        `<span class="paper-day-block-tag">${b.letter} &middot; ${escapeHtml(b.name)}</span>`).join("");
+    }
     if (metricVals.length < 3 || metricSubs.length < 2) return;
     const sets = d.blocks.reduce((n, b) => n + b.exercises.reduce((s, ex) => s + (ex.sets || 0), 0), 0);
     metricVals[0].textContent = String(sets).padStart(2, "0");
@@ -17413,15 +17418,17 @@ function _wireTimeBudgetCard(card, day, breakdown) {
     } else {
       lastBudget = computeTimeBudget(day, currentTarget);
       let adjHtml = "";
+      // First, so a target the day can't reach doesn't read as a pick that
+      // didn't take.
+      if (!lastBudget.achievable) {
+        adjHtml += `<div class="tb-adj-warn">~${lastBudget.adjustedMin} min is as short as this day goes</div>`;
+      }
       if (lastBudget.adjustments.length) {
         const savedMin = Math.round(lastBudget.adjustments.reduce((s, a) => s + a.savedSec, 0) / 60);
         adjHtml += `<div class="tb-adj-header">Cut for today · saves ~${savedMin} min</div>`;
         lastBudget.adjustments.forEach(a => {
           adjHtml += `<div class="tb-adj-item">${a.description}</div>`;
         });
-      }
-      if (!lastBudget.achievable) {
-        adjHtml += `<div class="tb-adj-warn">~${lastBudget.adjustedMin} min is as short as this day goes</div>`;
       }
       adjPreview.innerHTML = adjHtml;
       const adjMin = lastBudget.adjustedMin;
@@ -17483,7 +17490,9 @@ function _wireTimeBudgetCard(card, day, breakdown) {
   card.querySelectorAll(".tb-step").forEach(btn => {
     btn.addEventListener("click", e => {
       e.stopPropagation();
-      setTarget(currentTarget + parseInt(btn.dataset.dir, 10) * 5);
+      // Step to the next 5-minute mark from the day's own estimate (48 → 45 or 50).
+      const dir = parseInt(btn.dataset.dir, 10);
+      setTarget(dir < 0 ? Math.ceil(currentTarget / 5) * 5 - 5 : Math.floor(currentTarget / 5) * 5 + 5);
     });
   });
 
@@ -33146,10 +33155,12 @@ function paperBuildDayCard(d, isHero) {
     </div>
   ` : "";
 
-  // Round UP to the 5-minute step. Rounding to nearest put a 41-minute day's
-  // target at 40, below the estimate, so every such card loaded in
-  // "adjusted" mode: the time line read ~39 beside an Est. of 41.
-  const defaultTarget = Math.ceil(breakdown.totalMin / 5) * 5;
+  // The target starts at the estimate itself. Below it, the card loads in
+  // "adjusted" mode (rounding to nearest once put a 41-minute day at 40, and
+  // its time line read ~39 beside Est. 41); rounded up, it read 50 beside
+  // Est. 48 and lifters couldn't tell which counted. The stepper moves to
+  // 5-minute marks from here.
+  const defaultTarget = breakdown.totalMin;
   // Quick picks for the common short days; only the ones that would cut.
   const picksHtml = [30, 45].filter(m => m < breakdown.totalMin)
     .map(m => `<button class="paper-tb-pick" data-min="${m}">${m}</button>`).join("");
