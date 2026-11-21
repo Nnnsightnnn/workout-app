@@ -848,6 +848,81 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     eq(JSON.stringify(w.activeProgram().program), programBefore, "stored program after finishing an old draft");
   });
 
+  // ---- Pace trim: a late session cut for today only (2026-11-21) ----
+  // trimSession() removed the last untouched block through mutateDay, which
+  // wrote the stored program, so a block trimmed on one late day was gone
+  // from that day every week after. The trim now holds the day on the draft
+  // (draft.sessionDay) first, the way an "adjust time" start does.
+  const _blockNames = d => d.blocks.map(b => b.name).join(" | ");
+
+  t("pace trim: a trim, a logged set and a finish leave the stored program byte-identical", () => {
+    const { hero, stored } = _adjustFixture("TrimKeep");
+    const programBefore = JSON.stringify(w.activeProgram().program);
+    hero.querySelector(".paper-day-start").click();
+    assert(w.getDraft(), "Start opened today's workout");
+    w.document.querySelector(".paper-action-log").click();
+    w.hideHeaderRest();
+    w.document.getElementById("trimBtn").click();
+    eq(w.getCurrentDay().blocks.length, stored.blocks.length - 1, "blocks in the session after one trim");
+    eq(JSON.stringify(w.activeProgram().program), programBefore, "stored program after a trim");
+    w.finishWorkout({ autoCompleteUntouched: false });
+    eq(JSON.stringify(w.activeProgram().program), programBefore, "stored program after the trimmed session ended");
+    eq(w.activeProgram().draft, null, "the trimmed day went with the draft");
+    eq(w.userData().sessions.slice(-1)[0].sets.length, 1, "sets saved from the trimmed session");
+  });
+
+  t("pace trim: two trims and two undos put the session back in order and never touch the stored program", () => {
+    const { hero, stored } = _adjustFixture("TrimUndo");
+    const programBefore = JSON.stringify(w.activeProgram().program);
+    hero.querySelector(".paper-day-start").click();
+    w.trimSession();
+    w.trimSession();
+    eq(w.getCurrentDay().blocks.length, stored.blocks.length - 2, "blocks in the session after two trims");
+    eq(JSON.stringify(w.activeProgram().program), programBefore, "stored program after two trims");
+    w.undoTrim();
+    w.undoTrim();
+    eq(_blockNames(w.getCurrentDay()), _blockNames(stored), "the session's blocks after both undos");
+    eq(JSON.stringify(w.activeProgram().program), programBefore, "stored program after both undos");
+  });
+
+  t("pace trim: a mid-workout draft saved before this change trims its session, not the program", () => {
+    w.localStorage.clear();
+    w.addUser("TrimOldDraft", "upperlower4");
+    const s = JSON.parse(w.localStorage.getItem("kn-lifts-v3"));
+    const u = s.users.find(x => x.id === s.currentUserId);
+    const entry = u.programs.find(p => p.id === u.activeProgramId);
+    const day = entry.program[0];
+    const blk = day.blocks.find(b => b.type !== "warmup" && b.exercises[0] && !b.exercises[0].bodyweight);
+    // The draft shape a phone holds mid-session when this build lands: no sessionDay.
+    entry.draft = { dayId: day.id, startedAt: Date.now() - 1500000, pausedAt: null,
+      inputs: { [`${blk.id}|0|0|status`]: "done", [`${blk.id}|0|0|w`]: 95, [`${blk.id}|0|0|r`]: 8 } };
+    w.localStorage.setItem("kn-lifts-v3", JSON.stringify(s));
+    const programBefore = JSON.stringify(w.activeProgram().program);
+    w.state.currentDayId = day.id;
+    w.state.dayChosen = true;
+    w.state.workoutStartedAt = Date.now() - 1500000;
+    w.renderWorkoutScreen();
+    w.document.getElementById("trimBtn").click();
+    eq(w.getCurrentDay().blocks.length, day.blocks.length - 1, "blocks in the session after the trim");
+    assert(w.getCurrentDay().blocks.some(b => b.id === blk.id), "the block with a logged set stays");
+    eq(JSON.stringify(w.activeProgram().program), programBefore, "stored program after trimming an old draft");
+    w.finishWorkout({ autoCompleteUntouched: false });
+    const saved = w.userData().sessions.slice(-1)[0];
+    eq(saved.sets.length, 1, "sets saved");
+    eq(saved.sets[0].weight, 95, "the logged weight");
+    eq(JSON.stringify(w.activeProgram().program), programBefore, "stored program after the session ended");
+  });
+
+  t("pace trim: in an adjusted session the trim cuts that session's shorter day", () => {
+    const { hero } = _adjustFixture("TrimAdjusted");
+    const programBefore = JSON.stringify(w.activeProgram().program);
+    _stepTo30(hero).click();
+    const cutBlocks = w.getCurrentDay().blocks.length;
+    w.trimSession();
+    eq(w.getCurrentDay().blocks.length, cutBlocks - 1, "blocks after trimming the adjusted day");
+    eq(JSON.stringify(w.activeProgram().program), programBefore, "stored program after trimming an adjusted session");
+  });
+
   t("addTrainingDay: appends a blockless day and renders an empty state", () => {
     const snapshot = JSON.stringify(w.loadStore());
     const prevDay = w.state.currentDayId, prevChosen = w.state.dayChosen;

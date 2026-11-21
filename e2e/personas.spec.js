@@ -325,6 +325,42 @@ test.describe("personas", () => {
     expect(errors, "page errors / console.error").toEqual([]);
   });
 
+  // Regression (2026-11-21): "Trim session" removed the last untouched block
+  // through mutateDay into the stored program, so a block trimmed on one
+  // late day was gone from that day every week after. A lifter with Auto
+  // timer on runs long; a real tap on Trim cuts this session only, and a
+  // logged set and Finish leave the stored program as written.
+  test("pace trim: a real tap on Trim cuts today's session only", async ({ page }) => {
+    test.setTimeout(60_000);
+    const errors = await P.instrument(page);
+    await P.seedUser(page, { name: "Trim", templateId: "upperlower4" });
+    await P.ensureTrainingToday(page);
+    const before = await page.evaluate(() => {
+      const s = loadStore(); s.autoTimer = true; saveStore(s); state.autoTimer = true;
+      return JSON.stringify(activeProgram().program);
+    });
+    await P.startToday(page);
+    const blocks = await page.evaluate(() => getCurrentDay().blocks.length);
+    // Setup: the session began 25 minutes ago, so the pace check reads long.
+    await page.evaluate(() => {
+      updateActiveProgram(e => { if (e.draft) e.draft.startedAt -= 25 * 60000; });
+      state.workoutStartedAt = getDraft().startedAt;
+      updatePaceChip();
+    });
+    const trim = page.locator("#trimBtn");
+    await expect(trim, "Trim is offered once the session runs long").toBeVisible();
+    await trim.tap({ timeout: 15000 });
+    await page.waitForFunction(n => getCurrentDay().blocks.length === n - 1, blocks);
+    expect(await page.evaluate(() => JSON.stringify(activeProgram().program)), "the stored program after a trim").toBe(before);
+    await page.locator(".paper-action-log").first().tap({ timeout: 15000 });
+    await page.waitForFunction(() => Object.values(getDraft().inputs).indexOf("done") >= 0);
+    await P.finishToday(page);
+    const after = await page.evaluate(() => ({ program: JSON.stringify(activeProgram().program), draft: activeProgram().draft }));
+    expect(after.program, "the stored program after a trimmed session").toBe(before);
+    expect(after.draft, "the trimmed day went with the draft").toBeNull();
+    expect(errors, "page errors / console.error").toEqual([]);
+  });
+
   // Regression (2026-11-15): the rest countdown lived only in a header pill
   // the paper skin hides, so the bar's rest cell sat still through every
   // rest, and the 0s warm-up's pending hide cancelled the first working

@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.22",
+    "date": "2026-11-21",
+    "title": "Trimming a late session is for today only",
+    "items": [
+      "When a session runs long, Trim session drops the last block you haven't started. It used to remove that block from your program too, so it was missing every week after.",
+      "Now the trim is for today only. The next time this day comes around, the block is back."
+    ]
+  },
+  {
     "version": "0.21",
     "date": "2026-11-19",
     "title": "Short on time? Shorten today only",

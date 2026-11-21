@@ -11744,6 +11744,15 @@ body[data-skin="paper"] .sheet .paper-menu-sheet button.paper-menu-item:active {
 // === Inlined from src/changelog.json ===
 const CHANGELOG = [
   {
+    "version": "0.22",
+    "date": "2026-11-21",
+    "title": "Trimming a late session is for today only",
+    "items": [
+      "When a session runs long, Trim session drops the last block you haven't started. It used to remove that block from your program too, so it was missing every week after.",
+      "Now the trim is for today only. The next time this day comes around, the block is back."
+    ]
+  },
+  {
     "version": "0.21",
     "date": "2026-11-19",
     "title": "Short on time? Shorten today only",
@@ -14540,7 +14549,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 23;
-const APP_BUILD = "fd10a9bc";
+const APP_BUILD = "ea736db3";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -30755,10 +30764,19 @@ function stopPaceTicker() {
   updatePaceChip();
 }
 
-// Remove the last block that has no done sets from the current day.
+// Remove the last block that has no done sets from today's session only.
+// Until 2026-11-21 the cut went through mutateDay into the stored program,
+// so a block trimmed on one late day was gone from that day every week
+// after. Now the day is first held on the draft (draft.sessionDay, as an
+// "adjust time" start does), mutateDay and getCurrentDay use that copy, and
+// it ends with the draft. A day already held is cut in place.
 function trimSession() {
   const day = getCurrentDay();
   if (!day) return;
+  // Only a running session for this day has a draft to hold the cut on.
+  // Never ensureDraft() here: it would replace another day's draft.
+  const draft = getDraft();
+  if (!draft) return;
 
   // Walk blocks in order; track the last one with zero done sets.
   let lastPendingIdx = -1;
@@ -30784,9 +30802,14 @@ function trimSession() {
   if (!state.trimmedBlocks) state.trimmedBlocks = [];
   state.trimmedBlocks.push({ dayId: day.id, blockIdx: lastPendingIdx, block: trimmedBlock });
 
+  // Same test getCurrentDay() and mutateDay() use, so the cut can never
+  // fall through to the stored day.
+  if (!sessionDayOf(activeProgram())) {
+    updateActiveProgram(entry => { if (entry.draft) entry.draft.sessionDay = deepClone(day); });
+  }
   mutateDay(d => { d.blocks.splice(lastPendingIdx, 1); });
   renderWorkoutScreen();
-  showToast(`Trimmed "${trimmedBlock.name}" — tap Undo to restore`, "success");
+  showToast(`Trimmed "${trimmedBlock.name}" for today. Tap Undo to bring it back.`, "success");
   updatePaceChip();
 }
 
