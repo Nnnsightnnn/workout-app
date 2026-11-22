@@ -917,6 +917,49 @@ function paperPaintRestCells() {
   document.querySelectorAll(".paper-action-rest").forEach(paperPaintRestCell);
 }
 
+// ── What the bar is logging ────────────────────────────────────
+// The bar used to say only "set 1 of 4": no lift, no reps, while the row it
+// logs was usually off screen. It names both now. `reps` is the number the
+// active row shows, which is what Log set records.
+function paperBarSetLabel(ex, reps, setIdx, totalSets) {
+  const unit = ex.isTime ? "s" : ex.isDistance ? "m" : "reps";
+  const repsHtml = (reps != null && reps !== "")
+    ? `<span class="pa-label-reps">${escapeHtml(String(reps))} ${unit}</span>` : "";
+  return `<span class="pa-label-lift">${escapeHtml(ex.name || "")}</span>${repsHtml}`
+    + `<span class="pa-label-target">set ${setIdx + 1} of ${totalSets}</span>`;
+}
+
+// ── List view follows the set being logged ─────────────────────
+// The bar is pinned to the bottom and the list never moved, so after Start
+// and after every log the next set sat under the bar or below the fold.
+// Bring its lift's name and the set into view, but only when the active set
+// has changed since the last follow: a tap that leaves it where it was (the
+// weight stepper, a tick on another row, an inline edit) never moves the
+// page under the lifter's thumb.
+let _paperFollowKey = null;
+function paperFollowActiveRow(row, key) {
+  // A row a later render already replaced measures as zero and would read as
+  // "in view"; a hidden screen has no layout. Neither counts as followed.
+  if (!row || !row.isConnected || key === _paperFollowKey) return;
+  const bar = document.querySelector(".paper-action-bar");
+  const br = bar && bar.getBoundingClientRect();
+  if (!br || !br.height) return; // not laid out (jsdom, hidden screen)
+  _paperFollowKey = key;
+  const r = row.getBoundingClientRect();
+  const exEl = row.closest(".paper-exercise");
+  const head = exEl && exEl.querySelector(".paper-exercise-head");
+  const top = head ? head.getBoundingClientRect().top : r.top;
+  const TOP = 104; // clears the MENU note in the top corner
+  const GAP = 12;
+  if (top >= 0 && r.bottom <= br.top - GAP) return; // name and set both in view
+  let delta = top - TOP;
+  // A long set list: keep the set itself clear of the bar first.
+  if (r.bottom - delta > br.top - GAP) delta = r.bottom - (br.top - GAP);
+  const reduce = window.matchMedia
+    && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  window.scrollBy({ top: delta, behavior: reduce ? "auto" : "smooth" });
+}
+
 function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi) {
   const bar = document.createElement("div");
   bar.className = "paper-action-bar";
@@ -971,8 +1014,16 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi)
   } else if (allDone) {
     lbl.innerHTML = `<span class="pa-label-target">workout complete &middot; ${_daySetsDone}/${_daySetsTotal}</span>`;
   } else {
-    const totalSets = (ex.sets || 3);
-    lbl.innerHTML = `<span class="pa-label-target">set ${activeSetIdx + 1} of ${totalSets}</span>`;
+    // Same reps default as the set row (paperRenderSetsTable).
+    const lastR = (typeof getLastSetsFor === "function") ? getLastSetsFor(ex.exId || ex.name) : [];
+    const lastSetR = lastR[activeSetIdx] || lastR[lastR.length - 1];
+    const rptOn = (typeof rptEffectiveScheme === "function") && !!rptEffectiveScheme(block, ex, activeExIdx);
+    const rptR = rptOn ? rptPlannedSet(block, ex, activeExIdx, activeSetIdx) : null;
+    const defR = rptR ? rptR.reps : (lastSetR?.reps ?? ex.reps);
+    const reps = (typeof getInput === "function")
+      ? getInput(inputKey(block.id, activeExIdx, activeSetIdx, "r"), defR) : defR;
+    lbl.classList.add("has-lift");
+    lbl.innerHTML = paperBarSetLabel(ex, reps, activeSetIdx, ex.sets || 3);
   }
   bar.appendChild(lbl);
 

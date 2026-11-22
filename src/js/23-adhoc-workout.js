@@ -313,8 +313,14 @@ function _paperBuildAdhocActionBar(day, block, activeExIdx, activeSetIdx, allDon
   if (allDone) {
     lbl.innerHTML = `<span class="pa-label-target">workout complete &middot; ${_daySetsDone}/${_daySetsTotal}</span>`;
   } else {
-    const totalSets = (ex.sets || 3);
-    lbl.innerHTML = `<span class="pa-label-target">set ${activeSetIdx + 1} of ${totalSets}</span>`;
+    // Name the lift and the reps the row shows (see paperBarSetLabel); same
+    // default as the one-off set row.
+    const inpR = state.adhocInputs[`adhoc|${bi}|${activeExIdx}|${activeSetIdx}`] || {};
+    const lastR = (typeof getLastSetsFor === "function") ? getLastSetsFor(ex.exId || ex.name) : [];
+    const lastSetR = lastR[activeSetIdx] || lastR[lastR.length - 1];
+    const reps = inpR.r != null ? inpR.r : (lastSetR ? lastSetR.reps : (ex.reps || 0));
+    lbl.classList.add("has-lift");
+    lbl.innerHTML = paperBarSetLabel(ex, reps, activeSetIdx, ex.sets || 3);
   }
   bar.appendChild(lbl);
 
@@ -689,6 +695,10 @@ function renderAdhocScreen() {
         `.paper-set-row[data-set-idx="${_adhocBarActive.setIdx}"]`
       );
       if (row) row.classList.add("paper-focus-active-set");
+      if (row && typeof paperFollowActiveRow === "function") {
+        paperFollowActiveRow(row, ["adhoc", state.adhocStartedAt,
+          _adhocBarActive.bi, _adhocBarActive.exIdx, _adhocBarActive.setIdx].join("|"));
+      }
     });
   }
 

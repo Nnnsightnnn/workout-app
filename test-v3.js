@@ -584,6 +584,67 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     }
   });
 
+  // ---- The bar names the lift and the reps it logs ----
+  // Until 2026-11-22 the bar said only "set 1 of 4": no lift, no reps, while
+  // the row it logs sat under the bar or below the fold (walked: Back Squat's
+  // first working set logged with the finished Row warm-up on screen).
+  const _barLabel = (root) => {
+    const l = w.document.querySelector(root + " .paper-action-edit-label");
+    return {
+      lift: (l && l.querySelector(".pa-label-lift") || {}).textContent || "",
+      reps: ((l && l.querySelector(".pa-label-reps") || {}).textContent || "").replace(/\s+/g, " ").trim(),
+      text: l ? l.textContent.replace(/\s+/g, " ").trim() : "",
+    };
+  };
+
+  t("list view: the bar names the lift and the reps its active row shows, and moves on after a log", () => {
+    const { day } = _focusFixture("BarNames");
+    w.state.workoutView = "chapters";
+    w.renderWorkoutScreen();
+    const a = w.paperFindDayActiveSet(day);
+    const ex = day.blocks[a.bi].exercises[a.exIdx];
+    const row = w.document.querySelector(`.paper-chapters-view .paper-block[data-bi="${a.bi}"] ` +
+      `.paper-exercise[data-ei="${a.exIdx}"] .paper-set-row[data-set-idx="${a.setIdx}"] .paper-set-reps`);
+    assert(row, "the active set's row is drawn");
+    const lbl = _barLabel(".paper-chapters-view");
+    eq(lbl.lift, ex.name, "bar names the lift it logs");
+    eq(lbl.reps, row.textContent.replace(/\s+/g, " ").trim(), "bar shows the reps its row shows");
+    assert(/set 1 of/i.test(lbl.text), "bar still counts the set");
+
+    // Log every set of that lift; the bar then names the next lift.
+    for (let si = 0; si < (ex.sets || 3); si++) w.saveInput(w.inputKey(day.blocks[a.bi].id, a.exIdx, si, "status"), "done");
+    w.renderWorkoutScreen();
+    const b = w.paperFindDayActiveSet(day);
+    const next = day.blocks[b.bi].exercises[b.exIdx];
+    eq(_barLabel(".paper-chapters-view").lift, next.name, "after a log the bar names the next set's lift");
+  });
+
+  t("focus view: the bar names the lift and its reps", () => {
+    const { day, open } = _focusFixture("FocusBarNames");
+    w.state.focusBlockIdx = open[0];
+    w.renderWorkoutScreen();
+    const ex = day.blocks[open[0]].exercises.find(e => !e.isWarmup);
+    const lbl = _barLabel(".paper-focus-view");
+    eq(lbl.lift, ex.name, "focus bar names the lift");
+    assert(/\d/.test(lbl.reps), "focus bar shows the reps, got " + JSON.stringify(lbl.reps));
+  });
+
+  t("one-off workout: the bar names the lift and the reps it logs", () => {
+    const prev = w.state.adhocInputs;
+    try {
+      w.state.adhocInputs = { "adhoc|0|0|0": { status: "done" }, "adhoc|0|0|1": { r: 3 } };
+      const ex = w.mkSets(w.LIB_BY_ID.backsquat, { sets: 2, reps: 5, rest: 90 });
+      const day = { blocks: [{ exercises: [ex] }] };
+      const bar = w._paperBuildAdhocActionBar(day, day.blocks[0], 0, 1, false, 0);
+      const l = bar.querySelector(".paper-action-edit-label");
+      eq((l.querySelector(".pa-label-lift") || {}).textContent, ex.name, "one-off bar names the lift");
+      eq(((l.querySelector(".pa-label-reps") || {}).textContent || "").trim(), "3 reps", "one-off bar shows the row's reps");
+      assert(/set 2 of 2/i.test(l.textContent), "one-off bar counts the set");
+    } finally {
+      w.state.adhocInputs = prev;
+    }
+  });
+
   // ---- Rest: the countdown is on screen, and a 0s rest can't cancel the next ----
   // Until 2026-11-15 the only countdown lived in the header pill, which the
   // paper skin hides, so the bar's "Rest 2:30" sat still through every rest.

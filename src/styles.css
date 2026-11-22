@@ -10099,6 +10099,41 @@ body[data-skin="paper"] .paper-action-edit-label {
 body[data-skin="paper"] .pa-label-target {
   letter-spacing: 0.14em;
 }
+/* The bar names the lift and reps it logs: handwritten like the row's own
+   name, one line, a long name trails off rather than wrapping the bar. */
+body[data-skin="paper"] .paper-action-edit-label.has-lift {
+  opacity: 1;
+  min-width: 0;
+}
+body[data-skin="paper"] .pa-label-lift {
+  font-family: var(--paper-hand);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--paper-ink);
+  min-width: 0;
+  flex: 0 1 auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body[data-skin="paper"] .pa-label-reps {
+  font-family: var(--paper-hand);
+  font-size: 18px;
+  line-height: 1.1;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--paper-ink);
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+body[data-skin="paper"] .has-lift .pa-label-target {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  opacity: 0.8;
+}
 
 /* Reduced-motion: kill the animations, keep state visible. */
 @media (prefers-reduced-motion: reduce) {
