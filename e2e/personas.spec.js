@@ -250,6 +250,64 @@ test.describe("personas", () => {
     expect(errors, "page errors / console.error").toEqual([]);
   });
 
+  // Regression (2026-11-22): in list view the bar said only "set 1 of 4" and
+  // the list never moved, so after Start and after every log the set being
+  // logged sat under the bar or below the fold (walked: 0 of 10 on screen;
+  // Back Squat logged with the finished Row warm-up showing). Real taps: after
+  // each log the active set is wholly in view above the bar and the bar names
+  // its lift; a "+" on the weight leaves the page where it was.
+  test("list view: the set being logged is on screen and the bar names its lift", async ({ page }) => {
+    test.setTimeout(90_000);
+    const errors = await P.instrument(page);
+    await P.seedUser(page, { name: "Follow", templateId: "upperlower4" });
+    await P.startToday(page);
+    const bar = page.locator(".paper-chapters-view .paper-action-bar");
+    const stamp = bar.locator(".paper-action-log");
+    const inView = () => page.evaluate(() => {
+      const row = document.querySelector(".paper-chapters-view .paper-focus-active-set");
+      const b = document.querySelector(".paper-chapters-view .paper-action-bar");
+      if (!row || !b) return { ok: false, why: "no active row or bar" };
+      const r = row.getBoundingClientRect();
+      const ex = row.closest(".paper-exercise").querySelector(".paper-ex-name").textContent.trim();
+      const lift = (b.querySelector(".pa-label-lift") || {}).textContent || "";
+      return { ok: r.top >= 0 && r.bottom <= b.getBoundingClientRect().top, named: lift === ex, ex, lift };
+    });
+    const settledScrollY = async () => {
+      let prev = null, y = await page.evaluate(() => scrollY);
+      for (let i = 0; i < 20 && y !== prev; i++) {
+        prev = y;
+        await page.waitForTimeout(150);
+        y = await page.evaluate(() => scrollY);
+      }
+      return y;
+    };
+
+    let weighted = false;
+    const misnamed = [];
+    for (let i = 0; i < 10; i++) {
+      await expect.poll(async () => (await inView()).ok, { message: `set ${i + 1} on screen above the bar` }).toBe(true);
+      const v = await inView();
+      if (!v.named) misnamed.push(`set ${i + 1}: row ${v.ex}, bar "${v.lift}"`);
+      if (!weighted && await bar.locator(".pa-weight-plus").count()) {
+        weighted = true;
+        // The follow scrolls smoothly, and the row reads as in view before
+        // the scroll ends; on a loaded runner it was still moving when y was
+        // read (1145, then 1195). Measure only a page at rest.
+        const y = await settledScrollY();
+        await bar.locator(".pa-weight-plus").tap();
+        await page.waitForTimeout(400);
+        expect(await settledScrollY(), "a + on the weight moved the page").toBe(y);
+      }
+      const done = await page.evaluate(() => Object.values(getDraft().inputs).filter(x => x === "done").length);
+      await expect(stamp).toBeEnabled();
+      await stamp.tap();
+      await page.waitForFunction(n => Object.values(getDraft().inputs).filter(x => x === "done").length > n, done);
+    }
+    expect(weighted, "walk reached a weighted lift").toBe(true);
+    expect(misnamed, "the bar didn't name the lift being logged").toEqual([]);
+    expect(errors, "page errors / console.error").toEqual([]);
+  });
+
   // Regression (2026-11-14): from 2026-05-12 the returning lifter's only
   // Start sat inside the collapsed "adjust time" panel, which never opens in
   // paper. The gate missed it because startToday() used a JS click. A lifter

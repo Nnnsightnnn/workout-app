@@ -2040,6 +2040,11 @@ function renderChaptersView(container, day) {
             `.paper-set-row[data-set-idx="${active.setIdx}"]`
           );
           if (row) row.classList.add("paper-focus-active-set");
+          if (row && typeof paperFollowActiveRow === "function") {
+            const d = (typeof getDraft === "function") ? getDraft() : null;
+            paperFollowActiveRow(row, [d && d.startedAt, state.currentDayId,
+              activeBlock.id, active.exIdx, active.setIdx].join("|"));
+          }
         });
       }
     }

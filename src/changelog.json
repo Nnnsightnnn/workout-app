@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.23",
+    "date": "2026-11-22",
+    "title": "The bar says what you're logging",
+    "items": [
+      "The bar at the bottom of a workout now names the lift and the reps that Log set will record, for example Back Squat, 8 reps, set 1 of 4.",
+      "In the list, the page now moves to the set you're on after Start and after each set you log. It used to stay put, so the next set was often hidden under the bar.",
+      "Tapping + or − on the weight, or ticking another set, leaves the page where it is."
+    ]
+  },
+  {
     "version": "0.22",
     "date": "2026-11-21",
     "title": "Trimming a late session is for today only",
