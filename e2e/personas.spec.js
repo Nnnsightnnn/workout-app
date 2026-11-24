@@ -343,23 +343,35 @@ test.describe("personas", () => {
 
     const bar = page.locator(".paper-chapters-view .paper-action-bar");
     const stamp = bar.locator(".paper-action-log");
-    // The highlighted set, as "lift#set". Log set redraws the list after a
-    // short ink animation, so wait for this to change before reading or
-    // tapping again; the draft updates first, and a second tap in between
-    // logs the next set.
+    // The highlighted set, as "lift#set". Log set records the set at once and
+    // redraws the list about 320ms later; the new list gets its highlight on
+    // the next animation frame, so for a moment no row is highlighted (12ms
+    // on a Mac, far longer on a cold CI runner). The first version of this
+    // test took that gap for "the highlight moved", tapped again with a log
+    // still pending, and ran one set ahead (deploy run 45357657889). Wait for
+    // exactly one more logged set, then for a highlight that is there and new.
     const activeKey = () => page.evaluate(() => {
       const row = document.querySelector(".paper-chapters-view .paper-focus-active-set");
       return row ? row.closest(".paper-exercise").querySelector(".paper-ex-name").textContent.trim() + "#" + row.dataset.setIdx : null;
     });
+    const doneCount = () => page.evaluate(() => Object.values(getDraft().inputs).filter(x => x === "done").length);
     const activeLift = async () => ((await activeKey()) || "").split("#")[0];
+    let taps = 0;
     const logAndSettle = async () => {
       const k = await activeKey();
+      const n = await doneCount();
       await stamp.tap();
-      await expect.poll(activeKey, { message: `the highlight moved on from ${k}` }).not.toBe(k);
+      taps++;
+      await expect.poll(doneCount, { message: `the tap after ${k} logged one set` }).toBe(n + 1);
+      await expect.poll(async () => { const x = await activeKey(); return x !== null && x !== k; },
+        { message: `the highlight moved on from ${k}` }).toBe(true);
     };
-    // Follow the lead through the warm-ups to the lift.
+    await expect.poll(activeKey, { message: "a set is highlighted after Start" }).not.toBeNull();
     for (let i = 0; i < 20 && (await activeLift()) !== target.name; i++) await logAndSettle();
     expect(await activeLift(), "the lead reached the first working lift").toBe(target.name);
+    expect(await activeKey(), "the lift's first set is the one up").toBe(`${target.name}#0`);
+    await page.waitForTimeout(400); // a stray second log would land by now
+    expect(await doneCount(), `${taps} taps on Log set, one set each`).toBe(taps);
 
     const lift = page.locator(".paper-chapters-view .paper-exercise").filter({ has: page.locator(".paper-focus-active-set") });
     const activeRow = lift.locator(".paper-focus-active-set");
