@@ -233,7 +233,7 @@ function paperRenderSetsTable(block, ex, bi, ei) {
   const last = (typeof getLastSetsFor === "function") ? getLastSetsFor(ex.exId || ex.name) : [];
   const hasRpt = (typeof rptEffectiveScheme === "function") && !!rptEffectiveScheme(block, ex, ei);
 
-  // Linear progression line ("Last time clean 140 lb · Apply"): computed
+  // Linear progression line ("All clean at 135 · try 140 lb · Apply"): computed
   // all along but only drawn by the pre-paper renderer, so a lifter told
   // "Heavier" had no number. A guess, one tap to take; the rows keep last
   // time's weight until then. An rpt lift has its own line above.

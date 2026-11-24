@@ -107,13 +107,15 @@ function injectLinearProgressionHint(wrap, ex, block, ei) {
   const newWeight = lastWeight + bump;
   const unitLbl = state.unit === "kg" ? "kg" : "lb";
 
-  // "Last time", not "last week": the rule reads the lift's last session,
-  // which may be days or weeks back.
+  // Names the weight that went clean and marks the new one as a try. It
+  // read "Last week clean 140 lbs", which a lifter took as "last time I did
+  // 140" right above "last: 135x8" (blind read, 2026-11-24); and the last
+  // session may be weeks back, not a week.
   const chip = document.createElement("div");
   chip.className = "lp-hint-chip";
   chip.innerHTML =
     '<span class="lp-hint-icon">↑</span>' +
-    '<span class="lp-hint-text"><span class="lp-hint-label">Last time clean</span>' +
+    '<span class="lp-hint-text"><span class="lp-hint-label">All clean at ' + lastWeight + ' &middot; try</span>' +
     ' <strong>' + newWeight + ' ' + unitLbl + '</strong></span>' +
     '<button class="lp-hint-apply" type="button">Apply</button>';
 
@@ -129,7 +131,8 @@ function injectLinearProgressionHint(wrap, ex, block, ei) {
       saveInput(inputKey(block.id, ei, s, "w"), newWeight);
     }
     if (navigator.vibrate) navigator.vibrate(10);
-    if (typeof showToast === "function") showToast("Weight set to " + newWeight + " " + unitLbl);
+    // No toast: the rows and the bar change to the new weight where the
+    // lifter is looking; a toast at the top of the screen was out of sight.
     if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
   });
 
