@@ -11779,6 +11779,16 @@ body[data-skin="paper"] .sheet .paper-menu-sheet button.paper-menu-item:active {
 // === Inlined from src/changelog.json ===
 const CHANGELOG = [
   {
+    "version": "0.24",
+    "date": "2026-11-24",
+    "title": "Sets start from today's plan",
+    "items": [
+      "Each set now starts at the reps your program asks for today. When the plan moved from 8 reps to 6, every set used to show last time's 8, so one tap on Log set recorded 8.",
+      "Last time's numbers still sit above the sets as \"last\", so you can see what changed.",
+      "When you cleared every set last time, a line above the sets offers the next weight up, for example 140 lb. Tap Apply to use it, or leave it and your sets stay at last time's weight."
+    ]
+  },
+  {
     "version": "0.23",
     "date": "2026-11-22",
     "title": "The bar says what you're logging",
@@ -14594,7 +14604,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 23;
-const APP_BUILD = "fb6727ae";
+const APP_BUILD = "edab0192";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -15540,10 +15550,17 @@ function getDraft() {
   return p.draft;
 }
 
+// repsFrom: "plan" marks a draft begun under the plan-first reps default
+// (setRepsDefault in 11-helpers.js). A draft without it was begun before
+// that rule and keeps the old one until it ends.
+function newDraft() {
+  return { dayId: state.currentDayId, startedAt: Date.now(), inputs: {}, pausedAt: null, repsFrom: "plan" };
+}
+
 function ensureDraft() {
   updateActiveProgram(entry => {
     if (!entry.draft || entry.draft.dayId !== state.currentDayId) {
-      entry.draft = { dayId: state.currentDayId, startedAt: Date.now(), inputs: {}, pausedAt: null };
+      entry.draft = newDraft();
     }
   });
 }
@@ -15555,7 +15572,7 @@ function saveInput(key, value) {
   const entry = activeProgramOf(user);
   if (!entry) return;
   if (!entry.draft || entry.draft.dayId !== state.currentDayId) {
-    entry.draft = { dayId: state.currentDayId, startedAt: Date.now(), inputs: {}, pausedAt: null };
+    entry.draft = newDraft();
     if (state.autoTimer) {
       state.workoutStartedAt = entry.draft.startedAt;
       startSessionTimer();
@@ -18360,7 +18377,7 @@ function renderSetsTable(block, ex, bi, ei) {
     const rptDef = (typeof rptPlannedSet === "function")
       ? rptPlannedSet(block, ex, ei, i) : null;
     const curW = getInput(wkey, rptDef && rptDef.weight != null ? rptDef.weight : (lastSet?.weight ?? ex.defaultWeight ?? 0));
-    const curR = getInput(rkey, rptDef ? rptDef.reps : (lastSet?.reps ?? ex.reps));
+    const curR = getInput(rkey, rptDef ? rptDef.reps : setRepsDefault(ex, lastSet));
     const curP = getInput(pkey, 7);
 
     const chip = document.createElement("div");
@@ -18577,7 +18594,7 @@ function openSetEditor(block, ex, bi, ei, setIdx, bw) {
 
     // RPT scheme: planned per-set targets override generic defaults —
     // back-off weight derives from the actual top-set entry.
-    let repsDefault = lastSet?.reps ?? ex.reps;
+    let repsDefault = setRepsDefault(ex, lastSet);
     const rptDef = (typeof rptPlannedSet === "function")
       ? rptPlannedSet(block, ex, ei, si) : null;
     if (rptDef) {
@@ -18912,7 +18929,9 @@ function openInlineEditor(anchorEl, field, block, ex, bi, ei, setIdx, bw) {
     unitLabel = state.unit;
     commonVals = state.unit === "lbs" ? [45, 95, 135, 185, 225, 275, 315] : [20, 40, 60, 80, 100, 120, 140];
   } else {
-    curVal = getInput(key, (field === "r" && rptDef) ? rptDef.reps : (lastSet?.reps ?? ex.reps));
+    curVal = getInput(key, field === "r"
+      ? (rptDef ? rptDef.reps : setRepsDefault(ex, lastSet))
+      : (lastSet?.reps ?? ex.reps));
     step = ex.isTime ? 5 : ex.isDistance ? 10 : 1;
     label = ex.isTime ? "Time (sec)" : ex.isDistance ? "Distance (m)" : "Reps";
     unitLabel = ex.isTime ? "s" : ex.isDistance ? "m" : "reps";
@@ -20180,6 +20199,28 @@ function getPrevDaySetsFor(dayId, exId) {
 }
 
 // ============================================================
+// SET REPS DEFAULT
+// ------------------------------------------------------------
+// The reps a set shows before the lifter changes them, which is also what
+// Log set and Finish record. Today's plan comes first: a periodized week
+// can move a lift from 4 x 8 to 4 x 6 ("Heavier. Fewer reps."), and last
+// session's 8 used to be logged against a plan of 6. Last session's reps
+// are the fallback when the plan names none.
+// A draft begun before this rule has no repsFrom (see newDraft); it keeps
+// the old rule, last session first, until it ends, so a set logged under
+// it still reads what the lifter saw when they logged it.
+// Pass `draft` when holding a private copy (finishWorkout); otherwise the
+// stored draft for today is read.
+// ============================================================
+function setRepsDefault(ex, lastSet, draft) {
+  const d = (draft !== undefined) ? draft
+    : (typeof getDraft === "function" ? getDraft() : null);
+  const fromPlan = !d || d.repsFrom === "plan";
+  if (fromPlan && Number(ex && ex.reps) > 0) return ex.reps;
+  return lastSet?.reps ?? ex.reps;
+}
+
+// ============================================================
 // LINEAR-PROGRESSION HINT
 // ------------------------------------------------------------
 // Simple, deterministic progression suggestion for users who
@@ -20228,26 +20269,43 @@ function injectLinearProgressionHint(wrap, ex, block, ei) {
   const set1Cur = set1Key ? Number(getInput(set1Key, lastWeight)) : lastWeight;
   if (set1Cur > lastWeight) return;
 
+  // The guess is for the lift's first set. Once any set of it is logged or
+  // skipped the lifter has chosen a weight, and Apply would only reach the
+  // sets after it, so the line goes away.
+  const statusOf = s => (typeof inputKey === "function")
+    ? getInput(inputKey(block.id, ei, s, "status"), null) : null;
+  for (let s = 0; s < numSets; s++) {
+    const st = statusOf(s);
+    if (st === "done" || st === "skipped") return;
+  }
+
   const bump = state.unit === "lbs" ? 5 : 2.5;
   const newWeight = lastWeight + bump;
+  const unitLbl = state.unit === "kg" ? "kg" : "lb";
 
+  // "Last time", not "last week": the rule reads the lift's last session,
+  // which may be days or weeks back.
   const chip = document.createElement("div");
   chip.className = "lp-hint-chip";
   chip.innerHTML =
     '<span class="lp-hint-icon">↑</span>' +
-    '<span class="lp-hint-text"><span class="lp-hint-label">Last week clean</span>' +
-    ' <strong>' + newWeight + ' ' + state.unit + '</strong></span>' +
+    '<span class="lp-hint-text"><span class="lp-hint-label">Last time clean</span>' +
+    ' <strong>' + newWeight + ' ' + unitLbl + '</strong></span>' +
     '<button class="lp-hint-apply" type="button">Apply</button>';
 
   const applyBtn = chip.querySelector(".lp-hint-apply");
   applyBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     if (typeof inputKey !== "function" || typeof saveInput !== "function") return;
+    // Never rewrite a set already logged or skipped (the same rule as the
+    // bar's stepper since F19).
     for (let s = 0; s < numSets; s++) {
+      const st = statusOf(s);
+      if (st === "done" || st === "skipped") continue;
       saveInput(inputKey(block.id, ei, s, "w"), newWeight);
     }
     if (navigator.vibrate) navigator.vibrate(10);
-    if (typeof showToast === "function") showToast("Weight bumped to " + newWeight + " " + state.unit);
+    if (typeof showToast === "function") showToast("Weight set to " + newWeight + " " + unitLbl);
     if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
   });
 
@@ -21724,7 +21782,7 @@ function completeCurrentBlock() {
       const rptDef = (typeof rptPlannedSet === "function")
         ? rptPlannedSet(block, ex, ei, i) : null;
       const rkey = inputKey(block.id, ei, i, "r");
-      if (getInput(rkey, null) == null) saveInput(rkey, rptDef ? rptDef.reps : (lastSet?.reps ?? ex.reps));
+      if (getInput(rkey, null) == null) saveInput(rkey, rptDef ? rptDef.reps : setRepsDefault(ex, lastSet));
       const wkey = inputKey(block.id, ei, i, "w");
       if (getInput(wkey, null) == null) saveInput(wkey, rptDef && rptDef.weight != null ? rptDef.weight : (lastSet?.weight ?? ex.defaultWeight ?? 0));
       const pkey = inputKey(block.id, ei, i, "p");
@@ -21763,7 +21821,7 @@ function toggleBlockComplete(block) {
         saveInput(sKey, "done");
         const lastSet = last[i] || last[last.length - 1];
         const rkey = inputKey(block.id, ei, i, "r");
-        if (getInput(rkey, null) == null) saveInput(rkey, lastSet?.reps ?? ex.reps);
+        if (getInput(rkey, null) == null) saveInput(rkey, setRepsDefault(ex, lastSet));
         const wkey = inputKey(block.id, ei, i, "w");
         if (getInput(wkey, null) == null) saveInput(wkey, lastSet?.weight ?? ex.defaultWeight ?? 0);
         const pkey = inputKey(block.id, ei, i, "p");
@@ -21915,7 +21973,7 @@ function finishWorkout(opts) {
         const lastSet = last[i] || last[last.length - 1];
         const rkey = inputKey(block.id, ei, i, "r");
         if (inputs[rkey] == null) {
-          inputs[rkey] = exRptScheme ? rptTargetRepsFor(exRptScheme, i) : (lastSet?.reps ?? ex.reps);
+          inputs[rkey] = exRptScheme ? rptTargetRepsFor(exRptScheme, i) : setRepsDefault(ex, lastSet, draft);
         }
         const wkey = inputKey(block.id, ei, i, "w");
         if (inputs[wkey] == null) {
@@ -32748,6 +32806,14 @@ function paperRenderSetsTable(block, ex, bi, ei) {
   const last = (typeof getLastSetsFor === "function") ? getLastSetsFor(ex.exId || ex.name) : [];
   const hasRpt = (typeof rptEffectiveScheme === "function") && !!rptEffectiveScheme(block, ex, ei);
 
+  // Linear progression line ("Last time clean 140 lb · Apply"): computed
+  // all along but only drawn by the pre-paper renderer, so a lifter told
+  // "Heavier" had no number. A guess, one tap to take; the rows keep last
+  // time's weight until then. An rpt lift has its own line above.
+  if (!hasRpt && typeof injectLinearProgressionHint === "function") {
+    injectLinearProgressionHint(list, ex, block, ei);
+  }
+
   for (let i = 0; i < numSets; i++) {
     const lastSet = last[i] || last[last.length - 1];
     const wkey = inputKey(block.id, ei, i, "w");
@@ -32759,7 +32825,7 @@ function paperRenderSetsTable(block, ex, bi, ei) {
     // reps step up per drop. User input still wins via getInput.
     const rptDef = hasRpt ? rptPlannedSet(block, ex, ei, i) : null;
     const defW = rptDef ? (rptDef.weight ?? 0) : (lastSet?.weight ?? ex.defaultWeight ?? 0);
-    const defR = rptDef ? rptDef.reps : (lastSet?.reps ?? ex.reps);
+    const defR = rptDef ? rptDef.reps : setRepsDefault(ex, lastSet);
     const curW = getInput(wkey, defW);
     const curR = getInput(rkey, defR);
     const curP = getInput(pkey, 7);
@@ -33534,7 +33600,7 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi)
     const lastSetR = lastR[activeSetIdx] || lastR[lastR.length - 1];
     const rptOn = (typeof rptEffectiveScheme === "function") && !!rptEffectiveScheme(block, ex, activeExIdx);
     const rptR = rptOn ? rptPlannedSet(block, ex, activeExIdx, activeSetIdx) : null;
-    const defR = rptR ? rptR.reps : (lastSetR?.reps ?? ex.reps);
+    const defR = rptR ? rptR.reps : setRepsDefault(ex, lastSetR);
     const reps = (typeof getInput === "function")
       ? getInput(inputKey(block.id, activeExIdx, activeSetIdx, "r"), defR) : defR;
     lbl.classList.add("has-lift");

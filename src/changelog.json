@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.24",
+    "date": "2026-11-24",
+    "title": "Sets start from today's plan",
+    "items": [
+      "Each set now starts at the reps your program asks for today. When the plan moved from 8 reps to 6, every set used to show last time's 8, so one tap on Log set recorded 8.",
+      "Last time's numbers still sit above the sets as \"last\", so you can see what changed.",
+      "When you cleared every set last time, a line above the sets offers the next weight up, for example 140 lb. Tap Apply to use it, or leave it and your sets stay at last time's weight."
+    ]
+  },
+  {
     "version": "0.23",
     "date": "2026-11-22",
     "title": "The bar says what you're logging",

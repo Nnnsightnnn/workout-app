@@ -308,6 +308,80 @@ test.describe("personas", () => {
     expect(errors, "page errors / console.error").toEqual([]);
   });
 
+  // Regression (2026-11-24, Director F5): sets prefilled last session's reps
+  // whatever the plan said, so in a week where the plan moved a lift's reps,
+  // following the lead logged last week's number (walked: plan 4 x 6, every
+  // row and the bar 135 x 8, saved 135 x 8). And the heavier weight the app
+  // computes after a clean session was never drawn in paper. Real taps: the
+  // first working lift reads the plan's reps in its rows and the bar, Apply on
+  // the progression line takes the next weight, and the saved set is
+  // that weight at the plan's reps.
+  test("list view: the first working set starts at the plan's reps, and Apply takes the next weight", async ({ page }) => {
+    test.setTimeout(90_000);
+    const errors = await P.instrument(page);
+    await P.seedUser(page, { name: "PlanReps", templateId: "upperlower4" });
+    // One clean past session of today's first weighted lift, at the plan's
+    // reps + 2. Its dayId matches no program day, so today's day doesn't move.
+    const target = await page.evaluate(() => {
+      const day = getCurrentDay();
+      const blk = day.blocks.find(b => b.exercises.length && !b.exercises[0].isWarmup
+        && !(LIB_BY_ID[b.exercises[0].exId] || b.exercises[0]).bodyweight && Number(b.exercises[0].reps) > 0);
+      const ex = blk.exercises[0];
+      const t0 = Date.now() - 2 * 86400000;
+      updateUser(u => {
+        u.sessions.push({ id: "s-" + t0, dayId: "e2e-history", dayName: "History", startedAt: t0, finishedAt: t0 + 3600000,
+          duration: 3600, volume: 0, prCount: 0, feedback: {},
+          sets: Array.from({ length: ex.sets }, (_, i) => ({ exId: ex.exId || ex.name, exName: ex.name, muscles: [],
+            setIdx: i + 1, weight: 135, reps: Number(ex.reps) + 2, rpe: 7, bodyweight: false, isPR: false })) });
+      });
+      return { name: ex.name, exId: ex.exId || ex.name, plan: Number(ex.reps), dayId: day.id };
+    });
+    await page.reload();
+    await P.waitForBoot(page);
+    expect(await page.evaluate(() => getCurrentDay().id), "today's day after planting history").toBe(target.dayId);
+    await P.startToday(page);
+
+    const bar = page.locator(".paper-chapters-view .paper-action-bar");
+    const stamp = bar.locator(".paper-action-log");
+    // The highlighted set, as "lift#set". Log set redraws the list after a
+    // short ink animation, so wait for this to change before reading or
+    // tapping again; the draft updates first, and a second tap in between
+    // logs the next set.
+    const activeKey = () => page.evaluate(() => {
+      const row = document.querySelector(".paper-chapters-view .paper-focus-active-set");
+      return row ? row.closest(".paper-exercise").querySelector(".paper-ex-name").textContent.trim() + "#" + row.dataset.setIdx : null;
+    });
+    const activeLift = async () => ((await activeKey()) || "").split("#")[0];
+    const logAndSettle = async () => {
+      const k = await activeKey();
+      await stamp.tap();
+      await expect.poll(activeKey, { message: `the highlight moved on from ${k}` }).not.toBe(k);
+    };
+    // Follow the lead through the warm-ups to the lift.
+    for (let i = 0; i < 20 && (await activeLift()) !== target.name; i++) await logAndSettle();
+    expect(await activeLift(), "the lead reached the first working lift").toBe(target.name);
+
+    const lift = page.locator(".paper-chapters-view .paper-exercise").filter({ has: page.locator(".paper-focus-active-set") });
+    const activeRow = lift.locator(".paper-focus-active-set");
+    await expect(activeRow.locator(".paper-set-reps")).toHaveText(`${target.plan} reps`);
+    await expect(bar.locator(".pa-label-reps")).toHaveText(`${target.plan} reps`);
+    const line = lift.locator(".lp-hint-chip");
+    await expect(line).toBeVisible();
+    await expect(line).toContainText("140 lb");
+    await line.locator(".lp-hint-apply").tap();
+    await expect(activeRow.locator(".paper-set-weight")).toHaveText("140 lb");
+    await expect(line).toHaveCount(0);
+
+    await logAndSettle();
+    await bar.locator(".paper-action-exit").tap();
+    await page.locator("#exitWorkoutConfirm").tap();
+    await page.waitForFunction(() => !getDraft());
+    const saved = await page.evaluate(id => userData().sessions.slice(-1)[0].sets
+      .filter(x => x.exId === id).map(x => x.weight + " x " + x.reps), target.exId);
+    expect(saved, "the saved set").toEqual([`140 x ${target.plan}`]);
+    expect(errors, "page errors / console.error").toEqual([]);
+  });
+
   // Regression (2026-11-14): from 2026-05-12 the returning lifter's only
   // Start sat inside the collapsed "adjust time" panel, which never opens in
   // paper. The gate missed it because startToday() used a JS click. A lifter

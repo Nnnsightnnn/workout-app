@@ -984,6 +984,115 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     eq(JSON.stringify(w.activeProgram().program), programBefore, "stored program after trimming an adjusted session");
   });
 
+  // ---- Plan-first reps (2026-11-24, Director F5) ----
+  // Sets prefilled last session's reps whatever the plan said, so a week that
+  // moved a lift from 4 x 8 to 4 x 6 ("Heavier. Fewer reps.") showed 8 on
+  // every row and in the bar, and Log set and Finish recorded 8. The plan's
+  // reps come first now. A draft begun before the rule (no draft.repsFrom)
+  // keeps the old one until it ends, so a set logged under it keeps the reps
+  // it showed.
+  // Fixture: today's first weighted working lift, with one past session of it
+  // at 135 and the plan's reps + delta on every set.
+  const _planFixture = (name, delta, draftFn) => {
+    w.localStorage.clear();
+    w.addUser(name, "upperlower4");
+    const s = JSON.parse(w.localStorage.getItem("kn-lifts-v3"));
+    const u = s.users.find(x => x.id === s.currentUserId);
+    const entry = u.programs.find(p => p.id === u.activeProgramId);
+    const day = entry.program[0];
+    const bi = day.blocks.findIndex(b => b.exercises.length && !b.exercises[0].isWarmup
+      && !(w.LIB_BY_ID[b.exercises[0].exId] || b.exercises[0]).bodyweight && Number(b.exercises[0].reps) > 0);
+    assert(bi > 0, "fixture day has warm-ups and then a weighted lift");
+    const blk = day.blocks[bi];
+    const ex = blk.exercises[0];
+    const plan = Number(ex.reps);
+    const lastReps = plan + delta;
+    const t0 = Date.now() - 2 * 86400000;
+    u.sessions.push({ id: "s-" + t0, dayId: day.id, dayName: day.name, startedAt: t0, finishedAt: t0 + 3600000,
+      duration: 3600, volume: 0, prCount: 0, feedback: {},
+      sets: Array.from({ length: ex.sets }, (_, i) => ({ exId: ex.exId || ex.name, exName: ex.name, muscles: [],
+        setIdx: i + 1, weight: 135, reps: lastReps, rpe: 7, bodyweight: false, isPR: false })) });
+    entry.draft = draftFn ? draftFn(day, blk) : null;
+    // The stored JSON, the shape a lifter's phone holds.
+    w.localStorage.clear();
+    w.localStorage.setItem("kn-lifts-v3", JSON.stringify(s));
+    w.state.currentDayId = day.id;
+    w.state.dayChosen = true;
+    w.state.workoutStartedAt = null;
+    w.state.adhocActive = false;
+    return { day, blk, bi, ex, plan, lastReps };
+  };
+  const _liftEl = (ex) => [...w.document.querySelectorAll("#blocksContainer .paper-exercise")]
+    .find(e => (e.querySelector(".paper-ex-name") || {}).textContent.trim() === ex.name);
+  const _rowReps = (ex) => [..._liftEl(ex).querySelectorAll(".paper-set-row .paper-set-reps")].map(r => r.textContent.trim());
+  const _rowWeights = (ex) => [..._liftEl(ex).querySelectorAll(".paper-set-row .paper-set-weight")].map(r => r.textContent.trim());
+  const _savedReps = (ex) => w.userData().sessions.slice(-1)[0].sets.filter(x => x.exId === (ex.exId || ex.name)).map(x => x.reps);
+
+  t("plan reps: rows, the bar and Finish use today's planned reps, not last session's", () => {
+    const { day, bi, ex, plan, lastReps } = _planFixture("PlanReps", 2);
+    w.openWorkout();
+    eq(_rowReps(ex).join(" | "), Array(ex.sets).fill(plan + " reps").join(" | "), `rows (plan ${plan}, last time ${lastReps})`);
+    eq(w.getDraft().repsFrom, "plan", "a new session's draft");
+    // Log the warm-ups so the bar reaches the lift.
+    day.blocks.slice(0, bi).forEach(b => b.exercises.forEach((e, ei) => {
+      for (let i = 0; i < (e.sets || 1); i++) w.saveInput(w.inputKey(b.id, ei, i, "status"), "done");
+    }));
+    w.renderWorkoutScreen();
+    const bar = w.document.querySelector(".paper-action-bar");
+    eq(bar.querySelector(".pa-label-lift").textContent, ex.name, "the bar's lift");
+    eq(bar.querySelector(".pa-label-reps").textContent, plan + " reps", "the bar's reps");
+    bar.querySelector(".paper-action-log").click();
+    w.hideHeaderRest();
+    w.finishWorkout();
+    eq(_savedReps(ex).join(" | "), Array(ex.sets).fill(plan).join(" | "), "saved reps: one logged by Log set, the rest by Finish");
+  });
+
+  t("plan reps: a draft begun before the rule keeps the reps it showed; the next session starts from the plan", () => {
+    // Mid-workout when this build lands: set 1 logged with nothing typed, set 2
+    // typed down to 7. No repsFrom on the draft.
+    const { day: oldDay, ex, plan, lastReps } = _planFixture("PlanRepsOldDraft", 2, (day, blk) => ({
+      dayId: day.id, startedAt: Date.now() - 600000, pausedAt: null,
+      inputs: { [`${blk.id}|0|0|status`]: "done", [`${blk.id}|0|1|status`]: "done", [`${blk.id}|0|1|r`]: 7 } }));
+    w.renderWorkoutScreen();
+    const rows = _rowReps(ex);
+    eq(rows[0], lastReps + " reps", "set 1, logged before the update");
+    eq(rows[1], "7 reps", "set 2, typed");
+    eq(rows[2], lastReps + " reps", "set 3, untouched, while the old draft runs");
+    w.finishWorkout();
+    eq(_savedReps(ex).join(" | "), [lastReps, 7].concat(Array(ex.sets - 2).fill(lastReps)).join(" | "), "saved from the old draft");
+    // The next time this day comes around, the plan leads.
+    w.state.currentDayId = oldDay.id;
+    w.state.dayChosen = true;
+    w.openWorkout();
+    eq(_rowReps(ex).join(" | "), Array(ex.sets).fill(plan + " reps").join(" | "), "rows in the next session");
+    eq(w.getDraft().repsFrom, "plan", "the next session's draft");
+  });
+
+  t("progression line: drawn after a clean session, Apply sets the heavier weight, gone once a set is logged", () => {
+    const { ex, plan } = _planFixture("PlanHint", 2);
+    w.openWorkout();
+    const chip = _liftEl(ex).querySelector(".lp-hint-chip");
+    assert(chip, "the line is drawn above the sets");
+    assert(/140 lb/.test(chip.textContent), `it names the weight: "${chip.textContent.trim()}"`);
+    eq(_rowWeights(ex)[0], "135 lb", "rows keep last time's weight until Apply");
+    chip.querySelector(".lp-hint-apply").click();
+    eq(_rowWeights(ex).join(" | "), Array(ex.sets).fill("140 lb").join(" | "), "rows after Apply");
+    eq(_rowReps(ex)[0], plan + " reps", "Apply leaves the reps alone");
+    assert(!_liftEl(ex).querySelector(".lp-hint-chip"), "the line goes once taken");
+
+    // A set already logged: the lifter chose a weight; no line.
+    const f2 = _planFixture("PlanHintLogged", 2);
+    w.openWorkout();
+    w.saveInput(w.inputKey(f2.blk.id, 0, 0, "status"), "done");
+    w.renderWorkoutScreen();
+    assert(!_liftEl(f2.ex).querySelector(".lp-hint-chip"), "no line once a set of the lift is logged");
+
+    // Last time a set fell short of today's reps: no heavier weight offered.
+    const f3 = _planFixture("PlanHintMissed", -1);
+    w.openWorkout();
+    assert(!_liftEl(f3.ex).querySelector(".lp-hint-chip"), "no line after a session with missed reps");
+  });
+
   t("addTrainingDay: appends a blockless day and renders an empty state", () => {
     const snapshot = JSON.stringify(w.loadStore());
     const prevDay = w.state.currentDayId, prevChosen = w.state.dayChosen;
