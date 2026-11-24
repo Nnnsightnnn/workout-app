@@ -233,6 +233,14 @@ function paperRenderSetsTable(block, ex, bi, ei) {
   const last = (typeof getLastSetsFor === "function") ? getLastSetsFor(ex.exId || ex.name) : [];
   const hasRpt = (typeof rptEffectiveScheme === "function") && !!rptEffectiveScheme(block, ex, ei);
 
+  // Linear progression line ("All clean at 135 · try 140 lb · Apply"): computed
+  // all along but only drawn by the pre-paper renderer, so a lifter told
+  // "Heavier" had no number. A guess, one tap to take; the rows keep last
+  // time's weight until then. An rpt lift has its own line above.
+  if (!hasRpt && typeof injectLinearProgressionHint === "function") {
+    injectLinearProgressionHint(list, ex, block, ei);
+  }
+
   for (let i = 0; i < numSets; i++) {
     const lastSet = last[i] || last[last.length - 1];
     const wkey = inputKey(block.id, ei, i, "w");
@@ -244,7 +252,7 @@ function paperRenderSetsTable(block, ex, bi, ei) {
     // reps step up per drop. User input still wins via getInput.
     const rptDef = hasRpt ? rptPlannedSet(block, ex, ei, i) : null;
     const defW = rptDef ? (rptDef.weight ?? 0) : (lastSet?.weight ?? ex.defaultWeight ?? 0);
-    const defR = rptDef ? rptDef.reps : (lastSet?.reps ?? ex.reps);
+    const defR = rptDef ? rptDef.reps : setRepsDefault(ex, lastSet);
     const curW = getInput(wkey, defW);
     const curR = getInput(rkey, defR);
     const curP = getInput(pkey, 7);
@@ -1019,7 +1027,7 @@ function paperBuildActionBar(day, block, activeExIdx, activeSetIdx, allDone, bi)
     const lastSetR = lastR[activeSetIdx] || lastR[lastR.length - 1];
     const rptOn = (typeof rptEffectiveScheme === "function") && !!rptEffectiveScheme(block, ex, activeExIdx);
     const rptR = rptOn ? rptPlannedSet(block, ex, activeExIdx, activeSetIdx) : null;
-    const defR = rptR ? rptR.reps : (lastSetR?.reps ?? ex.reps);
+    const defR = rptR ? rptR.reps : setRepsDefault(ex, lastSetR);
     const reps = (typeof getInput === "function")
       ? getInput(inputKey(block.id, activeExIdx, activeSetIdx, "r"), defR) : defR;
     lbl.classList.add("has-lift");

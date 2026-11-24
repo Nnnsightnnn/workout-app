@@ -121,7 +121,7 @@ function completeCurrentBlock() {
       const rptDef = (typeof rptPlannedSet === "function")
         ? rptPlannedSet(block, ex, ei, i) : null;
       const rkey = inputKey(block.id, ei, i, "r");
-      if (getInput(rkey, null) == null) saveInput(rkey, rptDef ? rptDef.reps : (lastSet?.reps ?? ex.reps));
+      if (getInput(rkey, null) == null) saveInput(rkey, rptDef ? rptDef.reps : setRepsDefault(ex, lastSet));
       const wkey = inputKey(block.id, ei, i, "w");
       if (getInput(wkey, null) == null) saveInput(wkey, rptDef && rptDef.weight != null ? rptDef.weight : (lastSet?.weight ?? ex.defaultWeight ?? 0));
       const pkey = inputKey(block.id, ei, i, "p");
@@ -160,7 +160,7 @@ function toggleBlockComplete(block) {
         saveInput(sKey, "done");
         const lastSet = last[i] || last[last.length - 1];
         const rkey = inputKey(block.id, ei, i, "r");
-        if (getInput(rkey, null) == null) saveInput(rkey, lastSet?.reps ?? ex.reps);
+        if (getInput(rkey, null) == null) saveInput(rkey, setRepsDefault(ex, lastSet));
         const wkey = inputKey(block.id, ei, i, "w");
         if (getInput(wkey, null) == null) saveInput(wkey, lastSet?.weight ?? ex.defaultWeight ?? 0);
         const pkey = inputKey(block.id, ei, i, "p");
@@ -312,7 +312,7 @@ function finishWorkout(opts) {
         const lastSet = last[i] || last[last.length - 1];
         const rkey = inputKey(block.id, ei, i, "r");
         if (inputs[rkey] == null) {
-          inputs[rkey] = exRptScheme ? rptTargetRepsFor(exRptScheme, i) : (lastSet?.reps ?? ex.reps);
+          inputs[rkey] = exRptScheme ? rptTargetRepsFor(exRptScheme, i) : setRepsDefault(ex, lastSet, draft);
         }
         const wkey = inputKey(block.id, ei, i, "w");
         if (inputs[wkey] == null) {

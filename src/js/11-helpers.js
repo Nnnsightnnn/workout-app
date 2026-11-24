@@ -23,6 +23,28 @@ function getPrevDaySetsFor(dayId, exId) {
 }
 
 // ============================================================
+// SET REPS DEFAULT
+// ------------------------------------------------------------
+// The reps a set shows before the lifter changes them, which is also what
+// Log set and Finish record. Today's plan comes first: a periodized week
+// can move a lift from 4 x 8 to 4 x 6 ("Heavier. Fewer reps."), and last
+// session's 8 used to be logged against a plan of 6. Last session's reps
+// are the fallback when the plan names none.
+// A draft begun before this rule has no repsFrom (see newDraft); it keeps
+// the old rule, last session first, until it ends, so a set logged under
+// it still reads what the lifter saw when they logged it.
+// Pass `draft` when holding a private copy (finishWorkout); otherwise the
+// stored draft for today is read.
+// ============================================================
+function setRepsDefault(ex, lastSet, draft) {
+  const d = (draft !== undefined) ? draft
+    : (typeof getDraft === "function" ? getDraft() : null);
+  const fromPlan = !d || d.repsFrom === "plan";
+  if (fromPlan && Number(ex && ex.reps) > 0) return ex.reps;
+  return lastSet?.reps ?? ex.reps;
+}
+
+// ============================================================
 // LINEAR-PROGRESSION HINT
 // ------------------------------------------------------------
 // Simple, deterministic progression suggestion for users who
@@ -71,26 +93,46 @@ function injectLinearProgressionHint(wrap, ex, block, ei) {
   const set1Cur = set1Key ? Number(getInput(set1Key, lastWeight)) : lastWeight;
   if (set1Cur > lastWeight) return;
 
+  // The guess is for the lift's first set. Once any set of it is logged or
+  // skipped the lifter has chosen a weight, and Apply would only reach the
+  // sets after it, so the line goes away.
+  const statusOf = s => (typeof inputKey === "function")
+    ? getInput(inputKey(block.id, ei, s, "status"), null) : null;
+  for (let s = 0; s < numSets; s++) {
+    const st = statusOf(s);
+    if (st === "done" || st === "skipped") return;
+  }
+
   const bump = state.unit === "lbs" ? 5 : 2.5;
   const newWeight = lastWeight + bump;
+  const unitLbl = state.unit === "kg" ? "kg" : "lb";
 
+  // Names the weight that went clean and marks the new one as a try. It
+  // read "Last week clean 140 lbs", which a lifter took as "last time I did
+  // 140" right above "last: 135x8" (blind read, 2026-11-24); and the last
+  // session may be weeks back, not a week.
   const chip = document.createElement("div");
   chip.className = "lp-hint-chip";
   chip.innerHTML =
     '<span class="lp-hint-icon">↑</span>' +
-    '<span class="lp-hint-text"><span class="lp-hint-label">Last week clean</span>' +
-    ' <strong>' + newWeight + ' ' + state.unit + '</strong></span>' +
+    '<span class="lp-hint-text"><span class="lp-hint-label">All clean at ' + lastWeight + ' &middot; try</span>' +
+    ' <strong>' + newWeight + ' ' + unitLbl + '</strong></span>' +
     '<button class="lp-hint-apply" type="button">Apply</button>';
 
   const applyBtn = chip.querySelector(".lp-hint-apply");
   applyBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     if (typeof inputKey !== "function" || typeof saveInput !== "function") return;
+    // Never rewrite a set already logged or skipped (the same rule as the
+    // bar's stepper since F19).
     for (let s = 0; s < numSets; s++) {
+      const st = statusOf(s);
+      if (st === "done" || st === "skipped") continue;
       saveInput(inputKey(block.id, ei, s, "w"), newWeight);
     }
     if (navigator.vibrate) navigator.vibrate(10);
-    if (typeof showToast === "function") showToast("Weight bumped to " + newWeight + " " + state.unit);
+    // No toast: the rows and the bar change to the new weight where the
+    // lifter is looking; a toast at the top of the screen was out of sight.
     if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
   });
 

@@ -1422,7 +1422,7 @@ function renderSetsTable(block, ex, bi, ei) {
     const rptDef = (typeof rptPlannedSet === "function")
       ? rptPlannedSet(block, ex, ei, i) : null;
     const curW = getInput(wkey, rptDef && rptDef.weight != null ? rptDef.weight : (lastSet?.weight ?? ex.defaultWeight ?? 0));
-    const curR = getInput(rkey, rptDef ? rptDef.reps : (lastSet?.reps ?? ex.reps));
+    const curR = getInput(rkey, rptDef ? rptDef.reps : setRepsDefault(ex, lastSet));
     const curP = getInput(pkey, 7);
 
     const chip = document.createElement("div");
@@ -1639,7 +1639,7 @@ function openSetEditor(block, ex, bi, ei, setIdx, bw) {
 
     // RPT scheme: planned per-set targets override generic defaults —
     // back-off weight derives from the actual top-set entry.
-    let repsDefault = lastSet?.reps ?? ex.reps;
+    let repsDefault = setRepsDefault(ex, lastSet);
     const rptDef = (typeof rptPlannedSet === "function")
       ? rptPlannedSet(block, ex, ei, si) : null;
     if (rptDef) {
@@ -1974,7 +1974,9 @@ function openInlineEditor(anchorEl, field, block, ex, bi, ei, setIdx, bw) {
     unitLabel = state.unit;
     commonVals = state.unit === "lbs" ? [45, 95, 135, 185, 225, 275, 315] : [20, 40, 60, 80, 100, 120, 140];
   } else {
-    curVal = getInput(key, (field === "r" && rptDef) ? rptDef.reps : (lastSet?.reps ?? ex.reps));
+    curVal = getInput(key, field === "r"
+      ? (rptDef ? rptDef.reps : setRepsDefault(ex, lastSet))
+      : (lastSet?.reps ?? ex.reps));
     step = ex.isTime ? 5 : ex.isDistance ? 10 : 1;
     label = ex.isTime ? "Time (sec)" : ex.isDistance ? "Distance (m)" : "Reps";
     unitLabel = ex.isTime ? "s" : ex.isDistance ? "m" : "reps";

@@ -7,10 +7,17 @@ function getDraft() {
   return p.draft;
 }
 
+// repsFrom: "plan" marks a draft begun under the plan-first reps default
+// (setRepsDefault in 11-helpers.js). A draft without it was begun before
+// that rule and keeps the old one until it ends.
+function newDraft() {
+  return { dayId: state.currentDayId, startedAt: Date.now(), inputs: {}, pausedAt: null, repsFrom: "plan" };
+}
+
 function ensureDraft() {
   updateActiveProgram(entry => {
     if (!entry.draft || entry.draft.dayId !== state.currentDayId) {
-      entry.draft = { dayId: state.currentDayId, startedAt: Date.now(), inputs: {}, pausedAt: null };
+      entry.draft = newDraft();
     }
   });
 }
@@ -22,7 +29,7 @@ function saveInput(key, value) {
   const entry = activeProgramOf(user);
   if (!entry) return;
   if (!entry.draft || entry.draft.dayId !== state.currentDayId) {
-    entry.draft = { dayId: state.currentDayId, startedAt: Date.now(), inputs: {}, pausedAt: null };
+    entry.draft = newDraft();
     if (state.autoTimer) {
       state.workoutStartedAt = entry.draft.startedAt;
       startSessionTimer();
