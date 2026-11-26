@@ -9670,6 +9670,65 @@ body[data-skin="paper"] [class*="inline-edit"] {
   color: var(--paper-ink);
   font-family: var(--paper-hand);
 }
+/* Only the popover itself is framed. The rule above also matched the
+   backdrop (painting it opaque, so the workout vanished behind the editor)
+   and boxed every part inside. The backdrop stays clear so the set being
+   edited is still in view; tapping anywhere on it closes the editor. */
+body[data-skin="paper"] .inline-edit-backdrop,
+body[data-skin="paper"] .inline-edit-label,
+body[data-skin="paper"] .inline-edit-stepper-row,
+body[data-skin="paper"] .inline-edit-value,
+body[data-skin="paper"] .inline-edit-pills {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+body[data-skin="paper"] .inline-edit-label {
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .inline-edit-value {
+  font-family: var(--paper-hand);
+  font-size: 30px;
+}
+body[data-skin="paper"] .inline-edit-value small {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .inline-edit-stepper,
+body[data-skin="paper"] .inline-edit-pill {
+  background: transparent;
+  border: 1.4px solid var(--paper-ink);
+  box-shadow: none;
+  color: var(--paper-ink);
+  font-family: var(--paper-hand);
+  transform: none;
+}
+body[data-skin="paper"] .inline-edit-stepper { width: 44px; height: 44px; font-size: 22px; }
+/* Two rows of four, each 44px tall, instead of one row of thin chips. */
+body[data-skin="paper"] .inline-edit-pills {
+  flex-wrap: wrap;
+  overflow: visible;
+  gap: 6px;
+}
+body[data-skin="paper"] .inline-edit-pill {
+  flex: 1 0 calc(25% - 6px);
+  height: 44px;
+  padding: 0;
+  font-size: 18px;
+}
+body[data-skin="paper"] .inline-edit-stepper:active,
+body[data-skin="paper"] .inline-edit-pill:active,
+body[data-skin="paper"] .inline-edit-pill.active {
+  background: var(--paper-marker-soft);
+  color: var(--paper-ink);
+  border-color: var(--paper-ink);
+  box-shadow: none;
+}
 
 /* Onboarding overlay & cards                                        */
 body[data-skin="paper"] .onboarding-overlay {
@@ -11778,6 +11837,16 @@ body[data-skin="paper"] .sheet .paper-menu-sheet button.paper-menu-item:active {
 
 // === Inlined from src/changelog.json ===
 const CHANGELOG = [
+  {
+    "version": "0.25",
+    "date": "2026-11-26",
+    "title": "Tap a number to change it",
+    "items": [
+      "On a phone, tapping a set's weight, reps or RPE now opens a small editor beside the set. It used to flash open and close at once, so the tap seemed to do nothing, and Log set then recorded the planned number.",
+      "Pick a number and the editor closes; the set and the bar both show it before you log. The − and + keep it open; tap anywhere else to close it.",
+      "The same fix applies when you edit a past workout from your history."
+    ]
+  },
   {
     "version": "0.24",
     "date": "2026-11-24",
@@ -14604,7 +14673,7 @@ function switchUser(id) {
 // VERSION
 // ============================================================
 const APP_VERSION = 23;
-const APP_BUILD = "f27d620c";
+const APP_BUILD = "7b6e61f8";
 const APP_DISPLAY_VERSION = "0." + APP_VERSION;
 
 
@@ -18829,7 +18898,9 @@ function dismissInlineEditor() {
 
 // Generic stepper+pills popover. Reused by openInlineEditor (program-day
 // draft) and openSessionInlineEditor (past-session set editing).
-// opts: { curVal, step, label, unitLabel, commonVals, allowNegative, onChange(v) }
+// opts: { curVal, step, label, unitLabel, commonVals, allowNegative, onChange(v), onDone() }
+// A pill is a final answer, so picking one closes the popover; the stepper
+// keeps it open. onDone runs whenever the popover closes from inside.
 function openValuePopover(anchorEl, opts) {
   dismissInlineEditor();
   let curVal = opts.curVal;
@@ -18840,8 +18911,12 @@ function openValuePopover(anchorEl, opts) {
 
   const backdrop = document.createElement("div");
   backdrop.className = "inline-edit-backdrop";
-  backdrop.addEventListener("click", dismissInlineEditor);
-  backdrop.addEventListener("touchend", (e) => { e.preventDefault(); dismissInlineEditor(); });
+  function finish() {
+    dismissInlineEditor();
+    if (typeof opts.onDone === "function") opts.onDone();
+  }
+  backdrop.addEventListener("click", finish);
+  backdrop.addEventListener("touchend", (e) => { e.preventDefault(); finish(); });
 
   const pop = document.createElement("div");
   pop.className = "inline-edit-popover";
@@ -18885,7 +18960,7 @@ function openValuePopover(anchorEl, opts) {
     const pill = document.createElement("button");
     pill.className = "inline-edit-pill" + (v === curVal ? " active" : "");
     pill.textContent = v;
-    pill.onclick = () => updateVal(v);
+    pill.onclick = () => { updateVal(v); finish(); };
     pills.appendChild(pill);
   });
 
@@ -18948,6 +19023,10 @@ function openInlineEditor(anchorEl, field, block, ex, bi, ei, setIdx, bw) {
         const rl = ex.isTime ? "s" : ex.isDistance ? "m" : "reps";
         anchorEl.textContent = v + " " + rl;
       }
+    },
+    // Redraw on close so the bar names the number Log set will now record.
+    onDone() {
+      if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
     }
   });
 }
@@ -23882,17 +23961,7 @@ function paperWireSessionSetRow(row, editing, globalIdx, bw) {
   ["w", "r", "p"].forEach(field => {
     const span = row.querySelector(`[data-field="${field}"]`);
     if (!span) return;
-    let handled = false;
-    span.addEventListener("touchend", (e) => {
-      e.stopPropagation();
-      handled = true;
-      openSessionInlineEditor(span, field, editing, globalIdx, bw);
-    });
-    span.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (handled) { handled = false; return; }
-      openSessionInlineEditor(span, field, editing, globalIdx, bw);
-    });
+    paperWireNumberTap(span, () => openSessionInlineEditor(span, field, editing, globalIdx, bw));
   });
 
   // Delete-set button — confirm then re-render the page so indices update.
@@ -33004,22 +33073,36 @@ function paperWireSetRow(row, block, ex, bi, ei, setIdx, bw) {
   ["w", "r", "p"].forEach(field => {
     const span = row.querySelector(`[data-field="${field}"]`);
     if (!span) return;
-    let handled = false;
-    span.addEventListener("touchend", (e) => {
-      if (isSwiping) return;
-      e.stopPropagation();
-      handled = true;
+    paperWireNumberTap(span, () => {
       if (typeof openInlineEditor === "function") {
         openInlineEditor(span, field, block, ex, bi, ei, setIdx, bw);
       }
-    });
-    span.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (handled) { handled = false; return; }
-      if (typeof openInlineEditor === "function") {
-        openInlineEditor(span, field, block, ex, bi, ei, setIdx, bw);
-      }
-    });
+    }, () => isSwiping);
+  });
+}
+
+// A tap on a set's weight, reps or RPE opens its editor. On a touch screen
+// it opens on touchend, so that touchend must cancel the browser's follow-up
+// click: left alone, the click lands on the editor's own backdrop a few ms
+// later and closes it, and the tap looks dead (F46). A touch that moved is a
+// scroll or a swipe, not a tap, and opens nothing. Mouse clicks still open.
+function paperWireNumberTap(span, open, isSwiping) {
+  let startX = 0, startY = 0;
+  span.addEventListener("touchstart", (e) => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+  span.addEventListener("touchend", (e) => {
+    if (isSwiping && isSwiping()) return;
+    const t = e.changedTouches[0];
+    if (Math.abs(t.clientX - startX) > 10 || Math.abs(t.clientY - startY) > 10) return;
+    e.preventDefault();
+    e.stopPropagation();
+    open();
+  });
+  span.addEventListener("click", (e) => {
+    e.stopPropagation();
+    open();
   });
 }
 
@@ -34109,6 +34192,7 @@ if (typeof window !== "undefined") {
   window.paperRenderExercise = paperRenderExercise;
   window.paperRenderSetsTable = paperRenderSetsTable;
   window.paperWireSetRow = paperWireSetRow;
+  window.paperWireNumberTap = paperWireNumberTap;
   window.paperRebuildBottomNav = paperRebuildBottomNav;
   window.paperUpdateActiveNavTab = paperUpdateActiveNavTab;
   window.paperRenderDayPicker = paperRenderDayPicker;

@@ -1118,6 +1118,73 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     }
   });
 
+  // ---- A tap on a set's number opens its editor on a phone (2026-11-26, Director F46) ----
+  // The row's weight / reps / RPE opened the inline editor on touchend without
+  // cancelling the browser's follow-up click, which then landed on the
+  // editor's own backdrop and closed it a few ms later. On a phone the tap
+  // looked dead, and the next tap on Log set recorded the planned reps. A
+  // touch that moved (a scroll) also opened the editor.
+  // Touches are plain events with the fields the handlers read.
+  const _touch = (el, type, x, y) => {
+    const e = new w.Event(type, { bubbles: true, cancelable: true });
+    const pt = [{ clientX: x, clientY: y }];
+    e.touches = type === "touchend" ? [] : pt;
+    e.changedTouches = pt;
+    el.dispatchEvent(e);
+    return e;
+  };
+  const _tapTouch = (el) => { _touch(el, "touchstart", 20, 20); return _touch(el, "touchend", 22, 21); };
+  const _popover = () => w.document.querySelector(".inline-edit-popover");
+
+  t("row tap: a touch on a set's reps opens its editor and cancels the click that used to close it", () => {
+    const { ex } = _planFixture("TapEdit", 2);
+    w.openWorkout();
+    const reps = () => _liftEl(ex).querySelector('.paper-set-row [data-field="r"]');
+    const end = _tapTouch(reps());
+    assert(_popover(), "the editor is open after the touch");
+    assert(end.defaultPrevented, "the touchend cancels the follow-up click (else it lands on the backdrop)");
+    w.dismissInlineEditor();
+    // A thumb that moved is scrolling the list, not asking to edit.
+    _touch(reps(), "touchstart", 20, 20);
+    const moved = _touch(reps(), "touchend", 20, 60);
+    assert(!_popover(), "a touch that moved 40px opens nothing");
+    assert(!moved.defaultPrevented, "and leaves the scroll alone");
+    // A mouse click still opens it.
+    reps().click();
+    assert(_popover(), "a click opens the editor");
+    w.dismissInlineEditor();
+  });
+
+  t("row tap: picking a value closes the editor, keeps the value, and the bar names it", () => {
+    const { day, blk, bi, ex, plan } = _planFixture("TapEditPick", 2);
+    w.openWorkout();
+    day.blocks.slice(0, bi).forEach(b => b.exercises.forEach((e, ei) => {
+      for (let i = 0; i < (e.sets || 1); i++) w.saveInput(w.inputKey(b.id, ei, i, "status"), "done");
+    }));
+    w.renderWorkoutScreen();
+    const pick = plan === 5 ? 3 : 5;
+    const bar = () => w.document.querySelector(".paper-action-bar");
+    eq(bar().querySelector(".pa-label-lift").textContent, ex.name, "the bar is on the lift");
+    _tapTouch(_liftEl(ex).querySelector('.paper-set-row [data-field="r"]'));
+    const pill = [..._popover().querySelectorAll(".inline-edit-pill")].find(p => p.textContent === String(pick));
+    pill.click();
+    assert(!_popover(), "picking a value closes the editor");
+    eq(w.getInput(w.inputKey(blk.id, 0, 0, "r")), pick, "the picked reps are kept for set 1");
+    eq(_rowReps(ex)[0], pick + " reps", "set 1's row");
+    eq(bar().querySelector(".pa-label-reps").textContent, pick + " reps", "the bar names what Log set will record");
+    // The stepper keeps it open; closing it redraws the bar too.
+    _tapTouch(_liftEl(ex).querySelector('.paper-set-row [data-field="r"]'));
+    _popover().querySelector(".inline-edit-stepper:last-of-type").click();
+    assert(_popover(), "the stepper leaves the editor open");
+    w.document.querySelector(".inline-edit-backdrop").click();
+    assert(!_popover(), "a tap beside the editor closes it");
+    eq(bar().querySelector(".pa-label-reps").textContent, (pick + 1) + " reps", "the bar after a + and close");
+    bar().querySelector(".paper-action-log").click();
+    w.hideHeaderRest();
+    w.finishWorkout();
+    eq(_savedReps(ex)[0], pick + 1, "set 1 saved at the edited reps");
+  });
+
   // ---- Phase -> loading resolution ----
 
   t("getLoading falls back with the shape mkSets expects", () => {
@@ -3999,6 +4066,21 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     const editor = w.document.getElementById("sheetContent")
       .querySelector(".paper-session-view, .session-editor");
     assert(editor, "session editor opened after Edit click");
+    w.document.getElementById("sheetBg").classList.remove("active");
+  });
+
+  // F46 (2026-11-26): the past-session editor's numbers had the same dead
+  // touch as the workout rows.
+  t("session editor: a touch on a logged set's reps opens its editor and cancels the follow-up click", () => {
+    _resetUserForCtTests();
+    w.updateUser(u => { u.sessions = [_makeSession("tapedit", Date.now() - 60 * 1000, { dayName: "Tap Edit" })]; });
+    w.openSessionEditor(w.userData().sessions[0]);
+    const reps = w.document.querySelector('.paper-session-set-row [data-field="r"]');
+    assert(reps, "a logged set's reps are on screen");
+    const end = _tapTouch(reps);
+    assert(_popover(), "the editor is open after the touch");
+    assert(end.defaultPrevented, "the touchend cancels the follow-up click");
+    w.dismissInlineEditor();
     w.document.getElementById("sheetBg").classList.remove("active");
   });
 

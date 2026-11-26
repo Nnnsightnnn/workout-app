@@ -394,6 +394,56 @@ test.describe("personas", () => {
     expect(errors, "page errors / console.error").toEqual([]);
   });
 
+  // Regression (2026-11-26, Director F46): on a phone a tap on a set's weight,
+  // reps or RPE opened the inline editor on touchend, and the browser's
+  // follow-up click landed on the editor's own backdrop and closed it about
+  // 4ms later. Mouse clicks worked, so no check saw it, and the next tap on
+  // Log set recorded the planned reps. Real touches: the editor opens and
+  // stays open, a pick closes it and keeps the value, the + stepper keeps it
+  // open until a tap beside it.
+  test("list view: a touch on a set's reps or weight opens its editor, and the pick is kept", async ({ page }) => {
+    test.setTimeout(60_000);
+    const errors = await P.instrument(page);
+    await P.seedUser(page, { name: "RowTap", templateId: "upperlower4" });
+    await P.startToday(page);
+    const target = await page.evaluate(() => {
+      const day = getCurrentDay();
+      const blk = day.blocks.find(b => b.exercises.length && !b.exercises[0].isWarmup
+        && !(LIB_BY_ID[b.exercises[0].exId] || b.exercises[0]).bodyweight && Number(b.exercises[0].reps) > 0);
+      return { name: blk.exercises[0].name, blockId: blk.id, plan: Number(blk.exercises[0].reps) };
+    });
+    const pick = target.plan === 5 ? 3 : 5;
+    const input = field => page.evaluate(([b, f]) => getInput(inputKey(b, 0, 0, f), null), [target.blockId, field]);
+    const row = () => page.locator(".paper-chapters-view .paper-exercise")
+      .filter({ has: page.locator(".paper-ex-name", { hasText: target.name }) }).locator(".paper-set-row").first();
+    const popover = page.locator(".inline-edit-popover");
+
+    await row().locator('[data-field="r"]').scrollIntoViewIfNeeded();
+    await row().locator('[data-field="r"]').tap();
+    await expect(popover, "the reps editor opens on a touch").toBeVisible();
+    await page.waitForTimeout(300); // the old follow-up click closed it within ~4ms
+    await expect(popover, "and is still open").toBeVisible();
+    await popover.locator(".inline-edit-pill", { hasText: new RegExp(`^${pick}$`) }).tap();
+    await expect(popover, "a pick closes the editor").toHaveCount(0);
+    await expect(row().locator(".paper-set-reps")).toHaveText(`${pick} reps`);
+    expect(await input("r"), "set 1's reps").toBe(pick);
+
+    const w0 = parseFloat(await row().locator(".paper-set-weight").textContent());
+    await row().locator('[data-field="w"]').tap();
+    await page.waitForTimeout(300);
+    await expect(popover, "the weight editor is open 300ms after the touch").toBeVisible();
+    await popover.locator(".inline-edit-stepper").last().tap();
+    await expect(popover, "the + stepper leaves it open").toBeVisible();
+    // A thumb beside the editor closes it: the top or bottom edge, whichever
+    // the popover isn't on.
+    const box = await popover.boundingBox();
+    await page.touchscreen.tap(20, box.y > 120 ? 40 : 800);
+    await expect(popover, "a touch beside the editor closes it").toHaveCount(0);
+    await expect(row().locator(".paper-set-weight")).toHaveText(`${w0 + 5} lb`);
+    expect(await input("w"), "set 1's weight").toBe(w0 + 5);
+    expect(errors, "page errors / console.error").toEqual([]);
+  });
+
   // Regression (2026-11-14): from 2026-05-12 the returning lifter's only
   // Start sat inside the collapsed "adjust time" panel, which never opens in
   // paper. The gate missed it because startToday() used a JS click. A lifter

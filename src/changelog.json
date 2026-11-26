@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.25",
+    "date": "2026-11-26",
+    "title": "Tap a number to change it",
+    "items": [
+      "On a phone, tapping a set's weight, reps or RPE now opens a small editor beside the set. It used to flash open and close at once, so the tap seemed to do nothing, and Log set then recorded the planned number.",
+      "Pick a number and the editor closes; the set and the bar both show it before you log. The − and + keep it open; tap anywhere else to close it.",
+      "The same fix applies when you edit a past workout from your history."
+    ]
+  },
+  {
     "version": "0.24",
     "date": "2026-11-24",
     "title": "Sets start from today's plan",

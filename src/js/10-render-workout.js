@@ -1874,7 +1874,9 @@ function dismissInlineEditor() {
 
 // Generic stepper+pills popover. Reused by openInlineEditor (program-day
 // draft) and openSessionInlineEditor (past-session set editing).
-// opts: { curVal, step, label, unitLabel, commonVals, allowNegative, onChange(v) }
+// opts: { curVal, step, label, unitLabel, commonVals, allowNegative, onChange(v), onDone() }
+// A pill is a final answer, so picking one closes the popover; the stepper
+// keeps it open. onDone runs whenever the popover closes from inside.
 function openValuePopover(anchorEl, opts) {
   dismissInlineEditor();
   let curVal = opts.curVal;
@@ -1885,8 +1887,12 @@ function openValuePopover(anchorEl, opts) {
 
   const backdrop = document.createElement("div");
   backdrop.className = "inline-edit-backdrop";
-  backdrop.addEventListener("click", dismissInlineEditor);
-  backdrop.addEventListener("touchend", (e) => { e.preventDefault(); dismissInlineEditor(); });
+  function finish() {
+    dismissInlineEditor();
+    if (typeof opts.onDone === "function") opts.onDone();
+  }
+  backdrop.addEventListener("click", finish);
+  backdrop.addEventListener("touchend", (e) => { e.preventDefault(); finish(); });
 
   const pop = document.createElement("div");
   pop.className = "inline-edit-popover";
@@ -1930,7 +1936,7 @@ function openValuePopover(anchorEl, opts) {
     const pill = document.createElement("button");
     pill.className = "inline-edit-pill" + (v === curVal ? " active" : "");
     pill.textContent = v;
-    pill.onclick = () => updateVal(v);
+    pill.onclick = () => { updateVal(v); finish(); };
     pills.appendChild(pill);
   });
 
@@ -1993,6 +1999,10 @@ function openInlineEditor(anchorEl, field, block, ex, bi, ei, setIdx, bw) {
         const rl = ex.isTime ? "s" : ex.isDistance ? "m" : "reps";
         anchorEl.textContent = v + " " + rl;
       }
+    },
+    // Redraw on close so the bar names the number Log set will now record.
+    onDone() {
+      if (typeof renderWorkoutScreen === "function") renderWorkoutScreen();
     }
   });
 }

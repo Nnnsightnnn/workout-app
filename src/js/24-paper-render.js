@@ -428,22 +428,36 @@ function paperWireSetRow(row, block, ex, bi, ei, setIdx, bw) {
   ["w", "r", "p"].forEach(field => {
     const span = row.querySelector(`[data-field="${field}"]`);
     if (!span) return;
-    let handled = false;
-    span.addEventListener("touchend", (e) => {
-      if (isSwiping) return;
-      e.stopPropagation();
-      handled = true;
+    paperWireNumberTap(span, () => {
       if (typeof openInlineEditor === "function") {
         openInlineEditor(span, field, block, ex, bi, ei, setIdx, bw);
       }
-    });
-    span.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (handled) { handled = false; return; }
-      if (typeof openInlineEditor === "function") {
-        openInlineEditor(span, field, block, ex, bi, ei, setIdx, bw);
-      }
-    });
+    }, () => isSwiping);
+  });
+}
+
+// A tap on a set's weight, reps or RPE opens its editor. On a touch screen
+// it opens on touchend, so that touchend must cancel the browser's follow-up
+// click: left alone, the click lands on the editor's own backdrop a few ms
+// later and closes it, and the tap looks dead (F46). A touch that moved is a
+// scroll or a swipe, not a tap, and opens nothing. Mouse clicks still open.
+function paperWireNumberTap(span, open, isSwiping) {
+  let startX = 0, startY = 0;
+  span.addEventListener("touchstart", (e) => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+  span.addEventListener("touchend", (e) => {
+    if (isSwiping && isSwiping()) return;
+    const t = e.changedTouches[0];
+    if (Math.abs(t.clientX - startX) > 10 || Math.abs(t.clientY - startY) > 10) return;
+    e.preventDefault();
+    e.stopPropagation();
+    open();
+  });
+  span.addEventListener("click", (e) => {
+    e.stopPropagation();
+    open();
   });
 }
 
@@ -1533,6 +1547,7 @@ if (typeof window !== "undefined") {
   window.paperRenderExercise = paperRenderExercise;
   window.paperRenderSetsTable = paperRenderSetsTable;
   window.paperWireSetRow = paperWireSetRow;
+  window.paperWireNumberTap = paperWireNumberTap;
   window.paperRebuildBottomNav = paperRebuildBottomNav;
   window.paperUpdateActiveNavTab = paperUpdateActiveNavTab;
   window.paperRenderDayPicker = paperRenderDayPicker;
