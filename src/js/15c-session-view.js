@@ -295,17 +295,7 @@ function paperWireSessionSetRow(row, editing, globalIdx, bw) {
   ["w", "r", "p"].forEach(field => {
     const span = row.querySelector(`[data-field="${field}"]`);
     if (!span) return;
-    let handled = false;
-    span.addEventListener("touchend", (e) => {
-      e.stopPropagation();
-      handled = true;
-      openSessionInlineEditor(span, field, editing, globalIdx, bw);
-    });
-    span.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (handled) { handled = false; return; }
-      openSessionInlineEditor(span, field, editing, globalIdx, bw);
-    });
+    paperWireNumberTap(span, () => openSessionInlineEditor(span, field, editing, globalIdx, bw));
   });
 
   // Delete-set button — confirm then re-render the page so indices update.

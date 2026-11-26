@@ -9457,6 +9457,65 @@ body[data-skin="paper"] [class*="inline-edit"] {
   color: var(--paper-ink);
   font-family: var(--paper-hand);
 }
+/* Only the popover itself is framed. The rule above also matched the
+   backdrop (painting it opaque, so the workout vanished behind the editor)
+   and boxed every part inside. The backdrop stays clear so the set being
+   edited is still in view; tapping anywhere on it closes the editor. */
+body[data-skin="paper"] .inline-edit-backdrop,
+body[data-skin="paper"] .inline-edit-label,
+body[data-skin="paper"] .inline-edit-stepper-row,
+body[data-skin="paper"] .inline-edit-value,
+body[data-skin="paper"] .inline-edit-pills {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+body[data-skin="paper"] .inline-edit-label {
+  font-family: var(--paper-form);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .inline-edit-value {
+  font-family: var(--paper-hand);
+  font-size: 30px;
+}
+body[data-skin="paper"] .inline-edit-value small {
+  font-family: var(--paper-form);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--paper-ink-faint);
+}
+body[data-skin="paper"] .inline-edit-stepper,
+body[data-skin="paper"] .inline-edit-pill {
+  background: transparent;
+  border: 1.4px solid var(--paper-ink);
+  box-shadow: none;
+  color: var(--paper-ink);
+  font-family: var(--paper-hand);
+  transform: none;
+}
+body[data-skin="paper"] .inline-edit-stepper { width: 44px; height: 44px; font-size: 22px; }
+/* Two rows of four, each 44px tall, instead of one row of thin chips. */
+body[data-skin="paper"] .inline-edit-pills {
+  flex-wrap: wrap;
+  overflow: visible;
+  gap: 6px;
+}
+body[data-skin="paper"] .inline-edit-pill {
+  flex: 1 0 calc(25% - 6px);
+  height: 44px;
+  padding: 0;
+  font-size: 18px;
+}
+body[data-skin="paper"] .inline-edit-stepper:active,
+body[data-skin="paper"] .inline-edit-pill:active,
+body[data-skin="paper"] .inline-edit-pill.active {
+  background: var(--paper-marker-soft);
+  color: var(--paper-ink);
+  border-color: var(--paper-ink);
+  box-shadow: none;
+}
 
 /* Onboarding overlay & cards                                        */
 body[data-skin="paper"] .onboarding-overlay {
