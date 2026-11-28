@@ -675,13 +675,19 @@ function paperRenderDayPicker() {
 
   // Normal branch — hero day + others
   const days = ap.program || [];
-  const nextId = (typeof determineDefaultDay === "function") ? determineDefaultDay() : (days[0] && days[0].id);
+  // Once today's session is saved, lead with the next day and when it falls,
+  // with no Start stamp; otherwise today's day as the hero.
+  const doneNext = paperDoneTodayNext(u, ap);
+  const nextId = doneNext ? doneNext.day.id
+    : (typeof determineDefaultDay === "function") ? determineDefaultDay() : (days[0] && days[0].id);
   const nextDay = days.find(d => d.id === nextId) || days[0];
   if (!nextDay) return;
   const picker = document.createElement("div");
   picker.className = "paper-day-picker";
 
-  picker.appendChild(paperBuildDayCard(nextDay, true));
+  picker.appendChild(doneNext
+    ? paperBuildDayCard(nextDay, false, { nextWhen: doneNext.when })
+    : paperBuildDayCard(nextDay, true));
 
   const others = days.filter(d => d.id !== nextDay.id);
   if (others.length) {
@@ -704,9 +710,47 @@ function paperRenderDayPicker() {
   container.appendChild(picker);
 }
 
-function paperBuildDayCard(d, isHero) {
+// ── Done today ────────────────────────────────────────────────
+// After a finish the weekday schedule still points at the day just done, so
+// the hero offered that same day again under "today" with a fresh Start, and
+// lifters doubted the finish had counted. When this program has a session
+// saved today and nothing is in progress, this returns the day that comes
+// next and when: { day, when } where when is "tomorrow", a weekday name, or
+// null for a program that runs by rotation with no weekdays set. Returns
+// null otherwise. One-off workouts and other programs' sessions don't count.
+function paperDoneTodayNext(u, ap) {
+  if (!u || !ap || ap.draft || typeof getTodaysSessions !== "function") return null;
+  const days = ap.program || [];
+  if (!days.length) return null;
+  const doneToday = getTodaysSessions(u).some(s =>
+    !s.isAdhoc && (!s.programId || s.programId === ap.id) && days.some(d => d.id === s.dayId));
+  if (!doneToday) return null;
+
+  const sched = (Array.isArray(ap.weeklySchedule) && ap.weeklySchedule.length === 7) ? ap.weeklySchedule : null;
+  if (sched) {
+    const dow = new Date().getDay();
+    for (let k = 1; k <= 7; k++) {
+      const id = sched[(dow + k) % 7];
+      const day = id != null ? days.find(d => d.id === id) : null;
+      if (day) {
+        const name = (typeof _DOW_LABELS_LONG !== "undefined") ? _DOW_LABELS_LONG[(dow + k) % 7] : null;
+        return { day, when: k === 1 ? "tomorrow" : name };
+      }
+    }
+  }
+  // No weekdays set: the next day in rotation after the one just finished.
+  const last = ap.lastDoneDayId;
+  const nextId = last == null ? days[0].id : (last % days.length) + 1;
+  return { day: days.find(d => d.id === nextId) || days[0], when: null };
+}
+
+// opts.nextWhen (set only after today's session is done): the card names the
+// next day and when it falls, in the hero's place, with no Start stamp, no
+// metrics and no time panel. A tap on it still starts that day.
+function paperBuildDayCard(d, isHero, opts) {
+  const isNext = !!(opts && "nextWhen" in opts);
   const card = document.createElement("div");
-  card.className = "paper-day-card" + (isHero ? " paper-day-card-hero" : "");
+  card.className = "paper-day-card" + (isHero ? " paper-day-card-hero" : "") + (isNext ? " paper-day-card-next" : "");
   card.dataset.dayId = d.id;
 
   const breakdown = (typeof getSessionBreakdown === "function") ? getSessionBreakdown(d) : { totalMin: 30, warmupSec: 300, workingSec: 1200, cooldownSec: 300 };
@@ -717,9 +761,12 @@ function paperBuildDayCard(d, isHero) {
   const totalSets = d.blocks.reduce((n, b) => n + b.exercises.reduce((s, ex) => s + (ex.sets || 0), 0), 0);
   const blockLetters = d.blocks.map(b => b.letter).join(" ");
 
+  const dayNo = `day ${String(d.id).padStart(2, "0")}`;
   const todayKicker = isHero
-    ? `<div class="paper-day-card-kicker">today &middot; day ${String(d.id).padStart(2, "0")}</div>`
-    : `<div class="paper-day-card-kicker">day ${String(d.id).padStart(2, "0")}</div>`;
+    ? `<div class="paper-day-card-kicker">today &middot; ${dayNo}</div>`
+    : isNext
+      ? `<div class="paper-day-card-kicker">next${opts.nextWhen ? " &middot; " + escapeHtml(opts.nextWhen) : ""} &middot; ${dayNo}</div>`
+      : `<div class="paper-day-card-kicker">${dayNo}</div>`;
 
   const blockTagsHtml = d.blocks.map(b =>
     `<span class="paper-day-block-tag">${b.letter} &middot; ${escapeHtml(b.name)}</span>`
@@ -774,7 +821,7 @@ function paperBuildDayCard(d, isHero) {
       <span class="paper-day-card-time-total picker-duration">⏱ ~${breakdown.totalMin} min</span>
       <span class="paper-day-card-time-split picker-breakdown">WU ${wuMin}m &middot; Work ${wkMin}m &middot; CD ${cdMin}m</span>
     </div>
-    <div class="paper-day-card-actions">
+    ${isNext ? "" : `<div class="paper-day-card-actions">
       <button class="paper-day-card-expand dpc-expand-hint">
         <span class="dpc-chevron">▾</span> adjust time
       </button>
@@ -796,7 +843,7 @@ function paperBuildDayCard(d, isHero) {
           <button class="tb-start-btn paper-start-stamp" data-day-id="${d.id}">Start workout</button>
         </div>
       </div>
-    </div>
+    </div>`}
   `;
 
   // Tapping the card opens the workout (unless the tap was on the time-budget controls or the expand hint)
@@ -824,7 +871,7 @@ function paperBuildDayCard(d, isHero) {
     });
   }
 
-  if (typeof _wireTimeBudgetCard === "function") {
+  if (!isNext && typeof _wireTimeBudgetCard === "function") {
     _wireTimeBudgetCard(card, d, breakdown);
   }
   return card;

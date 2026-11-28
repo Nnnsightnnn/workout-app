@@ -236,6 +236,12 @@ async function cloneHistory(page, total) {
     const base = u.sessions[u.sessions.length - 1];
     const days = (u.programs.find(p => p.id === u.activeProgramId) || {}).program || [];
     const DAY = 86400000;
+    // The newest session moves to yesterday, so the persona opens as a
+    // veteran coming back, not one who already trained today: since
+    // 2026-11-28 a session saved today replaces today's Start with the
+    // next day.
+    base.startedAt -= DAY;
+    base.finishedAt -= DAY;
     const clones = [];
     for (let i = 1; i < total; i++) {
       const c = JSON.parse(JSON.stringify(base));

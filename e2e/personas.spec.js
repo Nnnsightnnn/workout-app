@@ -480,6 +480,57 @@ test.describe("personas", () => {
     expect(errors, "page errors / console.error").toEqual([]);
   });
 
+  // Regression (2026-11-28): after Finish the weekday schedule still pointed
+  // at the day just done, so today's card offered that same day again with a
+  // red Start, after Finish and on every open that day. Real taps: Start,
+  // Log set, Save & exit, Save and end. The picker leads with the next day and no Start,
+  // the same on reopening, and a tap on that card starts the next day.
+  test("after Finish: the next day leads, with no Start for the day just done", async ({ page }) => {
+    test.setTimeout(60_000);
+    const errors = await P.instrument(page);
+    await P.seedUser(page, { name: "Finished", templateId: "upperlower4" });
+    // Today runs day 1 and the next training day is two days out, day 2, as
+    // a lifter would set it in the schedule editor.
+    const expected = await page.evaluate(() => {
+      const dow = new Date().getDay();
+      const sched = [null, null, null, null, null, null, null];
+      sched[dow] = 1; sched[(dow + 2) % 7] = 2;
+      updateActiveProgram(e => { e.weeklySchedule = sched; });
+      state.dayChosen = false;
+      renderWorkoutScreen();
+      return { day: 2, weekday: ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"][(dow + 2) % 7] };
+    });
+    await P.startToday(page);
+    expect(await page.evaluate(() => getDraft().dayId), "Start opened today's day").toBe(1);
+    await page.locator(".paper-action-log").first().tap({ timeout: 15000 });
+    await page.waitForFunction(() => Object.values(getDraft().inputs).indexOf("done") >= 0);
+    // Save & exit, then Save and end: real taps, as a lifter ends early.
+    await page.locator(".paper-action-exit").first().tap({ timeout: 15000 });
+    await page.locator("#exitWorkoutConfirm").tap({ timeout: 15000 });
+    await page.waitForFunction(() => !getDraft() && userData().sessions.length === 1);
+
+    const check = async (when) => {
+      const next = page.locator(".paper-day-picker > .paper-day-card-next");
+      await expect(next, `${when}: the next day leads the picker`).toBeVisible({ timeout: 15000 });
+      await expect(next.locator(".paper-day-card-kicker"), `${when}: the kicker`)
+        .toHaveText(new RegExp(`^next · ${expected.weekday} · day 02$`, "i"));
+      const nextDay = Number(await next.getAttribute("data-day-id"));
+      expect(nextDay, `${when}: the next card's day`).toBe(expected.day);
+      const starts = page.locator("#blocksContainer").getByRole("button", { name: /^start/i }).filter({ visible: true });
+      await expect(starts, `${when}: visible Start buttons`).toHaveCount(0);
+      return { next, nextDay };
+    };
+    await check("after Finish");
+    await page.reload();
+    await P.waitForBoot(page);
+    const { next, nextDay } = await check("reopened later today");
+
+    await next.locator(".paper-day-card-name").tap({ timeout: 15000 });
+    await page.waitForFunction(() => !!getDraft());
+    expect(await page.evaluate(() => getDraft().dayId), "a tap on the next card starts that day").toBe(nextDay);
+    expect(errors, "page errors / console.error").toEqual([]);
+  });
+
   // Regression (2026-11-19): from 2026-05-12 "adjust time" opened to zero
   // height in paper, and behind it "Start adjusted" wrote the cut day over
   // the stored program, so the cut stayed every week after. Real taps:

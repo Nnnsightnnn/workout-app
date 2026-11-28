@@ -4143,6 +4143,105 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     eq(cards.length, 1, "one card on the strip");
   });
 
+  // F10 (2026-11-28): after a finish the weekday schedule still pointed at the
+  // day just done, so the hero offered it again under "today" with a fresh
+  // Start. Once today's session is saved, the hero slot names the next day
+  // and when it falls, with no Start stamp; a tap on it still starts it.
+  function _doneTodayFixture(sched) {
+    _resetUserForCtTests();
+    const ap0 = w.activeProgram();
+    const days = ap0.program;
+    assert(days.length >= 3, "the default program has at least three days");
+    w.updateActiveProgram(p => { p.weeklySchedule = sched; p.lastDoneDayId = days[1].id; });
+    const now = Date.now();
+    w.updateUser(u => { u.sessions = [Object.assign(_makeSession("f10", now - 60 * 1000, { dayName: days[1].name }),
+      { dayId: days[1].id, programId: u.activeProgramId })]; });
+    w.state.dayChosen = false;
+    w.renderWorkoutScreen();
+    return { days, container: w.document.getElementById("blocksContainer") };
+  }
+  const _f10Kicker = el => el.querySelector(".paper-day-card-kicker").textContent.replace(/\s+/g, " ").trim().toLowerCase();
+
+  t("done today: the hero names the next scheduled day and its weekday, with no Start", () => {
+    const dow = new Date().getDay();
+    const sched = [null, null, null, null, null, null, null];
+    const ap = (() => { _resetUserForCtTests(); return w.activeProgram(); })();
+    sched[dow] = ap.program[1].id;                 // today: the day just finished
+    sched[(dow + 2) % 7] = ap.program[2].id;       // the next training day, two days out
+    const { days, container } = _doneTodayFixture(sched);
+    eq(container.querySelectorAll(".paper-day-start").length, 0, "Start stamps after today's session is saved");
+    eq(container.querySelectorAll(".paper-day-card-hero").length, 0, "cards labelled today");
+    const next = container.querySelector(".paper-day-picker > .paper-day-card-next");
+    assert(next, "the next day leads the picker");
+    eq(next.dataset.dayId, String(days[2].id), "the next card's day");
+    const weekday = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"][(dow + 2) % 7];
+    eq(_f10Kicker(next), `next · ${weekday} · day ${String(days[2].id).padStart(2, "0")}`, "the next card's kicker");
+    eq(next.querySelectorAll(".dpc-expand-hint, .dpc-controls-outer, .paper-day-metrics").length, 0, "time panel and metrics on the next card");
+    const others = [...container.querySelectorAll(".paper-day-picker-others .paper-day-card")].map(c => c.dataset.dayId);
+    assert(others.indexOf(String(days[1].id)) >= 0, "today's day can still be run again from other workouts");
+    next.querySelector(".paper-day-card-name").click();
+    assert(w.getDraft(), "a tap on the next card starts it");
+    eq(w.getDraft().dayId, days[2].id, "the day a tap on the next card started");
+  });
+
+  t("done today: tomorrow says tomorrow, and a program with no weekdays names the next day in rotation", () => {
+    const dow = new Date().getDay();
+    const ap = (() => { _resetUserForCtTests(); return w.activeProgram(); })();
+    const sched = [null, null, null, null, null, null, null];
+    sched[dow] = ap.program[1].id;
+    sched[(dow + 1) % 7] = ap.program[0].id;
+    let { container } = _doneTodayFixture(sched);
+    const next = container.querySelector(".paper-day-card-next");
+    assert(next && _f10Kicker(next).startsWith("next · tomorrow · day "), `kicker "${next && _f10Kicker(next)}"`);
+    const r = _doneTodayFixture(null);
+    const rot = r.container.querySelector(".paper-day-card-next");
+    assert(rot, "the next card with no weekly schedule");
+    eq(rot.dataset.dayId, String(r.days[2].id), "the day after the one just finished");
+    eq(_f10Kicker(rot), `next · day ${String(r.days[2].id).padStart(2, "0")}`, "kicker with no weekday to name");
+    eq(r.container.querySelectorAll(".paper-day-start").length, 0, "Start stamps");
+  });
+
+  t("done today: a one-off workout or another program's session leaves today's Start in place", () => {
+    const dow = new Date().getDay();
+    const ap = (() => { _resetUserForCtTests(); return w.activeProgram(); })();
+    const sched = [null, null, null, null, null, null, null];
+    sched[dow] = ap.program[1].id;
+    _doneTodayFixture(sched);
+    w.updateUser(u => { u.sessions[0].isAdhoc = true; });
+    w.renderWorkoutScreen();
+    let c = w.document.getElementById("blocksContainer");
+    eq(c.querySelectorAll(".paper-day-card-hero .paper-day-start").length, 1, "Start after a one-off workout");
+    w.updateUser(u => { delete u.sessions[0].isAdhoc; u.sessions[0].programId = "some-other-program"; });
+    w.renderWorkoutScreen();
+    c = w.document.getElementById("blocksContainer");
+    eq(c.querySelectorAll(".paper-day-card-hero .paper-day-start").length, 1, "Start after another program's session");
+    eq(c.querySelectorAll(".paper-day-card-next").length, 0, "next cards");
+  });
+
+  t("done today: Start, a logged set and Finish land on the next day, not the same day again", () => {
+    _resetUserForCtTests();
+    const dow = new Date().getDay();
+    const days = w.activeProgram().program;
+    const sched = [null, null, null, null, null, null, null];
+    sched[dow] = days[0].id;
+    sched[(dow + 3) % 7] = days[1].id;
+    w.updateActiveProgram(p => { p.weeklySchedule = sched; });
+    w.renderWorkoutScreen();
+    w.document.querySelector("#blocksContainer .paper-day-card-hero .paper-day-start").click();
+    eq(w.getDraft().dayId, days[0].id, "Start opened today's day");
+    w.document.querySelector(".paper-action-log").click();
+    w.hideHeaderRest();
+    w.finishWorkout();
+    w.closeSheet && w.closeSheet();
+    w.state.dayChosen = false;
+    w.renderWorkoutScreen();
+    const c = w.document.getElementById("blocksContainer");
+    eq(c.querySelectorAll(".paper-day-start").length, 0, "Start stamps after Finish");
+    const next = c.querySelector(".paper-day-card-next");
+    assert(next, "the next card after Finish");
+    eq(next.dataset.dayId, String(days[1].id), "the next card's day after Finish");
+  });
+
   // -------------------- MULTI-PROGRAM LIBRARY (v21) --------------------
   // Two programs in the library, switch active back and forth, finish a
   // workout on each, verify each session is stamped with the program it
