@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.26",
+    "date": "2026-11-28",
+    "title": "After you finish, the next day",
+    "items": [
+      "Once today's workout is saved, the home screen shows your next day and when it falls, for example \"Next · Monday · Upper A\". It used to offer the workout you had just finished again, with a Start button, for the rest of the day.",
+      "To train again today, tap the next day's card, or pick any day under \"other workouts\"."
+    ]
+  },
+  {
     "version": "0.25",
     "date": "2026-11-26",
     "title": "Tap a number to change it",

@@ -8225,7 +8225,8 @@ body[data-skin="paper"] .paper-day-card-kicker {
   text-transform: uppercase;
   margin-bottom: 2px;
 }
-body[data-skin="paper"] .paper-day-card-hero .paper-day-card-kicker {
+body[data-skin="paper"] .paper-day-card-hero .paper-day-card-kicker,
+body[data-skin="paper"] .paper-day-card-next .paper-day-card-kicker {
   color: var(--paper-red);
 }
 body[data-skin="paper"] .paper-day-card-name {
